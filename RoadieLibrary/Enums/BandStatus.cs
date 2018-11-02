@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.Enums
 {
-    public enum BandStatus
+    public enum BandStatus : short
     {
+        Unknown = 0,
         Active,
         OnHold,
         SplitUp,

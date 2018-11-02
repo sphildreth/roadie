@@ -14,8 +14,12 @@ namespace Roadie.Library.Identity
         [StringLength(100)]
         public string ApiToken { get; set; }
 
+        public ICollection<UserArtist> ArtistRatings { get; set; }
+
         [Column("avatar", TypeName = "blob")]
         public byte[] Avatar { get; set; }
+
+        public ICollection<Bookmark> Bookmarks { get; set; }
 
         [Column("createdDate")]
         public DateTime? CreatedDate { get; set; }
@@ -74,6 +78,8 @@ namespace Roadie.Library.Identity
         [Column("playerTrackLimit")]
         public short? PlayerTrackLimit { get; set; }
 
+        public ICollection<Playlist> Playlists { get; set; }
+
         [Column("profile", TypeName = "text")]
         [StringLength(65535)]
         public string Profile { get; set; }
@@ -87,12 +93,20 @@ namespace Roadie.Library.Identity
         [Column("registeredOn")]
         public DateTime? RegisteredOn { get; set; }
 
+        public ICollection<UserRelease> ReleaseRatings { get; set; }
+
+        public ICollection<Request> Requests { get; set; }
+
         [Column("roadieId")]
         [StringLength(36)]
         public string RoadieId { get; set; }
 
+        public ICollection<UsersInRoles> Roles { get; set; }
+
         [Column("status")]
         public short? Status { get; set; }
+
+        public ICollection<Submission> Submissions { get; set; }
 
         [Column("timeformat")]
         [StringLength(50)]
@@ -102,11 +116,11 @@ namespace Roadie.Library.Identity
         [StringLength(50)]
         public string Timezone { get; set; }
 
+        public ICollection<UserTrack> TrackRatings { get; set; }
+
         [Column("username")]
         [Required]
         [StringLength(20)]
         public string Username { get; set; }
-
-        public ICollection<Playlist> Playlists { get; set; }
     }
 }

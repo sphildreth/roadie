@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.Enums
 {
-    public enum RequestStatus
+    public enum RequestStatus : short
     {
         New = 0,
         Processed = 1

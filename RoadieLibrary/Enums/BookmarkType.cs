@@ -8,6 +8,7 @@ namespace Roadie.Library.Enums
 {
     public enum BookmarkType : short
     {
+        Unknown = 0,
         Artist = 1,
         Release = 2,
         Track = 3,

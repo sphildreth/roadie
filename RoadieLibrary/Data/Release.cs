@@ -27,6 +27,8 @@ namespace Roadie.Library.Data
 
         public ICollection<ReleaseGenre> Genres { get; set; }
 
+        public ICollection<Image> Images { get; set; }
+
         [Column("isVirtual")]
         public bool? IsVirtual { get; set; }
 

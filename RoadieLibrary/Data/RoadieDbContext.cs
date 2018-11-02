@@ -1,20 +1,34 @@
 using Microsoft.EntityFrameworkCore;
 using Roadie.Library.Enums;
+using Roadie.Library.Identity;
 using System;
 
 namespace Roadie.Library.Data
 {
     public class RoadieDbContext : DbContext, IRoadieDbContext
     {
+        public DbSet<ArtistAssociation> ArtistAssociations { get; set; }
+        public DbSet<ArtistGenre> ArtistGenres { get; set; }
         public DbSet<Artist> Artists { get; set; }
+        public DbSet<Bookmark> Bookmarks { get; set; }
         public DbSet<CollectionRelease> CollectionReleases { get; set; }
         public DbSet<Collection> Collections { get; set; }
+        public DbSet<Genre> Genres { get; set; }
+        public DbSet<Image> Images { get; set; }
         public DbSet<Label> Labels { get; set; }
         public DbSet<Playlist> Playlists { get; set; }
+        public DbSet<PlaylistTrack> PlaylistTracks { get; set; }
         public DbSet<ReleaseGenre> ReleaseGenres { get; set; }
+        public DbSet<ReleaseLabel> ReleaseLabels { get; set; }
         public DbSet<ReleaseMedia> ReleaseMedias { get; set; }
         public DbSet<Release> Releases { get; set; }
+        public DbSet<Request> Requests { get; set; }
+        public DbSet<Submission> Submissions { get; set; }
         public DbSet<Track> Tracks { get; set; }
+        public DbSet<UserArtist> UserArtists { get; set; }
+        public DbSet<UserRelease> UserReleases { get; set; }
+        public DbSet<ApplicationUser> Users { get; set; }
+        public DbSet<UserTrack> UserTracks { get; set; }
 
         public RoadieDbContext(DbContextOptions<RoadieDbContext> options)
             : base(options)
@@ -46,6 +60,19 @@ namespace Roadie.Library.Data
                     v => v.ToString(),
                     v => (CollectionType)Enum.Parse(typeof(CollectionType), v))
                 .HasDefaultValue(CollectionType.Unknown);
+
+            builder
+                .Entity<Bookmark>()
+                .Property(e => e.BookmarkType)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (BookmarkType)Enum.Parse(typeof(BookmarkType), v))
+                .HasDefaultValue(BookmarkType.Unknown);
+
+            builder.Entity<ArtistAssociation>()
+                .HasOne(aa => aa.Artist)
+                .WithMany(a => a.AssociatedArtists)
+                .HasForeignKey(aa => aa.AssociatedArtistId);
 
             builder.Entity<ReleaseLabel>()
                 .HasOne(rl => rl.Release)
@@ -89,6 +116,12 @@ namespace Roadie.Library.Data
                 .HasOne(cr => cr.Collection)
                 .WithMany(c => c.Releases)
                 .HasForeignKey(cr => cr.CollectionId);
+
+            builder.Entity<Bookmark>()
+                .HasOne(b => b.User)
+                .WithMany(u => u.Bookmarks)
+                .HasForeignKey(b => b.UserId);
+
         }
     }
 }

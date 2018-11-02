@@ -16,5 +16,8 @@ namespace Roadie.Library.Identity
         public int UserId { get; set; }
         [Column("userRoleId")]
         public int UserRoleId { get; set; }
+
+        public ApplicationUser User { get; set; }
+        public ApplicationRole Role { get; set; }
     }
 }

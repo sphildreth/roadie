@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -36,5 +37,7 @@ namespace Roadie.Library.Identity
 
         [Column("status")]
         public short? Status { get; set; }
+
+        public ICollection<UsersInRoles> Users { get; set; }
     }
 }

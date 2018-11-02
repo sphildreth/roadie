@@ -16,6 +16,8 @@ namespace Roadie.Library.Data
         [Column("artistType", TypeName = "enum")]
         public string ArtistType { get; set; }
 
+        public ICollection<ArtistAssociation> AssociatedArtists { get; set; }
+
         [Column("bandStatus", TypeName = "enum")]
         public BandStatus? BandStatus { get; set; }
 
@@ -29,6 +31,10 @@ namespace Roadie.Library.Data
         [Column("discogsId")]
         [MaxLength(50)]
         public string DiscogsId { get; set; }
+
+        public ICollection<ArtistGenre> Genres { get; set; }
+
+        public ICollection<Image> Images { get; set; }
 
         [Column("isniList", TypeName = "text")]
         [MaxLength(65535)]

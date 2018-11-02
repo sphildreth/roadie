@@ -9,7 +9,7 @@ namespace Roadie.Library.Data
         [Column("artistId")]
         public int? ArtistId { get; set; }
 
-        [Column("image", TypeName = "blob")]
+        [Column("image", TypeName = "mediumblob")]
         public byte[] Bytes { get; set; }
 
         [Column("caption")]
