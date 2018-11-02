@@ -63,10 +63,10 @@ namespace Roadie.Library.Data
         [Column("rating")]
         public short Rating { get; set; }
 
+        public ReleaseMedia ReleaseMedia { get; set; }
+
         [Column("releaseMediaId")]
         public int ReleaseMediaId { get; set; }
-
-        public ReleaseMedia ReleaseMedia { get; set; }
 
         [Column("spotifyId")]
         [MaxLength(100)]
@@ -84,6 +84,5 @@ namespace Roadie.Library.Data
         [Column("trackNumber")]
         [Required]
         public short TrackNumber { get; set; }
-
     }
 }

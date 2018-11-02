@@ -1,19 +1,19 @@
-﻿using Roadie.Library.Enums;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
 namespace Roadie.Library.Data
 {
     [Table("releasemedia")]
     public class ReleaseMedia : EntityBase
     {
-        [Column("releaseId")]
-        public int ReleaseId { get; set; }
+        [Column("releaseMediaNumber")]
+        public short MediaNumber { get; set; }
 
         public Release Release { get; set; }
+
+        [Column("releaseId")]
+        public int ReleaseId { get; set; }
 
         [Column("releaseSubTitle")]
         [MaxLength(500)]
@@ -23,10 +23,6 @@ namespace Roadie.Library.Data
         [Required]
         public short TrackCount { get; set; }
 
-        [Column("releaseMediaNumber")]
-        public short MediaNumber { get; set; }
-
         public ICollection<Track> Tracks { get; set; }
-
     }
 }

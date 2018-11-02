@@ -53,13 +53,13 @@ namespace Roadie.Library.Data
         [MaxLength(500)]
         public string RealName { get; set; }
 
+        public List<Release> Releases { get; set; }
+
         [Column("spotifyId")]
         [MaxLength(100)]
         public string SpotifyId { get; set; }
 
         [Column("thumbnail", TypeName = "blob")]
         public byte[] Thumbnail { get; set; }
-
-        public List<Release> Releases { get; set; }
     }
 }

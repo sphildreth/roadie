@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
 namespace Roadie.Library.Data
 {
@@ -13,6 +10,5 @@ namespace Roadie.Library.Data
 
         [Column("endDate", TypeName = "date")]
         public DateTime? EndDate { get; set; }
-
     }
 }

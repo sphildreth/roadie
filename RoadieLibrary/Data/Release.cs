@@ -13,16 +13,19 @@ namespace Roadie.Library.Data
         [MaxLength(50)]
         public string AmgId { get; set; }
 
+        public Artist Artist { get; set; }
+
         [Column("artistId")]
         [Required]
- 
         public int ArtistId { get; set; }
 
-        public Artist Artist { get; set; }
+        public ICollection<CollectionRelease> Collections { get; set; }
 
         [Column("discogsId")]
         [MaxLength(50)]
         public string DiscogsId { get; set; }
+
+        public ICollection<ReleaseGenre> Genres { get; set; }
 
         [Column("isVirtual")]
         public bool? IsVirtual { get; set; }
@@ -30,6 +33,8 @@ namespace Roadie.Library.Data
         [Column("itunesId")]
         [MaxLength(100)]
         public string ITunesId { get; set; }
+
+        public ICollection<ReleaseLabel> Labels { get; set; }
 
         [Column("lastFMId")]
         [MaxLength(50)]
@@ -45,6 +50,8 @@ namespace Roadie.Library.Data
         [Column("mediaCount")]
         public short? MediaCount { get; set; }
 
+        public ICollection<ReleaseMedia> Medias { get; set; }
+
         [Column("musicBrainzId")]
         [MaxLength(100)]
         public string MusicBrainzId { get; set; }
@@ -57,7 +64,7 @@ namespace Roadie.Library.Data
         [Required]
         public DateTime ReleaseDate { get; set; }
 
-        [Column("releaseType")] 
+        [Column("releaseType")]
         public ReleaseType? ReleaseType { get; set; }
 
         [Column("spotifyId")]
@@ -67,6 +74,9 @@ namespace Roadie.Library.Data
         [Column("submissionId")]
         public int? SubmissionId { get; set; }
 
+        [Column("thumbnail", TypeName = "blob")]
+        public byte[] Thumbnail { get; set; }
+
         [MaxLength(250)]
         [Column("title")]
         [Required]
@@ -74,17 +84,5 @@ namespace Roadie.Library.Data
 
         [Column("trackCount")]
         public short TrackCount { get; set; }
-
-        [Column("thumbnail", TypeName = "blob")]
-        public byte[] Thumbnail { get; set; }
-
-        public ICollection<ReleaseLabel> Labels { get; set; }
-
-        public ICollection<ReleaseMedia> Medias { get; set; }
-
-        public ICollection<ReleaseGenre> Genres { get; set; }
-
-        public ICollection<CollectionRelease> Collections { get; set; }
-
     }
 }

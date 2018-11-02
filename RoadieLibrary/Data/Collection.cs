@@ -11,6 +11,9 @@ namespace Roadie.Library.Data
         [Column("collectionCount")]
         public int CollectionCount { get; set; }
 
+        [Column("collectionType")]
+        public CollectionType? CollectionType { get; set; }
+
         [Column("description")]
         [MaxLength(1000)]
         public string Description { get; set; }
@@ -30,12 +33,9 @@ namespace Roadie.Library.Data
         [Column("maintainerId")]
         public int MaintainerId { get; set; }
 
+        public ICollection<CollectionRelease> Releases { get; set; }
+
         [Column("thumbnail", TypeName = "blob")]
         public byte[] Thumbnail { get; set; }
-
-        [Column("collectionType")]
-        public CollectionType? CollectionType { get; set; }
-
-        public ICollection<CollectionRelease> Releases { get; set; }
     }
 }

@@ -1,26 +1,26 @@
 using Microsoft.EntityFrameworkCore;
 using Roadie.Library.Enums;
 using System;
-using System.Diagnostics;
 
 namespace Roadie.Library.Data
 {
     public class RoadieDbContext : DbContext, IRoadieDbContext
     {
         public DbSet<Artist> Artists { get; set; }
+        public DbSet<CollectionRelease> CollectionReleases { get; set; }
+        public DbSet<Collection> Collections { get; set; }
         public DbSet<Label> Labels { get; set; }
-        public DbSet<Release> Releases { get; set; }
-        public DbSet<Track> Tracks { get; set; }
+        public DbSet<Playlist> Playlists { get; set; }
         public DbSet<ReleaseGenre> ReleaseGenres { get; set; }
         public DbSet<ReleaseMedia> ReleaseMedias { get; set; }
-        public DbSet<Collection> Collections { get; set; }
-        public DbSet<CollectionRelease> CollectionReleases { get; set; }
-        public DbSet<Playlist> Playlists { get; set; }
+        public DbSet<Release> Releases { get; set; }
+        public DbSet<Track> Tracks { get; set; }
 
-        public RoadieDbContext(DbContextOptions<RoadieDbContext> options) 
+        public RoadieDbContext(DbContextOptions<RoadieDbContext> options)
             : base(options)
         {
         }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder
@@ -89,7 +89,6 @@ namespace Roadie.Library.Data
                 .HasOne(cr => cr.Collection)
                 .WithMany(c => c.Releases)
                 .HasForeignKey(cr => cr.CollectionId);
-
         }
     }
 }
