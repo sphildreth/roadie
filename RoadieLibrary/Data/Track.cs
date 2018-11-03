@@ -21,7 +21,7 @@ namespace Roadie.Library.Data
         public int? ArtistId { get; set; }
 
         [Column("duration")]
-        public int Duration { get; set; }
+        public int? Duration { get; set; }
 
         [Column("fileName")]
         [MaxLength(500)]
@@ -32,7 +32,7 @@ namespace Roadie.Library.Data
         public string FilePath { get; set; }
 
         [Column("fileSize")]
-        public int FileSize { get; set; }
+        public int? FileSize { get; set; }
 
         [Column("hash")]
         [MaxLength(32)]
@@ -58,7 +58,7 @@ namespace Roadie.Library.Data
         public string PartTitles { get; set; }
 
         [Column("playedCount")]
-        public int PlayedCount { get; set; }
+        public int? PlayedCount { get; set; }
 
         [Column("rating")]
         public short Rating { get; set; }
@@ -75,6 +75,9 @@ namespace Roadie.Library.Data
         [Column("tags", TypeName = "text")]
         [MaxLength(65535)]
         public string Tags { get; set; }
+
+        [Column("thumbnail", TypeName = "blob")]
+        public byte[] Thumbnail { get; set; }
 
         [MaxLength(250)]
         [Column("title")]

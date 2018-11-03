@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace roadie.Library.Setttings
+namespace Roadie.Library.Setttings
 {
     /// <summary>
     /// This is a Api Key used by Roadie to interact with an API (ie KeyName is "BingImageSearch" and its key is the BingImageSearch Key)

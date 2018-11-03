@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Roadie.Library.Data
 {
     [Table("release")]
-    public partial class Release : EntityBase
+    public partial class Release : NamedEntityBase
     {
         [Column("amgId")]
         [MaxLength(50)]
@@ -63,8 +63,7 @@ namespace Roadie.Library.Data
         public string Profile { get; set; }
 
         [Column("releaseDate")]
-        [Required]
-        public DateTime ReleaseDate { get; set; }
+        public DateTime? ReleaseDate { get; set; }
 
         [Column("releaseType")]
         public ReleaseType? ReleaseType { get; set; }
@@ -75,9 +74,6 @@ namespace Roadie.Library.Data
 
         [Column("submissionId")]
         public int? SubmissionId { get; set; }
-
-        [Column("thumbnail", TypeName = "blob")]
-        public byte[] Thumbnail { get; set; }
 
         [MaxLength(250)]
         [Column("title")]

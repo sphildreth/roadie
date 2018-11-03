@@ -21,6 +21,9 @@ namespace Roadie.Library.Data
         [MaxLength(65535)]
         public string Tags { get; set; }
 
+        [Column("thumbnail", TypeName = "blob")]
+        public byte[] Thumbnail { get; set; }
+
         [Column("urls", TypeName = "text")]
         [MaxLength(65535)]
         public string URLs { get; set; }

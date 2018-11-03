@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using roadie.Library.Setttings;
+using Roadie.Library.Setttings;
 using Roadie.Library.Caching;
 using Roadie.Library.Data;
 using System;
@@ -20,8 +20,8 @@ namespace Roadie.Api.Controllers
     [Authorize]
     public class ReleaseController : EntityControllerBase
     {
-        public ReleaseController(IRoadieDbContext roadieDbContext, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, IRoadieSettings roadieSettings)
-            : base(roadieDbContext, cacheManager, configuration, roadieSettings)
+        public ReleaseController(IRoadieDbContext RoadieDbContext, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, IRoadieSettings RoadieSettings)
+            : base(RoadieDbContext, cacheManager, configuration, RoadieSettings)
         {
             this._logger = logger.CreateLogger("RoadieApi.Controllers.ReleaseController"); ;
         }
@@ -29,7 +29,7 @@ namespace Roadie.Api.Controllers
         [EnableQuery]
         public IActionResult Get()
         {
-            return Ok(this._roadieDbContext.Releases.ProjectToType<models.Release>());
+            return Ok(this._RoadieDbContext.Releases.ProjectToType<models.Release>());
         }
 
         [HttpGet("{id}")]
@@ -40,7 +40,7 @@ namespace Roadie.Api.Controllers
             var key = id.ToString();
             var result = this._cacheManager.Get<models.Release>(key, () =>
             {
-                var d = this._roadieDbContext
+                var d = this._RoadieDbContext
                             .Releases
                             .Include(x => x.Artist)
                             .Include(x => x.Labels).Include("Labels.Label")

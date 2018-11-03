@@ -31,7 +31,7 @@ namespace Roadie.Library.Identity
         [StringLength(80)]
         public override string Name { get; set; }
 
-        [Column("roadieId")]
+        [Column("RoadieId")]
         [StringLength(36)]
         public string RoadieId { get; set; }
 

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace roadie.Library.Setttings
+namespace Roadie.Library.Setttings
 {
     public interface IRoadieSettings
     {

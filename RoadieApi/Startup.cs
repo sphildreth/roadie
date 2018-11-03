@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OData.Edm;
 using Newtonsoft.Json;
-using roadie.Library.Setttings;
+using Roadie.Library.Setttings;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Data;
@@ -22,6 +22,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using models = Roadie.Api.Data.Models;
+using Roadie.Library.Encoding;
 
 namespace Roadie.Api
 {
@@ -85,6 +86,8 @@ namespace Roadie.Api
             }));
 
             services.AddSingleton<ITokenService, TokenService>();
+
+            services.AddSingleton<IHttpEncoder, HttpEncoder>();
 
             services.AddSingleton<IRoadieSettings, RoadieSettings>(options =>
             {

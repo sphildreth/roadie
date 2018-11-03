@@ -10,7 +10,7 @@ namespace Roadie.Library.Data
 
         [Column("genreId")]
         [Required]
-        public int GenreId { get; set; }
+        public int? GenreId { get; set; }
 
         [Column("id")]
         [Key]

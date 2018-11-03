@@ -19,6 +19,10 @@ namespace Roadie.Library.Data
         [MaxLength(65535)]
         public string Profile { get; set; }
 
+        [Column("imageUrl")]
+        [MaxLength(500)]
+        public string ImageUrl { get; set; }
+
         public List<ReleaseLabel> ReleaseLabels { get; set; }
     }
 }

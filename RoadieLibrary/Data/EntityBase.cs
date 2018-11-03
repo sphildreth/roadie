@@ -21,11 +21,18 @@ namespace Roadie.Library.Data
         [Required]
         public DateTime? LastUpdated { get; set; }
 
-        [Column("roadieId")]
+        [Column("RoadieId")]
         [Required]
         public Guid RoadieId { get; set; }
 
         [Column("status", TypeName = "enum")]
         public Statuses Status { get; set; }
+
+        public EntityBase()
+        {
+            this.RoadieId = Guid.NewGuid();
+            this.Status = Statuses.Incomplete;
+            this.CreatedDate = DateTime.UtcNow;
+        }
     }
 }

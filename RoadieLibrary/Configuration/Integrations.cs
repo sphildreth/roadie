@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace roadie.Library.Setttings
+namespace Roadie.Library.Setttings
 {
     public class Integrations
     {

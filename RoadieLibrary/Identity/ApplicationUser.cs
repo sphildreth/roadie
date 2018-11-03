@@ -97,7 +97,7 @@ namespace Roadie.Library.Identity
 
         public ICollection<Request> Requests { get; set; }
 
-        [Column("roadieId")]
+        [Column("RoadieId")]
         [StringLength(36)]
         public string RoadieId { get; set; }
 
