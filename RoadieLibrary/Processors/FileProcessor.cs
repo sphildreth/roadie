@@ -1,33 +1,28 @@
 ﻿using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
+using Roadie.Library.Data;
+using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
 using Roadie.Library.FilePlugins;
-using Roadie.Library.Utility;
 using Roadie.Library.Logging;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Roadie.Library.Data;
-using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Processors
 {
     public sealed class FileProcessor : ProcessorBase
     {
-
         private IEnumerable<IFilePlugin> _plugins = null;
 
         public IEnumerable<IFilePlugin> Plugins
         {
             get
             {
-                if(this._plugins == null)
+                if (this._plugins == null)
                 {
                     var plugins = new List<IFilePlugin>();
                     try
@@ -46,19 +41,35 @@ namespace Roadie.Library.Processors
                         }
                     }
                     catch
-                    {                     
+                    {
                     }
                     this._plugins = plugins.ToArray();
                 }
                 return this._plugins;
             }
-
         }
 
-
-        public FileProcessor(IConfiguration configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger) 
+        public FileProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
             : base(configuration, httpEncoder, destinationRoot, context, cacheManager, logger)
         {
+        }
+
+        public static string DetermineFileType(System.IO.FileInfo fileinfo)
+        {
+            string r = MimeMapping.MimeUtility.GetMimeMapping(fileinfo.FullName);
+            if (r.Equals("application/octet-stream"))
+            {
+                if (fileinfo.Extension.Equals(".cue"))
+                {
+                    r = "audio/r-cue";
+                }
+                if (fileinfo.Extension.Equals(".mp4") || fileinfo.Extension.Equals(".m4a"))
+                {
+                    r = "audio/mp4";
+                }
+            }
+            Trace.WriteLine(string.Format("FileType [{0}] For File [{1}]", r, fileinfo.FullName));
+            return r;
         }
 
         public async Task<OperationResult<bool>> Process(string filename, bool doJustInfo = false)
@@ -72,7 +83,7 @@ namespace Roadie.Library.Processors
 
             try
             {
-                // Determine what type of file this is 
+                // Determine what type of file this is
                 var fileType = FileProcessor.DetermineFileType(fileInfo);
 
                 OperationResult<bool> pluginResult = null;
@@ -131,7 +142,7 @@ namespace Roadie.Library.Processors
                     if (willMove && !doJustInfo)
                     {
                         var directoryPath = Path.GetDirectoryName(newPath);
-                        if(!Directory.Exists(directoryPath))
+                        if (!Directory.Exists(directoryPath))
                         {
                             Directory.CreateDirectory(directoryPath);
                         }
@@ -145,25 +156,5 @@ namespace Roadie.Library.Processors
             }
             return result;
         }
-
-        public static string DetermineFileType(System.IO.FileInfo fileinfo)
-        {
-            string r = MimeMapping.MimeUtility.GetMimeMapping(fileinfo.FullName);
-            if (r.Equals("application/octet-stream"))
-            {
-                if (fileinfo.Extension.Equals(".cue"))
-                {
-                    r =  "audio/r-cue";
-                }
-                if (fileinfo.Extension.Equals(".mp4") || fileinfo.Extension.Equals(".m4a"))
-                {
-                    r = "audio/mp4";
-                }
-            }
-            Trace.WriteLine(string.Format("FileType [{0}] For File [{1}]", r, fileinfo.FullName));
-            return r;
-        }
-
-
     }
 }

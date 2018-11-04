@@ -6,8 +6,8 @@ namespace Roadie.Library.SearchEngines.Imaging
 {
     public interface IImageSearchEngine
     {
-        Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount);
-
         RestRequest BuildRequest(string query, int resultsCount);
+
+        Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount);
     }
 }

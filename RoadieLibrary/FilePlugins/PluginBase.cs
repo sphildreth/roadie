@@ -1,62 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Roadie.Library.Caching;
-using Roadie.Library.Logging;
-using Roadie.Library.Utility;
-using Roadie.Library.Factories;
-using System.Diagnostics;
-using Microsoft.Extensions.Configuration;
-using Roadie.Library.MetaData.ID3Tags;
+﻿using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Factories;
+using Roadie.Library.Logging;
+using Roadie.Library.MetaData.ID3Tags;
+using Roadie.Library.Utility;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Roadie.Library.FilePlugins
 {
     public abstract class PluginBase : IFilePlugin
     {
-        protected readonly IConfiguration _configuration = null;
-        protected readonly IHttpEncoder _httpEncoder = null;
-        protected readonly ICacheManager _cacheManager = null;
-        protected readonly ILogger _loggingService = null;
         protected readonly ArtistFactory _artistFactory = null;
-        protected readonly ReleaseFactory _releaseFactory = null;
+        protected readonly ICacheManager _cacheManager = null;
+        protected readonly IRoadieSettings _configuration = null;
+        protected readonly IHttpEncoder _httpEncoder = null;
         protected readonly ImageFactory _imageFactory = null;
-        protected ID3TagsHelper _id3TagsHelper = null;
+        protected readonly ILogger _loggingService = null;
+        protected readonly ReleaseFactory _releaseFactory = null;
         protected Audio _audioPlugin = null;
+        protected ID3TagsHelper _id3TagsHelper = null;
+        public abstract string[] HandlesTypes { get; }
 
-        protected IConfiguration Configuration
+        public int MinWeightToDelete
         {
             get
             {
-                return this._configuration;
-            }
-        }
-
-        protected IHttpEncoder HttpEncoder
-        {
-            get
-            {
-                return this._httpEncoder;
-            }
-        }
-
-        protected ICacheManager CacheManager
-        {
-            get
-            {
-                return this._cacheManager;
-            }
-        }
-
-        protected ILogger Logger
-        {
-            get
-            {
-                return this._loggingService;
+                return this.Configuration.FilePlugins.MinWeightToDelete;
             }
         }
 
@@ -65,34 +38,6 @@ namespace Roadie.Library.FilePlugins
             get
             {
                 return this._artistFactory;
-            }
-        }
-
-        protected ImageFactory ImageFactory
-        {
-            get
-            {
-                return this._imageFactory;
-            }
-        }
-
-        protected ReleaseFactory ReleaseFactory
-        {
-            get
-            {
-                return this._releaseFactory;
-            }
-        }
-
-        protected ID3TagsHelper ID3TagsHelper
-        {
-            get
-            {
-                return this._id3TagsHelper ?? (this._id3TagsHelper = new ID3TagsHelper(this.Configuration, this.CacheManager, this.Logger));
-            }
-            set
-            {
-                this._id3TagsHelper = value;
             }
         }
 
@@ -108,7 +53,67 @@ namespace Roadie.Library.FilePlugins
             }
         }
 
-        public PluginBase(IConfiguration configuration, IHttpEncoder httpEncoder, ArtistFactory artistFactory, ReleaseFactory releaseFactory, ImageFactory imageFactory, ICacheManager cacheManager, ILogger logger)
+        protected ICacheManager CacheManager
+        {
+            get
+            {
+                return this._cacheManager;
+            }
+        }
+
+        protected IRoadieSettings Configuration
+        {
+            get
+            {
+                return this._configuration;
+            }
+        }
+
+        protected IHttpEncoder HttpEncoder
+        {
+            get
+            {
+                return this._httpEncoder;
+            }
+        }
+
+        protected ID3TagsHelper ID3TagsHelper
+        {
+            get
+            {
+                return this._id3TagsHelper ?? (this._id3TagsHelper = new ID3TagsHelper(this.Configuration, this.CacheManager, this.Logger));
+            }
+            set
+            {
+                this._id3TagsHelper = value;
+            }
+        }
+
+        protected ImageFactory ImageFactory
+        {
+            get
+            {
+                return this._imageFactory;
+            }
+        }
+
+        protected ILogger Logger
+        {
+            get
+            {
+                return this._loggingService;
+            }
+        }
+
+        protected ReleaseFactory ReleaseFactory
+        {
+            get
+            {
+                return this._releaseFactory;
+            }
+        }
+
+        public PluginBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, ArtistFactory artistFactory, ReleaseFactory releaseFactory, ImageFactory imageFactory, ICacheManager cacheManager, ILogger logger)
         {
             this._configuration = configuration;
             this._httpEncoder = httpEncoder;
@@ -118,9 +123,6 @@ namespace Roadie.Library.FilePlugins
             this._cacheManager = cacheManager;
             this._loggingService = logger;
         }
-
-        public abstract string[] HandlesTypes { get; }
-        public abstract Task<OperationResult<bool>> Process(string destinationRoot, FileInfo fileInfo, bool doJustInfo, int? submissionId);
 
         /// <summary>
         /// Check if exists if not make given folder
@@ -140,13 +142,7 @@ namespace Roadie.Library.FilePlugins
             return false;
         }
 
-        public int MinWeightToDelete
-        {
-            get
-            {
-                return SafeParser.ToNumber<int>(this.Configuration.GetValue<int>("FilePlugins:MinWeightToDelete", 0));
-            }
-        }
+        public abstract Task<OperationResult<bool>> Process(string destinationRoot, FileInfo fileInfo, bool doJustInfo, int? submissionId);
 
         protected virtual bool IsFileLocked(FileInfo file)
         {
@@ -163,7 +159,9 @@ namespace Roadie.Library.FilePlugins
             finally
             {
                 if (stream != null)
+                {
                     stream.Close();
+                }
             }
 
             //file is not locked

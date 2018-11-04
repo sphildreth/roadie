@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Roadie.Library.Setttings;
+using Roadie.Library.Configuration;
 using Roadie.Library.Caching;
 using Roadie.Library.Data;
 using System;
@@ -19,8 +19,8 @@ namespace Roadie.Api.Controllers
     [Authorize]
     public class LabelController : EntityControllerBase
     {
-        public LabelController(IRoadieDbContext RoadieDbContext, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, IRoadieSettings RoadieSettings)
-            : base(RoadieDbContext, cacheManager, configuration, RoadieSettings)
+        public LabelController(IRoadieDbContext RoadieDbContext, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration)
+            : base(RoadieDbContext, cacheManager, configuration)
         {
             this._logger = logger.CreateLogger("RoadieApi.Controllers.LabelController"); ;
         }

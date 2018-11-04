@@ -11,6 +11,10 @@ namespace Roadie.Library.Data
         [MaxLength(50)]
         public string DiscogsId { get; set; }
 
+        [Column("imageUrl")]
+        [MaxLength(500)]
+        public string ImageUrl { get; set; }
+
         [Column("musicBrainzId")]
         [MaxLength(100)]
         public string MusicBrainzId { get; set; }
@@ -18,10 +22,6 @@ namespace Roadie.Library.Data
         [Column("profile", TypeName = "text")]
         [MaxLength(65535)]
         public string Profile { get; set; }
-
-        [Column("imageUrl")]
-        [MaxLength(500)]
-        public string ImageUrl { get; set; }
 
         public List<ReleaseLabel> ReleaseLabels { get; set; }
     }

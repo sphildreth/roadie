@@ -14,7 +14,7 @@ namespace Roadie.Library.Caching
 
         void ClearRegion(string region);
 
-         bool Exists<TOut>(string key);
+        bool Exists<TOut>(string key);
 
         bool Exists<TOut>(string key, string region);
 

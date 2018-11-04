@@ -1,13 +1,16 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.EntityFrameworkCore;
 using MySql.Data.MySqlClient;
-
+using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
+using Roadie.Library.Data;
+using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.Imaging;
+using Roadie.Library.Logging;
+using Roadie.Library.MetaData.Audio;
 using Roadie.Library.Processors;
 using Roadie.Library.Utility;
-
-using Roadie.Library.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -15,20 +18,15 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Roadie.Library.Data;
-using Microsoft.Extensions.Configuration;
-using Roadie.Library.MetaData.Audio;
-using Microsoft.EntityFrameworkCore;
-using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Factories
 {
     public sealed class ArtistFactory : FactoryBase
     {
-        private ReleaseFactory _releaseFactory = null;
         private List<int> _addedArtistIds = new List<int>();
+        private ReleaseFactory _releaseFactory = null;
 
-        public  IEnumerable<int> AddedArtistIds
+        public IEnumerable<int> AddedArtistIds
         {
             get
             {
@@ -44,7 +42,7 @@ namespace Roadie.Library.Factories
             }
         }
 
-        public ArtistFactory(IConfiguration configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, ReleaseFactory releaseFactory = null) : base(configuration, context, cacheManager, logger, httpEncoder)
+        public ArtistFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, ReleaseFactory releaseFactory = null) : base(configuration, context, cacheManager, logger, httpEncoder)
         {
             this._releaseFactory = releaseFactory ?? new ReleaseFactory(configuration, httpEncoder, context, CacheManager, logger, null, this);
         }
@@ -70,7 +68,7 @@ namespace Roadie.Library.Factories
                         artist.Thumbnail = firstImageWithNotNullBytes.Bytes;
                         if (artist.Thumbnail != null)
                         {
-                            artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.GetValue<int>("Thumbnails:Width", 80), this.Configuration.GetValue<int>("Thumbnails:Height", 80));
+                            artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.Thumbnails.Width, this.Configuration.Thumbnails.Height);
                             artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
                         }
                     }
@@ -86,7 +84,7 @@ namespace Roadie.Library.Factories
                 int inserted = 0;
                 inserted = await this.DbContext.SaveChangesAsync();
                 this._addedArtistIds.Add(artist.Id);
-                if(artist.Id < 1 && addArtistResult.Entity.Id > 0)
+                if (artist.Id < 1 && addArtistResult.Entity.Id > 0)
                 {
                     artist.Id = addArtistResult.Entity.Id;
                 }
@@ -115,13 +113,12 @@ namespace Roadie.Library.Factories
                                     await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
                                 }
                             }
-
                         }
                         catch (Exception ex)
                         {
                             this._logger.Error(ex, "Sql [" + sql + "] Exception [" + ex.Serialize() + "]");
                         }
-                    }                
+                    }
                     if (ArtistImages != null && ArtistImages.Any(x => x.Status == Statuses.New))
                     {
                         foreach (var ArtistImage in ArtistImages)
@@ -150,117 +147,70 @@ namespace Roadie.Library.Factories
             };
         }
 
-        public async Task<FactoryResult<Artist>> Update(Artist Artist, IEnumerable<Image> ArtistImages, string destinationFolder = null)
+        public async Task<FactoryResult<bool>> Delete(Guid RoadieId)
         {
-            SimpleContract.Requires<ArgumentNullException>(Artist != null, "Invalid Artist");
-
-            var sw = new Stopwatch();
-            sw.Start();
-
-            var artistGenreTables = Artist.Genres.Select(x => new ArtistGenre { ArtistId = Artist.Id, GenreId = x.GenreId }).ToList();
-            var artistAssociatedWith = Artist.AssociatedArtists.Select(x => new ArtistAssociation { ArtistId = Artist.Id, AssociatedArtistId = x.AssociatedArtistId }).ToList();
-            var result = true;
-
-            var now = DateTime.UtcNow;
-            var originalArtistFolder = Artist.ArtistFileFolder(this.Configuration, destinationFolder ?? this.Configuration.GetValue<string>("LibraryFolder"));
-            var originalName = Artist.Name;
-            var originalSortName = Artist.SortName;
-
-            Artist.LastUpdated = now;
-            await this.DbContext.SaveChangesAsync();
-
-            this.DbContext.ArtistGenres.RemoveRange((from at in this.DbContext.ArtistGenres
-                                               where at.ArtistId == Artist.Id
-                                                          select at));
-            Artist.Genres = artistGenreTables;
-            this.DbContext.ArtistAssociations.RemoveRange((from at in this.DbContext.ArtistAssociations
-                                                          where at.ArtistId == Artist.Id
-                                                          select at));
-            Artist.AssociatedArtists = artistAssociatedWith;
-            await this.DbContext.SaveChangesAsync();
-
-            var existingImageIds = (from ai in ArtistImages
-                                    where ai.Status != Statuses.New
-                                    select ai.RoadieId).ToArray();
-            this.DbContext.Images.RemoveRange((from i in this.DbContext.Images
-                                               where i.ArtistId == Artist.Id
-                                               where !(from x in existingImageIds select x).Contains(i.RoadieId)
-                                               select i));
-            await this.DbContext.SaveChangesAsync();
-            if (ArtistImages != null && ArtistImages.Any(x => x.Status == Statuses.New))
+            var isSuccess = false;
+            var Artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == RoadieId);
+            if (Artist != null)
             {
-                foreach (var ArtistImage in ArtistImages.Where(x => x.Status == Statuses.New))
-                {
-                    this.DbContext.Images.Add(ArtistImage);
-                }
-                try
-                {
-                    await this.DbContext.SaveChangesAsync();
-                }
-                catch (Exception ex)
-                {
-                    this.Logger.Error(ex, ex.Serialize());
-                }
+                return await this.Delete(Artist);
             }
-
-            var newArtistFolder = Artist.ArtistFileFolder(this.Configuration, destinationFolder ?? this.Configuration.GetValue<string>("LibraryFolder"));
-            if (!originalArtistFolder.Equals(newArtistFolder, StringComparison.OrdinalIgnoreCase))
-            {                
-                this.Logger.Trace("Moving Artist From Folder [{0}] To  [{1}]", originalArtistFolder, newArtistFolder);
-              //  Directory.Move(originalArtistFolder, Artist.ArtistFileFolder(destinationFolder ?? SettingsHelper.Instance.LibraryFolder));
-                // TODO if name changed then update Artist track files to have new Artist name
-            }
-            this._cacheManager.ClearRegion(Artist.CacheRegion);
-            sw.Stop();
-
-            return new FactoryResult<Artist>
+            return new FactoryResult<bool>
             {
-                Data = Artist,
-                IsSuccess = result,
-                OperationTime = sw.ElapsedMilliseconds
+                Data = isSuccess
             };
-
         }
 
-        private Artist DatabaseQueryForArtistName(string name, string sortName = null)
+        public async Task<FactoryResult<bool>> Delete(Artist Artist)
         {
-            if(string.IsNullOrEmpty(name))
-            {
-                return null;
-            }
+            var isSuccess = false;
             try
             {
-                var getParams = new List<object>();
-                var searchName = name.NormalizeName().ToLower();
-                var searchSortName = !string.IsNullOrEmpty(sortName) ? sortName.NormalizeName().ToLower() : searchName;
-                var specialSearchName = name.ToAlphanumericName();
-                getParams.Add(new MySqlParameter("@isName", searchName));
-                getParams.Add(new MySqlParameter("@isSortName", searchSortName));
-                getParams.Add(new MySqlParameter("@startAlt", string.Format("{0}|%", searchName)));
-                getParams.Add(new MySqlParameter("@inAlt", string.Format("%|{0}|%", searchName)));
-                getParams.Add(new MySqlParameter("@endAlt", string.Format("%|{0}", searchName)));
-                getParams.Add(new MySqlParameter("@sstartAlt", string.Format("{0}|%", specialSearchName)));
-                getParams.Add(new MySqlParameter("@sinAlt", string.Format("%|{0}|%", specialSearchName)));
-                getParams.Add(new MySqlParameter("@sendAlt", string.Format("%|{0}", specialSearchName)));
-                return this.DbContext.Artists.FromSql(@"SELECT *
-                FROM `Artist`
-                WHERE LCASE(name) = @isName
-                OR LCASE(sortName) = @isName
-                OR LCASE(sortName) = @isSortName
-                OR LCASE(alternatenames) = @isName
-                OR alternatenames like @startAlt 
-                OR alternatenames like @sstartAlt
-                OR alternatenames like @inAlt 
-                OR alternatenames like @sinAlt
-                OR (alternatenames like @endAlt 
-                OR alternatenames like @sendAlt)
-                LIMIT 1;", getParams.ToArray()).FirstOrDefault();
+                if (Artist != null)
+                {
+                    this.DbContext.Artists.Remove(Artist);
+                    await this.DbContext.SaveChangesAsync();
+                    this._cacheManager.ClearRegion(Artist.CacheRegion);
+                    this.Logger.Info(string.Format("x DeleteArtist [{0}]", Artist.Id));
+                    isSuccess = true;
+                }
             }
             catch (Exception ex)
             {
                 this.Logger.Error(ex, ex.Serialize());
+                return new FactoryResult<bool>
+                {
+                    Errors = new string[1] { "An error occured" }
+                };
             }
-            return null;
+            return new FactoryResult<bool>
+            {
+                IsSuccess = isSuccess,
+                Data = isSuccess
+            };
+        }
+
+        public FactoryResult<Artist> GetByExternalIds(string musicBrainzId = null, string iTunesId = null, string amgId = null, string spotifyId = null)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var Artist = (from a in this.DbContext.Artists
+                          where ((a.MusicBrainzId != null && (musicBrainzId != null && a.MusicBrainzId == musicBrainzId)) ||
+                                 (a.ITunesId != null || (iTunesId != null && a.ITunesId == iTunesId)) ||
+                                 (a.AmgId != null || (amgId != null && a.AmgId == amgId)) ||
+                                 (a.SpotifyId != null || (spotifyId != null && a.SpotifyId == spotifyId)))
+                          select a).FirstOrDefault();
+            sw.Stop();
+            if (Artist == null || !Artist.IsValid)
+            {
+                this._logger.Trace("ArtistFactory: Artist Not Found By External Ids: MusicbrainzId [{0}], iTunesIs [{1}], AmgId [{2}], SpotifyId [{3}]", musicBrainzId, iTunesId, amgId, spotifyId);
+            }
+            return new FactoryResult<Artist>
+            {
+                IsSuccess = Artist != null,
+                OperationTime = sw.ElapsedMilliseconds,
+                Data = Artist
+            };
         }
 
         public async Task<FactoryResult<Artist>> GetByName(AudioMetaData metaData, bool doFindIfNotInDatabase = false)
@@ -305,7 +255,7 @@ namespace Roadie.Library.Factories
                             // See if Artist already exist with either Name or Sort Name
                             var alreadyExists = this.DatabaseQueryForArtistName(ArtistSearch.Data.Name, ArtistSearch.Data.SortNameValue);
                             if (alreadyExists == null || !alreadyExists.IsValid)
-                            { 
+                            {
                                 var addResult = await this.Add(Artist);
                                 if (!addResult.IsSuccess)
                                 {
@@ -326,7 +276,7 @@ namespace Roadie.Library.Factories
                         }
                     }
                 }
-                if(Artist != null && Artist.IsValid)
+                if (Artist != null && Artist.IsValid)
                 {
                     this.CacheManager.Add(cacheKey, Artist);
                 }
@@ -342,73 +292,6 @@ namespace Roadie.Library.Factories
                 this.Logger.Error(ex, ex.Serialize());
             }
             return new FactoryResult<Artist>();
-        }
-
-        /// <summary>
-        /// Perform a Metadata Provider search and then merge the results into the given Artist
-        /// </summary>
-        /// <param name="ArtistId">Given Artist RoadieId</param>
-        /// <returns>Operation Result</returns>
-        public async Task<OperationResult<bool>> RefreshArtistMetadata(Guid ArtistId)
-        {
-            SimpleContract.Requires<ArgumentOutOfRangeException>(ArtistId != Guid.Empty, "Invalid ArtistId");
-
-            var result = true;
-            var resultErrors = new List<Exception>();
-            var sw = new Stopwatch();
-            sw.Start();
-            try
-            {
-                var Artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == ArtistId);
-                if (Artist == null)
-                {
-                    this.Logger.Fatal("Unable To Find Artist [{0}]", ArtistId);
-                    return new OperationResult<bool>();
-                }
-
-                OperationResult<Artist> ArtistSearch = null;
-                try
-                {
-                    ArtistSearch = await this.PerformMetaDataProvidersArtistSearch(new AudioMetaData
-                    {
-                         Artist = Artist.Name
-                    });
-                }
-                catch (Exception ex)
-                {
-                    this.Logger.Error(ex, ex.Serialize());
-                }
-                if (ArtistSearch.IsSuccess)
-                {
-                    // Do metadata search for Artist like if new Artist then set some overides and merge 
-                    var mergeResult = await this.MergeArtists(ArtistSearch.Data, Artist);
-                    if(mergeResult.IsSuccess)
-                    {
-                        Artist = mergeResult.Data;
-                        await this.DbContext.SaveChangesAsync();
-                        sw.Stop();
-                        this.CacheManager.ClearRegion(Artist.CacheRegion);
-                        this.Logger.Info("Scanned RefreshArtistMetadata [{0}], OperationTime [{1}]", Artist.ToString(), sw.ElapsedMilliseconds);
-                    }
-                    else
-                    {
-                        sw.Stop();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                this.Logger.Error(ex, ex.Serialize());
-                resultErrors.Add(ex);
-            }
-            return new OperationResult<bool>
-            {
-                Data = result,
-                IsSuccess = result,
-                Errors = resultErrors,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-
         }
 
         /// <summary>
@@ -438,7 +321,7 @@ namespace Roadie.Library.Factories
             ArtistToMergeInto.BirthDate = ArtistToMerge.BirthDate ?? ArtistToMergeInto.BirthDate;
             ArtistToMergeInto.BeginDate = ArtistToMerge.BeginDate ?? ArtistToMergeInto.BeginDate;
             ArtistToMergeInto.EndDate = ArtistToMerge.EndDate ?? ArtistToMergeInto.EndDate;
-            if(!string.IsNullOrEmpty(ArtistToMerge.ArtistType) && !ArtistToMerge.ArtistType.Equals("Other", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(ArtistToMerge.ArtistType) && !ArtistToMerge.ArtistType.Equals("Other", StringComparison.OrdinalIgnoreCase))
             {
                 ArtistToMergeInto.ArtistType = ArtistToMerge.ArtistType;
             }
@@ -471,13 +354,12 @@ namespace Roadie.Library.Factories
                 {
                     sql = "UPDATE `release` set ArtistId = " + ArtistToMergeInto.Id + " WHERE ArtistId = " + ArtistToMerge.Id + ";";
                     await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
-
                 }
                 catch (Exception ex)
                 {
                     this._logger.Warning(ex.ToString());
                 }
-                var artistFolder = ArtistToMerge.ArtistFileFolder(this.Configuration, this.Configuration.GetValue<string>("LibraryFolder"));
+                var artistFolder = ArtistToMerge.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
                 foreach (var release in this.DbContext.Releases.Include("Artist").Where(x => x.ArtistId == ArtistToMerge.Id).ToArray())
                 {
                     var originalReleaseFolder = release.ReleaseFileFolder(artistFolder);
@@ -496,79 +378,7 @@ namespace Roadie.Library.Factories
                 IsSuccess = result,
                 OperationTime = sw.ElapsedMilliseconds
             };
-
         }
-
-
-        public async Task<OperationResult<bool>> ScanArtistReleasesFolders(Guid artistId, string destinationFolder, bool doJustInfo)
-        {
-            SimpleContract.Requires<ArgumentOutOfRangeException>(artistId == Guid.Empty, "Invalid ArtistId");
-
-            var result = true;
-            var resultErrors = new List<Exception>();
-            var sw = new Stopwatch();
-            sw.Start();
-            try
-            {
-                var Artist = this.DbContext.Artists.Include("releases").FirstOrDefault(x => x.RoadieId == artistId);
-                if (Artist == null)
-                {
-                    this.Logger.Fatal("Unable To Find Artist [{0}]", artistId);
-                    return new OperationResult<bool>();
-                }
-                var releaseScannedCount = 0;
-                var ArtistFolder = Artist.ArtistFileFolder(this.Configuration, destinationFolder);
-                var scannedArtistFolders = new List<string>();
-                // Scan known releases for changes
-                if (Artist.Releases != null)
-                {
-                    foreach(var release in Artist.Releases)
-                    {
-                        try
-                        {
-
-                            result = result && (await this.ReleaseFactory.ScanReleaseFolder(Guid.Empty, destinationFolder, doJustInfo, release)).Data;
-                            releaseScannedCount++;
-                            scannedArtistFolders.Add(release.ReleaseFileFolder(ArtistFolder));
-                        }
-                        catch (Exception ex)
-                        {
-                            this.Logger.Error(ex, ex.Serialize());
-                        }
-                    }
-                }
-                // Any folder found in Artist folder not already scanned scan
-                var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, destinationFolder, this.DbContext, this.CacheManager, this.Logger);
-                var nonReleaseFolders = (from d in Directory.EnumerateDirectories(ArtistFolder)
-                                         where !(from r in scannedArtistFolders select r).Contains(d)
-                                         orderby d
-                                         select d);
-                foreach (var folder in nonReleaseFolders)
-                {
-                    await folderProcessor.Process(new DirectoryInfo(folder), doJustInfo);
-                }
-                if (!doJustInfo)
-                {
-                    folderProcessor.DeleteEmptyFolders(new DirectoryInfo(ArtistFolder));
-                }
-                sw.Stop();
-                this.CacheManager.ClearRegion(Artist.CacheRegion);
-                this.Logger.Info("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", Artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
-            {
-                this.Logger.Error(ex, ex.Serialize());
-                resultErrors.Add(ex);
-            }
-            return new OperationResult<bool>
-            {
-                Data = result,
-                IsSuccess = result,
-                Errors = resultErrors,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-        }
-
 
         public async Task<OperationResult<Artist>> PerformMetaDataProvidersArtistSearch(AudioMetaData metaData)
         {
@@ -642,7 +452,7 @@ namespace Roadie.Library.Factories
                 this.Logger.Error(ex, "iTunesArtistSearch: " + ex.Serialize());
             }
             try
-            { 
+            {
                 if (this.MusicBrainzArtistSearchEngine.IsEnabled)
                 {
                     var mbResult = await this.MusicBrainzArtistSearchEngine.PerformArtistSearch(result.Name, 1);
@@ -860,7 +670,7 @@ namespace Roadie.Library.Factories
                 {
                     var wikiName = result.Name;
                     // Help get better results for bands with proper nouns (e.g. "Poison")
-                    if(!result.ArtistType.Equals("Person", StringComparison.OrdinalIgnoreCase))
+                    if (!result.ArtistType.Equals("Person", StringComparison.OrdinalIgnoreCase))
                     {
                         wikiName = wikiName + " band";
                     }
@@ -930,7 +740,7 @@ namespace Roadie.Library.Factories
                         imageBag.Add(await WebHelper.GetImageFromUrlAsync(url));
                     });
                     await Task.WhenAll(i);
-                    result.Images = imageBag.Where(x => x != null && x.Bytes != null).GroupBy(x => x.Signature).Select(x => x.First()).Take(this.Configuration.GetValue<int>("Processing.MaximumArtistImagesToAdd", 12)).ToList();
+                    result.Images = imageBag.Where(x => x != null && x.Bytes != null).GroupBy(x => x.Signature).Select(x => x.First()).Take(this.Configuration.Processing.MaximumArtistImagesToAdd).ToList();
                     if (result.Thumbnail == null && result.Images != null)
                     {
                         result.Thumbnail = result.Images.First().Bytes;
@@ -938,7 +748,7 @@ namespace Roadie.Library.Factories
                 }
                 if (result.Thumbnail != null)
                 {
-                    result.Thumbnail = ImageHelper.ResizeImage(result.Thumbnail, this.Configuration.GetValue<int>("Thumbnails:Width", 80), this.Configuration.GetValue<int>("Thumbnails:Height", 80));
+                    result.Thumbnail = ImageHelper.ResizeImage(result.Thumbnail, this.Configuration.Thumbnails.Width, this.Configuration.Thumbnails.Height);
                     result.Thumbnail = ImageHelper.ConvertToJpegFormat(result.Thumbnail);
                 }
             }
@@ -947,7 +757,7 @@ namespace Roadie.Library.Factories
                 this.Logger.Error(ex, "CombiningResults: " + ex.Serialize());
             }
             result.SortName = result.SortName.ToTitleCase();
-            if(!string.IsNullOrEmpty(result.ArtistType))
+            if (!string.IsNullOrEmpty(result.ArtistType))
             {
                 switch (result.ArtistType.ToLower().Replace('-', ' '))
                 {
@@ -958,6 +768,7 @@ namespace Roadie.Library.Factories
                     case "person":
                         result.ArtistType = "Person";
                         break;
+
                     case "band":
                     case "big band":
                     case "duet":
@@ -969,19 +780,23 @@ namespace Roadie.Library.Factories
                     case "group":
                         result.ArtistType = "Group";
                         break;
+
                     case "orchestra":
                         result.ArtistType = "Orchestra";
                         break;
+
                     case "choir band":
                     case "choir":
                         result.ArtistType = "Choir";
                         break;
+
                     case "movie part":
                     case "movie role":
                     case "role":
                     case "character":
                         result.ArtistType = "Character";
                         break;
+
                     default:
                         this.Logger.Warning(string.Format("Unknown Artist Type [{0}]", result.ArtistType));
                         result.ArtistType = "Other";
@@ -998,71 +813,250 @@ namespace Roadie.Library.Factories
             };
         }
 
-        public FactoryResult<Artist> GetByExternalIds(string musicBrainzId = null, string iTunesId = null, string amgId = null, string spotifyId = null)
+        /// <summary>
+        /// Perform a Metadata Provider search and then merge the results into the given Artist
+        /// </summary>
+        /// <param name="ArtistId">Given Artist RoadieId</param>
+        /// <returns>Operation Result</returns>
+        public async Task<OperationResult<bool>> RefreshArtistMetadata(Guid ArtistId)
         {
+            SimpleContract.Requires<ArgumentOutOfRangeException>(ArtistId != Guid.Empty, "Invalid ArtistId");
+
+            var result = true;
+            var resultErrors = new List<Exception>();
             var sw = new Stopwatch();
             sw.Start();
-            var Artist = (from a in this.DbContext.Artists
-                          where ((a.MusicBrainzId != null && (musicBrainzId != null && a.MusicBrainzId == musicBrainzId)) ||
-                                 (a.ITunesId != null || (iTunesId != null && a.ITunesId == iTunesId)) ||
-                                 (a.AmgId != null || (amgId != null && a.AmgId == amgId)) ||
-                                 (a.SpotifyId != null || (spotifyId != null && a.SpotifyId == spotifyId)))
-                          select a).FirstOrDefault();
-            sw.Stop();
-            if (Artist == null || !Artist.IsValid)
-            {
-                this._logger.Trace("ArtistFactory: Artist Not Found By External Ids: MusicbrainzId [{0}], iTunesIs [{1}], AmgId [{2}], SpotifyId [{3}]", musicBrainzId, iTunesId, amgId, spotifyId);
-            }
-            return new FactoryResult<Artist>
-            {
-                IsSuccess = Artist != null,
-                OperationTime = sw.ElapsedMilliseconds,
-                Data = Artist
-            };
-        }
-
-        public async Task<FactoryResult<bool>> Delete(Guid RoadieId)
-        {
-            var isSuccess = false;
-            var Artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == RoadieId);
-            if (Artist != null)
-            {
-                return await this.Delete(Artist);
-            }
-            return new FactoryResult<bool>
-            {
-                Data = isSuccess
-            };
-        }
-
-        public async Task<FactoryResult<bool>> Delete(Artist Artist)
-        {
-            var isSuccess = false;
             try
             {
-                if (Artist != null)
+                var Artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == ArtistId);
+                if (Artist == null)
                 {
-                    this.DbContext.Artists.Remove(Artist);
-                    await this.DbContext.SaveChangesAsync();
-                    this._cacheManager.ClearRegion(Artist.CacheRegion);
-                    this.Logger.Info(string.Format("x DeleteArtist [{0}]", Artist.Id));
-                    isSuccess = true;
+                    this.Logger.Fatal("Unable To Find Artist [{0}]", ArtistId);
+                    return new OperationResult<bool>();
+                }
+
+                OperationResult<Artist> ArtistSearch = null;
+                try
+                {
+                    ArtistSearch = await this.PerformMetaDataProvidersArtistSearch(new AudioMetaData
+                    {
+                        Artist = Artist.Name
+                    });
+                }
+                catch (Exception ex)
+                {
+                    this.Logger.Error(ex, ex.Serialize());
+                }
+                if (ArtistSearch.IsSuccess)
+                {
+                    // Do metadata search for Artist like if new Artist then set some overides and merge
+                    var mergeResult = await this.MergeArtists(ArtistSearch.Data, Artist);
+                    if (mergeResult.IsSuccess)
+                    {
+                        Artist = mergeResult.Data;
+                        await this.DbContext.SaveChangesAsync();
+                        sw.Stop();
+                        this.CacheManager.ClearRegion(Artist.CacheRegion);
+                        this.Logger.Info("Scanned RefreshArtistMetadata [{0}], OperationTime [{1}]", Artist.ToString(), sw.ElapsedMilliseconds);
+                    }
+                    else
+                    {
+                        sw.Stop();
+                    }
                 }
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 this.Logger.Error(ex, ex.Serialize());
-                return new FactoryResult<bool>
-                {
-                     Errors = new string[1] { "An error occured" }
-                };
+                resultErrors.Add(ex);
             }
-            return new FactoryResult<bool>
+            return new OperationResult<bool>
             {
-                IsSuccess = isSuccess,
-                Data = isSuccess
+                Data = result,
+                IsSuccess = result,
+                Errors = resultErrors,
+                OperationTime = sw.ElapsedMilliseconds
             };
         }
 
+        public async Task<OperationResult<bool>> ScanArtistReleasesFolders(Guid artistId, string destinationFolder, bool doJustInfo)
+        {
+            SimpleContract.Requires<ArgumentOutOfRangeException>(artistId == Guid.Empty, "Invalid ArtistId");
+
+            var result = true;
+            var resultErrors = new List<Exception>();
+            var sw = new Stopwatch();
+            sw.Start();
+            try
+            {
+                var Artist = this.DbContext.Artists.Include("releases").FirstOrDefault(x => x.RoadieId == artistId);
+                if (Artist == null)
+                {
+                    this.Logger.Fatal("Unable To Find Artist [{0}]", artistId);
+                    return new OperationResult<bool>();
+                }
+                var releaseScannedCount = 0;
+                var ArtistFolder = Artist.ArtistFileFolder(this.Configuration, destinationFolder);
+                var scannedArtistFolders = new List<string>();
+                // Scan known releases for changes
+                if (Artist.Releases != null)
+                {
+                    foreach (var release in Artist.Releases)
+                    {
+                        try
+                        {
+                            result = result && (await this.ReleaseFactory.ScanReleaseFolder(Guid.Empty, destinationFolder, doJustInfo, release)).Data;
+                            releaseScannedCount++;
+                            scannedArtistFolders.Add(release.ReleaseFileFolder(ArtistFolder));
+                        }
+                        catch (Exception ex)
+                        {
+                            this.Logger.Error(ex, ex.Serialize());
+                        }
+                    }
+                }
+                // Any folder found in Artist folder not already scanned scan
+                var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, destinationFolder, this.DbContext, this.CacheManager, this.Logger);
+                var nonReleaseFolders = (from d in Directory.EnumerateDirectories(ArtistFolder)
+                                         where !(from r in scannedArtistFolders select r).Contains(d)
+                                         orderby d
+                                         select d);
+                foreach (var folder in nonReleaseFolders)
+                {
+                    await folderProcessor.Process(new DirectoryInfo(folder), doJustInfo);
+                }
+                if (!doJustInfo)
+                {
+                    folderProcessor.DeleteEmptyFolders(new DirectoryInfo(ArtistFolder));
+                }
+                sw.Stop();
+                this.CacheManager.ClearRegion(Artist.CacheRegion);
+                this.Logger.Info("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", Artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.Error(ex, ex.Serialize());
+                resultErrors.Add(ex);
+            }
+            return new OperationResult<bool>
+            {
+                Data = result,
+                IsSuccess = result,
+                Errors = resultErrors,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<FactoryResult<Artist>> Update(Artist Artist, IEnumerable<Image> ArtistImages, string destinationFolder = null)
+        {
+            SimpleContract.Requires<ArgumentNullException>(Artist != null, "Invalid Artist");
+
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var artistGenreTables = Artist.Genres.Select(x => new ArtistGenre { ArtistId = Artist.Id, GenreId = x.GenreId }).ToList();
+            var artistAssociatedWith = Artist.AssociatedArtists.Select(x => new ArtistAssociation { ArtistId = Artist.Id, AssociatedArtistId = x.AssociatedArtistId }).ToList();
+            var result = true;
+
+            var now = DateTime.UtcNow;
+            var originalArtistFolder = Artist.ArtistFileFolder(this.Configuration, destinationFolder ?? this.Configuration.LibraryFolder);
+            var originalName = Artist.Name;
+            var originalSortName = Artist.SortName;
+
+            Artist.LastUpdated = now;
+            await this.DbContext.SaveChangesAsync();
+
+            this.DbContext.ArtistGenres.RemoveRange((from at in this.DbContext.ArtistGenres
+                                                     where at.ArtistId == Artist.Id
+                                                     select at));
+            Artist.Genres = artistGenreTables;
+            this.DbContext.ArtistAssociations.RemoveRange((from at in this.DbContext.ArtistAssociations
+                                                           where at.ArtistId == Artist.Id
+                                                           select at));
+            Artist.AssociatedArtists = artistAssociatedWith;
+            await this.DbContext.SaveChangesAsync();
+
+            var existingImageIds = (from ai in ArtistImages
+                                    where ai.Status != Statuses.New
+                                    select ai.RoadieId).ToArray();
+            this.DbContext.Images.RemoveRange((from i in this.DbContext.Images
+                                               where i.ArtistId == Artist.Id
+                                               where !(from x in existingImageIds select x).Contains(i.RoadieId)
+                                               select i));
+            await this.DbContext.SaveChangesAsync();
+            if (ArtistImages != null && ArtistImages.Any(x => x.Status == Statuses.New))
+            {
+                foreach (var ArtistImage in ArtistImages.Where(x => x.Status == Statuses.New))
+                {
+                    this.DbContext.Images.Add(ArtistImage);
+                }
+                try
+                {
+                    await this.DbContext.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    this.Logger.Error(ex, ex.Serialize());
+                }
+            }
+
+            var newArtistFolder = Artist.ArtistFileFolder(this.Configuration, destinationFolder ?? this.Configuration.LibraryFolder);
+            if (!originalArtistFolder.Equals(newArtistFolder, StringComparison.OrdinalIgnoreCase))
+            {
+                this.Logger.Trace("Moving Artist From Folder [{0}] To  [{1}]", originalArtistFolder, newArtistFolder);
+                //  Directory.Move(originalArtistFolder, Artist.ArtistFileFolder(destinationFolder ?? SettingsHelper.Instance.LibraryFolder));
+                // TODO if name changed then update Artist track files to have new Artist name
+            }
+            this._cacheManager.ClearRegion(Artist.CacheRegion);
+            sw.Stop();
+
+            return new FactoryResult<Artist>
+            {
+                Data = Artist,
+                IsSuccess = result,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        private Artist DatabaseQueryForArtistName(string name, string sortName = null)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return null;
+            }
+            try
+            {
+                var getParams = new List<object>();
+                var searchName = name.NormalizeName().ToLower();
+                var searchSortName = !string.IsNullOrEmpty(sortName) ? sortName.NormalizeName().ToLower() : searchName;
+                var specialSearchName = name.ToAlphanumericName();
+                getParams.Add(new MySqlParameter("@isName", searchName));
+                getParams.Add(new MySqlParameter("@isSortName", searchSortName));
+                getParams.Add(new MySqlParameter("@startAlt", string.Format("{0}|%", searchName)));
+                getParams.Add(new MySqlParameter("@inAlt", string.Format("%|{0}|%", searchName)));
+                getParams.Add(new MySqlParameter("@endAlt", string.Format("%|{0}", searchName)));
+                getParams.Add(new MySqlParameter("@sstartAlt", string.Format("{0}|%", specialSearchName)));
+                getParams.Add(new MySqlParameter("@sinAlt", string.Format("%|{0}|%", specialSearchName)));
+                getParams.Add(new MySqlParameter("@sendAlt", string.Format("%|{0}", specialSearchName)));
+                return this.DbContext.Artists.FromSql(@"SELECT *
+                FROM `Artist`
+                WHERE LCASE(name) = @isName
+                OR LCASE(sortName) = @isName
+                OR LCASE(sortName) = @isSortName
+                OR LCASE(alternatenames) = @isName
+                OR alternatenames like @startAlt
+                OR alternatenames like @sstartAlt
+                OR alternatenames like @inAlt
+                OR alternatenames like @sinAlt
+                OR (alternatenames like @endAlt
+                OR alternatenames like @sendAlt)
+                LIMIT 1;", getParams.ToArray()).FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                this.Logger.Error(ex, ex.Serialize());
+            }
+            return null;
+        }
     }
 }

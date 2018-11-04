@@ -1,20 +1,113 @@
 ﻿using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
-using Roadie.Library.Utility;
 using Roadie.Library.Logging;
+using Roadie.Library.MetaData.Audio;
+using Roadie.Library.Utility;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Roadie.Library.MetaData.Audio;
-using Microsoft.Extensions.Configuration;
 
 namespace Roadie.Library.MetaData.FileName
 {
     public class FileNameHelper : MetaDataProviderBase
     {
-        public FileNameHelper(IConfiguration configuration, ICacheManager cacheManager, ILogger loggingService) 
+        public FileNameHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService)
             : base(configuration, cacheManager, loggingService)
         { }
+
+        /// <summary>
+        /// GUID~TALB~TPOS TPE1 - TRCK - TIT2
+        /// </summary>
+        public static bool IsTalbTposTpe1TrckTit2(string filename)
+        {
+            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!-]+[\s\w()'&]~[0-9]{2}[-\w\s,$/.'`#&()!]+[-\s~]\s[0-9]{1,2}[-\s~]+[\w\s,$/.'-`#&()!]+");
+            return regex.IsMatch(filename);
+        }
+
+        /// <summary>
+        /// GUID~TPE1 - [TYER] - TALB~TRCK. TIT2
+        /// </summary>
+        public static bool IsTalbTyerTalbTrckTit2(string filename)
+        {
+            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!]+-\s\[[0-9]{4}]\s-\s[\w\s,$/.'`#&()!]+~[0-9]{2}.[\w\s,$/.'`#&()!]+");
+            return regex.IsMatch(filename);
+        }
+
+        /// <summary>
+        /// GUID~TPE1-TALB (TYER)~TRCK-TIT2
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <returns></returns>
+        public static bool IsTpe1TalbTyerTrckTit2(string filename)
+        {
+            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!]+-[\w\s,$/.'`#&()!]+~[\w\s,$/.'`#&()!]+-\s[0-9]{2}\s-[\w\s,$/.'`#&()!]+");
+            return regex.IsMatch(filename);
+        }
+
+        /// <summary>
+        /// GUID~TPE1-TALB-TYER~TRCK-TPE1-TIT2
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <returns></returns>
+        public static bool IsTpe1TalbTyerTrckTpe1Tit2(string filename)
+        {
+            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!]+-[\w\s,$/.'`#&()!]+-[0-9]{4}[\]\)]*~[\w\s,$/.'`#&()!]+-[\w\s,$/.'`#&()!]+");
+            return regex.IsMatch(filename);
+        }
+
+        /// <summary>
+        /// GUID~TPE1~TIT2
+        /// </summary>
+        public static bool IsTpe1Tit2(string filename)
+        {
+            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'-`#&()!]+~[\w\s,$/.'-`#&()!]+");
+            return regex.IsMatch(filename);
+        }
+
+        /// <summary>
+        /// GUID~TPE1~TRCK TIT2
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <returns></returns>
+        public static bool IsTpe1TrckTit2(string filename)
+        {
+            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[-\w\s,$/.'`#&()!]+[ -~][0-9]{2}[\w\s,$/.'-`#&()!]+");
+            return regex.IsMatch(filename);
+        }
+
+        /// <summary>
+        /// TRCK TIT2
+        /// </summary>
+        public static bool IsTrckTit2(string filename)
+        {
+            var regex = new Regex(@"[0-9]{2}\s[\w\s,$/.'-`#&()!]+");
+            return regex.IsMatch(filename);
+        }
+
+        /// <summary>
+        /// GUID~TYER - TALB~TPE1 - TIT2
+        /// </summary>
+        public static bool IsTyerTalbTpe1Tit2(string filename)
+        {
+            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[0-9]{4}[\w\s,$/.'-`#&()!]+~[\w\s,$/.'-`#&()!]+");
+            return regex.IsMatch(filename);
+        }
+
+        /// <summary>
+        /// GUID~[TYER] TALB~TRCK - TIT2
+        /// </summary>
+        public static bool IsTyerTalbTrckTit2(string filename)
+        {
+            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\[\(]*[0-9]{4}[\]\)]*[\w\s,$/.'-`#&()!]+[~-]*((\\)*(/)*([0-9]{2})*)[\s~-]*[\w\s,$/.'-`#&()!]+");
+            return regex.IsMatch(filename);
+        }
+
+        public static bool IsValidAudioFileName(string filename)
+        {
+            var regex = new Regex(@"[a-zA-Z]:\\[\\\w\s,\$\/\.'`#&()!\‐\-]+\[[0-9]{4}\]\s[\[\]\w\s,\$\/\.'`#&()!\‐\-]+[\\CD0-9]*\\[0-9]{2,}\s[\[\]\w\s,\$\/\.'`#&()!\‐\-]+\.(mp3|flac)");
+            return regex.IsMatch(filename);
+        }
 
         public string CleanString(string input)
         {
@@ -23,6 +116,48 @@ namespace Roadie.Library.MetaData.FileName
                 return input;
             }
             return input.CleanString(this.Configuration);
+        }
+
+        public AudioMetaData MetaDataFromFileInfo(FileInfo fileInfo)
+        {
+            var justFilename = CleanString(fileInfo.Name.Replace(fileInfo.Extension, ""));
+            if (IsTrckTit2(justFilename))
+            {
+                var Release = fileInfo.Directory.Name;
+                var ReleaseYear = SafeParser.ToYear(Release.Substring(0, 4));
+                if (ReleaseYear.HasValue)
+                {
+                    Release = Release.Substring(5, Release.Length - 5);
+                }
+                var artist = fileInfo.Directory.Parent.Name;
+
+                var title = justFilename.Substring(2, justFilename.Length - 2);
+                var artistYearRelease = CleanString(string.Format("{0} {1} {2}", artist, ReleaseYear, Release));
+                if (justFilename.StartsWith(artistYearRelease) || CleanString(justFilename.Replace("The ", "")).StartsWith(CleanString(artistYearRelease.Replace("The ", ""))))
+                {
+                    title = CleanString(CleanString(justFilename.Replace("The ", "")).Replace(CleanString(artistYearRelease.Replace("The ", "")), ""));
+                }
+                else
+                {
+                    var regex = new Regex(@"[0-9]{2}-[\w\s,$/.'-`#&()!]+");
+                    if (regex.IsMatch(title))
+                    {
+                        title = fileInfo.Name.Replace(fileInfo.Extension, "");
+                        title = title.Substring(6, title.Length - 6);
+                        title = Regex.Replace(title, @"(\B[A-Z]+?(?=[A-Z][^A-Z])|\B[A-Z]+?(?=[^A-Z]))", " $1");
+                    }
+                }
+                var trackNumber = SafeParser.ToNumber<short>(title.Substring(0, 2));
+                return new AudioMetaData
+                {
+                    Artist = artist,
+                    Release = Release,
+                    Year = ReleaseYear,
+                    TrackNumber = trackNumber,
+                    Title = CleanString(title.Replace(trackNumber.ToString("D2") + " ", ""))
+                };
+            }
+            return new AudioMetaData();
         }
 
         public AudioMetaData MetaDataFromFilename(string rawFilename)
@@ -185,141 +320,6 @@ namespace Roadie.Library.MetaData.FileName
             }
 
             return new AudioMetaData();
-        }
-
-        public AudioMetaData MetaDataFromFileInfo(FileInfo fileInfo)
-        {
-            var justFilename = CleanString(fileInfo.Name.Replace(fileInfo.Extension, ""));
-            if (IsTrckTit2(justFilename))
-            {
-                var Release = fileInfo.Directory.Name;
-                var ReleaseYear = SafeParser.ToYear(Release.Substring(0, 4));
-                if (ReleaseYear.HasValue)
-                {
-                    Release = Release.Substring(5, Release.Length - 5);
-                }
-                var artist = fileInfo.Directory.Parent.Name;
-
-                var title = justFilename.Substring(2, justFilename.Length - 2);
-                var artistYearRelease = CleanString(string.Format("{0} {1} {2}", artist, ReleaseYear, Release));
-                if (justFilename.StartsWith(artistYearRelease) || CleanString(justFilename.Replace("The ", "")).StartsWith(CleanString(artistYearRelease.Replace("The ", ""))))
-                {
-                    title = CleanString(CleanString(justFilename.Replace("The ", "")).Replace(CleanString(artistYearRelease.Replace("The ", "")), ""));
-                }
-                else
-                {
-                    var regex = new Regex(@"[0-9]{2}-[\w\s,$/.'-`#&()!]+");
-                    if (regex.IsMatch(title))
-                    {
-                        title = fileInfo.Name.Replace(fileInfo.Extension, "");
-                        title = title.Substring(6, title.Length - 6);
-                        title = Regex.Replace(title, @"(\B[A-Z]+?(?=[A-Z][^A-Z])|\B[A-Z]+?(?=[^A-Z]))", " $1");
-                    }
-                }
-                var trackNumber = SafeParser.ToNumber<short>(title.Substring(0, 2));
-                return new AudioMetaData
-                {
-                    Artist = artist,
-                    Release = Release,
-                    Year = ReleaseYear,
-                    TrackNumber = trackNumber,
-                    Title = CleanString(title.Replace(trackNumber.ToString("D2") + " ", ""))
-                };
-            }
-            return new AudioMetaData();
-        }
-
-        public static bool IsValidAudioFileName(string filename)
-        {
-            var regex = new Regex(@"[a-zA-Z]:\\[\\\w\s,\$\/\.'`#&()!\‐\-]+\[[0-9]{4}\]\s[\[\]\w\s,\$\/\.'`#&()!\‐\-]+[\\CD0-9]*\\[0-9]{2,}\s[\[\]\w\s,\$\/\.'`#&()!\‐\-]+\.(mp3|flac)");
-            return regex.IsMatch(filename);
-        }
-
-        /// <summary>
-        /// TRCK TIT2
-        /// </summary>
-        public static bool IsTrckTit2(string filename)
-        {
-            var regex = new Regex(@"[0-9]{2}\s[\w\s,$/.'-`#&()!]+");
-            return regex.IsMatch(filename);
-        }
-
-        /// <summary>
-        /// GUID~TALB~TPOS TPE1 - TRCK - TIT2
-        /// </summary>
-        public static bool IsTalbTposTpe1TrckTit2(string filename)
-        {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!-]+[\s\w()'&]~[0-9]{2}[-\w\s,$/.'`#&()!]+[-\s~]\s[0-9]{1,2}[-\s~]+[\w\s,$/.'-`#&()!]+");
-            return regex.IsMatch(filename);
-        }
-
-        /// <summary>
-        /// GUID~TPE1 - [TYER] - TALB~TRCK. TIT2
-        /// </summary>
-        public static bool IsTalbTyerTalbTrckTit2(string filename)
-        {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!]+-\s\[[0-9]{4}]\s-\s[\w\s,$/.'`#&()!]+~[0-9]{2}.[\w\s,$/.'`#&()!]+");
-            return regex.IsMatch(filename);
-        }
-
-        /// <summary>
-        /// GUID~TPE1~TIT2
-        /// </summary>
-        public static bool IsTpe1Tit2(string filename)
-        {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'-`#&()!]+~[\w\s,$/.'-`#&()!]+");
-            return regex.IsMatch(filename);
-        }
-
-        /// <summary>
-        /// GUID~TYER - TALB~TPE1 - TIT2
-        /// </summary>
-        public static bool IsTyerTalbTpe1Tit2(string filename)
-        {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[0-9]{4}[\w\s,$/.'-`#&()!]+~[\w\s,$/.'-`#&()!]+");
-            return regex.IsMatch(filename);
-        }
-
-        /// <summary>
-        /// GUID~[TYER] TALB~TRCK - TIT2
-        /// </summary>
-        public static bool IsTyerTalbTrckTit2(string filename)
-        {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\[\(]*[0-9]{4}[\]\)]*[\w\s,$/.'-`#&()!]+[~-]*((\\)*(/)*([0-9]{2})*)[\s~-]*[\w\s,$/.'-`#&()!]+");
-            return regex.IsMatch(filename);
-        }
-
-        /// <summary>
-        /// GUID~TPE1-TALB-TYER~TRCK-TPE1-TIT2
-        /// </summary>
-        /// <param name="filename"></param>
-        /// <returns></returns>
-        public static bool IsTpe1TalbTyerTrckTpe1Tit2(string filename)
-        {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!]+-[\w\s,$/.'`#&()!]+-[0-9]{4}[\]\)]*~[\w\s,$/.'`#&()!]+-[\w\s,$/.'`#&()!]+");
-            return regex.IsMatch(filename);
-        }
-
-        /// <summary>
-        /// GUID~TPE1-TALB (TYER)~TRCK-TIT2
-        /// </summary>
-        /// <param name="filename"></param>
-        /// <returns></returns>
-        public static bool IsTpe1TalbTyerTrckTit2(string filename)
-        {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!]+-[\w\s,$/.'`#&()!]+~[\w\s,$/.'`#&()!]+-\s[0-9]{2}\s-[\w\s,$/.'`#&()!]+");
-            return regex.IsMatch(filename);
-        }
-
-        /// <summary>
-        /// GUID~TPE1~TRCK TIT2
-        /// </summary>
-        /// <param name="filename"></param>
-        /// <returns></returns>
-        public static bool IsTpe1TrckTit2(string filename)
-        {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[-\w\s,$/.'`#&()!]+[ -~][0-9]{2}[\w\s,$/.'-`#&()!]+");
-            return regex.IsMatch(filename);
         }
     }
 }

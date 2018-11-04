@@ -1,15 +1,13 @@
 ﻿using RestSharp;
-using Roadie.Library.SearchEngines.Imaging.BingModels;
-using Roadie.Library.Utility;
+using Roadie.Library.Configuration;
 using Roadie.Library.Logging;
+using Roadie.Library.SearchEngines.Imaging.BingModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Authentication;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Roadie.Library.Setttings;
 
 namespace Roadie.Library.SearchEngines.Imaging
 {
@@ -19,48 +17,13 @@ namespace Roadie.Library.SearchEngines.Imaging
     public class BingImageSearchEngine : ImageSearchEngineBase
     {
         private ILogger loggingService;
-        private string requestIp;
         private string referrer;
+        private string requestIp;
 
-        public BingImageSearchEngine(IConfiguration configuration, ILogger loggingService, string requestIp = null, string referrer = null)
+        public BingImageSearchEngine(IRoadieSettings configuration, ILogger loggingService, string requestIp = null, string referrer = null)
             : base(configuration, loggingService, "https://api.cognitive.microsoft.com", requestIp, referrer)
         {
-            this._apiKey = configuration.GetValue<List<ApiKey>>("ApiKeys", new List<ApiKey>()).FirstOrDefault(x => x.ApiName == "BingImageSearch") ?? new ApiKey();
-        }
-
-        //public BingImageSearchEngine(ILogger loggingService, string requestIp, string referrer)
-        //{
-        //    this.loggingService = loggingService;
-        //    this.requestIp = requestIp;
-        //    this.referrer = referrer;
-        //}
-
-        public override async Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount)
-        {
-            var request = this.BuildRequest(query, resultsCount);
-
-            var response = await _client.ExecuteTaskAsync<BingImageResult>(request);
-
-            if (response.ResponseStatus == ResponseStatus.Error)
-            {
-                if (response.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    throw new AuthenticationException("Api Key is not correct");
-                }
-                throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
-            }
-            if (response.Data == null || response.Data.value == null)
-            {
-                this.LoggingService.Warning("Response Is Null on PerformImageSearch [" + Newtonsoft.Json.JsonConvert.SerializeObject(response) + "]");
-                return null;
-            }
-            return response.Data.value.Select(x => new ImageSearchResult
-            {
-               Width = (x.width ?? 0).ToString(),
-               Height =  (x.height ?? 0).ToString(),
-               MediaUrl = x.contentUrl,
-               Title = x.name
-            }).ToArray();
+            this._apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "BingImageSearch") ?? new ApiKey();
         }
 
         public override RestRequest BuildRequest(string query, int resultsCount)
@@ -103,6 +66,34 @@ namespace Roadie.Library.SearchEngines.Imaging
             });
 
             return request;
+        }
+
+        public override async Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount)
+        {
+            var request = this.BuildRequest(query, resultsCount);
+
+            var response = await _client.ExecuteTaskAsync<BingImageResult>(request);
+
+            if (response.ResponseStatus == ResponseStatus.Error)
+            {
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    throw new AuthenticationException("Api Key is not correct");
+                }
+                throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
+            }
+            if (response.Data == null || response.Data.value == null)
+            {
+                this.LoggingService.Warning("Response Is Null on PerformImageSearch [" + Newtonsoft.Json.JsonConvert.SerializeObject(response) + "]");
+                return null;
+            }
+            return response.Data.value.Select(x => new ImageSearchResult
+            {
+                Width = (x.width ?? 0).ToString(),
+                Height = (x.height ?? 0).ToString(),
+                MediaUrl = x.contentUrl,
+                Title = x.name
+            }).ToArray();
         }
     }
 }

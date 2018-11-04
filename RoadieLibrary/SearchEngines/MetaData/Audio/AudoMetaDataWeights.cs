@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Roadie.Library.MetaData.Audio
 {
@@ -22,5 +18,4 @@ namespace Roadie.Library.MetaData.Audio
     //Artist + Release + TrackNumber 44
     //Artist + TrackNumber + Title 38
     //Artist + Release + TrackNumber + TrackTitle = 60
-
 }

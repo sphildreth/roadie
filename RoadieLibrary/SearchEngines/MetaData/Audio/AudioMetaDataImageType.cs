@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Roadie.Library.MetaData.Audio
+﻿namespace Roadie.Library.MetaData.Audio
 {
     public enum AudioMetaDataImageType
     {

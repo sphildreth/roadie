@@ -1,8 +1,6 @@
 ﻿using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Roadie.Library.Logging
 {
@@ -27,7 +25,6 @@ namespace Roadie.Library.Logging
                             .WriteTo.File("logs//errors-.txt", Serilog.Events.LogEventLevel.Error)
                             .CreateLogger();
         }
-
 
         public void Debug(string message)
         {

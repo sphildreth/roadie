@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Roadie.Library.Extensions
+﻿namespace Roadie.Library.Extensions
 {
     public static class ShortExt
     {
@@ -23,7 +17,7 @@ namespace Roadie.Library.Extensions
             {
                 return null;
             }
-            if(!value.HasValue && alternative.HasValue)
+            if (!value.HasValue && alternative.HasValue)
             {
                 return alternative.Value;
             }

@@ -1,23 +1,24 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.EntityFrameworkCore;
 using MySql.Data.MySqlClient;
+using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
+using Roadie.Library.Data;
+using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
-using Roadie.Library.Utility;
 using Roadie.Library.Logging;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Roadie.Library.Data;
-using Microsoft.Extensions.Configuration;
-using Microsoft.EntityFrameworkCore;
-using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Factories
 {
     public sealed class LabelFactory : FactoryBase
     {
-        public LabelFactory(IConfiguration configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger) : base(configuration, context, cacheManager, logger, httpEncoder)
+        public LabelFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
+            : base(configuration, context, cacheManager, logger, httpEncoder)
         {
         }
 

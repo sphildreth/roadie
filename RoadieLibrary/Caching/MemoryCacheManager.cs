@@ -1,11 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using StackExchange.Redis;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Roadie.Library.Caching
 {
@@ -13,10 +8,9 @@ namespace Roadie.Library.Caching
     {
         private MemoryCache _cache;
 
-        public MemoryCacheManager(ILogger logger, CachePolicy defaultPolicy) 
+        public MemoryCacheManager(ILogger logger, CachePolicy defaultPolicy)
             : base(logger, defaultPolicy)
         {
-
             this._cache = new MemoryCache(new MemoryCacheOptions());
         }
 
@@ -35,7 +29,7 @@ namespace Roadie.Library.Caching
             {
                 _cache.Set(key, value, new MemoryCacheEntryOptions
                 {
-                    AbsoluteExpiration = DateTimeOffset.UtcNow.Add(policy.ExpiresAfter) // new DateTimeOffset(DateTime.UtcNow, policy.ExpiresAfter)                  
+                    AbsoluteExpiration = DateTimeOffset.UtcNow.Add(policy.ExpiresAfter) // new DateTimeOffset(DateTime.UtcNow, policy.ExpiresAfter)
                 });
                 return true;
             }
@@ -58,7 +52,7 @@ namespace Roadie.Library.Caching
 
         public override void Dispose()
         {
-          //  throw new NotImplementedException();
+            //  throw new NotImplementedException();
         }
 
         public override bool Exists<TOut>(string key)

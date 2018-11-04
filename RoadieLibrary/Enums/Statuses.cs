@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Roadie.Library.Enums
+﻿namespace Roadie.Library.Enums
 {
     public enum Statuses : short
     {
@@ -13,7 +7,7 @@ namespace Roadie.Library.Enums
         Complete = 2,
         Incomplete = 3,
         Missing = 4,
-        Wishlist =5,
+        Wishlist = 5,
         Deleted = 99
     }
 }

@@ -1,12 +1,12 @@
-﻿using Roadie.Library.Caching;
-using RestSharp;
-using Roadie.Library.MetaData;
+﻿using RestSharp;
+using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
+using Roadie.Library.Encoding;
 using Roadie.Library.Logging;
+using Roadie.Library.MetaData;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Roadie.Library.Encoding;
 
 namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
 {
@@ -22,7 +22,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
             }
         }
 
-        public WikipediaHelper(IConfiguration configuration, ICacheManager cacheManager, ILogger logger, IHttpEncoder httpEncoder) 
+        public WikipediaHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IHttpEncoder httpEncoder)
             : base(configuration, cacheManager, logger)
         {
             this._httpEncoder = httpEncoder;

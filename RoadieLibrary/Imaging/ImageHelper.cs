@@ -1,16 +1,12 @@
-﻿using Roadie.Library.Extensions;
-using Roadie.Library.SearchEngines.Imaging;
+﻿using Roadie.Library.SearchEngines.Imaging;
 using Roadie.Library.Utility;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using SixLabors.Primitives;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace Roadie.Library.Imaging
 {
@@ -87,14 +83,13 @@ namespace Roadie.Library.Imaging
             using (MemoryStream outStream = new MemoryStream())
             {
                 IImageFormat imageFormat = null;
-                using (Image<Rgba32> image = Image.Load(imageBytes, out imageFormat)) 
+                using (Image<Rgba32> image = Image.Load(imageBytes, out imageFormat))
                 {
                     image.Mutate(ctx => ctx.Resize(width, height));
                     image.Save(outStream, imageFormat);
                 }
                 return outStream.ToArray();
             }
-
         }
     }
 }

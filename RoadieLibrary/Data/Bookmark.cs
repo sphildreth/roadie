@@ -14,10 +14,10 @@ namespace Roadie.Library.Data
         [Column("bookmarkType")]
         public BookmarkType? BookmarkType { get; set; }
 
+        public ApplicationUser User { get; set; }
+
         [Column("userId")]
         [Required]
         public int UserId { get; set; }
-
-        public ApplicationUser User { get; set; }
     }
 }

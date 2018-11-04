@@ -1,10 +1,8 @@
-﻿using Microsoft.Extensions.Configuration;
-using Roadie.Library.Extensions;
+﻿using Roadie.Library.Extensions;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Roadie.Library.Data
 {
@@ -17,6 +15,7 @@ namespace Roadie.Library.Data
                 return string.Format("urn:release:{0}", this.RoadieId);
             }
         }
+
         public string Etag
         {
             get
@@ -28,11 +27,15 @@ namespace Roadie.Library.Data
             }
         }
 
-        public bool IsValid
+        public bool IsCastRecording
         {
             get
             {
-                return !string.IsNullOrEmpty(this.Title) && this.ReleaseDate > DateTime.MinValue;
+                if (string.IsNullOrEmpty(this.Title))
+                {
+                    return false;
+                }
+                return this.IsReleaseTypeOf("Original Broadway Cast") || this.IsReleaseTypeOf("Original Cast");
             }
         }
 
@@ -55,15 +58,11 @@ namespace Roadie.Library.Data
             }
         }
 
-        public bool IsCastRecording
+        public bool IsValid
         {
             get
             {
-                if (string.IsNullOrEmpty(this.Title))
-                {
-                    return false;
-                }
-                return this.IsReleaseTypeOf("Original Broadway Cast") || this.IsReleaseTypeOf("Original Cast");
+                return !string.IsNullOrEmpty(this.Title) && this.ReleaseDate > DateTime.MinValue;
             }
         }
 
@@ -118,12 +117,6 @@ namespace Roadie.Library.Data
             {
             }
             return false;
-
-        }
-
-        public override string ToString()
-        {
-            return string.Format("Id [{0}], Title [{1}], Release Date [{2}]", this.Id, this.Title, this.ReleaseDate);
         }
 
         /// <summary>
@@ -136,5 +129,9 @@ namespace Roadie.Library.Data
             return FolderPathHelper.ReleasePath(artistFolder, this.Title, this.ReleaseDate.Value);
         }
 
+        public override string ToString()
+        {
+            return string.Format("Id [{0}], Title [{1}], Release Date [{2}]", this.Id, this.Title, this.ReleaseDate);
+        }
     }
 }

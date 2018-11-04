@@ -121,7 +121,6 @@ namespace Roadie.Library.Data
                 .HasOne(b => b.User)
                 .WithMany(u => u.Bookmarks)
                 .HasForeignKey(b => b.UserId);
-
         }
     }
 }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Roadie.Library.Extensions
+﻿namespace Roadie.Library.Extensions
 {
     public static class ByteExt
     {

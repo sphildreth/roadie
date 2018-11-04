@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Roadie.Library.Utility
 {
@@ -36,7 +34,5 @@ namespace Roadie.Library.Utility
                 throw new Exception(Message);
             }
         }
-
-
     }
 }

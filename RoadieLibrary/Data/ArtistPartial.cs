@@ -1,9 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Roadie.Library.Configuration;
 using Roadie.Library.Utility;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Roadie.Library.Data
 {
@@ -28,14 +26,6 @@ namespace Roadie.Library.Data
             }
         }
 
-        public bool IsValid
-        {
-            get
-            {
-                return !string.IsNullOrEmpty(this.Name);
-            }
-        }
-
         public bool IsNew
         {
             get
@@ -44,9 +34,12 @@ namespace Roadie.Library.Data
             }
         }
 
-        public override string ToString()
+        public bool IsValid
         {
-            return string.Format("Id [{0}], Name [{1}], SortName [{2}], RoadieId [{3}]", this.Id, this.Name, this.SortNameValue, this.RoadieId);
+            get
+            {
+                return !string.IsNullOrEmpty(this.Name);
+            }
         }
 
         public string SortNameValue
@@ -57,9 +50,14 @@ namespace Roadie.Library.Data
             }
         }
 
-        public string ArtistFileFolder(IConfiguration configuration, string destinationRoot)
+        public string ArtistFileFolder(IRoadieSettings configuration, string destinationRoot)
         {
             return FolderPathHelper.ArtistPath(configuration, this.SortNameValue, destinationRoot);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Id [{0}], Name [{1}], SortName [{2}], RoadieId [{3}]", this.Id, this.Name, this.SortNameValue, this.RoadieId);
         }
     }
 }

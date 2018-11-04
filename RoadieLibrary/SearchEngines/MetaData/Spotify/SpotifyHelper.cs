@@ -1,16 +1,16 @@
-﻿using Roadie.Library.Caching;
-using RestSharp;
+﻿using RestSharp;
+using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
+using Roadie.Library.Logging;
 using Roadie.Library.MetaData;
 using Roadie.Library.Utility;
-using Roadie.Library.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Authentication;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 
 namespace Roadie.Library.SearchEngines.MetaData.Spotify
 {
@@ -20,42 +20,13 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
         {
             get
             {
-                return this.Configuration.GetValue<bool>("Integrations:SpotifyProviderEnabled", true);
+                return this.Configuration.Integrations.SpotifyProviderEnabled;
             }
         }
 
-        public SpotifyHelper(IConfiguration configuration, ICacheManager cacheManager, ILogger loggingService) 
+        public SpotifyHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService)
             : base(configuration, cacheManager, loggingService)
         {
-        }
-
-        private RestRequest BuildSearchRequest(string query, int resultsCount, string entityType)
-        {
-            var request = new RestRequest
-            {
-                Resource = "search",
-                Method = Method.GET,
-                RequestFormat = DataFormat.Json
-            };
-            request.AddParameter(new Parameter
-            {
-                Name = "type",
-                Value = entityType,
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "q",
-                Value = string.Format("{0}", query.Trim()),
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "market",
-                Value = "US",
-                Type = ParameterType.GetOrPost
-            });
-            return request;
         }
 
         public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
@@ -118,24 +89,6 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             };
         }
 
-        private async Task<Albums> AlbumsForArtist(string spotifyId)
-        {
-            var cacheKey = string.Format("uri:spotify:AlbumsForArtist:{0}", spotifyId);
-            var result = this.CacheManager.Get<Albums>(cacheKey);
-            if (result == null)
-            {
-                var request = new RestRequest(Method.GET);
-                var client = new RestClient(string.Format("http://api.spotify.com/v1/artists/{0}/albums?offset=0&limit=25&album_type=album&market=US", spotifyId));
-                var artistAlbumsResponse = await client.ExecuteTaskAsync<Albums>(request);
-                result = artistAlbumsResponse != null && artistAlbumsResponse.Data != null ? artistAlbumsResponse.Data : null;
-                if (result != null)
-                {
-                    this.CacheManager.Add(cacheKey, result);
-                }
-            }
-            return result;
-        }
-
         public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
         {
             var artistResult = await this.PerformArtistSearch(artistName, resultsCount);
@@ -145,7 +98,6 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             }
             try
             {
-
                 var tcs = new TaskCompletionSource<OperationResult<IEnumerable<ReleaseSearchResult>>>();
                 var request = new RestRequest(Method.GET);
 
@@ -262,7 +214,54 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             {
                 this.Logger.Error(ex, ex.Serialize());
             }
-            return new OperationResult<IEnumerable<ReleaseSearchResult>>();            
+            return new OperationResult<IEnumerable<ReleaseSearchResult>>();
+        }
+
+        private async Task<Albums> AlbumsForArtist(string spotifyId)
+        {
+            var cacheKey = string.Format("uri:spotify:AlbumsForArtist:{0}", spotifyId);
+            var result = this.CacheManager.Get<Albums>(cacheKey);
+            if (result == null)
+            {
+                var request = new RestRequest(Method.GET);
+                var client = new RestClient(string.Format("http://api.spotify.com/v1/artists/{0}/albums?offset=0&limit=25&album_type=album&market=US", spotifyId));
+                var artistAlbumsResponse = await client.ExecuteTaskAsync<Albums>(request);
+                result = artistAlbumsResponse != null && artistAlbumsResponse.Data != null ? artistAlbumsResponse.Data : null;
+                if (result != null)
+                {
+                    this.CacheManager.Add(cacheKey, result);
+                }
+            }
+            return result;
+        }
+
+        private RestRequest BuildSearchRequest(string query, int resultsCount, string entityType)
+        {
+            var request = new RestRequest
+            {
+                Resource = "search",
+                Method = Method.GET,
+                RequestFormat = DataFormat.Json
+            };
+            request.AddParameter(new Parameter
+            {
+                Name = "type",
+                Value = entityType,
+                Type = ParameterType.GetOrPost
+            });
+            request.AddParameter(new Parameter
+            {
+                Name = "q",
+                Value = string.Format("{0}", query.Trim()),
+                Type = ParameterType.GetOrPost
+            });
+            request.AddParameter(new Parameter
+            {
+                Name = "market",
+                Value = "US",
+                Type = ParameterType.GetOrPost
+            });
+            return request;
         }
     }
 }

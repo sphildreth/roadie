@@ -1,56 +1,29 @@
 ﻿using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
+using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
 using Roadie.Library.Factories;
-using Roadie.Library.Utility;
+using Roadie.Library.Imaging;
 using Roadie.Library.Logging;
+using Roadie.Library.MetaData.Audio;
+using Roadie.Library.MetaData.LastFm;
+using Roadie.Library.MetaData.MusicBrainz;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Roadie.Library.MetaData.MusicBrainz;
-using Microsoft.Extensions.Configuration;
-using Roadie.Library.MetaData.Audio;
-using Roadie.Library.MetaData.LastFm;
-using Roadie.Library.Imaging;
-using Roadie.Library.Encoding;
 
 namespace Roadie.Library.FilePlugins
 {
     public class Audio : PluginBase
     {
-        private Guid _releaseId = Guid.Empty;
         private Guid _artistId = Guid.Empty;
-
-        private MusicBrainzProvider _musicBrainzProvider = null;
-
-        public MusicBrainzProvider MusicBrainzProvider
-        {
-            get
-            {
-                return this._musicBrainzProvider ?? (this._musicBrainzProvider = new MusicBrainzProvider(this.Configuration, this.CacheManager, this.Logger));
-            }
-            set
-            {
-                this._musicBrainzProvider = value;
-            }
-        }
-
-        private LastFmHelper _lastFmHelper = null;
-
-        public LastFmHelper LastFmHelper
-        {
-            get
-            {
-                return this._lastFmHelper ?? (this._lastFmHelper = new LastFmHelper(this.Configuration, this.CacheManager, this.Logger));
-            }
-            set
-            {
-                this._lastFmHelper = value;
-            }
-        }
-
         private AudioMetaDataHelper _audioMetaDataHelper = null;
+        private LastFmHelper _lastFmHelper = null;
+        private MusicBrainzProvider _musicBrainzProvider = null;
+        private Guid _releaseId = Guid.Empty;
 
         public AudioMetaDataHelper AudioMetaDataHelper
         {
@@ -72,8 +45,31 @@ namespace Roadie.Library.FilePlugins
             }
         }
 
+        public LastFmHelper LastFmHelper
+        {
+            get
+            {
+                return this._lastFmHelper ?? (this._lastFmHelper = new LastFmHelper(this.Configuration, this.CacheManager, this.Logger));
+            }
+            set
+            {
+                this._lastFmHelper = value;
+            }
+        }
 
-        public Audio(IConfiguration configuration, 
+        public MusicBrainzProvider MusicBrainzProvider
+        {
+            get
+            {
+                return this._musicBrainzProvider ?? (this._musicBrainzProvider = new MusicBrainzProvider(this.Configuration, this.CacheManager, this.Logger));
+            }
+            set
+            {
+                this._musicBrainzProvider = value;
+            }
+        }
+
+        public Audio(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             ArtistFactory artistFactory,
             ReleaseFactory releaseFactory,
@@ -168,7 +164,7 @@ namespace Roadie.Library.FilePlugins
                             var imageBytes = File.ReadAllBytes(i.FullName);
                             imageBytes = ImageHelper.ConvertToJpegFormat(imageBytes);
 
-                            // Move cover to release folder 
+                            // Move cover to release folder
                             if (!doJustInfo)
                             {
                                 File.WriteAllBytes(coverFileName, imageBytes);
@@ -237,6 +233,24 @@ namespace Roadie.Library.FilePlugins
             return result;
         }
 
+        private async Task<string> DetermineArtistFolder(string destinationRoot, AudioMetaData metaData, bool doJustInfo)
+        {
+            var artist = await this.ArtistFactory.GetByName(metaData, !doJustInfo);
+            if (!artist.IsSuccess)
+            {
+                return null;
+            }
+            try
+            {
+                return artist.Data.ArtistFileFolder(this.Configuration, destinationRoot);
+            }
+            catch (Exception ex)
+            {
+                this._loggingService.Error(ex, ex.Serialize());
+            }
+            return null;
+        }
+
         private async Task<string> DetermineReleaseFolder(string artistFolder, AudioMetaData metaData, bool doJustInfo, int? submissionId)
         {
             var artist = await this.ArtistFactory.GetByName(metaData, !doJustInfo);
@@ -253,24 +267,6 @@ namespace Roadie.Library.FilePlugins
             this._releaseId = release.Data.RoadieId;
             release.Data.ReleaseDate = SafeParser.ToDateTime(metaData.Year);
             return release.Data.ReleaseFileFolder(artistFolder);
-        }
-
-        private async Task<string> DetermineArtistFolder(string destinationRoot, AudioMetaData metaData, bool doJustInfo)
-        {
-            var artist = await this.ArtistFactory.GetByName(metaData, !doJustInfo);
-            if (!artist.IsSuccess)
-            {
-                return null;
-            }
-            try
-            {
-                return artist.Data.ArtistFileFolder(this.Configuration,destinationRoot);
-            }
-            catch (Exception ex)
-            {
-                this._loggingService.Error(ex, ex.Serialize());
-            }
-            return null;
         }
     }
 }

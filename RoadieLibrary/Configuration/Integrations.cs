@@ -1,68 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Roadie.Library.Setttings
+namespace Roadie.Library.Configuration
 {
     public class Integrations
     {
-        private bool _lastFmEnabled = true;
-        private bool _discogsEnabled = true;
-
-        private string _lastFMApiKey = null;
-        private string _lastFMSecret = null;
-
         private string _discogsConsumerKey = null;
         private string _discogsConsumerSecret = null;
-
-        public string LastFMApiKey
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(this._lastFMApiKey))
-                {
-                    // TODO
-                    //var keySetting = SettingsHelper.Instance.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey");
-                    //if (keySetting != null)
-                    //{
-                    //    this._lastFMApiKey = keySetting.Key;
-                    //    this._lastFMSecret = keySetting.Secret;
-                    //}
-                    //else
-                    //{
-                    //    Trace.WriteLine("Unable To Find Api Key with Key Name of 'LastFMApiKey', Last FM Integration Disabled");
-                    //}
-                }
-                return this._lastFMApiKey;
-            }
-
-        }
-
-        public string LastFmApiSecret
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(this._lastFMSecret))
-                {
-                    // TODO
-                    //var keySetting = SettingsHelper.Instance.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey");
-                    //if (keySetting != null)
-                    //{
-                    //    this._lastFMApiKey = keySetting.Key;
-                    //    this._lastFMSecret = keySetting.Secret;
-                    //}
-                    //else
-                    //{
-                    //    Trace.WriteLine("Unable To Find Api Key with Key Name of 'LastFMApiKey', Last FM Integration Disabled");
-                    //}
-                }
-                return this._lastFMSecret;
-            }
-
-        }
+        private bool _discogsEnabled = true;
+        private string _lastFMApiKey = null;
+        private bool _lastFmEnabled = true;
+        private string _lastFMSecret = null;
+        public List<ApiKey> ApiKeys { get; set; }
 
         public string DiscogsConsumerKey
         {
@@ -70,21 +20,19 @@ namespace Roadie.Library.Setttings
             {
                 if (string.IsNullOrEmpty(this._discogsConsumerKey))
                 {
-                    // TODO
-                    //var keySetting = SettingsHelper.Instance.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey");
-                    //if (keySetting != null)
-                    //{
-                    //    this._discogsConsumerKey = keySetting.Key;
-                    //    this._discogsConsumerSecret = keySetting.Secret;
-                    //}
-                    //else
-                    //{
-                    //    Trace.WriteLine("Unable To Find Api Key with Key Name of 'DiscogsConsumerKey', Discogs Integration Disabled");
-                    //}
+                    var keySetting = this.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey");
+                    if (keySetting != null)
+                    {
+                        this._discogsConsumerKey = keySetting.Key;
+                        this._discogsConsumerSecret = keySetting.KeySecret;
+                    }
+                    else
+                    {
+                        Trace.WriteLine("Unable To Find Api Key with Key Name of 'DiscogsConsumerKey', Discogs Integration Disabled");
+                    }
                 }
                 return this._discogsConsumerKey;
             }
-
         }
 
         public string DiscogsConsumerSecret
@@ -93,34 +41,26 @@ namespace Roadie.Library.Setttings
             {
                 if (string.IsNullOrEmpty(this._discogsConsumerSecret))
                 {
-                    // TODO
-                    //var keySetting = SettingsHelper.Instance.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey");
-                    //if (keySetting != null)
-                    //{
-                    //    this._discogsConsumerKey = keySetting.Key;
-                    //    this._discogsConsumerSecret = keySetting.Secret;
-                    //}
-                    //else
-                    //{
-                    //    Trace.WriteLine("Unable To Find Api Key with Key Name of 'DiscogsConsumerKey', Discogs Integration Disabled");
-                    //}
+                    var keySetting = this.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey");
+                    if (keySetting != null)
+                    {
+                        this._discogsConsumerKey = keySetting.Key;
+                        this._discogsConsumerSecret = keySetting.KeySecret;
+                    }
+                    else
+                    {
+                        Trace.WriteLine("Unable To Find Api Key with Key Name of 'DiscogsConsumerKey', Discogs Integration Disabled");
+                    }
                 }
                 return this._discogsConsumerSecret;
             }
-
         }
 
-        public short? DiscogsReadWriteTimeout { get; set; }
-        public short? DiscogsTimeout { get; set; }
-
-        public bool ITunesProviderEnabled { get; set; }
-        public bool MusicBrainzProviderEnabled { get; set; }
-        public bool SpotifyProviderEnabled { get; set; }
         public bool DiscogsProviderEnabled
         {
             get
             {
-                if(string.IsNullOrEmpty(this.DiscogsConsumerKey) || string.IsNullOrEmpty(this.DiscogsConsumerSecret))
+                if (string.IsNullOrEmpty(this.DiscogsConsumerKey) || string.IsNullOrEmpty(this.DiscogsConsumerSecret))
                 {
                     return false;
                 }
@@ -129,6 +69,54 @@ namespace Roadie.Library.Setttings
             set
             {
                 this._discogsEnabled = value;
+            }
+        }
+
+        public short? DiscogsReadWriteTimeout { get; set; }
+
+        public short? DiscogsTimeout { get; set; }
+
+        public bool ITunesProviderEnabled { get; set; }
+
+        public string LastFMApiKey
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this._lastFMApiKey))
+                {
+                    var keySetting = this.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey");
+                    if (keySetting != null)
+                    {
+                        this._lastFMApiKey = keySetting.Key;
+                        this._lastFMSecret = keySetting.KeySecret;
+                    }
+                    else
+                    {
+                        Trace.WriteLine("Unable To Find Api Key with Key Name of 'LastFMApiKey', Last FM Integration Disabled");
+                    }
+                }
+                return this._lastFMApiKey;
+            }
+        }
+
+        public string LastFmApiSecret
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this._lastFMSecret))
+                {
+                    var keySetting = this.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey");
+                    if (keySetting != null)
+                    {
+                        this._lastFMApiKey = keySetting.Key;
+                        this._lastFMSecret = keySetting.KeySecret;
+                    }
+                    else
+                    {
+                        Trace.WriteLine("Unable To Find Api Key with Key Name of 'LastFMApiKey', Last FM Integration Disabled");
+                    }
+                }
+                return this._lastFMSecret;
             }
         }
 
@@ -148,12 +136,7 @@ namespace Roadie.Library.Setttings
             }
         }
 
-        public Integrations()
-        {
-            this.ITunesProviderEnabled = true;
-            this.MusicBrainzProviderEnabled = true;
-            this.SpotifyProviderEnabled = true;
-
-        }
+        public bool MusicBrainzProviderEnabled { get; set; }
+        public bool SpotifyProviderEnabled { get; set; }
     }
 }

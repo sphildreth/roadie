@@ -1,22 +1,46 @@
-﻿using Microsoft.Extensions.Configuration;
-using Roadie.Library.Caching;
+﻿using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Logging;
-using Roadie.Library.Setttings;
-using System.Net;
 
 namespace Roadie.Library.MetaData
 {
     public abstract class MetaDataProviderBase
     {
-        protected readonly IConfiguration _configuration = null;
         protected readonly ICacheManager _cacheManager = null;
+        protected readonly IRoadieSettings _configuration = null;
         protected readonly ILogger _loggingService = null;
+
+        protected ApiKey _apiKey = null;
+
+        public virtual bool IsEnabled
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        protected ApiKey ApiKey
+        {
+            get
+            {
+                return this._apiKey;
+            }
+        }
 
         protected ICacheManager CacheManager
         {
             get
             {
                 return this._cacheManager;
+            }
+        }
+
+        protected IRoadieSettings Configuration
+        {
+            get
+            {
+                return this._configuration;
             }
         }
 
@@ -28,24 +52,7 @@ namespace Roadie.Library.MetaData
             }
         }
 
-        protected IConfiguration Configuration
-        {
-            get
-            {
-                return this._configuration;
-            }
-        }
-
-        protected ApiKey _apiKey = null;
-        protected ApiKey ApiKey
-        {
-            get
-            {
-                return this._apiKey;
-            }
-        }
-
-        public MetaDataProviderBase(IConfiguration configuration, ICacheManager cacheManager, ILogger loggingService)
+        public MetaDataProviderBase(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService)
         {
             this._configuration = configuration;
             this._cacheManager = cacheManager;
@@ -57,15 +64,6 @@ namespace Roadie.Library.MetaData
             {
                 return true; // **** Always accept
             };
-
-        }
-
-        public virtual bool IsEnabled
-        {
-            get
-            {
-                return true;
-            }
         }
     }
 }

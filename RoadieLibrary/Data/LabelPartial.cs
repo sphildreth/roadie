@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Roadie.Library.Data
 {
@@ -14,6 +12,7 @@ namespace Roadie.Library.Data
                 return string.Format("urn:label:{0}", this.RoadieId);
             }
         }
+
         public string Etag
         {
             get
@@ -24,6 +23,7 @@ namespace Roadie.Library.Data
                 }
             }
         }
+
         public bool IsValid
         {
             get

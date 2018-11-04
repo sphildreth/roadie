@@ -1,27 +1,20 @@
 ﻿using Roadie.Library.Caching;
-using MySql.Data.MySqlClient;
-using Roadie.Library.Enums;
-using Roadie.Library.Extensions;
-using Roadie.Library.Imaging;
-using Roadie.Library.Processors;
-using Roadie.Library.Utility;
+using Roadie.Library.Configuration;
+using Roadie.Library.Data;
+using Roadie.Library.Encoding;
 using Roadie.Library.Logging;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Roadie.Library.Data;
-using Microsoft.Extensions.Configuration;
-using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Factories
 {
     public class PlaylistFactory : FactoryBase
     {
-        public PlaylistFactory(IConfiguration configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger) : base(configuration, context, cacheManager, logger, httpEncoder)
+        public PlaylistFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
+            : base(configuration, context, cacheManager, logger, httpEncoder)
         {
         }
 
@@ -74,7 +67,7 @@ namespace Roadie.Library.Factories
             if (playlist != null)
             {
                 var looper = 0;
-                foreach(var playlistTrack in this.DbContext.PlaylistTracks.Where(x => x.PlayListId == playlist.Id).OrderBy(x => x.CreatedDate))
+                foreach (var playlistTrack in this.DbContext.PlaylistTracks.Where(x => x.PlayListId == playlist.Id).OrderBy(x => x.CreatedDate))
                 {
                     looper++;
                     playlistTrack.ListNumber = looper;
@@ -89,9 +82,6 @@ namespace Roadie.Library.Factories
                 IsSuccess = result,
                 Data = result
             };
-
         }
-
-
     }
 }

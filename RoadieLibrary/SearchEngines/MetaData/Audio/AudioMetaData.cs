@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Roadie.Library.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using Roadie.Library.Extensions;
 using System.IO;
+using System.Linq;
 
 namespace Roadie.Library.MetaData.Audio
 {
@@ -13,33 +13,24 @@ namespace Roadie.Library.MetaData.Audio
     {
         public const char ArtistSplitCharacter = '/';
 
+        public const int MinimumYearValue = 1900;
+        public const string SoundTrackArtist = "Sound Tracks";
+        private string _artist = null;
         private bool _doModifyArtistNameOnGet = true;
 
+        /// <summary>
+        /// TIT2
+        /// </summary>
+        private string _title = null;
+
         private string _trackArtist = null;
-        private string _artist = null;
-
-        public const string SoundTrackArtist = "Sound Tracks";
-        public const int MinimumYearValue = 1900;
 
         /// <summary>
-        /// Full filename to the file used to get this AudioMetaData
+        /// TYER
         /// </summary>
-        public string Filename { get; set; }
+        private int? _year = null;
 
-        /// <summary>
-        /// Directory holding file used to get this AudioMetaData
-        /// </summary>
-        public string Directory
-        {
-            get
-            {
-                if(string.IsNullOrEmpty(this.Filename))
-                {
-                    return null;
-                }
-                return Path.GetDirectoryName(this.Filename);
-            }
-        }
+        public string AmgId { get; set; }
 
         /// <summary>
         /// TPE1 First Lead Artist
@@ -67,13 +58,10 @@ namespace Roadie.Library.MetaData.Audio
             }
         }
 
-        public ICollection<string> Genres { get; set; }
-
-        public string ArtistRaw { get; set; }       
-          
+        public string ArtistRaw { get; set; }
 
         /// <summary>
-        /// TPE1 All Lead Artists       
+        /// TPE1 All Lead Artists
         /// <seealso cref="http://id3.org/id3v2.3.0"/>
         /// </summary>
         /// <remarks>Per ID3.Org Spec: The 'Lead artist(s)/Lead performer(s)/Soloist(s)/Performing group' is used for the main artist(s). They are seperated with the "/" character.</remarks>
@@ -81,11 +69,11 @@ namespace Roadie.Library.MetaData.Audio
         {
             get
             {
-                if(string.IsNullOrEmpty(this._artist))
+                if (string.IsNullOrEmpty(this._artist))
                 {
                     return new string[0];
                 }
-                if(!this._artist.Contains(AudioMetaData.ArtistSplitCharacter.ToString()))
+                if (!this._artist.Contains(AudioMetaData.ArtistSplitCharacter.ToString()))
                 {
                     return new string[0];
                 }
@@ -93,162 +81,9 @@ namespace Roadie.Library.MetaData.Audio
             }
         }
 
-        /// <summary>
-        /// TOPE First Contributing Artist
-        /// </summary>
-        public string TrackArtist
-        {
-            get
-            {
-                if (!string.IsNullOrEmpty(this._trackArtist) && this._trackArtist.Contains(AudioMetaData.ArtistSplitCharacter.ToString()))
-                {
-                    return this._trackArtist.Split(AudioMetaData.ArtistSplitCharacter).First().ToTitleCase();
-                }
-                if(!string.IsNullOrEmpty(this._artist) || !string.IsNullOrEmpty(this._trackArtist))
-                {
-                    return !this._artist.Equals(this._trackArtist, StringComparison.OrdinalIgnoreCase) ? this._trackArtist : null;
-                }
-                return null;
-            }
-            set
-            {
-                this._trackArtist = value;
-                if (!string.IsNullOrEmpty(this._trackArtist))
-                {
-                    this._trackArtist = this._trackArtist.Replace(';', AudioMetaData.ArtistSplitCharacter).ToTitleCase();
-                }
-            }
-        }
-
-        public string TrackArtistRaw { get; set; }
-
-
-        /// <summary>
-        /// TOPE All Contributing Artists
-        /// </summary>
-        /// <remarks>Per ID3.Org Spec: They are seperated with the "/" character.</remarks>
-        public IEnumerable<string> TrackArtists
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(this._trackArtist))
-                {
-                    return new string[0];
-                }
-                if (!this._trackArtist.Contains(AudioMetaData.ArtistSplitCharacter.ToString()))
-                {
-                    return new string[1] { this.TrackArtist };
-                }
-                if (!string.IsNullOrEmpty(this._artist) || !string.IsNullOrEmpty(this._trackArtist))
-                {
-                    if(!this._artist.Equals(this._trackArtist, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this._trackArtist.Split(AudioMetaData.ArtistSplitCharacter).Select(x => x.ToTitleCase()).ToArray();
-                    }
-                }
-                return new string[0];
-            }
-        }
-
-        
-
-        /// <summary>
-        /// TALB
-        /// </summary>
-        public string Release { get; set; }
-
-        /// <summary>
-        /// TIT2
-        /// </summary>
-        private string _title = null;
-
-        public string Title
-        {
-            get
-            {
-                return this.SpecialTitle ?? this._title;
-            }
-            set
-            {
-                this._title = value;
-                if (IsSoundTrack)
-                {
-                    this.Artist = AudioMetaData.SoundTrackArtist;
-                }
-            }
-        }
-
-        public string SpecialTitle { get; set; }
-
-        /// <summary>
-        /// TYER
-        /// </summary>
-        private int? _year = null;
-
-        public int? Year
-        {
-            get
-            {
-                return this._year;
-            }
-            set
-            {
-                this._year = value < AudioMetaData.MinimumYearValue ? null : value;
-            }
-        }
-
-        /// <summary>
-        /// TPOS
-        /// </summary>
-        public int? Disk { get; set; }
-
-        /// <summary>
-        /// TRCK
-        /// </summary>
-        public short? TrackNumber { get; set; }
-
-        /// <summary>
-        /// TRCK 0[/OptionalElements]
-        /// </summary>
-        public int? TotalTrackNumbers { get; set; }
-
         public int? AudioBitrate { get; set; }
 
         public int? AudioChannels { get; set; }
-
-        public int? AudioSampleRate { get; set; }
-
-        public string ReleaseMusicBrainzId { get; set; }
-
-        public string ReleaseLastFmId { get; set; }
-
-        public string LastFmId { get; set; }
-
-        public string MusicBrainzId { get; set; }
-        public string AmgId { get; set; }
-
-        public string SpotifyId { get; set; }
-
-        /// <summary>
-        /// TIME
-        /// </summary>
-        public TimeSpan? Time { get; set; }
-
-        public ulong? SampleLength { get; set; }
-
-        public IEnumerable<AudioMetaDataImage> Images { get; set; }
-
-        public double TotalSeconds
-        {
-            get
-            {
-                if (this.Time == null)
-                {
-                    return 0;
-                }
-                return this.Time.Value.TotalSeconds;
-            }
-        }
 
         public AudioMetaDataWeights AudioMetaDataWeights
         {
@@ -279,11 +114,51 @@ namespace Roadie.Library.MetaData.Audio
             }
         }
 
-        public int ValidWeight
+        public int? AudioSampleRate { get; set; }
+
+        /// <summary>
+        /// Directory holding file used to get this AudioMetaData
+        /// </summary>
+        public string Directory
         {
             get
             {
-                return (int)this.AudioMetaDataWeights;
+                if (string.IsNullOrEmpty(this.Filename))
+                {
+                    return null;
+                }
+                return Path.GetDirectoryName(this.Filename);
+            }
+        }
+
+        /// <summary>
+        /// TPOS
+        /// </summary>
+        public int? Disk { get; set; }
+
+        /// <summary>
+        /// Full filename to the file used to get this AudioMetaData
+        /// </summary>
+        public string Filename { get; set; }
+
+        public ICollection<string> Genres { get; set; }
+        public IEnumerable<AudioMetaDataImage> Images { get; set; }
+
+        public string ISRC { get; internal set; }
+
+        public bool IsSoundTrack
+        {
+            get
+            {
+                if (this.Genres != null && this.Genres.Any())
+                {
+                    var soundtrackGenres = new List<string> { "24", "soundtrack" };
+                    if (this.Genres.Intersect(soundtrackGenres, StringComparer.OrdinalIgnoreCase).Any())
+                    {
+                        return true;
+                    }
+                }
+                return false;
             }
         }
 
@@ -313,6 +188,144 @@ namespace Roadie.Library.MetaData.Audio
             }
         }
 
+        public string LastFmId { get; set; }
+
+        public string MusicBrainzId { get; set; }
+
+        /// <summary>
+        /// TALB
+        /// </summary>
+        public string Release { get; set; }
+
+        public string ReleaseLastFmId { get; set; }
+
+        public string ReleaseMusicBrainzId { get; set; }
+
+        public ulong? SampleLength { get; set; }
+
+        public string SpecialTitle { get; set; }
+
+        public string SpotifyId { get; set; }
+
+        /// <summary>
+        /// TIME
+        /// </summary>
+        public TimeSpan? Time { get; set; }
+
+        public string Title
+        {
+            get
+            {
+                return this.SpecialTitle ?? this._title;
+            }
+            set
+            {
+                this._title = value;
+                if (IsSoundTrack)
+                {
+                    this.Artist = AudioMetaData.SoundTrackArtist;
+                }
+            }
+        }
+
+        public double TotalSeconds
+        {
+            get
+            {
+                if (this.Time == null)
+                {
+                    return 0;
+                }
+                return this.Time.Value.TotalSeconds;
+            }
+        }
+
+        /// <summary>
+        /// TRCK 0[/OptionalElements]
+        /// </summary>
+        public int? TotalTrackNumbers { get; set; }
+
+        /// <summary>
+        /// TOPE First Contributing Artist
+        /// </summary>
+        public string TrackArtist
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(this._trackArtist) && this._trackArtist.Contains(AudioMetaData.ArtistSplitCharacter.ToString()))
+                {
+                    return this._trackArtist.Split(AudioMetaData.ArtistSplitCharacter).First().ToTitleCase();
+                }
+                if (!string.IsNullOrEmpty(this._artist) || !string.IsNullOrEmpty(this._trackArtist))
+                {
+                    return !this._artist.Equals(this._trackArtist, StringComparison.OrdinalIgnoreCase) ? this._trackArtist : null;
+                }
+                return null;
+            }
+            set
+            {
+                this._trackArtist = value;
+                if (!string.IsNullOrEmpty(this._trackArtist))
+                {
+                    this._trackArtist = this._trackArtist.Replace(';', AudioMetaData.ArtistSplitCharacter).ToTitleCase();
+                }
+            }
+        }
+
+        public string TrackArtistRaw { get; set; }
+
+        /// <summary>
+        /// TOPE All Contributing Artists
+        /// </summary>
+        /// <remarks>Per ID3.Org Spec: They are seperated with the "/" character.</remarks>
+        public IEnumerable<string> TrackArtists
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this._trackArtist))
+                {
+                    return new string[0];
+                }
+                if (!this._trackArtist.Contains(AudioMetaData.ArtistSplitCharacter.ToString()))
+                {
+                    return new string[1] { this.TrackArtist };
+                }
+                if (!string.IsNullOrEmpty(this._artist) || !string.IsNullOrEmpty(this._trackArtist))
+                {
+                    if (!this._artist.Equals(this._trackArtist, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this._trackArtist.Split(AudioMetaData.ArtistSplitCharacter).Select(x => x.ToTitleCase()).ToArray();
+                    }
+                }
+                return new string[0];
+            }
+        }
+
+        /// <summary>
+        /// TRCK
+        /// </summary>
+        public short? TrackNumber { get; set; }
+
+        public int ValidWeight
+        {
+            get
+            {
+                return (int)this.AudioMetaDataWeights;
+            }
+        }
+
+        public int? Year
+        {
+            get
+            {
+                return this._year;
+            }
+            set
+            {
+                this._year = value < AudioMetaData.MinimumYearValue ? null : value;
+            }
+        }
+
         public AudioMetaData()
         {
             this.Images = new AudioMetaDataImage[0];
@@ -325,12 +338,12 @@ namespace Roadie.Library.MetaData.Audio
             {
                 return false;
             }
-            return item.GetHashCode() == this.GetHashCode();            
+            return item.GetHashCode() == this.GetHashCode();
         }
 
         public override int GetHashCode()
         {
-            unchecked 
+            unchecked
             {
                 int hash = 17;
                 hash = hash * 23 + this.Artist.GetHashCode();
@@ -366,23 +379,5 @@ namespace Roadie.Library.MetaData.Audio
                                   this.IsSoundTrack ? " [SoundTrack ]" : string.Empty,
                                   this.Time == null ? "-" : this.Time.Value.ToString());
         }
-
-        public bool IsSoundTrack
-        {
-            get
-            {
-                if (this.Genres != null && this.Genres.Any())
-                {
-                    var soundtrackGenres = new List<string> { "24", "soundtrack" };
-                    if (this.Genres.Intersect(soundtrackGenres, StringComparer.OrdinalIgnoreCase).Any())
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
-
-        public string ISRC { get; internal set; }
     }
 }

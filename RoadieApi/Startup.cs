@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OData.Edm;
 using Newtonsoft.Json;
-using Roadie.Library.Setttings;
+using Roadie.Library.Configuration;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Data;
@@ -89,21 +89,21 @@ namespace Roadie.Api
 
             services.AddSingleton<IHttpEncoder, HttpEncoder>();
 
-            services.AddSingleton<IRoadieSettings, RoadieSettings>(options =>
-            {
-                var settingsPath = Path.Combine(AssemblyDirectory, "settings.json");
-                var settings = new RoadieSettings();
-                if (File.Exists(settingsPath))
-                {
-                    var settingsFileContents = File.ReadAllText(settingsPath);
-                    var fromSettingsFile = Newtonsoft.Json.JsonConvert.DeserializeObject<RoadieSettings>(settingsFileContents);
-                    if (fromSettingsFile != null)
-                    {
-                        settings.MergeWith(fromSettingsFile);
-                    }
-                }
-                return settings;
-            });
+            //services.AddSingleton<IRoadieSettings, RoadieSettings>(options =>
+            //{
+            //    var settingsPath = Path.Combine(AssemblyDirectory, "settings.json");
+            //    var settings = new RoadieSettings();
+            //    if (File.Exists(settingsPath))
+            //    {
+            //        var settingsFileContents = File.ReadAllText(settingsPath);
+            //        var fromSettingsFile = Newtonsoft.Json.JsonConvert.DeserializeObject<RoadieSettings>(settingsFileContents);
+            //        if (fromSettingsFile != null)
+            //        {
+            //            settings.MergeWith(fromSettingsFile);
+            //        }
+            //    }
+            //    return settings;
+            //});
 
             var cacheManager = new MemoryCacheManager(this._loggerFactory.CreateLogger<MemoryCacheManager>(), new CachePolicy(TimeSpan.FromHours(1)));
             services.AddSingleton<ICacheManager>(cacheManager);

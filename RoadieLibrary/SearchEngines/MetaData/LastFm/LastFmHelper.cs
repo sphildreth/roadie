@@ -1,19 +1,18 @@
-﻿using Roadie.Library.Caching;
-using IF.Lastfm.Core.Api;
+﻿using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Objects;
 using RestSharp;
+using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
+using Roadie.Library.Logging;
+using Roadie.Library.MetaData.Audio;
 using Roadie.Library.SearchEngines.MetaData;
 using Roadie.Library.SearchEngines.MetaData.LastFm;
 using Roadie.Library.Utility;
-using Roadie.Library.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Roadie.Library.MetaData.Audio;
-using Roadie.Library.Setttings;
 
 namespace Roadie.Library.MetaData.LastFm
 {
@@ -23,14 +22,16 @@ namespace Roadie.Library.MetaData.LastFm
         {
             get
             {
-                return this.Configuration.GetValue<bool>("Integrations:LastFmProviderEnabled", true) &&
-                       !string.IsNullOrEmpty(this.ApiKey.Key);
+                // TODO
+                //  return this.Configuration.GetValue<bool>("Integrations:LastFmProviderEnabled", true) &&
+                //         !string.IsNullOrEmpty(this.ApiKey.Key);
+                return false;
             }
         }
 
-        public LastFmHelper(IConfiguration configuration, ICacheManager cacheManager, ILogger loggingService) : base(configuration, cacheManager, loggingService)
+        public LastFmHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService) : base(configuration, cacheManager, loggingService)
         {
-            this._apiKey = configuration.GetValue<List<ApiKey>>("ApiKeys", new List<ApiKey>()).FirstOrDefault(x => x.ApiName == "LastFMApiKey") ?? new ApiKey();
+            this._apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey") ?? new ApiKey();
         }
 
         public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
@@ -38,7 +39,7 @@ namespace Roadie.Library.MetaData.LastFm
             try
             {
                 this.Logger.Trace("LastFmHelper:PerformArtistSearch:{0}", query);
-                var auth = new LastAuth(this.ApiKey.Key, this.ApiKey.Secret);
+                var auth = new LastAuth(this.ApiKey.Key, this.ApiKey.KeySecret);
                 var albumApi = new ArtistApi(auth);
                 var response = await albumApi.GetInfoAsync(query);
                 if (!response.Success)
@@ -57,7 +58,7 @@ namespace Roadie.Library.MetaData.LastFm
                 {
                     result.Tags = lastFmArtist.Tags.Select(x => x.Name).ToList();
                 }
-                if (lastFmArtist.MainImage != null && (lastFmArtist.MainImage.ExtraLarge != null || lastFmArtist.MainImage.Large != null ))
+                if (lastFmArtist.MainImage != null && (lastFmArtist.MainImage.ExtraLarge != null || lastFmArtist.MainImage.Large != null))
                 {
                     result.ArtistThumbnailUrl = (lastFmArtist.MainImage.ExtraLarge ?? lastFmArtist.MainImage.Large).ToString();
                 }
@@ -70,12 +71,12 @@ namespace Roadie.Library.MetaData.LastFm
                     IsSuccess = response.Success,
                     Data = new List<ArtistSearchResult> { result }
                 };
-        }
+            }
             catch (Exception ex)
             {
                 this.Logger.Error(ex, ex.Serialize());
             }
-            return new OperationResult<IEnumerable<ArtistSearchResult>>();                       
+            return new OperationResult<IEnumerable<ArtistSearchResult>>();
         }
 
         public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
@@ -150,7 +151,7 @@ namespace Roadie.Library.MetaData.LastFm
                 {
                     try
                     {
-                        var auth = new LastAuth(this.ApiKey.Key, this.ApiKey.Secret);
+                        var auth = new LastAuth(this.ApiKey.Key, this.ApiKey.KeySecret);
                         var albumApi = new AlbumApi(auth); // this is an unauthenticated call to the API
                         var response = await albumApi.GetInfoAsync(artist, Release);
                         releaseInfo = response.Content;

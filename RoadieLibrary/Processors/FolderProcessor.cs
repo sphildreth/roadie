@@ -1,24 +1,25 @@
 ﻿using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
+using Roadie.Library.Data;
+using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
 using Roadie.Library.FilePlugins;
-using Roadie.Library.Utility;
 using Roadie.Library.Logging;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Roadie.Library.Data;
-using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Processors
 {
     public sealed class FolderProcessor : ProcessorBase
     {
         private readonly FileProcessor _fileProcessor;
+        public int? ProcessLimit { get; set; }
+
         private FileProcessor FileProcessor
         {
             get
@@ -26,13 +27,26 @@ namespace Roadie.Library.Processors
                 return this._fileProcessor;
             }
         }
-        public int? ProcessLimit { get; set; }
 
-        public FolderProcessor(IConfiguration configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger loggingService) 
+        public FolderProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger loggingService)
             : base(configuration, httpEncoder, destinationRoot, context, cacheManager, loggingService)
         {
             SimpleContract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(destinationRoot), "Invalid Destination Folder");
             this._fileProcessor = new FileProcessor(configuration, httpEncoder, destinationRoot, context, cacheManager, loggingService);
+        }
+
+        public OperationResult<bool> DeleteEmptyFolders(DirectoryInfo processingFolder)
+        {
+            var result = new OperationResult<bool>();
+            try
+            {
+                result.IsSuccess = FolderPathHelper.DeleteEmptyFolders(processingFolder);
+            }
+            catch (Exception ex)
+            {
+                this.LoggingService.Error(ex, string.Format("Error Deleting Empty Folder [{0}] Error [{1}]", processingFolder.FullName, ex.Serialize()));
+            }
+            return result;
         }
 
         public async Task<OperationResult<bool>> Process(DirectoryInfo inboundFolder, bool doJustInfo, int? submissionId = null)
@@ -47,13 +61,13 @@ namespace Roadie.Library.Processors
             foreach (var file in Directory.EnumerateFiles(inboundFolder.FullName, "*.*", SearchOption.AllDirectories).ToArray())
             {
                 var operation = await this.FileProcessor.Process(file, doJustInfo);
-                if(operation != null && operation.AdditionalData != null && operation.AdditionalData.ContainsKey(PluginResultInfo.AdditionalDataKeyPluginResultInfo))
+                if (operation != null && operation.AdditionalData != null && operation.AdditionalData.ContainsKey(PluginResultInfo.AdditionalDataKeyPluginResultInfo))
                 {
                     pluginResultInfos.Add(operation.AdditionalData[PluginResultInfo.AdditionalDataKeyPluginResultInfo] as PluginResultInfo);
                 }
-                if(operation == null)
+                if (operation == null)
                 {
-                    var fileExtensionsToDelete = this.Configuration.GetValue<string[]>("FileExtensionsToDelete", new string[0]);
+                    var fileExtensionsToDelete = this.Configuration.FileExtensionsToDelete;
                     if (fileExtensionsToDelete.Any(x => x.Equals(Path.GetExtension(file), StringComparison.OrdinalIgnoreCase)))
                     {
                         if (!doJustInfo)
@@ -90,34 +104,6 @@ namespace Roadie.Library.Processors
         }
 
         /// <summary>
-        /// Perform any operations to the given folder before processing
-        /// </summary>
-        private bool PrePrecessFolder(DirectoryInfo inboundFolder, bool doJustInfo = false)
-        {
-            // If Folder name starts with "~" then remove the tilde and set all files in the folder artist to the folder name
-            if (this.Configuration.GetValue<bool>("Processing:DoFolderArtistNameSet", true) && inboundFolder.Name.StartsWith("~"))
-            {
-                var artist = inboundFolder.Name.Replace("~", "");
-                this.LoggingService.Info("Setting Folder File Tags To [{0}]", artist);
-                if (!doJustInfo)
-                {
-                    foreach (var file in inboundFolder.GetFiles("*.*", SearchOption.AllDirectories))
-                    {
-                        var extension = file.Extension.ToLower();
-                        if (extension.Equals(".mp3") || extension.Equals(".flac"))
-                        {
-                            var tagFile = TagLib.File.Create(file.FullName);
-                            tagFile.Tag.Performers = null;
-                            tagFile.Tag.Performers = new[] { artist };
-                            tagFile.Save();
-                        }
-                    }
-                }
-            }
-            return true;
-        }
-
-        /// <summary>
         /// Perform any operations to the given folder and the plugin results after processing
         /// </summary>
         private async Task<bool> PostProcessFolder(DirectoryInfo inboundFolder, IEnumerable<PluginResultInfo> pluginResults, bool doJustInfo)
@@ -142,19 +128,32 @@ namespace Roadie.Library.Processors
             return true;
         }
 
-        public OperationResult<bool> DeleteEmptyFolders(DirectoryInfo processingFolder)
+        /// <summary>
+        /// Perform any operations to the given folder before processing
+        /// </summary>
+        private bool PrePrecessFolder(DirectoryInfo inboundFolder, bool doJustInfo = false)
         {
-            var result = new OperationResult<bool>();
-            try
+            // If Folder name starts with "~" then remove the tilde and set all files in the folder artist to the folder name
+            if (this.Configuration.Processing.DoFolderArtistNameSet && inboundFolder.Name.StartsWith("~"))
             {
-                result.IsSuccess = FolderPathHelper.DeleteEmptyFolders(processingFolder);
+                var artist = inboundFolder.Name.Replace("~", "");
+                this.LoggingService.Info("Setting Folder File Tags To [{0}]", artist);
+                if (!doJustInfo)
+                {
+                    foreach (var file in inboundFolder.GetFiles("*.*", SearchOption.AllDirectories))
+                    {
+                        var extension = file.Extension.ToLower();
+                        if (extension.Equals(".mp3") || extension.Equals(".flac"))
+                        {
+                            var tagFile = TagLib.File.Create(file.FullName);
+                            tagFile.Tag.Performers = null;
+                            tagFile.Tag.Performers = new[] { artist };
+                            tagFile.Save();
+                        }
+                    }
+                }
             }
-            catch (Exception ex)
-            {
-                this.LoggingService.Error(ex, string.Format("Error Deleting Empty Folder [{0}] Error [{1}]", processingFolder.FullName, ex.Serialize()));
-            }
-            return result;
+            return true;
         }
-
     }
 }

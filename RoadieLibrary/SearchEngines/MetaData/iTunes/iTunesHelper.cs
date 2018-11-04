@@ -1,10 +1,10 @@
 ﻿using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
+using Roadie.Library.Logging;
 using Roadie.Library.MetaData;
 using Roadie.Library.SearchEngines.Imaging;
-using Roadie.Library.Logging;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 
 namespace Roadie.Library.SearchEngines.MetaData.iTunes
 {
@@ -16,11 +16,11 @@ namespace Roadie.Library.SearchEngines.MetaData.iTunes
         {
             get
             {
-                return this.Configuration.GetValue<bool>("Integrations:ITunesProviderEnabled", true);
+                return this.Configuration.Integrations.ITunesProviderEnabled;
             }
         }
 
-        public iTunesHelper(IConfiguration configuration, ICacheManager cacheManager, ILogger loggingService) 
+        public iTunesHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService)
             : base(configuration, cacheManager, loggingService)
         {
             this._iTunesSearchEngine = new ITunesSearchEngine(configuration, cacheManager, loggingService);

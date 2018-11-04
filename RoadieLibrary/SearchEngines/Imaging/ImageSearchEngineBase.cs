@@ -1,41 +1,22 @@
 ﻿using RestSharp;
-using Roadie.Library.Utility;
+using Roadie.Library.Configuration;
 using Roadie.Library.Logging;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Roadie.Library.Setttings;
 
 namespace Roadie.Library.SearchEngines.Imaging
 {
     public abstract class ImageSearchEngineBase : IImageSearchEngine
     {
-        protected readonly string _requestIp = null;
-        protected readonly string _referrer = null;
         protected readonly RestClient _client = null;
-
-        protected ILogger _loggingService = null;
-        protected ILogger LoggingService
-        {
-            get
-            {
-                return this._loggingService;
-            }
-        }
-
-        protected readonly IConfiguration _configuratio = null;
-        protected IConfiguration Configuration
-        {
-            get
-            {
-                return this._configuratio;
-            }
-        }
-
-
+        protected readonly IRoadieSettings _configuratio = null;
+        protected readonly string _referrer = null;
+        protected readonly string _requestIp = null;
         protected ApiKey _apiKey = null;
+        protected ILogger _loggingService = null;
+
         protected ApiKey ApiKey
         {
             get
@@ -44,8 +25,23 @@ namespace Roadie.Library.SearchEngines.Imaging
             }
         }
 
+        protected IRoadieSettings Configuration
+        {
+            get
+            {
+                return this._configuratio;
+            }
+        }
 
-        public ImageSearchEngineBase(IConfiguration configuration, ILogger loggingService, string baseUrl, string requestIp = null, string referrer = null)
+        protected ILogger LoggingService
+        {
+            get
+            {
+                return this._loggingService;
+            }
+        }
+
+        public ImageSearchEngineBase(IRoadieSettings configuration, ILogger loggingService, string baseUrl, string requestIp = null, string referrer = null)
         {
             this._configuratio = configuration;
             if (string.IsNullOrEmpty(referrer) || referrer.StartsWith("http://localhost"))
@@ -69,11 +65,9 @@ namespace Roadie.Library.SearchEngines.Imaging
             {
                 return true; // **** Always accept
             };
-
         }
 
         public abstract RestRequest BuildRequest(string query, int resultsCount);
-
 
         public virtual async Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount)
         {

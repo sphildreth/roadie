@@ -47,36 +47,15 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
     public partial class lfmAlbum
     {
-        private string nameField;
-
         private string artistField;
-
-        private string mbidField;
-
-        private string urlField;
-
         private List<lfmAlbumImage> imageField;
-
         private ushort listenersField;
-
+        private string mbidField;
+        private string nameField;
         private uint playcountField;
-
-        private List<lfmAlbumTrack> tracksField;
-
         private List<lfmAlbumTag> tagsField;
-
-        /// <remarks/>
-        public string name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-            }
-        }
+        private List<lfmAlbumTrack> tracksField;
+        private string urlField;
 
         /// <remarks/>
         public string artist
@@ -88,32 +67,6 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
             set
             {
                 this.artistField = value;
-            }
-        }
-
-        /// <remarks/>
-        public string mbid
-        {
-            get
-            {
-                return this.mbidField;
-            }
-            set
-            {
-                this.mbidField = value;
-            }
-        }
-
-        /// <remarks/>
-        public string url
-        {
-            get
-            {
-                return this.urlField;
-            }
-            set
-            {
-                this.urlField = value;
             }
         }
 
@@ -145,6 +98,32 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
         }
 
         /// <remarks/>
+        public string mbid
+        {
+            get
+            {
+                return this.mbidField;
+            }
+            set
+            {
+                this.mbidField = value;
+            }
+        }
+
+        /// <remarks/>
+        public string name
+        {
+            get
+            {
+                return this.nameField;
+            }
+            set
+            {
+                this.nameField = value;
+            }
+        }
+
+        /// <remarks/>
         public uint playcount
         {
             get
@@ -154,6 +133,20 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
             set
             {
                 this.playcountField = value;
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlArrayItemAttribute("tag", IsNullable = false)]
+        public List<lfmAlbumTag> tags
+        {
+            get
+            {
+                return this.tagsField;
+            }
+            set
+            {
+                this.tagsField = value;
             }
         }
 
@@ -172,16 +165,15 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
         }
 
         /// <remarks/>
-        [System.Xml.Serialization.XmlArrayItemAttribute("tag", IsNullable = false)]
-        public List<lfmAlbumTag> tags
+        public string url
         {
             get
             {
-                return this.tagsField;
+                return this.urlField;
             }
             set
             {
-                this.tagsField = value;
+                this.urlField = value;
             }
         }
 
@@ -231,19 +223,11 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
 
     /// <remarks/>
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class lfmAlbumTrack
+    public partial class lfmAlbumTag
     {
         private string nameField;
 
         private string urlField;
-
-        private ushort durationField;
-
-        private lfmAlbumTrackStreamable streamableField;
-
-        private lfmAlbumTrackArtist artistField;
-
-        private byte rankField;
 
         /// <remarks/>
         public string name
@@ -271,6 +255,36 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
             }
         }
 
+        public lfmAlbumTag()
+        {
+        }
+    }
+
+    /// <remarks/>
+    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    public partial class lfmAlbumTrack
+    {
+        private lfmAlbumTrackArtist artistField;
+        private ushort durationField;
+        private string nameField;
+
+        private byte rankField;
+        private lfmAlbumTrackStreamable streamableField;
+        private string urlField;
+
+        /// <remarks/>
+        public lfmAlbumTrackArtist artist
+        {
+            get
+            {
+                return this.artistField;
+            }
+            set
+            {
+                this.artistField = value;
+            }
+        }
+
         /// <remarks/>
         public ushort duration
         {
@@ -285,28 +299,15 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
         }
 
         /// <remarks/>
-        public lfmAlbumTrackStreamable streamable
+        public string name
         {
             get
             {
-                return this.streamableField;
+                return this.nameField;
             }
             set
             {
-                this.streamableField = value;
-            }
-        }
-
-        /// <remarks/>
-        public lfmAlbumTrackArtist artist
-        {
-            get
-            {
-                return this.artistField;
-            }
-            set
-            {
-                this.artistField = value;
+                this.nameField = value;
             }
         }
 
@@ -324,7 +325,85 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
             }
         }
 
+        /// <remarks/>
+        public lfmAlbumTrackStreamable streamable
+        {
+            get
+            {
+                return this.streamableField;
+            }
+            set
+            {
+                this.streamableField = value;
+            }
+        }
+
+        /// <remarks/>
+        public string url
+        {
+            get
+            {
+                return this.urlField;
+            }
+            set
+            {
+                this.urlField = value;
+            }
+        }
+
         public lfmAlbumTrack()
+        {
+        }
+    }
+
+    /// <remarks/>
+    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    public partial class lfmAlbumTrackArtist
+    {
+        private string mbidField;
+        private string nameField;
+        private string urlField;
+
+        /// <remarks/>
+        public string mbid
+        {
+            get
+            {
+                return this.mbidField;
+            }
+            set
+            {
+                this.mbidField = value;
+            }
+        }
+
+        /// <remarks/>
+        public string name
+        {
+            get
+            {
+                return this.nameField;
+            }
+            set
+            {
+                this.nameField = value;
+            }
+        }
+
+        /// <remarks/>
+        public string url
+        {
+            get
+            {
+                return this.urlField;
+            }
+            set
+            {
+                this.urlField = value;
+            }
+        }
+
+        public lfmAlbumTrackArtist()
         {
         }
     }
@@ -367,98 +446,5 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
 
         public lfmAlbumTrackStreamable()
         { }
-    }
-
-    /// <remarks/>
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class lfmAlbumTrackArtist
-    {
-        private string nameField;
-
-        private string mbidField;
-
-        private string urlField;
-
-        /// <remarks/>
-        public string name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-            }
-        }
-
-        /// <remarks/>
-        public string mbid
-        {
-            get
-            {
-                return this.mbidField;
-            }
-            set
-            {
-                this.mbidField = value;
-            }
-        }
-
-        /// <remarks/>
-        public string url
-        {
-            get
-            {
-                return this.urlField;
-            }
-            set
-            {
-                this.urlField = value;
-            }
-        }
-
-        public lfmAlbumTrackArtist()
-        {
-        }
-    }
-
-    /// <remarks/>
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class lfmAlbumTag
-    {
-        private string nameField;
-
-        private string urlField;
-
-        /// <remarks/>
-        public string name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-            }
-        }
-
-        /// <remarks/>
-        public string url
-        {
-            get
-            {
-                return this.urlField;
-            }
-            set
-            {
-                this.urlField = value;
-            }
-        }
-
-        public lfmAlbumTag()
-        {
-        }
     }
 }

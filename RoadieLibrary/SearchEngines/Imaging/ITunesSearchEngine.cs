@@ -1,29 +1,21 @@
-﻿using Roadie.Library.Caching;
-using RestSharp;
+﻿using RestSharp;
+using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
-using Roadie.Library.SearchEngines.MetaData;
 using Roadie.Library.Logging;
+using Roadie.Library.SearchEngines.MetaData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Authentication;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 
 namespace Roadie.Library.SearchEngines.Imaging
 {
     public class ITunesSearchEngine : ImageSearchEngineBase, IArtistSearchEngine, IReleaseSearchEngine
     {
         private readonly ICacheManager _cacheManager = null;
-
-        private ICacheManager CacheManager
-        {
-            get
-            {
-                return this._cacheManager;
-            }
-        }
 
         public bool IsEnabled
         {
@@ -33,96 +25,23 @@ namespace Roadie.Library.SearchEngines.Imaging
             }
         }
 
+        private ICacheManager CacheManager
+        {
+            get
+            {
+                return this._cacheManager;
+            }
+        }
 
-        public ITunesSearchEngine(IConfiguration configuration, ICacheManager cacheManager, ILogger logger, string requestIp = null, string referrer = null)
+        public ITunesSearchEngine(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, string requestIp = null, string referrer = null)
             : base(configuration, logger, "http://itunes.apple.com", requestIp, referrer)
         {
             this._cacheManager = cacheManager;
         }
 
-
         public override RestRequest BuildRequest(string query, int resultsCount)
         {
             return this.BuildRequest(query, resultsCount, "Release");
-        }
-
-        private RestRequest BuildRequest(string query, int resultsCount, string entityType)
-        {
-            var request = new RestRequest
-            {
-                Resource = "search",
-                Method = Method.GET,
-                RequestFormat = DataFormat.Json
-            };
-
-            if (resultsCount > 0)
-            {
-                request.AddParameter(new Parameter
-                {
-                    Name = "limit",
-                    Value = resultsCount,
-                    Type = ParameterType.GetOrPost
-                });
-            }
-
-            request.AddParameter(new Parameter
-            {
-                Name = "entity",
-                Value = entityType,
-                Type = ParameterType.GetOrPost
-            });
-
-            request.AddParameter(new Parameter
-            {
-                Name = "country",
-                Value = "us",
-                Type = ParameterType.GetOrPost
-            });
-
-            request.AddParameter(new Parameter
-            {
-                Name = "term",
-                Value = string.Format("'{0}'", query.Trim()),
-                Type = ParameterType.GetOrPost
-            });
-
-            return request;
-        }
-
-        public override async Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount)
-        {
-            var request = this.BuildRequest(query, resultsCount);
-            ImageSearchResult[] result = null;
-            try
-            {
-                var response = _client.Execute<ITunesSearchResult>(request);
-                if (response.ResponseStatus == ResponseStatus.Error)
-                {
-                    if (response.StatusCode == HttpStatusCode.Unauthorized)
-                    {
-                        throw new AuthenticationException("Unauthorized");
-                    }
-                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
-                }
-                if (response.Data.results == null)
-                {
-                    return new ImageSearchResult[0];
-                }
-                result = response.Data.results.Select(x => new ImageSearchResult
-                {
-                    ArtistId = x.artistId.ToString(),
-                    ArtistName = x.artistName,
-                    MediaUrl = x.artworkUrl100,
-                    Height = "100",
-                    Width = "100",
-                    Title = x.collectionName
-                }).ToArray();
-            }
-            catch (Exception ex)
-            {
-                this.LoggingService.Error(ex.Serialize());                
-            }
-            return result;
         }
 
         public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
@@ -180,6 +99,42 @@ namespace Roadie.Library.SearchEngines.Imaging
             };
         }
 
+        public override async Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount)
+        {
+            var request = this.BuildRequest(query, resultsCount);
+            ImageSearchResult[] result = null;
+            try
+            {
+                var response = _client.Execute<ITunesSearchResult>(request);
+                if (response.ResponseStatus == ResponseStatus.Error)
+                {
+                    if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        throw new AuthenticationException("Unauthorized");
+                    }
+                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
+                }
+                if (response.Data.results == null)
+                {
+                    return new ImageSearchResult[0];
+                }
+                result = response.Data.results.Select(x => new ImageSearchResult
+                {
+                    ArtistId = x.artistId.ToString(),
+                    ArtistName = x.artistName,
+                    MediaUrl = x.artworkUrl100,
+                    Height = "100",
+                    Width = "100",
+                    Title = x.collectionName
+                }).ToArray();
+            }
+            catch (Exception ex)
+            {
+                this.LoggingService.Error(ex.Serialize());
+            }
+            return result;
+        }
+
         public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
         {
             var request = this.BuildRequest(query, 1, "album");
@@ -232,6 +187,49 @@ namespace Roadie.Library.SearchEngines.Imaging
                 IsSuccess = data != null,
                 Data = new ReleaseSearchResult[] { data }
             };
+        }
+
+        private RestRequest BuildRequest(string query, int resultsCount, string entityType)
+        {
+            var request = new RestRequest
+            {
+                Resource = "search",
+                Method = Method.GET,
+                RequestFormat = DataFormat.Json
+            };
+
+            if (resultsCount > 0)
+            {
+                request.AddParameter(new Parameter
+                {
+                    Name = "limit",
+                    Value = resultsCount,
+                    Type = ParameterType.GetOrPost
+                });
+            }
+
+            request.AddParameter(new Parameter
+            {
+                Name = "entity",
+                Value = entityType,
+                Type = ParameterType.GetOrPost
+            });
+
+            request.AddParameter(new Parameter
+            {
+                Name = "country",
+                Value = "us",
+                Type = ParameterType.GetOrPost
+            });
+
+            request.AddParameter(new Parameter
+            {
+                Name = "term",
+                Value = string.Format("'{0}'", query.Trim()),
+                Type = ParameterType.GetOrPost
+            });
+
+            return request;
         }
     }
 }

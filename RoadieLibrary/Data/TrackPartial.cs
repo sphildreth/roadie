@@ -1,30 +1,15 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Roadie.Library.Configuration;
 using Roadie.Library.Enums;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
-using System.Text;
 
 namespace Roadie.Library.Data
 {
     public partial class Track
     {
-        [NotMapped]
-        public IEnumerable<string> TrackArtists { get; set; }
-
-        [NotMapped]
-        public Artist TrackArtist { get; set; }
-
-        public bool IsValid
-        {
-            get
-            {
-                return !string.IsNullOrEmpty(this.Hash);
-            }
-        }
-
         public string CacheRegion
         {
             get
@@ -32,6 +17,7 @@ namespace Roadie.Library.Data
                 return string.Format("urn:track:{0}", this.RoadieId);
             }
         }
+
         public string Etag
         {
             get
@@ -43,12 +29,31 @@ namespace Roadie.Library.Data
             }
         }
 
+        public bool IsValid
+        {
+            get
+            {
+                return !string.IsNullOrEmpty(this.Hash);
+            }
+        }
+
+        [NotMapped]
+        public Artist TrackArtist { get; set; }
+
+        [NotMapped]
+        public IEnumerable<string> TrackArtists { get; set; }
+
         /// <summary>
         /// Returns a full file path to the current track
         /// </summary>
-        public string PathToTrack(IConfiguration configuration, string libraryFolder)
+        public string PathToTrack(IRoadieSettings configuration, string libraryFolder)
         {
             return FolderPathHelper.PathForTrack(configuration, this, libraryFolder);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Id [{0}], TrackNumber [{1}], Title [{2}]", this.Id, this.TrackNumber, this.Title);
         }
 
         /// <summary>
@@ -64,11 +69,5 @@ namespace Roadie.Library.Data
             this.FilePath = null;
             this.LastUpdated = now ?? DateTime.UtcNow;
         }
-
-        public override string ToString()
-        {
-            return string.Format("Id [{0}], TrackNumber [{1}], Title [{2}]", this.Id, this.TrackNumber, this.Title);
-        }
-
     }
 }

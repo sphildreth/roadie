@@ -1,25 +1,23 @@
 ﻿using Roadie.Library.Caching;
-using Roadie.Library.Imaging;
+using Roadie.Library.Configuration;
+using Roadie.Library.Data;
+using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
+using Roadie.Library.Imaging;
+using Roadie.Library.Logging;
+using Roadie.Library.MetaData.Audio;
 using Roadie.Library.Processors;
 using Roadie.Library.Utility;
-using Roadie.Library.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using Roadie.Library.Data;
-using Microsoft.Extensions.Configuration;
-using Roadie.Library.MetaData.Audio;
-using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Factories
 {
     public sealed class ImageFactory : FactoryBase
     {
-
-        public ImageFactory(IConfiguration configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger) 
+        public ImageFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
             : base(configuration, context, cacheManager, logger, httpEncoder)
         {
         }
@@ -36,7 +34,6 @@ namespace Roadie.Library.Factories
             SimpleContract.Requires<ArgumentException>(metaData != null, "Invalid MetaData");
 
             return this.ImageForFilename(filename);
-
         }
 
         /// <summary>
@@ -48,7 +45,7 @@ namespace Roadie.Library.Factories
         {
             AudioMetaDataImage imageMetaData = null;
 
-            if(string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty(filename))
             {
                 return imageMetaData;
             }
@@ -78,7 +75,7 @@ namespace Roadie.Library.Factories
                         FileInfo picture = null;
                         // See if there is a "cover" or "front" jpg file if so use it
                         picture = pictures.FirstOrDefault(x => x.Name.Equals("cover", StringComparison.OrdinalIgnoreCase));
-                        if(picture == null)
+                        if (picture == null)
                         {
                             picture = pictures.FirstOrDefault(x => x.Name.Equals("front", StringComparison.OrdinalIgnoreCase));
                         }
@@ -100,9 +97,8 @@ namespace Roadie.Library.Factories
                         }
                     }
                 }
-
             }
-            catch(System.IO.FileNotFoundException)
+            catch (System.IO.FileNotFoundException)
             {
             }
             catch (Exception ex)
@@ -111,6 +107,5 @@ namespace Roadie.Library.Factories
             }
             return imageMetaData;
         }
-
     }
 }

@@ -3,8 +3,8 @@
 namespace Roadie.Library.Configuration
 {
     [Serializable]
-    public class RedisCache
+    public class FilePlugins
     {
-        public string ConnectionString { get; set; }
+        public int MinWeightToDelete { get; set; }
     }
 }

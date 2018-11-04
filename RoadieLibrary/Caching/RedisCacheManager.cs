@@ -4,7 +4,6 @@ using Newtonsoft.Json.Serialization;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Roadie.Library.Caching
 {
@@ -14,12 +13,13 @@ namespace Roadie.Library.Caching
     /// <typeparam name="TCacheValue"></typeparam>
     public class RedisCacheManager : CacheManagerBase
     {
-        private bool _doTraceLogging = true;
-
         private static Lazy<ConnectionMultiplexer> lazyConnection = new Lazy<ConnectionMultiplexer>(() =>
         {
             return ConnectionMultiplexer.Connect("192.168.1.253:6379,allowAdmin=true");
         });
+
+        private bool _doTraceLogging = true;
+        private IDatabase _redis = null;
 
         public static ConnectionMultiplexer Connection
         {
@@ -29,7 +29,6 @@ namespace Roadie.Library.Caching
             }
         }
 
-        private IDatabase _redis = null;
         private IDatabase Redis
         {
             get
@@ -38,7 +37,7 @@ namespace Roadie.Library.Caching
             }
         }
 
-        public RedisCacheManager(ILogger logger, CachePolicy defaultPolicy) 
+        public RedisCacheManager(ILogger logger, CachePolicy defaultPolicy)
             : base(logger, defaultPolicy)
         {
         }
@@ -85,22 +84,6 @@ namespace Roadie.Library.Caching
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                try
-                {
-                    Connection.Close();
-                    Connection.Dispose();
-                }
-                catch
-                {
-                }
-            }
-            // free native resources here if there are any
-        }
-
         public override bool Exists<TOut>(string key)
         {
             return this.Exists<TOut>(key, null);
@@ -126,6 +109,47 @@ namespace Roadie.Library.Caching
             return this.Get<TOut>(key, getItem, region, this._defaultPolicy);
         }
 
+        public override TOut Get<TOut>(string key, Func<TOut> getItem, string region, CachePolicy policy)
+        {
+            var r = this.Get<TOut>(key, region);
+            if (r == null)
+            {
+                r = getItem();
+                this.Add(key, r, region, policy);
+            }
+            return r;
+        }
+
+        public override bool Remove(string key)
+        {
+            return this.Remove(key, null);
+        }
+
+        public override bool Remove(string key, string region)
+        {
+            if (this.Redis.KeyExists(key))
+            {
+                this.Redis.KeyDelete(key);
+            }
+            return false;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                try
+                {
+                    Connection.Close();
+                    Connection.Dispose();
+                }
+                catch
+                {
+                }
+            }
+            // free native resources here if there are any
+        }
+
         private TOut Get<TOut>(string key, string region, CachePolicy policy)
         {
             var result = this.Deserialize<TOut>(this.Redis.StringGet(key));
@@ -142,37 +166,9 @@ namespace Roadie.Library.Caching
             }
             return result;
         }
-
-
-        public override TOut Get<TOut>(string key, Func<TOut> getItem, string region, CachePolicy policy)
-        {
-            var r = this.Get<TOut>(key, region);
-            if(r == null)
-            {
-                r = getItem();
-                this.Add(key, r, region, policy);
-            }
-            return r;
-        }
-
-
-        public override bool Remove(string key)
-        {
-            return this.Remove(key, null);
-        }
-
-
-        public override bool Remove(string key, string region)
-        {
-            if (this.Redis.KeyExists(key))
-            {
-                this.Redis.KeyDelete(key);
-            }
-            return false;
-        }
     }
 
-    class IgnoreJsonAttributesResolver : DefaultContractResolver
+    internal class IgnoreJsonAttributesResolver : DefaultContractResolver
     {
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {

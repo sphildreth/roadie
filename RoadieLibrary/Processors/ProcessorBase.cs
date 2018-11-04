@@ -1,28 +1,23 @@
 ﻿using Roadie.Library.Caching;
-using Roadie.Library.Factories;
-using Roadie.Library.Utility;
-using Roadie.Library.Logging;
-using System.Linq;
+using Roadie.Library.Configuration;
 using Roadie.Library.Data;
-using Microsoft.Extensions.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Factories;
+using Roadie.Library.Logging;
 
 namespace Roadie.Library.Processors
 {
     public abstract class ProcessorBase
     {
-        protected readonly string _destinationRoot = null;
         protected readonly ICacheManager _cacheManager = null;
-        protected readonly ILogger _logger = null;
+        protected readonly IRoadieSettings _configuration = null;
         protected readonly IRoadieDbContext _dbContext = null;
-        protected readonly IConfiguration _configuration = null;
+        protected readonly string _destinationRoot = null;
         protected readonly IHttpEncoder _httpEncoder = null;
-
+        protected readonly ILogger _logger = null;
         protected ArtistFactory _artistFactory = null;
-        protected ReleaseFactory _releaseFactory = null;
         protected ImageFactory _imageFactory = null;
-
-        public int? SubmissionId { get; set; }
+        protected ReleaseFactory _releaseFactory = null;
 
         public IHttpEncoder HttpEncoder
         {
@@ -32,13 +27,7 @@ namespace Roadie.Library.Processors
             }
         }
 
-        protected string DestinationRoot
-        {
-            get
-            {
-                return this._destinationRoot;
-            }
-        }
+        public int? SubmissionId { get; set; }
 
         protected ArtistFactory ArtistFactory
         {
@@ -52,15 +41,51 @@ namespace Roadie.Library.Processors
             }
         }
 
-        protected ReleaseFactory ReleaseFactory
+        protected ICacheManager CacheManager
         {
             get
             {
-                return this._releaseFactory ?? (this._releaseFactory = new ReleaseFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.LoggingService));
+                return this._cacheManager;
             }
-            set
+        }
+
+        protected IRoadieSettings Configuration
+        {
+            get
             {
-                this._releaseFactory = value;
+                return this._configuration;
+            }
+        }
+
+        protected IRoadieDbContext DbContext
+        {
+            get
+            {
+                return this._dbContext;
+            }
+        }
+
+        protected string DestinationRoot
+        {
+            get
+            {
+                return this._destinationRoot;
+            }
+        }
+
+        protected bool DoDeleteUnknowns
+        {
+            get
+            {
+                return this.Configuration.Processing.DoDeleteUnknowns;
+            }
+        }
+
+        protected bool DoMoveUnknowns
+        {
+            get
+            {
+                return this.Configuration.Processing.DoMoveUnknowns;
             }
         }
 
@@ -76,38 +101,6 @@ namespace Roadie.Library.Processors
             }
         }
 
-
-        protected bool DoMoveUnknowns
-        {
-            get
-            {
-                return this.Configuration.GetValue<bool>("Processing:DoMoveUnknowns");
-            }
-        }
-
-        protected bool DoDeleteUnknowns
-        {
-            get
-            {
-                return this.Configuration.GetValue<bool>("Processing:DoDeleteUnknowns");
-            }
-        }
-
-        protected string UnknownFolder
-        {
-            get
-            {
-                return this.Configuration.GetValue<string>("Processing:UnknownFolder");
-            }
-        }
-        protected ICacheManager CacheManager
-        {
-            get
-            {
-                return this._cacheManager;
-            }
-        }
-
         protected ILogger LoggingService
         {
             get
@@ -116,23 +109,27 @@ namespace Roadie.Library.Processors
             }
         }
 
-        protected IRoadieDbContext DbContext
+        protected ReleaseFactory ReleaseFactory
         {
             get
             {
-                return this._dbContext;
+                return this._releaseFactory ?? (this._releaseFactory = new ReleaseFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.LoggingService));
+            }
+            set
+            {
+                this._releaseFactory = value;
             }
         }
 
-        protected IConfiguration Configuration
+        protected string UnknownFolder
         {
             get
             {
-                return this._configuration;
+                return this.Configuration.Processing.UnknownFolder;
             }
         }
 
-        public ProcessorBase(IConfiguration configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
+        public ProcessorBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
         {
             this._configuration = configuration;
             this._httpEncoder = httpEncoder;

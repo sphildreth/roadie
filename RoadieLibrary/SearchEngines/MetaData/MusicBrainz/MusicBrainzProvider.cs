@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
-using Roadie.Library.Caching;
+﻿using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Extensions;
 using Roadie.Library.Logging;
@@ -21,11 +21,11 @@ namespace Roadie.Library.MetaData.MusicBrainz
         {
             get
             {
-                return this.Configuration.GetValue("Integrations:MusicBrainzProviderEnabled", true);
+                return this.Configuration.Integrations.MusicBrainzProviderEnabled;
             }
         }
 
-        public MusicBrainzProvider(IConfiguration configuration, ICacheManager cacheManager, ILogger logger) : base(configuration, cacheManager, logger)
+        public MusicBrainzProvider(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger) : base(configuration, cacheManager, logger)
         {
         }
 

@@ -1,22 +1,69 @@
-﻿using Roadie.Library.Caching;
-using Orthogonal.NTagLite;
-using Roadie.Library.Utility;
+﻿using Orthogonal.NTagLite;
+using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
 using Roadie.Library.Logging;
+using Roadie.Library.MetaData.Audio;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Roadie.Library.MetaData.Audio;
-using Microsoft.Extensions.Configuration;
 
 namespace Roadie.Library.MetaData.ID3Tags
 {
     public class ID3TagsHelper : MetaDataProviderBase
     {
-        public ID3TagsHelper(IConfiguration configuration, ICacheManager cacheManager, ILogger loggingService) : base(configuration, cacheManager, loggingService)
+        public ID3TagsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService)
+            : base(configuration, cacheManager, loggingService)
         {
+        }
+
+        public OperationResult<AudioMetaData> MetaDataForFile(string fileName)
+        {
+            var result = this.MetaDataForFileFromTagLib(fileName);
+            if (result.IsSuccess)
+            {
+                return result;
+            }
+            result = this.MetaDataForFileFromNTagLite(fileName);
+            if (result.IsSuccess)
+            {
+                return result;
+            }
+            return new OperationResult<AudioMetaData>();
+        }
+
+        public OperationResult<IEnumerable<AudioMetaData>> MetaDataForFiles(IEnumerable<string> fileNames)
+        {
+            var result = new List<AudioMetaData>();
+            foreach (var fileName in fileNames)
+            {
+                var r = this.MetaDataForFileFromTagLib(fileName);
+                if (r.IsSuccess)
+                {
+                    result.Add(r.Data);
+                }
+                else
+                {
+                    r = this.MetaDataForFileFromNTagLite(fileName);
+                    if (r.IsSuccess)
+                    {
+                        result.Add(r.Data);
+                    }
+                }
+            }
+            return new OperationResult<IEnumerable<AudioMetaData>>
+            {
+                IsSuccess = result.Any(),
+                Data = result
+            };
+        }
+
+        public OperationResult<IEnumerable<AudioMetaData>> MetaDataForFolder(string folderName)
+        {
+            return this.MetaDataForFiles(Directory.EnumerateFiles(folderName, "*.mp3", SearchOption.AllDirectories).ToArray());
         }
 
         public bool WriteTags(AudioMetaData metaData, string filename, bool force = false)
@@ -54,48 +101,50 @@ namespace Roadie.Library.MetaData.ID3Tags
             return false;
         }
 
-        public OperationResult<AudioMetaData> MetaDataForFile(string fileName)
+        private OperationResult<AudioMetaData> MetaDataForFileFromNTagLite(string fileName)
         {
-            var result = this.MetaDataForFileFromTagLib(fileName);
-            if (result.IsSuccess)
+            var sw = new Stopwatch();
+            sw.Start();
+            AudioMetaData result = new AudioMetaData();
+            var isSuccess = false;
+            try
             {
-                return result;
-            }
-            result = this.MetaDataForFileFromNTagLite(fileName);
-            if (result.IsSuccess)
-            {
-                return result;
-            }
-            return new OperationResult<AudioMetaData>();
-        }
-
-        public OperationResult<IEnumerable<AudioMetaData>> MetaDataForFolder(string folderName)
-        {
-            return this.MetaDataForFiles(Directory.EnumerateFiles(folderName, "*.mp3", SearchOption.AllDirectories).ToArray());
-        }
-
-        public OperationResult<IEnumerable<AudioMetaData>> MetaDataForFiles(IEnumerable<string> fileNames)
-        {
-            var result = new List<AudioMetaData>();
-            foreach (var fileName in fileNames)
-            {
-                var r = this.MetaDataForFileFromTagLib(fileName);
-                if (r.IsSuccess)
+                var file = LiteFile.LoadFromFile(fileName);
+                var tpos = file.Tag.FindFirstFrameById(FrameId.TPOS);
+                Picture[] pics = file.Tag.FindFramesById(FrameId.APIC).Select(f => f.GetPicture()).ToArray();
+                result.Release = file.Tag.Album;
+                result.Artist = file.Tag.Artist;
+                result.ArtistRaw = file.Tag.Artist;
+                result.Genres = (file.Tag.Genre ?? string.Empty).Split(';');
+                result.TrackArtist = file.Tag.OriginalArtist;
+                result.TrackArtistRaw = file.Tag.OriginalArtist;
+                result.AudioBitrate = file.Bitrate;
+                result.AudioChannels = file.AudioMode.HasValue ? (int?)file.AudioMode.Value : null;
+                result.AudioSampleRate = file.Frequency;
+                result.Disk = tpos != null ? SafeParser.ToNumber<int?>(tpos.Text) : null;
+                result.Images = pics.Select(x => new AudioMetaDataImage
                 {
-                    result.Add(r.Data);
-                }
-                else
-                {
-                    r = this.MetaDataForFileFromNTagLite(fileName);
-                    if (r.IsSuccess)
-                    {
-                        result.Add(r.Data);
-                    }
-                }
+                    Data = x.Data,
+                    Description = x.Description,
+                    MimeType = x.MimeType,
+                    Type = (AudioMetaDataImageType)x.PictureType
+                }).ToArray();
+                result.Time = file.Duration;
+                result.Title = file.Tag.Title.ToTitleCase(false);
+                result.TotalTrackNumbers = file.Tag.TrackCount;
+                result.TrackNumber = file.Tag.TrackNumber;
+                result.Year = file.Tag.Year;
+                isSuccess = true;
             }
-            return new OperationResult<IEnumerable<AudioMetaData>>
+            catch (Exception ex)
             {
-                IsSuccess = result.Any(),
+                this.Logger.Error(ex, "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
+            }
+            sw.Stop();
+            return new OperationResult<AudioMetaData>
+            {
+                IsSuccess = isSuccess,
+                OperationTime = sw.ElapsedMilliseconds,
                 Data = result
             };
         }
@@ -131,54 +180,6 @@ namespace Roadie.Library.MetaData.ID3Tags
                 result.TotalTrackNumbers = (tagFile.Tag.TrackCount > 0 ? (int?)tagFile.Tag.TrackCount : null);
                 result.TrackNumber = (tagFile.Tag.Track > 0 ? (short?)tagFile.Tag.Track : null);
                 result.Year = (tagFile.Tag.Year > 0 ? (int?)tagFile.Tag.Year : null);
-                isSuccess = true;
-            }
-            catch (Exception ex)
-            {
-                this.Logger.Error(ex, "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
-            }
-            sw.Stop();
-            return new OperationResult<AudioMetaData>
-            {
-                IsSuccess = isSuccess,
-                OperationTime = sw.ElapsedMilliseconds,
-                Data = result
-            };
-        }
-
-        private OperationResult<AudioMetaData> MetaDataForFileFromNTagLite(string fileName)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            AudioMetaData result = new AudioMetaData();
-            var isSuccess = false;
-            try
-            {
-                var file = LiteFile.LoadFromFile(fileName);
-                var tpos = file.Tag.FindFirstFrameById(FrameId.TPOS);
-                Picture[] pics = file.Tag.FindFramesById(FrameId.APIC).Select(f => f.GetPicture()).ToArray();
-                result.Release = file.Tag.Album;
-                result.Artist = file.Tag.Artist;
-                result.ArtistRaw = file.Tag.Artist;
-                result.Genres = (file.Tag.Genre ?? string.Empty).Split(';');
-                result.TrackArtist = file.Tag.OriginalArtist;
-                result.TrackArtistRaw = file.Tag.OriginalArtist;
-                result.AudioBitrate = file.Bitrate;
-                result.AudioChannels = file.AudioMode.HasValue ? (int?)file.AudioMode.Value : null;
-                result.AudioSampleRate = file.Frequency;
-                result.Disk = tpos != null ? SafeParser.ToNumber<int?>(tpos.Text) : null;
-                result.Images = pics.Select(x => new AudioMetaDataImage
-                {
-                    Data = x.Data,
-                    Description = x.Description,
-                    MimeType = x.MimeType,
-                    Type = (AudioMetaDataImageType)x.PictureType
-                }).ToArray();
-                result.Time = file.Duration;
-                result.Title = file.Tag.Title.ToTitleCase(false);
-                result.TotalTrackNumbers = file.Tag.TrackCount;
-                result.TrackNumber = file.Tag.TrackNumber;
-                result.Year = file.Tag.Year;
                 isSuccess = true;
             }
             catch (Exception ex)

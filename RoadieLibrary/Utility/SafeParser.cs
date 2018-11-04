@@ -1,41 +1,63 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Roadie.Library.Utility
 {
     public static class SafeParser
     {
+        public static T ChangeType<T>(object value)
+        {
+            var t = typeof(T);
+
+            if (t.IsGenericType && t.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+            {
+                if (value == null)
+                {
+                    return default(T);
+                }
+
+                t = Nullable.GetUnderlyingType(t);
+            }
+
+            return (T)Convert.ChangeType(value, t);
+        }
+
         /// <summary>
-        /// Safely Return a Number For Given Input
+        /// Return a value that is safe to use as a Key value
         /// </summary>
-        public static T ToNumber<T>(object input)
+        public static string KeyFriendly(string input)
+        {
+            return input;
+        }
+
+        /// <summary>
+        /// Safely return a Boolean for a given Input.
+        /// <remarks>Has Additional String Operations</remarks>
+        /// </summary>
+        public static bool ToBoolean(object input)
         {
             if (input == null)
             {
-                return default(T);
+                return false;
             }
-            try
+            var t = input as bool?;
+            if (t != null)
             {
-                return ChangeType<T>(input);
+                return t.Value;
             }
-            catch
+            switch (input.ToString().ToLower())
             {
-                return default(T);
+                case "true":
+                case "1":
+                case "y":
+                case "yes":
+                    return true;
+
+                default:
+                    return false;
             }
         }
-
-        public static T ToEnum<T>(object input) where T : struct, IConvertible
-        {
-            if (input == null)
-            {
-                return default(T);
-            }
-            Enum.TryParse(input.ToString(), out T r);
-            return r;
-        }
-
 
         public static DateTime? ToDateTime(object input)
         {
@@ -81,21 +103,33 @@ namespace Roadie.Library.Utility
             }
         }
 
-        public static T ChangeType<T>(object value)
+        public static T ToEnum<T>(object input) where T : struct, IConvertible
         {
-            var t = typeof(T);
-
-            if (t.IsGenericType && t.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+            if (input == null)
             {
-                if (value == null)
-                {
-                    return default(T);
-                }
-
-                t = Nullable.GetUnderlyingType(t);
+                return default(T);
             }
+            Enum.TryParse(input.ToString(), out T r);
+            return r;
+        }
 
-            return (T)Convert.ChangeType(value, t);
+        /// <summary>
+        /// Safely Return a Number For Given Input
+        /// </summary>
+        public static T ToNumber<T>(object input)
+        {
+            if (input == null)
+            {
+                return default(T);
+            }
+            try
+            {
+                return ChangeType<T>(input);
+            }
+            catch
+            {
+                return default(T);
+            }
         }
 
         public static string ToString(object input, string defaultValue = null)
@@ -111,42 +145,6 @@ namespace Roadie.Library.Utility
                 return r.Trim();
             }
             return defaultValue;
-        }
-
-        /// <summary>
-        /// Safely return a Boolean for a given Input.
-        /// <remarks>Has Additional String Operations</remarks>
-        /// </summary>
-        public static bool ToBoolean(object input)
-        {
-            if (input == null)
-            {
-                return false;
-            }
-            var t = input as bool?;
-            if (t != null)
-            {
-                return t.Value;
-            }
-            switch (input.ToString().ToLower())
-            {
-                case "true":
-                case "1":
-                case "y":
-                case "yes":
-                    return true;
-
-                default:
-                    return false;
-            }
-        }
-
-        /// <summary>
-        /// Return a value that is safe to use as a Key value
-        /// </summary>
-        public static string KeyFriendly(string input)
-        {
-            return input;
         }
 
         public static int? ToYear(string input)

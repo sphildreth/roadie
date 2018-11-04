@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Roadie.Library.Extensions
 {
@@ -10,11 +6,11 @@ namespace Roadie.Library.Extensions
     {
         public static DateTime? FormatDateTime(this DateTime? value)
         {
-            if(!value.HasValue)
+            if (!value.HasValue)
             {
                 return null;
             }
-            if(value.Value.Year == 0 || value.Value.Year == 1)
+            if (value.Value.Year == 0 || value.Value.Year == 1)
             {
                 return null;
             }

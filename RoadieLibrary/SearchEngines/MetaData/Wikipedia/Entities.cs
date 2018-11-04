@@ -7,13 +7,13 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
         public query query { get; set; }
     }
 
-    public class query
-    {
-        public List<page> pages { get; set; }
-    }
-
     public class page
     {
         public string extract { get; set; }
+    }
+
+    public class query
+    {
+        public List<page> pages { get; set; }
     }
 }

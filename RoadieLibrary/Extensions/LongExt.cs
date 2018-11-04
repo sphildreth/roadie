@@ -1,9 +1,5 @@
 ﻿using Roadie.Library.Utility;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Roadie.Library.Extensions
 {
@@ -11,7 +7,7 @@ namespace Roadie.Library.Extensions
     {
         public static string ToFileSize(this long? l)
         {
-            if(!l.HasValue)
+            if (!l.HasValue)
             {
                 return "0";
             }

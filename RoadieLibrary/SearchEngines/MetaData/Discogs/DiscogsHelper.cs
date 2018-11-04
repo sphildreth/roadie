@@ -1,17 +1,16 @@
-﻿using Roadie.Library.Caching;
-using RestSharp;
+﻿using RestSharp;
+using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
+using Roadie.Library.Logging;
 using Roadie.Library.MetaData;
 using Roadie.Library.Utility;
-using Roadie.Library.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Authentication;
 using System.Threading.Tasks;
-using Roadie.Library.Setttings;
-using Microsoft.Extensions.Configuration;
 
 namespace Roadie.Library.SearchEngines.MetaData.Discogs
 {
@@ -21,149 +20,16 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
         {
             get
             {
-                return this.Configuration.GetValue<bool>("Integrations:DiscogsProviderEnabled", true) &&
-                       !string.IsNullOrEmpty(this.ApiKey.Key);
+                // TODO
+                //return this.Configuration.Integrations.dis.GetValue<bool>("Integrations:DiscogsProviderEnabled", true) &&
+                //       !string.IsNullOrEmpty(this.ApiKey.Key);
+                return false;
             }
         }
 
-        public DiscogsHelper(IConfiguration configuration, ICacheManager cacheManager, ILogger loggingService) : base(configuration, cacheManager, loggingService)
+        public DiscogsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService) : base(configuration, cacheManager, loggingService)
         {
-            this._apiKey = configuration.GetValue<List<ApiKey>>("ApiKeys", new List<ApiKey>()).FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey") ?? new ApiKey();
-        }
-
-        private RestRequest BuildSearchRequest(string query, int resultsCount, string entityType, string artist = null)
-        {
-            var request = new RestRequest
-            {
-                Resource = "search",
-                Method = Method.GET,
-                RequestFormat = DataFormat.Json
-            };
-            if (resultsCount > 0)
-            {
-                request.AddParameter(new Parameter
-                {
-                    Name = "page",
-                    Value = 1,
-                    Type = ParameterType.GetOrPost
-                });
-                request.AddParameter(new Parameter
-                {
-                    Name = "per_page",
-                    Value = resultsCount,
-                    Type = ParameterType.GetOrPost
-                });
-            }
-            request.AddParameter(new Parameter
-            {
-                Name = "type",
-                Value = entityType,
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "q",
-                Value = string.Format("'{0}'", query.Trim()),
-                Type = ParameterType.GetOrPost
-            });
-            if (!string.IsNullOrEmpty(artist))
-            {
-                request.AddParameter(new Parameter
-                {
-                    Name = "artist",
-                    Value = string.Format("'{0}'", artist.Trim()),
-                    Type = ParameterType.GetOrPost
-                });
-            }
-            request.AddParameter(new Parameter
-            {
-                Name = "key",
-                Value = this.ApiKey.Key,
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "secret",
-                Value = this.ApiKey.Secret,
-                Type = ParameterType.GetOrPost
-            });
-
-            return request;
-        }
-
-        private RestRequest BuildArtistRequest(int? artistId)
-        {
-            var request = new RestRequest
-            {
-                Resource = "artists/{id}",
-                Method = Method.GET,
-                RequestFormat = DataFormat.Json
-            };
-            request.AddUrlSegment("id", artistId.ToString());
-            request.AddParameter(new Parameter
-            {
-                Name = "key",
-                Value = this.ApiKey.Key,
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "secret",
-                Value = this.ApiKey.Secret,
-                Type = ParameterType.GetOrPost
-            });
-
-            return request;
-        }
-
-        private RestRequest BuildLabelRequest(int? artistId)
-        {
-            var request = new RestRequest
-            {
-                Resource = "labels/{id}",
-                Method = Method.GET,
-                RequestFormat = DataFormat.Json
-            };
-            request.AddUrlSegment("id", artistId.ToString());
-            request.AddParameter(new Parameter
-            {
-                Name = "key",
-                Value = this.ApiKey.Key,
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "secret",
-                Value = this.ApiKey.Secret,
-                Type = ParameterType.GetOrPost
-            });
-
-            return request;
-        }
-
-        private RestRequest BuildReleaseRequest(int? releaseId)
-        {
-            var request = new RestRequest
-            {
-                Resource = "releases/{id}",
-                Method = Method.GET,
-                RequestFormat = DataFormat.Json
-            };
-            request.AddUrlSegment("id", releaseId.ToString());
-            request.AddParameter(new Parameter
-            {
-                Name = "key",
-                Value = this.ApiKey.Key,
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "secret",
-                Value = this.ApiKey.Secret,
-                Type = ParameterType.GetOrPost
-            });
-
-            return request;
+            this._apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey") ?? new ApiKey();
         }
 
         public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
@@ -248,6 +114,82 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             };
         }
 
+        public async Task<OperationResult<IEnumerable<LabelSearchResult>>> PerformLabelSearch(string labelName, int resultsCount)
+        {
+            LabelSearchResult data = null;
+            try
+            {
+                var request = this.BuildSearchRequest(labelName, 1, "label");
+
+                var client = new RestClient("https://api.discogs.com/database");
+                client.UserAgent = WebHelper.UserAgent;
+
+                var response = await client.ExecuteTaskAsync<DiscogsResult>(request);
+
+                if (response.ResponseStatus == ResponseStatus.Error)
+                {
+                    if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        throw new AuthenticationException("Unauthorized");
+                    }
+                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
+                }
+                Result responseData = response.Data.results != null && response.Data.results.Any() ? response.Data.results.First() : null;
+                if (responseData != null)
+                {
+                    request = this.BuildLabelRequest(responseData.id);
+                    var c2 = new RestClient("https://api.discogs.com/");
+                    c2.UserAgent = WebHelper.UserAgent;
+                    var labelResponse = await c2.ExecuteTaskAsync<DiscogsLabelResult>(request);
+                    DiscogsLabelResult label = labelResponse.Data;
+                    if (label != null)
+                    {
+                        var urls = new List<string>();
+                        var images = new List<string>();
+                        var alternateNames = new List<string>();
+                        string labelThumbnailUrl = null;
+                        urls.Add(label.uri);
+                        if (label.urls != null)
+                        {
+                            urls.AddRange(label.urls);
+                        }
+                        if (label.images != null)
+                        {
+                            images.AddRange(label.images.Where(x => x.type != "primary").Select(x => x.uri));
+                            var primaryImage = label.images.FirstOrDefault(x => x.type == "primary");
+                            if (primaryImage != null)
+                            {
+                                labelThumbnailUrl = primaryImage.uri;
+                            }
+                            if (string.IsNullOrEmpty(labelThumbnailUrl))
+                            {
+                                labelThumbnailUrl = label.images.First(x => !string.IsNullOrEmpty(x.uri)).uri;
+                            }
+                        }
+                        data = new LabelSearchResult
+                        {
+                            LabelName = label.name,
+                            DiscogsId = label.id.ToString(),
+                            Profile = label.profile,
+                            AlternateNames = alternateNames,
+                            LabelImageUrl = labelThumbnailUrl,
+                            Urls = urls,
+                            ImageUrls = images
+                        };
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.Logger.Error(ex);
+            }
+            return new OperationResult<IEnumerable<LabelSearchResult>>
+            {
+                IsSuccess = data != null,
+                Data = new LabelSearchResult[] { data }
+            };
+        }
+
         public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
         {
             ReleaseSearchResult data = null;
@@ -255,10 +197,12 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             {
                 var request = this.BuildSearchRequest(query, 10, "release", artistName);
 
-                var client = new RestClient("https://api.discogs.com/database");
-                client.UserAgent = WebHelper.UserAgent;
-                client.ReadWriteTimeout = this.Configuration.GetValue<int>("Integrations:DiscogsReadWriteTimeout", 45);
-                client.Timeout = this.Configuration.GetValue<int>("Integrations:DiscogsTimeout", 60);
+                var client = new RestClient("https://api.discogs.com/database")
+                {
+                    UserAgent = WebHelper.UserAgent,
+                    ReadWriteTimeout = (int)this.Configuration.Integrations.DiscogsReadWriteTimeout,
+                    Timeout = (int)this.Configuration.Integrations.DiscogsTimeout
+                };
 
                 var response = await client.ExecuteTaskAsync<DiscogsReleaseSearchResult>(request);
 
@@ -373,80 +317,139 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             };
         }
 
-        public async Task<OperationResult<IEnumerable<LabelSearchResult>>> PerformLabelSearch(string labelName, int resultsCount)
+        private RestRequest BuildArtistRequest(int? artistId)
         {
-            LabelSearchResult data = null;
-            try
+            var request = new RestRequest
             {
-                var request = this.BuildSearchRequest(labelName, 1, "label");
-
-                var client = new RestClient("https://api.discogs.com/database");
-                client.UserAgent = WebHelper.UserAgent;
-
-                var response = await client.ExecuteTaskAsync<DiscogsResult>(request);
-
-                if (response.ResponseStatus == ResponseStatus.Error)
-                {
-                    if (response.StatusCode == HttpStatusCode.Unauthorized)
-                    {
-                        throw new AuthenticationException("Unauthorized");
-                    }
-                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
-                }
-                Result responseData = response.Data.results != null && response.Data.results.Any() ? response.Data.results.First() : null;
-                if (responseData != null)
-                {
-                    request = this.BuildLabelRequest(responseData.id);
-                    var c2 = new RestClient("https://api.discogs.com/");
-                    c2.UserAgent = WebHelper.UserAgent;
-                    var labelResponse = await c2.ExecuteTaskAsync<DiscogsLabelResult>(request);
-                    DiscogsLabelResult label = labelResponse.Data;
-                    if (label != null)
-                    {
-                        var urls = new List<string>();
-                        var images = new List<string>();
-                        var alternateNames = new List<string>();
-                        string labelThumbnailUrl = null;
-                        urls.Add(label.uri);
-                        if (label.urls != null)
-                        {
-                            urls.AddRange(label.urls);
-                        }
-                        if (label.images != null)
-                        {
-                            images.AddRange(label.images.Where(x => x.type != "primary").Select(x => x.uri));
-                            var primaryImage = label.images.FirstOrDefault(x => x.type == "primary");
-                            if (primaryImage != null)
-                            {
-                                labelThumbnailUrl = primaryImage.uri;
-                            }
-                            if (string.IsNullOrEmpty(labelThumbnailUrl))
-                            {
-                                labelThumbnailUrl = label.images.First(x => !string.IsNullOrEmpty(x.uri)).uri;
-                            }
-                        }
-                        data = new LabelSearchResult
-                        {
-                            LabelName = label.name,
-                            DiscogsId = label.id.ToString(),
-                            Profile = label.profile,
-                            AlternateNames = alternateNames,
-                            LabelImageUrl = labelThumbnailUrl,
-                            Urls = urls,
-                            ImageUrls = images
-                        };
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                this.Logger.Error(ex);
-            }
-            return new OperationResult<IEnumerable<LabelSearchResult>>
-            {
-                IsSuccess = data != null,
-                Data = new LabelSearchResult[] { data }
+                Resource = "artists/{id}",
+                Method = Method.GET,
+                RequestFormat = DataFormat.Json
             };
+            request.AddUrlSegment("id", artistId.ToString());
+            request.AddParameter(new Parameter
+            {
+                Name = "key",
+                Value = this.ApiKey.Key,
+                Type = ParameterType.GetOrPost
+            });
+            request.AddParameter(new Parameter
+            {
+                Name = "secret",
+                Value = this.ApiKey.KeySecret,
+                Type = ParameterType.GetOrPost
+            });
+
+            return request;
+        }
+
+        private RestRequest BuildLabelRequest(int? artistId)
+        {
+            var request = new RestRequest
+            {
+                Resource = "labels/{id}",
+                Method = Method.GET,
+                RequestFormat = DataFormat.Json
+            };
+            request.AddUrlSegment("id", artistId.ToString());
+            request.AddParameter(new Parameter
+            {
+                Name = "key",
+                Value = this.ApiKey.Key,
+                Type = ParameterType.GetOrPost
+            });
+            request.AddParameter(new Parameter
+            {
+                Name = "secret",
+                Value = this.ApiKey.KeySecret,
+                Type = ParameterType.GetOrPost
+            });
+
+            return request;
+        }
+
+        private RestRequest BuildReleaseRequest(int? releaseId)
+        {
+            var request = new RestRequest
+            {
+                Resource = "releases/{id}",
+                Method = Method.GET,
+                RequestFormat = DataFormat.Json
+            };
+            request.AddUrlSegment("id", releaseId.ToString());
+            request.AddParameter(new Parameter
+            {
+                Name = "key",
+                Value = this.ApiKey.Key,
+                Type = ParameterType.GetOrPost
+            });
+            request.AddParameter(new Parameter
+            {
+                Name = "secret",
+                Value = this.ApiKey.KeySecret,
+                Type = ParameterType.GetOrPost
+            });
+
+            return request;
+        }
+
+        private RestRequest BuildSearchRequest(string query, int resultsCount, string entityType, string artist = null)
+        {
+            var request = new RestRequest
+            {
+                Resource = "search",
+                Method = Method.GET,
+                RequestFormat = DataFormat.Json
+            };
+            if (resultsCount > 0)
+            {
+                request.AddParameter(new Parameter
+                {
+                    Name = "page",
+                    Value = 1,
+                    Type = ParameterType.GetOrPost
+                });
+                request.AddParameter(new Parameter
+                {
+                    Name = "per_page",
+                    Value = resultsCount,
+                    Type = ParameterType.GetOrPost
+                });
+            }
+            request.AddParameter(new Parameter
+            {
+                Name = "type",
+                Value = entityType,
+                Type = ParameterType.GetOrPost
+            });
+            request.AddParameter(new Parameter
+            {
+                Name = "q",
+                Value = string.Format("'{0}'", query.Trim()),
+                Type = ParameterType.GetOrPost
+            });
+            if (!string.IsNullOrEmpty(artist))
+            {
+                request.AddParameter(new Parameter
+                {
+                    Name = "artist",
+                    Value = string.Format("'{0}'", artist.Trim()),
+                    Type = ParameterType.GetOrPost
+                });
+            }
+            request.AddParameter(new Parameter
+            {
+                Name = "key",
+                Value = this.ApiKey.Key,
+                Type = ParameterType.GetOrPost
+            });
+            request.AddParameter(new Parameter
+            {
+                Name = "secret",
+                Value = this.ApiKey.KeySecret,
+                Type = ParameterType.GetOrPost
+            });
+
+            return request;
         }
     }
 }

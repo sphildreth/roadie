@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Roadie.Library.Configuration;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -10,7 +10,7 @@ namespace Roadie.Library.Imaging
     /// </summary>
     public sealed class ImageProcessor : IDisposable
     {
-        private readonly IConfiguration _configuration;
+        private readonly IRoadieSettings _configuration;
         private IntPtr nativeResource = Marshal.AllocHGlobal(100);
 
         ///// <summary>
@@ -36,13 +36,11 @@ namespace Roadie.Library.Imaging
         {
             get
             {
-                return this.Configuration.GetValue<int>("ImageProcessor:MaxWidth", 500);
+                return this.Configuration.Processing.MaxImageWidth;
             }
         }
 
-
-
-        private IConfiguration Configuration
+        private IRoadieSettings Configuration
         {
             get
             {
@@ -53,7 +51,7 @@ namespace Roadie.Library.Imaging
         /// <summary>
         /// Processor that takes images and performs any manipulations
         /// </summary>
-        public ImageProcessor(IConfiguration configuration)
+        public ImageProcessor(IRoadieSettings configuration)
         {
             this._configuration = configuration;
         }
