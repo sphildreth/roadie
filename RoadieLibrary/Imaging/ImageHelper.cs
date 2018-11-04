@@ -16,36 +16,6 @@ namespace Roadie.Library.Imaging
 {
     public static class ImageHelper
     {
-        public static byte[] ConvertImageToGreyscale(byte[] imageBytes)
-        {
-            using (MemoryStream inStream = new MemoryStream(imageBytes))
-            {
-                using (MemoryStream outStream = new MemoryStream())
-                {
-                    byte[] byteArray = new byte[0];
-                    using (var image = new Bitmap(inStream))
-                    {
-                        for (int i = 0; i < image.Width; i++)
-                        {
-                            for (int j = 0; j < image.Height; j++)
-                            {
-                                int ser = (image.GetPixel(i, j).R + image.GetPixel(i, j).G + image.GetPixel(i, j).B) / 3;
-                                image.SetPixel(i, j, Color.FromArgb(ser, ser, ser));
-                            }
-                        }
-                        using (MemoryStream stream = new MemoryStream())
-                        {
-                            image.Save(stream, ImageFormat.Jpeg);
-                            stream.Close();
-
-                            byteArray = stream.ToArray();
-                        }
-                    }
-                    return byteArray;
-                }
-            }
-        }
-
         public static byte[] ConvertToJpegFormat(byte[] imageBytes)
         {
             if (imageBytes == null)
@@ -61,12 +31,6 @@ namespace Roadie.Library.Imaging
                 }
                 return outStream.ToArray();
             }
-        }
-
-        public static string GenerateImageSignature(byte[] imageBytes)
-        {
-            var greyScale = ConvertImageToGreyscale(imageBytes);
-            return ResizeImage(greyScale, 8, 8).ComputeHash().ToString();
         }
 
         public static string[] GetFiles(string path, string[] patterns = null, SearchOption options = SearchOption.TopDirectoryOnly)

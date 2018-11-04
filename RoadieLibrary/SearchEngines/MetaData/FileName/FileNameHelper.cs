@@ -6,21 +6,23 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Roadie.Library.MetaData.Audio;
+using Microsoft.Extensions.Configuration;
 
 namespace Roadie.Library.MetaData.FileName
 {
     public class FileNameHelper : MetaDataProviderBase
     {
-        public FileNameHelper(ICacheManager cacheManager, ILogger loggingService) : base(cacheManager, loggingService)
+        public FileNameHelper(IConfiguration configuration, ICacheManager cacheManager, ILogger loggingService) 
+            : base(configuration, cacheManager, loggingService)
         { }
 
-        public static string CleanString(string input)
+        public string CleanString(string input)
         {
             if (string.IsNullOrEmpty(input))
             {
                 return input;
             }
-            return input.CleanString();
+            return input.CleanString(this.Configuration);
         }
 
         public AudioMetaData MetaDataFromFilename(string rawFilename)
@@ -185,7 +187,7 @@ namespace Roadie.Library.MetaData.FileName
             return new AudioMetaData();
         }
 
-        public static AudioMetaData MetaDataFromFileInfo(FileInfo fileInfo)
+        public AudioMetaData MetaDataFromFileInfo(FileInfo fileInfo)
         {
             var justFilename = CleanString(fileInfo.Name.Replace(fileInfo.Extension, ""));
             if (IsTrckTit2(justFilename))

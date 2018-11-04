@@ -5,6 +5,7 @@ using Roadie.Library.Logging;
 using System.Linq;
 using Roadie.Library.Data;
 using Microsoft.Extensions.Configuration;
+using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Processors
 {
@@ -15,12 +16,21 @@ namespace Roadie.Library.Processors
         protected readonly ILogger _logger = null;
         protected readonly IRoadieDbContext _dbContext = null;
         protected readonly IConfiguration _configuration = null;
+        protected readonly IHttpEncoder _httpEncoder = null;
 
         protected ArtistFactory _artistFactory = null;
         protected ReleaseFactory _releaseFactory = null;
         protected ImageFactory _imageFactory = null;
 
         public int? SubmissionId { get; set; }
+
+        public IHttpEncoder HttpEncoder
+        {
+            get
+            {
+                return this._httpEncoder;
+            }
+        }
 
         protected string DestinationRoot
         {
@@ -34,7 +44,7 @@ namespace Roadie.Library.Processors
         {
             get
             {
-                return this._artistFactory ?? (this._artistFactory = new ArtistFactory(this.Configuration, this.DbContext, this.CacheManager, this.LoggingService));
+                return this._artistFactory ?? (this._artistFactory = new ArtistFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.LoggingService));
             }
             set
             {
@@ -46,7 +56,7 @@ namespace Roadie.Library.Processors
         {
             get
             {
-                return this._releaseFactory ?? (this._releaseFactory = new ReleaseFactory(this.Configuration, this.DbContext, this.CacheManager, this.LoggingService));
+                return this._releaseFactory ?? (this._releaseFactory = new ReleaseFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.LoggingService));
             }
             set
             {
@@ -58,7 +68,7 @@ namespace Roadie.Library.Processors
         {
             get
             {
-                return this._imageFactory ?? (this._imageFactory = new ImageFactory(this.Configuration, this.DbContext, this.CacheManager, this.LoggingService));
+                return this._imageFactory ?? (this._imageFactory = new ImageFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.LoggingService));
             }
             set
             {
@@ -71,7 +81,7 @@ namespace Roadie.Library.Processors
         {
             get
             {
-                return SettingsHelper.Instance.Processing.DoMoveUnknowns;
+                return this.Configuration.GetValue<bool>("Processing:DoMoveUnknowns");
             }
         }
 
@@ -79,7 +89,7 @@ namespace Roadie.Library.Processors
         {
             get
             {
-                return SettingsHelper.Instance.Processing.DoDeleteUnknowns;
+                return this.Configuration.GetValue<bool>("Processing:DoDeleteUnknowns");
             }
         }
 
@@ -87,7 +97,7 @@ namespace Roadie.Library.Processors
         {
             get
             {
-                return SettingsHelper.Instance.Processing.UnknownFolder;
+                return this.Configuration.GetValue<string>("Processing:UnknownFolder");
             }
         }
         protected ICacheManager CacheManager
@@ -122,9 +132,10 @@ namespace Roadie.Library.Processors
             }
         }
 
-        public ProcessorBase(IConfiguration configuration, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
+        public ProcessorBase(IConfiguration configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
         {
             this._configuration = configuration;
+            this._httpEncoder = httpEncoder;
             this._dbContext = context;
             this._destinationRoot = destinationRoot;
             this._cacheManager = cacheManager;

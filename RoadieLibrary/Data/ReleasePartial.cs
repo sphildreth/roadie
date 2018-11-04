@@ -133,7 +133,7 @@ namespace Roadie.Library.Data
         /// <returns></returns>
         public string ReleaseFileFolder(string artistFolder)
         {
-            return FolderPathHelper.ReleasePath(artistFolder, this.Title, this.ReleaseDate);
+            return FolderPathHelper.ReleasePath(artistFolder, this.Title, this.ReleaseDate.Value);
         }
 
     }

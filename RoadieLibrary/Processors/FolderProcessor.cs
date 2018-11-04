@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Roadie.Library.Data;
+using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Processors
 {
@@ -27,11 +28,11 @@ namespace Roadie.Library.Processors
         }
         public int? ProcessLimit { get; set; }
 
-        public FolderProcessor(IConfiguration configuration,string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger loggingService) 
-            : base(configuration, destinationRoot, context, cacheManager, loggingService)
+        public FolderProcessor(IConfiguration configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger loggingService) 
+            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, loggingService)
         {
             SimpleContract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(destinationRoot), "Invalid Destination Folder");
-            this._fileProcessor = new FileProcessor(configuration, destinationRoot, context, cacheManager, loggingService);
+            this._fileProcessor = new FileProcessor(configuration, httpEncoder, destinationRoot, context, cacheManager, loggingService);
         }
 
         public async Task<OperationResult<bool>> Process(DirectoryInfo inboundFolder, bool doJustInfo, int? submissionId = null)

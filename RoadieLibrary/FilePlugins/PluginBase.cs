@@ -12,12 +12,14 @@ using Roadie.Library.Factories;
 using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Roadie.Library.MetaData.ID3Tags;
+using Roadie.Library.Encoding;
 
 namespace Roadie.Library.FilePlugins
 {
     public abstract class PluginBase : IFilePlugin
     {
         protected readonly IConfiguration _configuration = null;
+        protected readonly IHttpEncoder _httpEncoder = null;
         protected readonly ICacheManager _cacheManager = null;
         protected readonly ILogger _loggingService = null;
         protected readonly ArtistFactory _artistFactory = null;
@@ -31,6 +33,14 @@ namespace Roadie.Library.FilePlugins
             get
             {
                 return this._configuration;
+            }
+        }
+
+        protected IHttpEncoder HttpEncoder
+        {
+            get
+            {
+                return this._httpEncoder;
             }
         }
 
@@ -90,7 +100,7 @@ namespace Roadie.Library.FilePlugins
         {
             get
             {
-                return this._audioPlugin ?? (this._audioPlugin = new Audio(this.ArtistFactory, this.ReleaseFactory, this.ImageFactory, this.CacheManager, this.Logger));
+                return this._audioPlugin ?? (this._audioPlugin = new Audio(this.Configuration, this.HttpEncoder, this.ArtistFactory, this.ReleaseFactory, this.ImageFactory, this.CacheManager, this.Logger));
             }
             set
             {
@@ -98,9 +108,10 @@ namespace Roadie.Library.FilePlugins
             }
         }
 
-        public PluginBase(IConfiguration configuration, ArtistFactory artistFactory, ReleaseFactory releaseFactory, ImageFactory imageFactory, ICacheManager cacheManager, ILogger logger)
+        public PluginBase(IConfiguration configuration, IHttpEncoder httpEncoder, ArtistFactory artistFactory, ReleaseFactory releaseFactory, ImageFactory imageFactory, ICacheManager cacheManager, ILogger logger)
         {
             this._configuration = configuration;
+            this._httpEncoder = httpEncoder;
             this._artistFactory = artistFactory;
             this._releaseFactory = releaseFactory;
             this._imageFactory = imageFactory;

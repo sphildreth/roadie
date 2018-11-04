@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Roadie.Library.Data;
+using Roadie.Library.Encoding;
 
 namespace Roadie.Library.MetaData.Audio
 {
@@ -24,6 +25,7 @@ namespace Roadie.Library.MetaData.Audio
         private readonly IRoadieDbContext _dbContext = null;
         private readonly ICacheManager _cacheManager = null;
         private readonly ILogger _logger = null;
+        private readonly IHttpEncoder _httpEncoder = null;
         private readonly MusicBrainzProvider _musicBrainzProvider = null;
         private readonly LastFmHelper _lastFmHelper = null;
         private readonly FileNameHelper _fileNameHelper = null;
@@ -35,6 +37,14 @@ namespace Roadie.Library.MetaData.Audio
             get
             {
                 return this._configuration;
+            }
+        }
+
+        private IHttpEncoder HttpEncoder
+        {
+            get
+            {
+                return this._httpEncoder;
             }
         }
 
@@ -102,7 +112,7 @@ namespace Roadie.Library.MetaData.Audio
         {
             get
             {
-                return this._imageFactory ?? (this._imageFactory = new ImageFactory(this.Configuration, this.DBContext, this.CacheManager, this.Logger));
+                return this._imageFactory ?? (this._imageFactory = new ImageFactory(this.Configuration, this.HttpEncoder, this.DBContext, this.CacheManager, this.Logger));
             }
             set
             {
@@ -118,14 +128,15 @@ namespace Roadie.Library.MetaData.Audio
         public bool DoParseFromMusicBrainz { get; set; }
         public bool DoParseFromLastFM { get; set; }
 
-        public AudioMetaDataHelper(IConfiguration configuration, IRoadieDbContext context, MusicBrainzProvider musicBrainzHelper, LastFmHelper lastFmHelper, ICacheManager cacheManager, ILogger logger, ImageFactory imageFactory = null)
+        public AudioMetaDataHelper(IConfiguration configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, MusicBrainzProvider musicBrainzHelper, LastFmHelper lastFmHelper, ICacheManager cacheManager, ILogger logger, ImageFactory imageFactory = null)
         {
             this._configuration = configuration;
+            this._httpEncoder = httpEncoder;
             this._dbContext = context;
             this._cacheManager = cacheManager;
             this._logger = logger;
             this._imageFactory = imageFactory;
-            this._fileNameHelper = new FileNameHelper(cacheManager, logger);
+            this._fileNameHelper = new FileNameHelper(configuration, cacheManager, logger);
 
             this._musicBrainzProvider = musicBrainzHelper;
             this._lastFmHelper = lastFmHelper;

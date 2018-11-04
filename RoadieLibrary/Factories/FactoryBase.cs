@@ -9,6 +9,7 @@ using Roadie.Library.Data;
 using Roadie.Library.MetaData.MusicBrainz;
 using Roadie.Library.MetaData.LastFm;
 using Microsoft.Extensions.Configuration;
+using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Factories
 {
@@ -25,12 +26,21 @@ namespace Roadie.Library.Factories
         protected readonly ICacheManager _cacheManager = null;
         protected readonly ILogger _logger = null;
         protected readonly IRoadieDbContext _dbContext = null;
+        protected readonly IHttpEncoder _httpEncoder = null;
 
         protected ICacheManager CacheManager
         {
             get
             {
                 return this._cacheManager;
+            }
+        }
+
+        protected IHttpEncoder HttpEncoder
+        {
+            get
+            {
+                return this._httpEncoder;
             }
         }
 
@@ -162,20 +172,20 @@ namespace Roadie.Library.Factories
             }
         }
 
-        public FactoryBase(IConfiguration configuration, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger
-            )
+        public FactoryBase(IConfiguration configuration, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IHttpEncoder httpEncoder)
         {
             this._configuration = configuration;
             this._dbContext = context;
             this._cacheManager = cacheManager;
             this._logger = logger;
+            this._httpEncoder = httpEncoder;
 
-            this._itunesArtistSearchEngine = new ITunesSearchEngine(configuration, this.CacheManager, this.Logger);
-            this._musicBrainzyArtistSearchEngine = new MusicBrainzProvider(configuration, this.CacheManager, this.Logger);
-            this._lastFmArtistSearchEngine = new LastFmHelper(configuration, this.CacheManager, this.Logger);
-            this._spotifyArtistSearchEngine = new SpotifyHelper(configuration, this.CacheManager, this.Logger);
-            this._wikipediaArtistSearchEngine = new WikipediaHelper(configuration, this.CacheManager, this.Logger);
-            this._discogsArtistSearchEngine = new DiscogsHelper(configuration, this.CacheManager, this.Logger);
+            this._itunesArtistSearchEngine = new ITunesSearchEngine(this.Configuration, this.CacheManager, this.Logger);
+            this._musicBrainzyArtistSearchEngine = new MusicBrainzProvider(this.Configuration, this.CacheManager, this.Logger);
+            this._lastFmArtistSearchEngine = new LastFmHelper(this.Configuration, this.CacheManager, this.Logger);
+            this._spotifyArtistSearchEngine = new SpotifyHelper(this.Configuration, this.CacheManager, this.Logger);
+            this._wikipediaArtistSearchEngine = new WikipediaHelper(this.Configuration, this.CacheManager, this.Logger, this.HttpEncoder);
+            this._discogsArtistSearchEngine = new DiscogsHelper(this.Configuration, this.CacheManager, this.Logger);
         }
     }
 }

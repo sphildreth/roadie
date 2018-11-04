@@ -15,16 +15,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using Roadie.Library.Data;
 using Microsoft.Extensions.Configuration;
+using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Factories
 {
     public class PlaylistFactory : FactoryBase
     {
-        public PlaylistFactory(IConfiguration configuration, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger) : base(configuration, context, cacheManager, logger)
+        public PlaylistFactory(IConfiguration configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger) : base(configuration, context, cacheManager, logger, httpEncoder)
         {
         }
 
-        public async Task<FactoryResult<bool>> AddTracksToPlaylist(Playlist playlist, IEnumerable<string> trackIds)
+        public async Task<FactoryResult<bool>> AddTracksToPlaylist(Playlist playlist, IEnumerable<Guid> trackIds)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -44,10 +45,9 @@ namespace Roadie.Library.Factories
             {
                 this.DbContext.PlaylistTracks.Add(new PlaylistTrack
                 {
-                    TrackId = newTrackForPlaylist.id,
+                    TrackId = newTrackForPlaylist.Id,
                     PlayListId = playlist.Id,
-                    CreatedDate = now,
-                    RoadieId = Guid.NewGuid()
+                    CreatedDate = now
                 });
             }
             playlist.LastUpdated = now;
@@ -74,7 +74,7 @@ namespace Roadie.Library.Factories
             if (playlist != null)
             {
                 var looper = 0;
-                foreach(var playlistTrack in this.DbContext.PlaylistTracks.Where(x => x.PlayListId == playlist.Id).OrderBy(x => x.createdDate))
+                foreach(var playlistTrack in this.DbContext.PlaylistTracks.Where(x => x.PlayListId == playlist.Id).OrderBy(x => x.CreatedDate))
                 {
                     looper++;
                     playlistTrack.ListNumber = looper;

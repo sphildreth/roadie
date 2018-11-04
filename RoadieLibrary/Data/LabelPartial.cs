@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Roadie.Library.Data
@@ -19,7 +20,7 @@ namespace Roadie.Library.Data
             {
                 using (var md5 = System.Security.Cryptography.MD5.Create())
                 {
-                    return String.Concat(md5.ComputeHash(Encoding.Default.GetBytes(string.Format("{0}{1}", this.RoadieId, this.LastUpdated))).Select(x => x.ToString("D2")));
+                    return String.Concat(md5.ComputeHash(System.Text.Encoding.Default.GetBytes(string.Format("{0}{1}", this.RoadieId, this.LastUpdated))).Select(x => x.ToString("D2")));
                 }
             }
         }

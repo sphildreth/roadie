@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.Imaging;
+using Roadie.Library.Encoding;
 
 namespace Roadie.Library.FilePlugins
 {
@@ -55,7 +56,7 @@ namespace Roadie.Library.FilePlugins
         {
             get
             {
-                return this._audioMetaDataHelper ?? (this._audioMetaDataHelper = new AudioMetaDataHelper(this.Configuration, null, this.MusicBrainzProvider, this.LastFmHelper, this.CacheManager, this.Logger, this.ImageFactory));
+                return this._audioMetaDataHelper ?? (this._audioMetaDataHelper = new AudioMetaDataHelper(this.Configuration, this.HttpEncoder, null, this.MusicBrainzProvider, this.LastFmHelper, this.CacheManager, this.Logger, this.ImageFactory));
             }
             set
             {
@@ -73,11 +74,12 @@ namespace Roadie.Library.FilePlugins
 
 
         public Audio(IConfiguration configuration, 
+            IHttpEncoder httpEncoder,
             ArtistFactory artistFactory,
             ReleaseFactory releaseFactory,
             ImageFactory imageFactory,
             ICacheManager cacheManager,
-            ILogger logger) : base(configuration, artistFactory, releaseFactory, imageFactory, cacheManager, logger)
+            ILogger logger) : base(configuration, httpEncoder, artistFactory, releaseFactory, imageFactory, cacheManager, logger)
         {
         }
 
@@ -135,7 +137,7 @@ namespace Roadie.Library.FilePlugins
                     Messages = new List<string> { "Unable To Find Release Folder" }
                 };
             }
-            destinationName = FolderPathHelper.TrackFullPath(metaData, dr, artistFolder);
+            destinationName = FolderPathHelper.TrackFullPath(this.Configuration, metaData, dr, artistFolder);
             this.Logger.Trace("Info: FileInfo [{0}], Artist Folder [{1}], Destination Name [{2}]", fileInfo.FullName, artistFolder, destinationName);
 
             if (doJustInfo)
@@ -249,7 +251,7 @@ namespace Roadie.Library.FilePlugins
                 return null;
             }
             this._releaseId = release.Data.RoadieId;
-            release.Data.releaseDate = SafeParser.ToDateTime(metaData.Year);
+            release.Data.ReleaseDate = SafeParser.ToDateTime(metaData.Year);
             return release.Data.ReleaseFileFolder(artistFolder);
         }
 
@@ -262,7 +264,7 @@ namespace Roadie.Library.FilePlugins
             }
             try
             {
-                return artist.Data.ArtistFileFolder(destinationRoot);
+                return artist.Data.ArtistFileFolder(this.Configuration,destinationRoot);
             }
             catch (Exception ex)
             {

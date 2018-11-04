@@ -20,6 +20,7 @@ using Roadie.Library.MetaData.MusicBrainz;
 using Roadie.Library.MetaData.LastFm;
 using Microsoft.EntityFrameworkCore;
 using Roadie.Library.Imaging;
+using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Factories
 {
@@ -55,11 +56,13 @@ namespace Roadie.Library.Factories
         {
             get
             {
-                return this._audioMetaDataHelper ?? (this._audioMetaDataHelper = new AudioMetaDataHelper(this.Configuration, this.DbContext, 
-                                                                                                                       new MusicBrainzProvider(this.Configuration, this.CacheManager, this.Logger),
-                                                                                                                       new LastFmHelper(this.Configuration, this.CacheManager, this.Logger),
-                                                                                                                       this.CacheManager,
-                                                                                                                       this.Logger));
+                return this._audioMetaDataHelper ?? (this._audioMetaDataHelper = new AudioMetaDataHelper(this.Configuration, 
+                                                                                                         this.HttpEncoder, 
+                                                                                                         this.DbContext, 
+                                                                                                         new MusicBrainzProvider(this.Configuration, this.CacheManager, this.Logger),
+                                                                                                         new LastFmHelper(this.Configuration, this.CacheManager, this.Logger),
+                                                                                                         this.CacheManager,
+                                                                                                         this.Logger));
             }
             set
             {
@@ -83,10 +86,10 @@ namespace Roadie.Library.Factories
             }
         }
 
-        public ReleaseFactory(IConfiguration configuration, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, LabelFactory labelFactory = null, ArtistFactory artistFactory = null) : base(configuration, context, cacheManager, logger)
+        public ReleaseFactory(IConfiguration configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, LabelFactory labelFactory = null, ArtistFactory artistFactory = null) : base(configuration, context, cacheManager, logger, httpEncoder)
         {
-            this._labelFactory = labelFactory ?? new LabelFactory(configuration, context, CacheManager, logger);
-            this._artistFactory = artistFactory ?? new ArtistFactory(configuration, context, CacheManager, logger);
+            this._labelFactory = labelFactory ?? new LabelFactory(configuration, httpEncoder, context, CacheManager, logger);
+            this._artistFactory = artistFactory ?? new ArtistFactory(configuration, httpEncoder, context, CacheManager, logger);
         }
 
         public FactoryResult<Data.Release> GetAllForArtist(Data.Artist artist, bool forceRefresh = false)
@@ -326,22 +329,22 @@ namespace Roadie.Library.Factories
                 var releaseMediaNumbersFound = new List<short?>();
                 foreach (var kp in releaseMediaTracksFound)
                 {
-                    var releaseMedia = this.DbContext.ReleaseMedias.FirstOrDefault(x => x.id == kp.Key);
+                    var releaseMedia = this.DbContext.ReleaseMedias.FirstOrDefault(x => x.Id == kp.Key);
                     if (releaseMedia != null)
                     {
-                        if(!releaseMediaNumbersFound.Any(x => x == releaseMedia.releaseMediaNumber))
+                        if(!releaseMediaNumbersFound.Any(x => x == releaseMedia.MediaNumber))
                         {
-                            releaseMediaNumbersFound.Add(releaseMedia.releaseMediaNumber);
+                            releaseMediaNumbersFound.Add(releaseMedia.MediaNumber);
                         }
-                        var releaseMediaFoundInFolderTrackNumbers = foundInFolderTracks.Where(x => x.ReleaseMediaId == releaseMedia.id).Select(x => x.TrackNumber).OrderBy(x => x).ToArray();
+                        var releaseMediaFoundInFolderTrackNumbers = foundInFolderTracks.Where(x => x.ReleaseMediaId == releaseMedia.Id).Select(x => x.TrackNumber).OrderBy(x => x).ToArray();
                         var areTracksForRelaseMediaSequential = releaseMediaFoundInFolderTrackNumbers.Zip(releaseMediaFoundInFolderTrackNumbers.Skip(1), (a, b) => (a + 1) == b).All(x => x);
                         if (!areTracksForRelaseMediaSequential)
                         {
-                            this.Logger.Debug("ReleaseMedia [{0}] Track Numbers Are Not Sequential", releaseMedia.id);
+                            this.Logger.Debug("ReleaseMedia [{0}] Track Numbers Are Not Sequential", releaseMedia.Id);
                         }
-                        releaseMedia.trackCount = kp.Value;
-                        releaseMedia.lastUpdated = now;
-                        releaseMedia.status = areTracksForRelaseMediaSequential ? (short)Statuses.Ok : (short)Statuses.Incomplete;
+                        releaseMedia.TrackCount = kp.Value;
+                        releaseMedia.LastUpdated = now;
+                        releaseMedia.Status = areTracksForRelaseMediaSequential ? Statuses.Ok : Statuses.Incomplete;
                         await this.DbContext.SaveChangesAsync();
                         modifiedRelease = true;
                     };
@@ -950,7 +953,7 @@ namespace Roadie.Library.Factories
                             {
                                 ReleaseDate = result.ReleaseDate ?? s.ReleaseDate,
                                 AmgId = s.AmgId,
-                                Profile = HttpUtility.HtmlEncode(s.Profile),
+                                Profile = this.HttpEncoder.HtmlEncode(s.Profile),
                                 SpotifyId = s.SpotifyId,
                                 MusicBrainzId = s.MusicBrainzId,
                                 ITunesId = s.iTunesId,
@@ -1002,7 +1005,7 @@ namespace Roadie.Library.Factories
                             }
                             result.CopyTo(new Data.Release
                             {
-                                Profile = HttpUtility.HtmlEncode(d.Profile),
+                                Profile = this.HttpEncoder.HtmlEncode(d.Profile),
                                 DiscogsId = d.DiscogsId,
                                 Title = result.Title ?? d.ReleaseTitle,
                                 Thumbnail = d.ReleaseThumbnailUrl != null ? WebHelper.BytesForImageUrl(d.ReleaseThumbnailUrl) : null,
@@ -1288,7 +1291,7 @@ namespace Roadie.Library.Factories
                     }
                     catch (Exception ex)
                     {
-                        this.Logger.Error(ex, string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath, track.id, ex.Serialize()));
+                        this.Logger.Error(ex, string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath, track.Id, ex.Serialize()));
                     }
                 }
                 try
@@ -1310,7 +1313,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, string.Format("Error Clearing Cache For Release [{0}] Exception [{1}]", release.id, ex.Serialize()));
+                this.Logger.Error(ex, string.Format("Error Clearing Cache For Release [{0}] Exception [{1}]", release.Id, ex.Serialize()));
             }
             sw.Stop();
             return new FactoryResult<bool>
@@ -1503,8 +1506,8 @@ namespace Roadie.Library.Factories
         {
             SimpleContract.Requires<ArgumentNullException>(releaseToMerge != null, "Invalid Release");
             SimpleContract.Requires<ArgumentNullException>(releaseToMergeInto != null, "Invalid Release");
-            SimpleContract.Requires<ArgumentNullException>(releaseToMerge.artist != null, "Invalid Artist");
-            SimpleContract.Requires<ArgumentNullException>(releaseToMergeInto.artist != null, "Invalid Artist");
+            SimpleContract.Requires<ArgumentNullException>(releaseToMerge.Artist != null, "Invalid Artist");
+            SimpleContract.Requires<ArgumentNullException>(releaseToMergeInto.Artist != null, "Invalid Artist");
 
             var result = false;
 
@@ -1519,7 +1522,7 @@ namespace Roadie.Library.Factories
             var now = DateTime.UtcNow;
             var releaseToMergeReleaseMedia = this.DbContext.ReleaseMedias.Where(x => x.ReleaseId == releaseToMerge.Id).ToList();
             var releaseToMergeIntoReleaseMedia = this.DbContext.ReleaseMedias.Where(x => x.ReleaseId == releaseToMergeInto.Id).ToList();
-            var releaseToMergeIntoLastMediaNumber = releaseToMergeIntoReleaseMedia.Max(x => x.MediaNumber) ?? 0;
+            var releaseToMergeIntoLastMediaNumber = releaseToMergeIntoReleaseMedia.Max(x => x.MediaNumber);
 
             // Add new ReleaseMedia
             if (addAsMedia || !releaseToMergeIntoReleaseMedia.Any())
@@ -1586,7 +1589,7 @@ namespace Roadie.Library.Factories
                                     existingTrack.LastPlayed = mergeTrack.LastPlayed;
                                 }
                                 existingTrack.Thumbnail = existingTrack.Thumbnail ?? mergeTrack.Thumbnail;
-                                existingTrack.MusicBrainzId = existingTrack.MusicBrainzId ?? mergeTrack.NusicBrainzId;
+                                existingTrack.MusicBrainzId = existingTrack.MusicBrainzId ?? mergeTrack.MusicBrainzId;
                                 existingTrack.Tags = existingTrack.Tags.AddToDelimitedList(mergeTrack.Tags.ToListFromDelimited());
                                 if (!mergeTrack.Title.Equals(existingTrack.Title, StringComparison.OrdinalIgnoreCase))
                                 {
@@ -1631,7 +1634,7 @@ namespace Roadie.Library.Factories
             }
 
             // Cleanup folders
-            var folderProcessor = new FolderProcessor(this.Configuration, destinationRoot, this.DbContext, this.CacheManager, this.Logger);
+            var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, destinationRoot, this.DbContext, this.CacheManager, this.Logger);
             folderProcessor.DeleteEmptyFolders(new DirectoryInfo(releaseToMergeIntoArtistFolder));
 
             // Now Merge release details            

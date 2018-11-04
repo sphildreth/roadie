@@ -18,12 +18,22 @@ namespace Roadie.Library.SearchEngines.Imaging
     /// </summary>
     public class BingImageSearchEngine : ImageSearchEngineBase
     {
+        private ILogger loggingService;
+        private string requestIp;
+        private string referrer;
 
         public BingImageSearchEngine(IConfiguration configuration, ILogger loggingService, string requestIp = null, string referrer = null)
             : base(configuration, loggingService, "https://api.cognitive.microsoft.com", requestIp, referrer)
         {
             this._apiKey = configuration.GetValue<List<ApiKey>>("ApiKeys", new List<ApiKey>()).FirstOrDefault(x => x.ApiName == "BingImageSearch") ?? new ApiKey();
         }
+
+        //public BingImageSearchEngine(ILogger loggingService, string requestIp, string referrer)
+        //{
+        //    this.loggingService = loggingService;
+        //    this.requestIp = requestIp;
+        //    this.referrer = referrer;
+        //}
 
         public override async Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount)
         {

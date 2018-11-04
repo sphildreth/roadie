@@ -12,24 +12,16 @@ using System.Threading.Tasks;
 using Roadie.Library.Data;
 using Microsoft.Extensions.Configuration;
 using Roadie.Library.MetaData.Audio;
+using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Factories
 {
     public sealed class ImageFactory : FactoryBase
     {
-        private readonly ImageProcessor _imageProcessor = null;
 
-        private ImageProcessor ImageProcessor
+        public ImageFactory(IConfiguration configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger) 
+            : base(configuration, context, cacheManager, logger, httpEncoder)
         {
-            get
-            {
-                return this._imageProcessor;
-            }
-        }
-
-        public ImageFactory(IConfiguration configuration, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger) : base(configuration, context, cacheManager, logger)
-        {
-            this._imageProcessor = new ImageProcessor();
         }
 
         /// <summary>
@@ -66,7 +58,7 @@ namespace Roadie.Library.Factories
                 var ReleaseCover = Path.ChangeExtension(filename, "jpg");
                 if (File.Exists(ReleaseCover))
                 {
-                    using (var processor = new ImageProcessor())
+                    using (var processor = new ImageProcessor(this.Configuration))
                     {
                         imageMetaData = new AudioMetaDataImage
                         {
@@ -96,7 +88,7 @@ namespace Roadie.Library.Factories
                         }
                         if (picture != null)
                         {
-                            using (var processor = new ImageProcessor())
+                            using (var processor = new ImageProcessor(this.Configuration))
                             {
                                 imageMetaData = new AudioMetaDataImage
                                 {

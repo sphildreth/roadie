@@ -10,12 +10,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Roadie.Library.Data;
 using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Factories
 {
     public sealed class LabelFactory : FactoryBase
     {
-        public LabelFactory(IConfiguration configuration, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger) : base(configuration, context, cacheManager, logger)
+        public LabelFactory(IConfiguration configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger) : base(configuration, context, cacheManager, logger, httpEncoder)
         {
         }
 
@@ -39,13 +41,6 @@ namespace Roadie.Library.Factories
                 try
                 {
                     inserted = await this.DbContext.SaveChangesAsync();
-                }
-                catch (System.Data.Entity.Validation.DbEntityValidationException ex)
-                {
-                    foreach (var v in ex.EntityValidationErrors.SelectMany(x => x.ValidationErrors))
-                    {
-                        this.Logger.Error(string.Format("Property [{0}], Error [{0}]", v.ErrorMessage, v.PropertyName));
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -88,7 +83,7 @@ namespace Roadie.Library.Factories
                 getParams.Add(new MySqlParameter("@startAlt", string.Format("{0}|%", searchName)));
                 getParams.Add(new MySqlParameter("@inAlt", string.Format("%|{0}|%", searchName)));
                 getParams.Add(new MySqlParameter("@endAlt", string.Format("%|{0}", searchName)));
-                var Label = this.DbContext.Labels.SqlQuery(@"SELECT *
+                var Label = this.DbContext.Labels.FromSql(@"SELECT *
                 FROM `Label`
                 WHERE LCASE(name) = @isName
                 OR LCASE(sortName) = @isName
@@ -172,13 +167,13 @@ namespace Roadie.Library.Factories
                     {
                         result.AlternateNames = result.AlternateNames.AddToDelimitedList(d.AlternateNames);
                     }
-                    if (!string.IsNullOrEmpty(d.LabelName) && !d.LabelName.Equals(result.name, StringComparison.OrdinalIgnoreCase))
+                    if (!string.IsNullOrEmpty(d.LabelName) && !d.LabelName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
                     {
                         result.AlternateNames.AddToDelimitedList(new string[] { d.LabelName });
                     }
                     result.CopyTo(new Label
                     {
-                        Profile = HttpUtility.HtmlEncode(d.Profile),
+                        Profile = this.HttpEncoder.HtmlEncode(d.Profile),
                         DiscogsId = d.DiscogsId,
                         Name = result.Name ?? d.LabelName.ToTitleCase(),
                         Thumbnail = d.LabelImageUrl != null ? WebHelper.BytesForImageUrl(d.LabelImageUrl) : null

@@ -9,6 +9,11 @@ namespace Roadie.Api.Services
 {
     public class HttpEncoder : IHttpEncoder
     {
+        public string HtmlEncode(string s)
+        {
+            return HttpUtility.HtmlEncode(s);
+        }
+
         public string UrlDecode(string s)
         {
             return HttpUtility.UrlDecode(s);

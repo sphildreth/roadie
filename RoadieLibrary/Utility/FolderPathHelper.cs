@@ -129,7 +129,7 @@ namespace Roadie.Library.Utility
         /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
         public static string TrackPath(IConfiguration configuration, Data.Artist artist, Data.Release release, Data.Track track, string destinationFolder = null)
         {
-            var fileInfo = new FileInfo(FolderPathHelper.TrackFullPath(configuration, artist.SortNameValue, release.Title, release.ReleaseDate, track.Title, track.TrackNumber, destinationFolder));
+            var fileInfo = new FileInfo(FolderPathHelper.TrackFullPath(configuration, artist.SortNameValue, release.Title, release.ReleaseDate.Value, track.Title, track.TrackNumber, destinationFolder));
             return fileInfo.Directory.Name;
         }
 
@@ -143,7 +143,7 @@ namespace Roadie.Library.Utility
         /// <returns></returns>
         public static string TrackFullPath(IConfiguration configuration, Data.Artist artist, Data.Release release, Data.Track track, string destinationFolder = null)
         {
-            return FolderPathHelper.TrackFullPath(configuration, artist.SortNameValue, release.Title, release.ReleaseDate, track.Title, track.TrackNumber, destinationFolder);
+            return FolderPathHelper.TrackFullPath(configuration, artist.SortNameValue, release.Title, release.ReleaseDate.Value, track.Title, track.TrackNumber, destinationFolder);
         }
 
         /// <summary>
@@ -211,7 +211,7 @@ namespace Roadie.Library.Utility
         {
             destinationFolder = destinationFolder ?? configuration.GetValue<string>("LibraryFolder");
             SimpleContract.Requires<ArgumentException>(artist != null, "Invalid Artist");
-            return FolderPathHelper.DeleteEmptyFolders(new DirectoryInfo(artist.ArtistFileFolder(destinationFolder)));
+            return FolderPathHelper.DeleteEmptyFolders(new DirectoryInfo(artist.ArtistFileFolder(configuration, destinationFolder)));
 
         }
 

@@ -4,6 +4,8 @@ using Roadie.Library.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Roadie.Library.Imaging;
+using Roadie.Library.Encoding;
+using Microsoft.Extensions.Configuration;
 
 namespace Roadie.Library.SearchEngines.Imaging
 {
@@ -20,10 +22,10 @@ namespace Roadie.Library.SearchEngines.Imaging
             }
         }
 
-        public ImageSearchManager(ICacheManager cacheManager, ILogger loggingService, string requestIp = null, string referrer = null)
+        public ImageSearchManager(IConfiguration configuration, ICacheManager cacheManager, ILogger loggingService, string requestIp = null, string referrer = null)
         {
-            this._bingSearchEngine = new BingImageSearchEngine(loggingService, requestIp, referrer);
-            this._itunesSearchEngine = new ITunesSearchEngine(cacheManager, loggingService, requestIp, referrer);
+            this._bingSearchEngine = new BingImageSearchEngine(configuration, loggingService, requestIp, referrer);
+            this._itunesSearchEngine = new ITunesSearchEngine(configuration, cacheManager, loggingService, requestIp, referrer);
         }
 
         public async Task<IEnumerable<ImageSearchResult>> ImageSearch(string query, int? resultsCount = null)

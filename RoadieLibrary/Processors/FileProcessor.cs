@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Roadie.Library.Data;
+using Roadie.Library.Encoding;
 
 namespace Roadie.Library.Processors
 {
@@ -55,7 +56,8 @@ namespace Roadie.Library.Processors
         }
 
 
-        public FileProcessor(IConfiguration configuration, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger) : base(configuration, destinationRoot, context, cacheManager, logger)
+        public FileProcessor(IConfiguration configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger) 
+            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, logger)
         {
         }
 

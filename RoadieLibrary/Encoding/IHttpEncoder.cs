@@ -8,5 +8,7 @@ namespace Roadie.Library.Encoding
     {
         string UrlEncode(string s);
         string UrlDecode(string s);
+
+        string HtmlEncode(string s);
     }
 }

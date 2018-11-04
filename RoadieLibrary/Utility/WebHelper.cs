@@ -37,7 +37,6 @@ namespace Roadie.Library.Utility
                 {
                     Url = url,
                     Status = Statuses.New,
-                    RoadieId = Guid.NewGuid(),
                     Signature = signature,
                     Bytes = ib
                 };
