@@ -9,7 +9,7 @@ using Roadie.Library.Caching;
 using Roadie.Library.Data;
 using System;
 using System.Linq;
-using models = Roadie.Api.Data.Models;
+using models = Roadie.Data.Models;
 
 namespace Roadie.Api.Controllers
 {

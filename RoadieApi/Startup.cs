@@ -20,7 +20,7 @@ using Roadie.Library.Identity;
 using System;
 using System.IO;
 using System.Reflection;
-using models = Roadie.Api.Data.Models;
+using models = Roadie.Data.Models;
 
 namespace Roadie.Api
 {

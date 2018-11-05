@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace Roadie.Api.Data.Models
+namespace Roadie.Data.Models
 {
     [Serializable]
     public class Release : EntityModelBase

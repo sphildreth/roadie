@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Roadie.Api.Data.Models
+namespace Roadie.Data.Models
 {
     /// <summary>
     /// Generic Info for a child item on a Detail record. Like a Label on a Release, or an Artist on a Release, or a Label for an Artist

@@ -10,7 +10,7 @@ using Roadie.Library.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using models = Roadie.Api.Data.Models;
+using models = Roadie.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Roadie.Api.Controllers

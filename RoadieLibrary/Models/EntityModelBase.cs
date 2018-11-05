@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
 
-namespace Roadie.Api.Data.Models
+namespace Roadie.Data.Models
 {
     public abstract class EntityModelBase
     {

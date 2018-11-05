@@ -22,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Roadie.Api.Data\Roadie.Api.Data.csproj" />
     <ProjectReference Include="..\RoadieLibrary\Roadie.Library.csproj" />
   </ItemGroup>
 

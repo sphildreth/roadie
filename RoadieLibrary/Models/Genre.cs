@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace Roadie.Api.Data.Models
+namespace Roadie.Data.Models
 {
     [Serializable]
-    public class ReleaseGenre : EntityModelBase
+    public class Genre : EntityModelBase
     {
-        public Genre Genre { get; set; }
+        [MaxLength(100)]
+        public string Name { get; set; }
     }
 }
