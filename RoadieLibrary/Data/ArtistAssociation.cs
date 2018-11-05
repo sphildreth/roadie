@@ -15,7 +15,6 @@ namespace Roadie.Library.Data
         public Artist AssociatedArtist { get; set; }
 
         [Column("associatedArtistId")]
-        [Required]
         public int AssociatedArtistId { get; set; }
 
         [Key]

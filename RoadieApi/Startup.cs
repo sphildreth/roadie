@@ -4,7 +4,6 @@ using Microsoft.AspNet.OData.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -13,16 +12,15 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OData.Edm;
 using Newtonsoft.Json;
-using Roadie.Library.Configuration;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Data;
+using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
 using System;
 using System.IO;
 using System.Reflection;
 using models = Roadie.Api.Data.Models;
-using Roadie.Library.Encoding;
 
 namespace Roadie.Api
 {
@@ -30,6 +28,17 @@ namespace Roadie.Api
     {
         private readonly IConfiguration _configuration;
         private readonly ILoggerFactory _loggerFactory;
+
+        public static string AssemblyDirectory
+        {
+            get
+            {
+                string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+                var uri = new UriBuilder(codeBase);
+                string path = Uri.UnescapeDataString(uri.Path);
+                return Path.GetDirectoryName(path);
+            }
+        }
 
         public Startup(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
@@ -61,17 +70,6 @@ namespace Roadie.Api
                 b.Select().Expand().Filter().OrderBy().MaxTop(100).Count();
                 b.MapODataServiceRoute("odata", "odata", GetEdmModel());
             });
-        }
-
-        public static string AssemblyDirectory
-        {
-            get
-            {
-                string codeBase = Assembly.GetExecutingAssembly().CodeBase;
-                var uri = new UriBuilder(codeBase);
-                string path = Uri.UnescapeDataString(uri.Path);
-                return Path.GetDirectoryName(path);
-            }
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -162,9 +160,9 @@ namespace Roadie.Api
                 .AddJsonOptions(options =>
                 {
                     options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
+                    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                 })
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-
         }
 
         private static IEdmModel GetEdmModel()

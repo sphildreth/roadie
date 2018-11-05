@@ -8,32 +8,27 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Caching;
 using Roadie.Library.Data;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using models = Roadie.Api.Data.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("artist")]
+    [Route("image")]
     [ApiController]
     [Authorize]
-    public class ArtistController : EntityControllerBase
+    public class ImageController : EntityControllerBase
     {
-        public ArtistController(IRoadieDbContext RoadieDbContext, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration)
+        public ImageController(IRoadieDbContext RoadieDbContext, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration)
             : base(RoadieDbContext, cacheManager, configuration)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.ArtistController");
-
-                 
-
+            this._logger = logger.CreateLogger("RoadieApi.Controllers.ImageController"); ;
         }
 
         [EnableQuery]
         public IActionResult Get()
         {
-            return Ok(this._RoadieDbContext.Artists.ProjectToType<models.Artist>());
+            return Ok(this._RoadieDbContext.Tracks.ProjectToType<models.Image>());
         }
 
         [HttpGet("{id}")]
@@ -42,15 +37,12 @@ namespace Roadie.Api.Controllers
         public IActionResult Get(Guid id)
         {
             var key = id.ToString();
-            var result = this._cacheManager.Get<models.Artist>(key, () =>
+            var result = this._cacheManager.Get<models.Image>(key, () =>
             {
-                var d = this._RoadieDbContext.Artists
-                                             .Include(x => x.AssociatedArtists).Include("AssociatedArtists.AssociatedArtist")
-                                             .FirstOrDefault(x => x.RoadieId == id);
+                var d = this._RoadieDbContext.Images.FirstOrDefault(x => x.RoadieId == id);
                 if (d != null)
                 {
-                 //   var info = d.AssociatedArtists.Adapt<models.AssociatedArtistInfo>();
-                    return d.Adapt<models.Artist>();
+                    return d.Adapt<models.Image>();
                 }
                 return null;
             }, key);

@@ -16,7 +16,9 @@ namespace Roadie.Library.Data
         [Column("artistType", TypeName = "enum")]
         public string ArtistType { get; set; }
 
-        public ICollection<ArtistAssociation> AssociatedArtists { get; set; }
+        public virtual ICollection<ArtistAssociation> AssociatedArtists { get; set; }
+
+        public virtual ICollection<ArtistAssociation> AssociatedArtists1 { get; set; }
 
         [Column("bandStatus", TypeName = "enum")]
         public BandStatus? BandStatus { get; set; }

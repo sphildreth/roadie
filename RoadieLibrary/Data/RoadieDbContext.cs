@@ -121,6 +121,17 @@ namespace Roadie.Library.Data
                 .HasOne(b => b.User)
                 .WithMany(u => u.Bookmarks)
                 .HasForeignKey(b => b.UserId);
+
+            // I dont understand why the "1" but without this self join generates "1" based columns on the selectd and blows up ef.
+            builder.Entity<Artist>()
+                .HasMany(e => e.AssociatedArtists)
+                .WithOne(e => e.Artist)
+                .HasForeignKey(e => e.ArtistId);
+
+            builder.Entity<Artist>()
+                .HasMany(e => e.AssociatedArtists1)
+                .WithOne(e => e.AssociatedArtist)
+                .HasForeignKey(e => e.AssociatedArtistId);
         }
     }
 }

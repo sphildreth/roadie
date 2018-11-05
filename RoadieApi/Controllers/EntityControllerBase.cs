@@ -13,14 +13,28 @@ namespace Roadie.Api.Controllers
         protected readonly ICacheManager _cacheManager;
         protected readonly IConfiguration _configuration;
         protected readonly IRoadieDbContext _RoadieDbContext;
+        protected readonly IRoadieSettings _roadieSettings;
+
 
         protected ILogger _logger;
+
+        protected IRoadieSettings RoadieSettings
+        {
+            get
+            {
+                return this._roadieSettings;
+            }
+        }
 
         public EntityControllerBase(IRoadieDbContext RoadieDbContext, ICacheManager cacheManager, IConfiguration configuration)
         {
             this._RoadieDbContext = RoadieDbContext;
             this._cacheManager = cacheManager;
             this._configuration = configuration;
+
+            this._roadieSettings = new RoadieSettings();
+            this._configuration.GetSection("RoadieSettings").Bind(this._roadieSettings);
+
         }
     }
 }

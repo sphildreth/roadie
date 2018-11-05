@@ -70,6 +70,8 @@ namespace Roadie.Api.Data.Models
             }
         }
 
+        public List<AssociatedArtist> AssociatedArtists { get; set; }
+
         public Artist()
         {
             this.BandStatus = "1";
