@@ -1,8 +1,7 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Roadie.Data.Models
+namespace Roadie.Library.Models
 {
     [Serializable]
     public class Label : EntityModelBase
@@ -24,5 +23,6 @@ namespace Roadie.Data.Models
         [MaxLength(65535)]
         public string Profile { get; set; }
 
+        public Image Thumbnail { get; set; }
     }
 }

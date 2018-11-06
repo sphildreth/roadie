@@ -20,7 +20,7 @@ using Roadie.Library.Identity;
 using System;
 using System.IO;
 using System.Reflection;
-using models = Roadie.Data.Models;
+using models = Roadie.Library.Models;
 
 namespace Roadie.Api
 {
@@ -170,7 +170,7 @@ namespace Roadie.Api
             ODataConventionModelBuilder builder = new ODataConventionModelBuilder();
             builder.EntitySet<models.Artist>("Artist");
             builder.EntitySet<models.Label>("Label");
-            builder.EntitySet<models.Release>("Release");
+            builder.EntitySet<models.Releases.Release>("Release");
             return builder.GetEdmModel();
         }
     }

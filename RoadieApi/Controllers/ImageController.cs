@@ -4,12 +4,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Roadie.Library.Configuration;
 using Roadie.Library.Caching;
 using Roadie.Library.Data;
 using System;
 using System.Linq;
-using models = Roadie.Data.Models;
+using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
 {

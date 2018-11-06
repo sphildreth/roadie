@@ -1,10 +1,8 @@
 ﻿using Mapster;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
 
-namespace Roadie.Data.Models
+namespace Roadie.Library.Models
 {
     [Serializable]
     public abstract class EntityInfoModelBase
@@ -16,6 +14,5 @@ namespace Roadie.Data.Models
 
         [MaxLength(250)]
         public string SortName { get; set; }
-
     }
 }

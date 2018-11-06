@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNet.OData;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Roadie.Library.Configuration;
 using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 
 namespace Roadie.Api.Controllers
@@ -14,7 +13,6 @@ namespace Roadie.Api.Controllers
         protected readonly IConfiguration _configuration;
         protected readonly IRoadieDbContext _RoadieDbContext;
         protected readonly IRoadieSettings _roadieSettings;
-
 
         protected ILogger _logger;
 
@@ -34,7 +32,6 @@ namespace Roadie.Api.Controllers
 
             this._roadieSettings = new RoadieSettings();
             this._configuration.GetSection("RoadieSettings").Bind(this._roadieSettings);
-
         }
     }
 }

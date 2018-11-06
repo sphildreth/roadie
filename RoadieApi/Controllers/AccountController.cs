@@ -46,11 +46,6 @@ namespace Roadie.Api.Controllers
             {
                 try
                 {
-                    //var u = await userManager.FindByNameAsync(model.Username);
-                    //u.PasswordHash = userManager.PasswordHasher.HashPassword(u, model.Password);
-                    //u.LastUpdated = DateTime.UtcNow;
-                    //await userManager.UpdateAsync(u);
-
                     // Login user
                     var loginResult = await signInManager.PasswordSignInAsync(model.Username, model.Password, isPersistent: false, lockoutOnFailure: false);
                     if (!loginResult.Succeeded)

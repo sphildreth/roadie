@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
 
-namespace Roadie.Data.Models
+namespace Roadie.Library.Models
 {
     [Serializable]
     public class Collection : EntityModelBase
     {
         public int CollectionCount { get; set; }
+
+        public string CollectionType { get; set; }
 
         [MaxLength(1000)]
         public string Description { get; set; }
@@ -16,8 +17,10 @@ namespace Roadie.Data.Models
         [MaxLength(200)]
         public string Edition { get; set; }
 
-        public int MaintainerId { get; set; }
+        public DataToken Maintainer { get; set; }
 
-        public string CollectionType { get; set; }
+        public IEnumerable<CollectionRelease> Releases { get; set; }
+
+        public Image Thumbnail { get; set; }
     }
 }

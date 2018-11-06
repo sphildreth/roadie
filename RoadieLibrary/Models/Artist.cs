@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
 
-namespace Roadie.Data.Models
+namespace Roadie.Library.Models
 {
     [Serializable]
     public class Artist : EntityModelBase
@@ -14,6 +14,8 @@ namespace Roadie.Data.Models
 
         public string ArtistType { get; set; }
 
+        public IEnumerable<DataToken> AssociatedArtists { get; set; }
+        public IEnumerable<DataToken> AssociatedWithArtists { get; set; }
         public string BandStatus { get; set; }
 
         [MaxLength(65535)]
@@ -23,6 +25,8 @@ namespace Roadie.Data.Models
 
         [MaxLength(50)]
         public string DiscogsId { get; set; }
+
+        public IEnumerable<DataToken> Genres { get; set; }
 
         [MaxLength(65535)]
         [JsonIgnore]
@@ -62,6 +66,8 @@ namespace Roadie.Data.Models
         [MaxLength(100)]
         public string SpotifyId { get; set; }
 
+        public Image Thumbnail { get; set; }
+
         public string Tooltip
         {
             get
@@ -69,8 +75,6 @@ namespace Roadie.Data.Models
                 return this.Name;
             }
         }
-
-        public List<AssociatedArtist> AssociatedArtists { get; set; }
 
         public Artist()
         {

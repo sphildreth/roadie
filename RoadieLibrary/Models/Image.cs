@@ -1,21 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
 
-namespace Roadie.Data.Models
+namespace Roadie.Library.Models
 {
     [Serializable]
-    public class Image  : EntityModelBase
+    public class Image : EntityModelBase
     {
-        public int? ArtistId { get; set; }
+        public Guid? ArtistId { get; set; }
 
         public byte[] Bytes { get; set; }
 
         [MaxLength(100)]
         public string Caption { get; set; }
 
-        public int? ReleaseId { get; set; }
+        public Guid? ReleaseId { get; set; }
 
         [MaxLength(50)]
         public string Signature { get; set; }

@@ -5,12 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Roadie.Library.Configuration;
 using Roadie.Library.Caching;
 using Roadie.Library.Data;
 using System;
 using System.Linq;
-using models = Roadie.Data.Models;
+using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
 {
@@ -29,7 +28,7 @@ namespace Roadie.Api.Controllers
         [EnableQuery]
         public IActionResult Get()
         {
-            return Ok(this._RoadieDbContext.Releases.ProjectToType<models.Release>());
+            return Ok(this._RoadieDbContext.Releases.ProjectToType<models.Releases.Release>());
         }
 
         [HttpGet("{id}")]
@@ -38,7 +37,7 @@ namespace Roadie.Api.Controllers
         public IActionResult Get(Guid id)
         {
             var key = id.ToString();
-            var result = this._cacheManager.Get<models.Release>(key, () =>
+            var result = this._cacheManager.Get<models.Releases.Release>(key, () =>
             {
                 var d = this._RoadieDbContext
                             .Releases
@@ -50,7 +49,7 @@ namespace Roadie.Api.Controllers
                             .FirstOrDefault(x => x.RoadieId == id);
                 if (d != null)
                 {
-                    return d.Adapt<models.Release>();
+                    return d.Adapt<models.Releases.Release>();
                 }
                 return null;
             }, key);

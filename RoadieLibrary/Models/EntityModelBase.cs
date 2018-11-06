@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
 
-namespace Roadie.Data.Models
+namespace Roadie.Library.Models
 {
     public abstract class EntityModelBase
     {
@@ -31,8 +31,6 @@ namespace Roadie.Data.Models
         [Required]
         public DateTime CreatedDate { get; set; }
 
-        public DateTime? LastUpdated { get; set; }
-
         public DateTime? EndDate { get; set; }
 
         [Key]
@@ -41,6 +39,7 @@ namespace Roadie.Data.Models
         public Guid Id { get; set; }
 
         public bool? IsLocked { get; set; }
+        public DateTime? LastUpdated { get; set; }
 
         [MaxLength(250)]
         public string SortName { get; set; }

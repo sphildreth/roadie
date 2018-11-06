@@ -2,16 +2,14 @@
 using Microsoft.AspNet.OData;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Roadie.Library.Configuration;
 using Roadie.Library.Caching;
 using Roadie.Library.Data;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using models = Roadie.Data.Models;
-using Microsoft.EntityFrameworkCore;
+using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
 {
@@ -25,9 +23,6 @@ namespace Roadie.Api.Controllers
             : base(RoadieDbContext, cacheManager, configuration)
         {
             this._logger = logger.CreateLogger("RoadieApi.Controllers.ArtistController");
-
-                 
-
         }
 
         [EnableQuery]
@@ -49,7 +44,7 @@ namespace Roadie.Api.Controllers
                                              .FirstOrDefault(x => x.RoadieId == id);
                 if (d != null)
                 {
-                 //   var info = d.AssociatedArtists.Adapt<models.AssociatedArtistInfo>();
+                    //   var info = d.AssociatedArtists.Adapt<models.AssociatedArtistInfo>();
                     return d.Adapt<models.Artist>();
                 }
                 return null;

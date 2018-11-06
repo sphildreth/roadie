@@ -1,14 +1,13 @@
-﻿using Roadie.Library.Models.Releases;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Roadie.Library.Models
 {
     [Serializable]
-    public class CollectionRelease
+    public class PlaylistTrack
     {
-        public Release Release { get; set; }
+        public Track Track { get; set; }
         public int ListNumber { get; set; }
     }
 }

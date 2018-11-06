@@ -2,7 +2,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Roadie.Data.Models
+namespace Roadie.Library.Models
 {
     [Serializable]
     public class Track : EntityModelBase
@@ -12,7 +12,7 @@ namespace Roadie.Data.Models
 
         //        public Artist Artist { get; set; }
 
-        public int ArtistId { get; set; }
+        public Guid ArtistId { get; set; }
 
         public int Duration { get; set; }
 
@@ -41,6 +41,8 @@ namespace Roadie.Data.Models
 
         [MaxLength(100)]
         public string SpotifyId { get; set; }
+
+        public Image Thumbnail { get; set; }
 
         [MaxLength(250)]
         [Required]

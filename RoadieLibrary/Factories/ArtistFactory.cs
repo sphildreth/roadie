@@ -42,10 +42,13 @@ namespace Roadie.Library.Factories
             }
         }
 
-        public ArtistFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, ReleaseFactory releaseFactory = null) : base(configuration, context, cacheManager, logger, httpEncoder)
+        public ArtistFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, 
+                             ICacheManager cacheManager, ILogger logger, ReleaseFactory releaseFactory = null) 
+            : base(configuration, context, cacheManager, logger, httpEncoder)
         {
             this._releaseFactory = releaseFactory ?? new ReleaseFactory(configuration, httpEncoder, context, CacheManager, logger, null, this);
         }
+
 
         public async Task<FactoryResult<Artist>> Add(Artist artist)
         {
