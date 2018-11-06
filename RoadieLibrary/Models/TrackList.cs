@@ -15,8 +15,7 @@ namespace Roadie.Library.Models
         public Guid ReleaseArtistId { get; set; }
         public string ReleaseArtistName { get; set; }
         public string ReleaseArtistThumbnail { get; set; }
-        public Guid? TrackArtistId { get; set; }
-        public string TrackArtistName { get; set; }
+        public DataToken TrackArtist { get; set; }
         public string TrackArtistThumbnail { get; set; }
         public string Title { get; set; }
         public int? Duration { get; set; }
@@ -25,6 +24,13 @@ namespace Roadie.Library.Models
             get
             {
                 return this.Duration.HasValue ? TimeSpan.FromSeconds(this.Duration.Value / 1000).ToString(@"hh\:mm\:ss") : "--:--";
+            }
+        }
+        public string DurationTimeShort
+        {
+            get
+            {
+                return this.Duration.HasValue ? TimeSpan.FromSeconds(this.Duration.Value / 1000).ToString(@"mm\:ss") : "--:--";
             }
         }
         public short? Rating { get; set; }
