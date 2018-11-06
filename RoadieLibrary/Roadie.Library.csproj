@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentFTP" Version="19.2.2" />
     <PackageReference Include="HtmlAgilityPack" Version="1.8.9" />
     <PackageReference Include="Inflatable.Lastfm" Version="1.1.0.339" />
     <PackageReference Include="Mapster" Version="3.2.0" />
@@ -30,6 +31,8 @@
   <ItemGroup>
     <Folder Include="Factories\" />
     <Folder Include="FilePlugins\" />
+    <Folder Include="Models\ThirdPartyApi\" />
+    <Folder Include="Models\ThirdPartyApi\Subsonic\" />
     <Folder Include="Processors\" />
     <Folder Include="SearchEngines\MetaData\Audio\" />
   </ItemGroup>
