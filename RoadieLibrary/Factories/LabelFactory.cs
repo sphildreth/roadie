@@ -22,7 +22,7 @@ namespace Roadie.Library.Factories
         {
         }
 
-        public async Task<FactoryResult<Label>> Add(Label label)
+        public async Task<OperationResult<Label>> Add(Label label)
         {
             SimpleContract.Requires<ArgumentNullException>(label != null, "Invalid Label");
 
@@ -32,9 +32,9 @@ namespace Roadie.Library.Factories
                 label.AlternateNames = label.AlternateNames.AddToDelimitedList(new string[] { label.Name.ToAlphanumericName() });
                 if (!label.IsValid)
                 {
-                    return new FactoryResult<Label>
+                    return new OperationResult<Label>
                     {
-                        Errors = new List<string> { "Label is Invalid" }
+                        Errors = new Exception[1] { new Exception("Label is Invalid") }
                     };
                 }
                 this.DbContext.Labels.Add(label);
@@ -52,14 +52,14 @@ namespace Roadie.Library.Factories
             {
                 this.Logger.Error(ex);
             }
-            return new FactoryResult<Label>
+            return new OperationResult<Label>
             {
                 IsSuccess = label.Id > 0,
                 Data = label
             };
         }
 
-        public async Task<FactoryResult<Label>> GetByName(string LabelName, bool doFindIfNotInDatabase = false)
+        public async Task<OperationResult<Label>> GetByName(string LabelName, bool doFindIfNotInDatabase = false)
         {
             try
             {
@@ -71,7 +71,7 @@ namespace Roadie.Library.Factories
                 if (resultInCache != null)
                 {
                     sw.Stop();
-                    return new FactoryResult<Label>
+                    return new OperationResult<Label>
                     {
                         IsSuccess = true,
                         OperationTime = sw.ElapsedMilliseconds,
@@ -115,7 +115,7 @@ namespace Roadie.Library.Factories
                             if (!addResult.IsSuccess)
                             {
                                 sw.Stop();
-                                return new FactoryResult<Label>
+                                return new OperationResult<Label>
                                 {
                                     OperationTime = sw.ElapsedMilliseconds,
                                     Errors = addResult.Errors
@@ -128,7 +128,7 @@ namespace Roadie.Library.Factories
                 {
                     this.CacheManager.Add(cacheKey, Label);
                 }
-                return new FactoryResult<Label>
+                return new OperationResult<Label>
                 {
                     IsSuccess = Label != null,
                     OperationTime = sw.ElapsedMilliseconds,
@@ -139,7 +139,7 @@ namespace Roadie.Library.Factories
             {
                 this.Logger.Error(ex);
             }
-            return new FactoryResult<Label>();
+            return new OperationResult<Label>();
         }
 
         public async Task<OperationResult<Label>> PerformMetaDataProvidersLabelSearch(string LabelName)

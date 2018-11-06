@@ -42,15 +42,14 @@ namespace Roadie.Library.Factories
             }
         }
 
-        public ArtistFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, 
-                             ICacheManager cacheManager, ILogger logger, ReleaseFactory releaseFactory = null) 
+        public ArtistFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
+                             ICacheManager cacheManager, ILogger logger, ReleaseFactory releaseFactory = null)
             : base(configuration, context, cacheManager, logger, httpEncoder)
         {
             this._releaseFactory = releaseFactory ?? new ReleaseFactory(configuration, httpEncoder, context, CacheManager, logger, null, this);
         }
 
-
-        public async Task<FactoryResult<Artist>> Add(Artist artist)
+        public async Task<OperationResult<Artist>> Add(Artist artist)
         {
             SimpleContract.Requires<ArgumentNullException>(artist != null, "Invalid Artist");
 
@@ -78,9 +77,9 @@ namespace Roadie.Library.Factories
                 }
                 if (!artist.IsValid)
                 {
-                    return new FactoryResult<Artist>
+                    return new OperationResult<Artist>
                     {
-                        Errors = new List<string> { "Artist is Invalid" }
+                        Errors = new Exception[1] { new Exception("Artist is Invalid") }
                     };
                 }
                 var addArtistResult = this.DbContext.Artists.Add(artist);
@@ -143,14 +142,14 @@ namespace Roadie.Library.Factories
             {
                 this.Logger.Error(ex, ex.Serialize());
             }
-            return new FactoryResult<Artist>
+            return new OperationResult<Artist>
             {
                 IsSuccess = artist.Id > 0,
                 Data = artist
             };
         }
 
-        public async Task<FactoryResult<bool>> Delete(Guid RoadieId)
+        public async Task<OperationResult<bool>> Delete(Guid RoadieId)
         {
             var isSuccess = false;
             var Artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == RoadieId);
@@ -158,13 +157,13 @@ namespace Roadie.Library.Factories
             {
                 return await this.Delete(Artist);
             }
-            return new FactoryResult<bool>
+            return new OperationResult<bool>
             {
                 Data = isSuccess
             };
         }
 
-        public async Task<FactoryResult<bool>> Delete(Artist Artist)
+        public async Task<OperationResult<bool>> Delete(Artist Artist)
         {
             var isSuccess = false;
             try
@@ -181,19 +180,19 @@ namespace Roadie.Library.Factories
             catch (Exception ex)
             {
                 this.Logger.Error(ex, ex.Serialize());
-                return new FactoryResult<bool>
+                return new OperationResult<bool>
                 {
-                    Errors = new string[1] { "An error occured" }
+                    Errors = new Exception[1] { ex }
                 };
             }
-            return new FactoryResult<bool>
+            return new OperationResult<bool>
             {
                 IsSuccess = isSuccess,
                 Data = isSuccess
             };
         }
 
-        public FactoryResult<Artist> GetByExternalIds(string musicBrainzId = null, string iTunesId = null, string amgId = null, string spotifyId = null)
+        public OperationResult<Artist> GetByExternalIds(string musicBrainzId = null, string iTunesId = null, string amgId = null, string spotifyId = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -208,7 +207,7 @@ namespace Roadie.Library.Factories
             {
                 this._logger.Trace("ArtistFactory: Artist Not Found By External Ids: MusicbrainzId [{0}], iTunesIs [{1}], AmgId [{2}], SpotifyId [{3}]", musicBrainzId, iTunesId, amgId, spotifyId);
             }
-            return new FactoryResult<Artist>
+            return new OperationResult<Artist>
             {
                 IsSuccess = Artist != null,
                 OperationTime = sw.ElapsedMilliseconds,
@@ -216,7 +215,7 @@ namespace Roadie.Library.Factories
             };
         }
 
-        public async Task<FactoryResult<Artist>> GetByName(AudioMetaData metaData, bool doFindIfNotInDatabase = false)
+        public async Task<OperationResult<Artist>> GetByName(AudioMetaData metaData, bool doFindIfNotInDatabase = false)
         {
             try
             {
@@ -229,7 +228,7 @@ namespace Roadie.Library.Factories
                 if (resultInCache != null)
                 {
                     sw.Stop();
-                    return new FactoryResult<Artist>
+                    return new OperationResult<Artist>
                     {
                         IsSuccess = true,
                         OperationTime = sw.ElapsedMilliseconds,
@@ -264,7 +263,7 @@ namespace Roadie.Library.Factories
                                 {
                                     sw.Stop();
                                     this.Logger.Fatal("Unable To Add Artist For MetaData [{0}]", metaData.ToString());
-                                    return new FactoryResult<Artist>
+                                    return new OperationResult<Artist>
                                     {
                                         OperationTime = sw.ElapsedMilliseconds,
                                         Errors = addResult.Errors
@@ -283,7 +282,7 @@ namespace Roadie.Library.Factories
                 {
                     this.CacheManager.Add(cacheKey, Artist);
                 }
-                return new FactoryResult<Artist>
+                return new OperationResult<Artist>
                 {
                     IsSuccess = Artist != null,
                     OperationTime = sw.ElapsedMilliseconds,
@@ -294,7 +293,7 @@ namespace Roadie.Library.Factories
             {
                 this.Logger.Error(ex, ex.Serialize());
             }
-            return new FactoryResult<Artist>();
+            return new OperationResult<Artist>();
         }
 
         /// <summary>
@@ -303,7 +302,7 @@ namespace Roadie.Library.Factories
         /// <param name="ArtistToMerge">The Artist to be merged</param>
         /// <param name="ArtistToMergeInto">The Artist to merge into</param>
         /// <returns></returns>
-        public async Task<FactoryResult<Artist>> MergeArtists(Artist ArtistToMerge, Artist ArtistToMergeInto, bool doDbUpdates = false)
+        public async Task<OperationResult<Artist>> MergeArtists(Artist ArtistToMerge, Artist ArtistToMergeInto, bool doDbUpdates = false)
         {
             SimpleContract.Requires<ArgumentNullException>(ArtistToMerge != null, "Invalid Artist");
             SimpleContract.Requires<ArgumentNullException>(ArtistToMergeInto != null, "Invalid Artist");
@@ -375,7 +374,7 @@ namespace Roadie.Library.Factories
             result = true;
 
             sw.Stop();
-            return new FactoryResult<Artist>
+            return new OperationResult<Artist>
             {
                 Data = ArtistToMergeInto,
                 IsSuccess = result,
@@ -950,7 +949,7 @@ namespace Roadie.Library.Factories
             };
         }
 
-        public async Task<FactoryResult<Artist>> Update(Artist Artist, IEnumerable<Image> ArtistImages, string destinationFolder = null)
+        public async Task<OperationResult<Artist>> Update(Artist Artist, IEnumerable<Image> ArtistImages, string destinationFolder = null)
         {
             SimpleContract.Requires<ArgumentNullException>(Artist != null, "Invalid Artist");
 
@@ -1013,7 +1012,7 @@ namespace Roadie.Library.Factories
             this._cacheManager.ClearRegion(Artist.CacheRegion);
             sw.Stop();
 
-            return new FactoryResult<Artist>
+            return new OperationResult<Artist>
             {
                 Data = Artist,
                 IsSuccess = result,

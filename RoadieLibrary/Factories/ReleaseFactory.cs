@@ -90,7 +90,7 @@ namespace Roadie.Library.Factories
             this._artistFactory = artistFactory ?? new ArtistFactory(configuration, httpEncoder, context, CacheManager, logger);
         }
 
-        public async Task<FactoryResult<Data.Release>> Add(Data.Release release, bool doAddTracksInDatabase = false)
+        public async Task<OperationResult<Data.Release>> Add(Data.Release release, bool doAddTracksInDatabase = false)
         {
             SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
 
@@ -109,9 +109,9 @@ namespace Roadie.Library.Factories
                 release.Status = Statuses.New;
                 if (!release.IsValid)
                 {
-                    return new FactoryResult<Data.Release>
+                    return new OperationResult<Data.Release>
                     {
-                        Errors = new List<string> { "Release is Invalid" }
+                        Errors = new Exception[1] { new Exception("Release is Invalid") } 
                     };
                 }
                 this.DbContext.Releases.Add(release);
@@ -285,7 +285,7 @@ namespace Roadie.Library.Factories
             {
                 this.Logger.Error(ex, ex.Serialize());
             }
-            return new FactoryResult<Data.Release>
+            return new OperationResult<Data.Release>
             {
                 IsSuccess = release.Id > 0,
                 Data = release
@@ -298,7 +298,7 @@ namespace Roadie.Library.Factories
         /// <param name="release">Release that has been modified</param>
         /// <param name="oldReleaseFolder">Folder for release before any changes</param>
         /// <returns></returns>
-        public async Task<FactoryResult<bool>> CheckAndChangeReleaseTitle(Data.Release release, string oldReleaseFolder, string destinationFolder = null)
+        public async Task<OperationResult<bool>> CheckAndChangeReleaseTitle(Data.Release release, string oldReleaseFolder, string destinationFolder = null)
         {
             SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
             SimpleContract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(oldReleaseFolder), "Invalid Release Old Folder");
@@ -367,14 +367,14 @@ namespace Roadie.Library.Factories
                 this._cacheManager.ClearRegion(release.Artist.CacheRegion);
             }
 
-            return new FactoryResult<bool>
+            return new OperationResult<bool>
             {
                 IsSuccess = result,
                 OperationTime = sw.ElapsedMilliseconds
             };
         }
 
-        public async Task<FactoryResult<bool>> Delete(Data.Release release, bool doDeleteFiles = false)
+        public async Task<OperationResult<bool>> Delete(Data.Release release, bool doDeleteFiles = false)
         {
             SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
             SimpleContract.Requires<ArgumentNullException>(release.Artist != null, "Invalid Artist");
@@ -431,7 +431,7 @@ namespace Roadie.Library.Factories
                 this.Logger.Error(ex, string.Format("Error Clearing Cache For Release [{0}] Exception [{1}]", release.Id, ex.Serialize()));
             }
             sw.Stop();
-            return new FactoryResult<bool>
+            return new OperationResult<bool>
             {
                 Data = result,
                 IsSuccess = result,
@@ -439,7 +439,7 @@ namespace Roadie.Library.Factories
             };
         }
 
-        public async Task<FactoryResult<bool>> DeleteReleases(IEnumerable<Guid> releaseIds, bool doDeleteFiles = false)
+        public async Task<OperationResult<bool>> DeleteReleases(IEnumerable<Guid> releaseIds, bool doDeleteFiles = false)
         {
             SimpleContract.Requires<ArgumentNullException>(releaseIds != null && releaseIds.Any(), "No Release Ids Found");
             var result = false;
@@ -459,7 +459,7 @@ namespace Roadie.Library.Factories
 
             sw.Stop();
 
-            return new FactoryResult<bool>
+            return new OperationResult<bool>
             {
                 Data = result,
                 IsSuccess = result,
@@ -467,12 +467,12 @@ namespace Roadie.Library.Factories
             };
         }
 
-        public FactoryResult<Data.Release> GetAllForArtist(Data.Artist artist, bool forceRefresh = false)
+        public OperationResult<Data.Release> GetAllForArtist(Data.Artist artist, bool forceRefresh = false)
         {
             throw new NotImplementedException();
         }
 
-        public async Task<FactoryResult<Data.Release>> GetByName(Data.Artist artist, AudioMetaData metaData, bool doFindIfNotInDatabase = false, bool doAddTracksInDatabase = false, int? submissionId = null)
+        public async Task<OperationResult<Data.Release>> GetByName(Data.Artist artist, AudioMetaData metaData, bool doFindIfNotInDatabase = false, bool doAddTracksInDatabase = false, int? submissionId = null)
         {
             SimpleContract.Requires<ArgumentNullException>(artist != null, "Invalid Artist");
             SimpleContract.Requires<ArgumentOutOfRangeException>(artist.Id > 0, "Invalid Artist Id");
@@ -486,7 +486,7 @@ namespace Roadie.Library.Factories
                 if (resultInCache != null)
                 {
                     sw.Stop();
-                    return new FactoryResult<Data.Release>
+                    return new OperationResult<Data.Release>
                     {
                         IsSuccess = true,
                         OperationTime = sw.ElapsedMilliseconds,
@@ -531,10 +531,10 @@ namespace Roadie.Library.Factories
                         {
                             sw.Stop();
                             this.Logger.Error(ex);
-                            return new FactoryResult<Data.Release>
+                            return new OperationResult<Data.Release>
                             {
                                 OperationTime = sw.ElapsedMilliseconds,
-                                Errors = new List<string> { ex.ToString() }
+                                Errors = new Exception[1] { ex }
                             };
                         }
                         if (releaseSearch.IsSuccess)
@@ -545,7 +545,7 @@ namespace Roadie.Library.Factories
                             if (!addResult.IsSuccess)
                             {
                                 sw.Stop();
-                                return new FactoryResult<Data.Release>
+                                return new OperationResult<Data.Release>
                                 {
                                     OperationTime = sw.ElapsedMilliseconds,
                                     Errors = addResult.Errors
@@ -558,7 +558,7 @@ namespace Roadie.Library.Factories
                 {
                     this.CacheManager.Add(cacheKey, release);
                 }
-                return new FactoryResult<Data.Release>
+                return new OperationResult<Data.Release>
                 {
                     IsSuccess = release != null,
                     OperationTime = sw.ElapsedMilliseconds,
@@ -569,7 +569,7 @@ namespace Roadie.Library.Factories
             {
                 this.Logger.Error(ex);
             }
-            return new FactoryResult<Data.Release>();
+            return new OperationResult<Data.Release>();
         }
 
         /// <summary>
@@ -579,7 +579,7 @@ namespace Roadie.Library.Factories
         /// <param name="releaseToMergeInto">The release to merge into</param>
         /// <param name="addAsMedia">If true then add a ReleaseMedia to the release to be merged into</param>
         /// <returns></returns>
-        public async Task<FactoryResult<bool>> MergeReleases(Data.Release releaseToMerge, Data.Release releaseToMergeInto, bool addAsMedia)
+        public async Task<OperationResult<bool>> MergeReleases(Data.Release releaseToMerge, Data.Release releaseToMergeInto, bool addAsMedia)
         {
             SimpleContract.Requires<ArgumentNullException>(releaseToMerge != null, "Invalid Release");
             SimpleContract.Requires<ArgumentNullException>(releaseToMergeInto != null, "Invalid Release");
@@ -812,7 +812,7 @@ namespace Roadie.Library.Factories
             }
 
             sw.Stop();
-            return new FactoryResult<bool>
+            return new OperationResult<bool>
             {
                 Data = result,
                 IsSuccess = result,
@@ -1648,7 +1648,7 @@ namespace Roadie.Library.Factories
             };
         }
 
-        public async Task<FactoryResult<Data.Release>> Update(Data.Release release, IEnumerable<Data.Image> releaseImages, string originalReleaseFolder, string destinationFolder = null)
+        public async Task<OperationResult<Data.Release>> Update(Data.Release release, IEnumerable<Data.Image> releaseImages, string originalReleaseFolder, string destinationFolder = null)
         {
             SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
 
@@ -1727,7 +1727,7 @@ namespace Roadie.Library.Factories
             }
             sw.Stop();
 
-            return new FactoryResult<Data.Release>
+            return new OperationResult<Data.Release>
             {
                 Data = release,
                 IsSuccess = result,

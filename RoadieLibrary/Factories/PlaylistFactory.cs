@@ -18,7 +18,7 @@ namespace Roadie.Library.Factories
         {
         }
 
-        public async Task<FactoryResult<bool>> AddTracksToPlaylist(Playlist playlist, IEnumerable<Guid> trackIds)
+        public async Task<OperationResult<bool>> AddTracksToPlaylist(Playlist playlist, IEnumerable<Guid> trackIds)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -50,13 +50,13 @@ namespace Roadie.Library.Factories
             var r = await this.ReorderPlaylist(playlist);
             result = result && r.IsSuccess;
 
-            return new FactoryResult<bool>
+            return new OperationResult<bool>
             {
                 Data = result
             };
         }
 
-        public async Task<FactoryResult<bool>> ReorderPlaylist(Playlist playlist)
+        public async Task<OperationResult<bool>> ReorderPlaylist(Playlist playlist)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -77,7 +77,7 @@ namespace Roadie.Library.Factories
                 result = true;
             }
 
-            return new FactoryResult<bool>
+            return new OperationResult<bool>
             {
                 IsSuccess = result,
                 Data = result
