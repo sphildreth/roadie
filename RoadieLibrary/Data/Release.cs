@@ -7,8 +7,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Roadie.Library.Data
 {
     [Table("release")]
-    public partial class Release : NamedEntityBase
+    public partial class Release : EntityBase
     {
+        [Column("alternateNames", TypeName = "text")]
+        [MaxLength(65535)]
+        public string AlternateNames { get; set; }
+
         [Column("amgId")]
         [MaxLength(50)]
         public string AmgId { get; set; }
@@ -62,6 +66,9 @@ namespace Roadie.Library.Data
         [MaxLength(65535)]
         public string Profile { get; set; }
 
+        [Column("rating")]
+        public short? Rating { get; set; }
+
         [Column("releaseDate")]
         public DateTime? ReleaseDate { get; set; }
 
@@ -75,6 +82,13 @@ namespace Roadie.Library.Data
         [Column("submissionId")]
         public int? SubmissionId { get; set; }
 
+        [Column("tags", TypeName = "text")]
+        [MaxLength(65535)]
+        public string Tags { get; set; }
+
+        [Column("thumbnail", TypeName = "blob")]
+        public byte[] Thumbnail { get; set; }
+
         [MaxLength(250)]
         [Column("title")]
         [Required]
@@ -82,5 +96,9 @@ namespace Roadie.Library.Data
 
         [Column("trackCount")]
         public short TrackCount { get; set; }
+
+        [Column("urls", TypeName = "text")]
+        [MaxLength(65535)]
+        public string URLs { get; set; }
     }
 }

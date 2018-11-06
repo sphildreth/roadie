@@ -6,8 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Images\" />
-    <Folder Include="wwwroot\" />
+    <Folder Include="wwwroot\Images\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,6 +18,16 @@
 
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\Images\artist.gif" />
+    <None Include="wwwroot\Images\collection.gif" />
+    <None Include="wwwroot\Images\image-not-found.gif" />
+    <None Include="wwwroot\Images\label.gif" />
+    <None Include="wwwroot\Images\release.gif" />
+    <None Include="wwwroot\Images\track.gif" />
+    <None Include="wwwroot\Images\user.gif" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,4 +1,7 @@
 ﻿using Newtonsoft.Json;
+using Roadie.Library.Models.Releases;
+using Roadie.Library.Models.Statistics;
+using Roadie.Library.Models.Users;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -9,6 +12,9 @@ namespace Roadie.Library.Models
     [Serializable]
     public class Artist : EntityModelBase
     {
+        public IEnumerable<ReleaseList> ArtistContributionReleases;
+        public IEnumerable<LabelList> ArtistLabels;
+
         [MaxLength(100)]
         public string AmgId { get; set; }
 
@@ -27,6 +33,8 @@ namespace Roadie.Library.Models
         public string DiscogsId { get; set; }
 
         public IEnumerable<DataToken> Genres { get; set; }
+
+        public IEnumerable<Image> Images { get; set; }
 
         [MaxLength(65535)]
         [JsonIgnore]
@@ -63,9 +71,12 @@ namespace Roadie.Library.Models
         [MaxLength(500)]
         public string RealName { get; set; }
 
+        public IEnumerable<Releases.ReleaseList> Releases { get; set; }
+
         [MaxLength(100)]
         public string SpotifyId { get; set; }
 
+        public CollectionStatistics Statistics { get; set; }
         public Image Thumbnail { get; set; }
 
         public string Tooltip
@@ -75,6 +86,8 @@ namespace Roadie.Library.Models
                 return this.Name;
             }
         }
+
+        public UserArtist UserArtist { get; set; }
 
         public Artist()
         {

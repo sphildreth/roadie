@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNet.OData;
+﻿using Mapster;
+using Microsoft.AspNet.OData;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
@@ -32,6 +33,7 @@ namespace Roadie.Api.Controllers
 
             this._roadieSettings = new RoadieSettings();
             this._configuration.GetSection("RoadieSettings").Bind(this._roadieSettings);
+
         }
     }
 }

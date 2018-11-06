@@ -11,7 +11,10 @@ namespace Roadie.Library.Configuration
         /// <remark>This was desgined to handle 'AC/DC' type names as they contain the ID3 v2.3 spec artist seperator</remark>
         /// </summary>
         public Dictionary<string, List<string>> ArtistNameReplace { get; set; }
-
+        /// <summary>
+        /// This is the phsycial path to the content folder (which holds among other things place-holder images)
+        /// </summary>
+        public string ContentPath { get; set; }
         public Converting Converting { get; set; }
         public string DefaultTimeZone { get; set; }
         public string DiagnosticsPassword { get; set; }

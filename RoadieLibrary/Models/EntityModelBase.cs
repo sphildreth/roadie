@@ -26,17 +26,23 @@ namespace Roadie.Library.Models
             }
         }
 
+        /// <summary>
+        /// Set when the user has created a bookmark for the object.
+        /// </summary>
+        public Guid? UserBookmarkId { get; set; }
+
+
         public DateTime? BeginDate { get; set; }
 
         [Required]
-        public DateTime CreatedDate { get; set; }
+        public virtual DateTime? CreatedDate { get; set; }
 
         public DateTime? EndDate { get; set; }
 
         [Key]
         [Required]
         [AdaptMember("RoadieId")]
-        public Guid Id { get; set; }
+        public virtual Guid? Id { get; set; }
 
         public bool? IsLocked { get; set; }
         public DateTime? LastUpdated { get; set; }

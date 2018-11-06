@@ -119,19 +119,13 @@ namespace Roadie.Library.FilePlugins
             if (string.IsNullOrEmpty(artistFolder))
             {
                 this.Logger.Warning("Unable To Find ArtistFolder [{0}] For MetaData [{1}]", artistFolder, metaData.ToString());
-                return new OperationResult<bool>
-                {
-                    Messages = new List<string> { "Unable To Find Artist Folder" }
-                };
+                return new OperationResult<bool>("Unable To Find Artist Folder");
             }
             var releaseFolder = await this.DetermineReleaseFolder(artistFolder, metaData, doJustInfo, submissionId);
             if (string.IsNullOrEmpty(releaseFolder))
             {
                 this.Logger.Warning("Unable To Find ReleaseFolder For MetaData [{0}]", metaData.ToString());
-                return new OperationResult<bool>
-                {
-                    Messages = new List<string> { "Unable To Find Release Folder" }
-                };
+                return new OperationResult<bool>("Unable To Find Release Folder");
             }
             destinationName = FolderPathHelper.TrackFullPath(this.Configuration, metaData, dr, artistFolder);
             this.Logger.Trace("Info: FileInfo [{0}], Artist Folder [{1}], Destination Name [{2}]", fileInfo.FullName, artistFolder, destinationName);

@@ -18,8 +18,6 @@ namespace Roadie.Library.Data
 
         public virtual ICollection<ArtistAssociation> AssociatedArtists { get; set; }
 
-        public virtual ICollection<ArtistAssociation> AssociatedArtists1 { get; set; }
-
         [Column("bandStatus", TypeName = "enum")]
         public BandStatus? BandStatus { get; set; }
 
@@ -67,7 +65,5 @@ namespace Roadie.Library.Data
         [MaxLength(100)]
         public string SpotifyId { get; set; }
 
-        [Column("thumbnail", TypeName = "blob")]
-        public byte[] Thumbnail { get; set; }
     }
 }

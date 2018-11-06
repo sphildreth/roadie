@@ -44,7 +44,12 @@ namespace Roadie.Library.Caching
 
         public override bool Add<TCacheValue>(string key, TCacheValue value)
         {
-            return this.Add(key, value, this._defaultPolicy);
+            return this.Add(key, value, null, this._defaultPolicy);
+        }
+
+        public override bool Add<TCacheValue>(string key, TCacheValue value, string region)
+        {
+            return this.Add(key, value, region, null);
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value, CachePolicy policy)

@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,9 +16,11 @@ using Microsoft.OData.Edm;
 using Newtonsoft.Json;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
+using Roadie.Library.Utility;
 using System;
 using System.IO;
 using System.Reflection;
@@ -44,7 +48,29 @@ namespace Roadie.Api
         {
             this._configuration = configuration;
             this._loggerFactory = loggerFactory;
-            TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
+
+            //TypeAdapterConfig<Roadie.Library.Data.Release, Roadie.Library.Models.Releases.ReleaseList>
+            //    .NewConfig()
+            //    .Map(rml => rml.Id,
+            //         src => src.RoadieId)
+            //    .Compile();
+
+            ////TypeAdapterConfig<Roadie.Library.Data.ReleaseMedia, Roadie.Library.Models.Releases.ReleaseMediaList>
+            ////    .NewConfig()
+            ////    .Map(rml => rml.Id,
+            ////         src => src.RoadieId)
+            ////    .Compile();
+
+            ////TypeAdapterConfig<Roadie.Library.Data.Track, Roadie.Library.Models.TrackList>
+            ////    .NewConfig()
+            ////    .Map(rml => rml.Id,
+            ////         src => src.RoadieId)
+            ////    .Compile();
+
+            //TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
+
+
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -124,6 +150,18 @@ namespace Roadie.Api
 
             services.Configure<IConfiguration>(this._configuration);
 
+            services.AddSingleton<IRoadieSettings, RoadieSettings>(ctx =>
+            {
+                var settings = new RoadieSettings();
+                var configuration = ctx.GetService<IConfiguration>();
+                configuration.GetSection("RoadieSettings").Bind(settings);
+                var hostingEnvironment = ctx.GetService<IHostingEnvironment>();
+                settings.ContentPath = hostingEnvironment.WebRootPath;
+                return settings;
+            });
+
+            services.AddScoped<IArtistService, ArtistService>();
+
             var securityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration["Tokens:PrivateKey"]));
             services.AddAuthentication(options =>
             {
@@ -163,6 +201,14 @@ namespace Roadie.Api
                     options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                 })
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
+            services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
+            services.AddScoped<IHttpContext>(factory =>
+            {
+                var actionContext = factory.GetService<IActionContextAccessor>()
+                                               .ActionContext;
+                return new HttpContext(new UrlHelper(actionContext));
+            });
         }
 
         private static IEdmModel GetEdmModel()

@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Roadie.Library.Utility;
 
 namespace Roadie.Api.Services
 {
@@ -20,6 +21,7 @@ namespace Roadie.Api.Services
         protected readonly data.IRoadieDbContext _dbContext = null;
         protected readonly IHttpEncoder _httpEncoder = null;
         protected readonly ILogger _logger = null;
+        protected readonly IHttpContext _httpContext = null;
 
         protected ICacheManager CacheManager
         {
@@ -61,9 +63,48 @@ namespace Roadie.Api.Services
             }
         }
 
-        public ServiceBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, data.IRoadieDbContext context,
-                             ICacheManager cacheManager, ILogger logger)
+        protected IHttpContext HttpContext
         {
+            get
+            {
+                return this._httpContext;
+            }                
+        }
+
+        public ServiceBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, data.IRoadieDbContext context,
+                             ICacheManager cacheManager, ILogger logger, IHttpContext httpContext)
+        {
+            this._configuration = configuration;
+            this._httpEncoder = httpEncoder;
+            this._dbContext = context;
+            this._cacheManager = cacheManager;
+            this._logger = logger;
+            this._httpContext = httpContext;
+        }
+
+        protected Image MakeArtistThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "artist");
+        }
+
+        protected Image MakeImage(Guid id, int width = 200, int height = 200)
+        {
+            return new Image($"{this.HttpContext.ImageBaseUrl }/{id}/{ width }/{ height }");
+        }
+
+        protected Image MakeReleaseThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "release");
+        }
+
+        protected Image MakeLabelThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "label");
+        }
+
+        private Image MakeThumbnailImage(Guid id, string type)
+        {
+            return new Image($"{this.HttpContext.ImageBaseUrl }/{ type }/thumbnail/{id}");
         }
     }
 }

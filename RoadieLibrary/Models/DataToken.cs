@@ -21,11 +21,11 @@ namespace Roadie.Library.Models
         /// <summary>
         /// Is the item selected
         /// </summary>
-        public bool Selected { get; set; }
+        public bool? Selected { get; set; }
         /// <summary>
         /// Is the item disabled
         /// </summary>
-        public bool Disabled { get; set; }
+        public bool? Disabled { get; set; }
         /// <summary>
         /// Any specific or special Css to apply to the item
         /// </summary>

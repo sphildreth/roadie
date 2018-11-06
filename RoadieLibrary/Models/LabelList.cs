@@ -9,7 +9,7 @@ namespace Roadie.Library.Models
     public class LabelList : EntityInfoModelBase
     {
         public DataToken Label { get; set; }
-        public string ThumbnailUrl { get; set; }
+        public Image Thumbnail { get; set; }
         public int? ArtistCount { get; set; }
         public int? ReleaseCount { get; set; }
         public int? TrackCount { get; set; }

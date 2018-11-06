@@ -23,6 +23,15 @@ namespace Roadie.Library.Caching
             }
         }
 
+        public override bool Add<TCacheValue>(string key, TCacheValue value, string region)
+        {
+            using (var entry = _cache.CreateEntry(key))
+            {
+                _cache.Set(key, value, DateTimeOffset.MaxValue);
+                return true;
+            }
+        }
+
         public override bool Add<TCacheValue>(string key, TCacheValue value, CachePolicy policy)
         {
             using (var entry = _cache.CreateEntry(key))

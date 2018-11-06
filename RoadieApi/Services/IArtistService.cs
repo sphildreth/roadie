@@ -4,13 +4,14 @@ using System.Threading.Tasks;
 using Roadie.Library;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
+using Roadie.Library.Models.Users;
 
 namespace Roadie.Api.Services
 {
     public interface IArtistService
     {
         Task<OperationResult<bool>> AddArtist(Artist artist);
-        Task<OperationResult<Artist>> ArtistById(Guid id, IEnumerable<string> includes);
+        Task<OperationResult<Artist>> ArtistById(User roadieUser, Guid id, IEnumerable<string> includes);
         Task<OperationResult<Artist>> ArtistByName(string name, IEnumerable<string> includes);
         Task<OperationResult<bool>> DeleteArtist(Guid id);
         Task<OperationResult<bool>> DeleteArtistReleases(Guid roadieId);

@@ -6,6 +6,8 @@ namespace Roadie.Library.Caching
     {
         bool Add<TCacheValue>(string key, TCacheValue value);
 
+        bool Add<TCacheValue>(string key, TCacheValue value, string region);
+
         bool Add<TCacheValue>(string key, TCacheValue value, CachePolicy policy);
 
         bool Add<TCacheValue>(string key, TCacheValue value, string region, CachePolicy policy);

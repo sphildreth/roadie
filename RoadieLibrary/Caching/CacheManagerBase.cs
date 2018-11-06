@@ -25,6 +25,8 @@ namespace Roadie.Library.Caching
 
         public abstract bool Add<TCacheValue>(string key, TCacheValue value, CachePolicy policy);
 
+        public abstract bool Add<TCacheValue>(string key, TCacheValue value, string region);
+
         public abstract bool Add<TCacheValue>(string key, TCacheValue value, string region, CachePolicy policy);
 
         public abstract void Clear();
