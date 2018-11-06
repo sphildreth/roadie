@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Roadie.Library.Models
+namespace Roadie.Library.Models.Collections
 {
     [Serializable]
     public class CollectionRelease

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace Roadie.Library.FilePlugins
 {
     [Serializable]
-    public class PluginResultInfo : OperationResultModel
+    public class PluginResultInfo : OperationResult<bool>
     {
         public const string AdditionalDataKeyPluginResultInfo = "PluginResultInfo";
 

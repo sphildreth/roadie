@@ -3,8 +3,12 @@ using System.Collections.Generic;
 
 namespace Roadie.Library
 {
-    public sealed class OperationResult<T>
+    public class OperationResult<T>
     {
+        public const string NoImageDataFound = "NO_IMAGE_DATA_FOUND";
+        public const string NotModified = "NotModified";
+        public const string OkMessage = "OK";
+
         public Dictionary<string, object> AdditionalData { get; set; }
         public T Data { get; set; }
         public IEnumerable<Exception> Errors { get; set; }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace Roadie.Library.Models
+namespace Roadie.Library.Models.Collections
 {
     [Serializable]
     public class Collection : EntityModelBase
