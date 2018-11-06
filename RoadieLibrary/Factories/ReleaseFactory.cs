@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.Factories
 {
+    #pragma warning disable EF1000
     public sealed class ReleaseFactory : FactoryBase
     {
         public const string CoverFilename = "cover.jpg";

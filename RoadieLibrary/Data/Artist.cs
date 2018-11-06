@@ -65,5 +65,6 @@ namespace Roadie.Library.Data
         [MaxLength(100)]
         public string SpotifyId { get; set; }
 
+
     }
 }

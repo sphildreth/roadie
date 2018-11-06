@@ -122,6 +122,12 @@ namespace Roadie.Library.Data
                 .WithMany(a => a.AssociatedArtists)
                 .HasForeignKey(aa => aa.AssociatedArtistId);
 
+            //builder.Entity<Track>()
+            //    .HasOne(t => t.TrackArtist)
+            //    .WithMany(a => a.Tracks)
+            //    .HasForeignKey(t => t.ArtistId);
+
+
             //// I dont understand why the "1" but without this self join generates "1" based columns on the selectd and blows up ef.
             //builder.Entity<Artist>()
             //    .HasMany(e => e.AssociatedArtists)

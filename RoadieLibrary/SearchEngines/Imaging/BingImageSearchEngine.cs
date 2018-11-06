@@ -16,10 +16,6 @@ namespace Roadie.Library.SearchEngines.Imaging
     /// </summary>
     public class BingImageSearchEngine : ImageSearchEngineBase
     {
-        private ILogger loggingService;
-        private string referrer;
-        private string requestIp;
-
         public BingImageSearchEngine(IRoadieSettings configuration, ILogger loggingService, string requestIp = null, string referrer = null)
             : base(configuration, loggingService, "https://api.cognitive.microsoft.com", requestIp, referrer)
         {

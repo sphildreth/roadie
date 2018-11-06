@@ -46,7 +46,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> Get(Guid id)
+        public async Task<IActionResult> Get(Guid id, string inc = null)
         {
             //var key = id.ToString();
             //var result = this._cacheManager.Get<models.Artist>(key, () =>
@@ -68,7 +68,8 @@ namespace Roadie.Api.Controllers
             //return Ok(result);
 
             var key = id.ToString();
-            var result = await this.ArtistService.ArtistById(null, id, new List<string> { "stats", "images", "associatedartists", "collections", "playlists", "contributions", "labels", "releases" });
+            var result = await this.ArtistService.ArtistById(null, id, (inc ?? "stats,images,associatedartists,collections,playlists,contributions,labels").ToLower().Split(","));
+            
             return Ok(result);
         }
     }

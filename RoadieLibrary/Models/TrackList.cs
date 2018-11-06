@@ -9,10 +9,10 @@ namespace Roadie.Library.Models
     {
         public int? TrackNumber { get; set; }
         public int? ReleaseMediaNumber { get; set; }
-        public Guid ReleaseId { get; set; }
+        public Guid? ReleaseId { get; set; }
         public string ReleaseThumbnailUrl { get; set; }
         public string ReleaseTitle { get; set; }
-        public Guid ReleaseArtistId { get; set; }
+        public Guid? ReleaseArtistId { get; set; }
         public string ReleaseArtistName { get; set; }
         public string ReleaseArtistThumbnail { get; set; }
         public DataToken TrackArtist { get; set; }

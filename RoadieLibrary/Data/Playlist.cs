@@ -15,9 +15,6 @@ namespace Roadie.Library.Data
         [Column("isPublic")]
         public bool IsPublic { get; set; }
 
-        [Column("thumbnail", TypeName = "blob")]
-        public byte[] Thumbnail { get; set; }
-
         public ICollection<PlaylistTrack> Tracks { get; set; }
 
         public ApplicationUser User { get; set; }

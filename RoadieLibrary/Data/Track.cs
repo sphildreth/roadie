@@ -15,8 +15,6 @@ namespace Roadie.Library.Data
         [MaxLength(50)]
         public string AmgId { get; set; }
 
-        public Artist Artist { get; set; }
-
         [Column("artistId")]
         public int? ArtistId { get; set; }
 

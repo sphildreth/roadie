@@ -22,6 +22,7 @@ namespace Roadie.Library.Identity
             _applicationUserDbContext = applicationUserDbContext;
         }
 
+        #pragma warning disable 1998
         public override async Task<ClaimsPrincipal> CreateAsync(ApplicationUser user)
         {
             var usersRoles = (from ur in _applicationUserDbContext.UsersInRoles.Where(x => x.UserId == user.Id)

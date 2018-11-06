@@ -37,7 +37,6 @@ namespace Roadie.Library.Data
             }
         }
 
-        [NotMapped]
         public Artist TrackArtist { get; set; }
 
         [NotMapped]

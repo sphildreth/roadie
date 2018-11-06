@@ -35,7 +35,5 @@ namespace Roadie.Library.Data
 
         public ICollection<CollectionRelease> Releases { get; set; }
 
-        [Column("thumbnail", TypeName = "blob")]
-        public byte[] Thumbnail { get; set; }
     }
 }

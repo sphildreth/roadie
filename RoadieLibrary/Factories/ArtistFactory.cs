@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.Factories
 {
+    #pragma warning disable EF1000
     public sealed class ArtistFactory : FactoryBase
     {
         private List<int> _addedArtistIds = new List<int>();

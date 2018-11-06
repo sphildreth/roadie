@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Mapster;
+using Newtonsoft.Json;
 using Roadie.Library.Enums;
 using System;
 using System.Collections.Generic;

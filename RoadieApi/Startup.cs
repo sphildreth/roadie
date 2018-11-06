@@ -49,25 +49,25 @@ namespace Roadie.Api
             this._configuration = configuration;
             this._loggerFactory = loggerFactory;
 
-            //TypeAdapterConfig<Roadie.Library.Data.Release, Roadie.Library.Models.Releases.ReleaseList>
+            TypeAdapterConfig<Roadie.Library.Data.Release, Roadie.Library.Models.Releases.ReleaseList>
+                .NewConfig()
+                .Map(rml => rml.ArtistId,
+                     src => src.Artist.RoadieId)
+                .Compile();
+
+            //TypeAdapterConfig<Roadie.Library.Data.ReleaseMedia, Roadie.Library.Models.Releases.ReleaseMediaList>
             //    .NewConfig()
             //    .Map(rml => rml.Id,
             //         src => src.RoadieId)
             //    .Compile();
 
-            ////TypeAdapterConfig<Roadie.Library.Data.ReleaseMedia, Roadie.Library.Models.Releases.ReleaseMediaList>
-            ////    .NewConfig()
-            ////    .Map(rml => rml.Id,
-            ////         src => src.RoadieId)
-            ////    .Compile();
+            //TypeAdapterConfig<Roadie.Library.Data.Track, Roadie.Library.Models.TrackList>
+            //    .NewConfig()
+            //    .Map(rml => rml.ReleaseArtistId,
+            //         src => src.Artist.RoadieId)
+            //    .Compile();
 
-            ////TypeAdapterConfig<Roadie.Library.Data.Track, Roadie.Library.Models.TrackList>
-            ////    .NewConfig()
-            ////    .Map(rml => rml.Id,
-            ////         src => src.RoadieId)
-            ////    .Compile();
-
-            //TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
+            TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
 
 
 

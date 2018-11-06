@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.SearchEngines.Imaging
 {
+    #pragma warning disable 1998
     public abstract class ImageSearchEngineBase : IImageSearchEngine
     {
         protected readonly RestClient _client = null;
