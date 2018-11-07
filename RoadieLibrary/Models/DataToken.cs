@@ -17,7 +17,7 @@ namespace Roadie.Library.Models
         /// <summary>
         /// This is the value to submit or the Key (Guid) of the item
         /// </summary>
-        public object Value { get; set; }
+        public string Value { get; set; }
         /// <summary>
         /// Is the item selected
         /// </summary>

@@ -18,38 +18,38 @@ namespace Roadie.Api.Controllers
     [Authorize]
     public class TrackController : EntityControllerBase
     {
-        public TrackController(IRoadieDbContext RoadieDbContext, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration)
-            : base(RoadieDbContext, cacheManager, configuration)
+        public TrackController(ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration)
+            : base(cacheManager, configuration)
         {
             this._logger = logger.CreateLogger("RoadieApi.Controllers.TrackController"); ;
         }
 
-        [EnableQuery]
-        public IActionResult Get()
-        {
-            return Ok(this._RoadieDbContext.Tracks.ProjectToType<models.Track>());
-        }
+        //[EnableQuery]
+        //public IActionResult Get()
+        //{
+        //    return Ok(this._RoadieDbContext.Tracks.ProjectToType<models.Track>());
+        //}
 
-        [HttpGet("{id}")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
-        public IActionResult Get(Guid id)
-        {
-            var key = id.ToString();
-            var result = this._cacheManager.Get<models.Track>(key, () =>
-            {
-                var d = this._RoadieDbContext.Tracks.FirstOrDefault(x => x.RoadieId == id);
-                if (d != null)
-                {
-                    return d.Adapt<models.Track>();
-                }
-                return null;
-            }, key);
-            if (result == null)
-            {
-                return NotFound();
-            }
-            return Ok(result);
-        }
+        //[HttpGet("{id}")]
+        //[ProducesResponseType(200)]
+        //[ProducesResponseType(404)]
+        //public IActionResult Get(Guid id)
+        //{
+        //    var key = id.ToString();
+        //    var result = this._cacheManager.Get<models.Track>(key, () =>
+        //    {
+        //        var d = this._RoadieDbContext.Tracks.FirstOrDefault(x => x.RoadieId == id);
+        //        if (d != null)
+        //        {
+        //            return d.Adapt<models.Track>();
+        //        }
+        //        return null;
+        //    }, key);
+        //    if (result == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    return Ok(result);
+        //}
     }
 }

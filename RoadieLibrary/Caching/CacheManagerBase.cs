@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
+using System.Threading.Tasks;
 
 namespace Roadie.Library.Caching
 {
@@ -46,6 +47,8 @@ namespace Roadie.Library.Caching
         public abstract TOut Get<TOut>(string key, Func<TOut> getItem, string region);
 
         public abstract TOut Get<TOut>(string key, Func<TOut> getItem, string region, CachePolicy policy);
+
+        public abstract Task<TOut> GetAsync<TOut>(string key, Func<Task<TOut>> getItem, string region);
 
         public abstract bool Remove(string key);
 

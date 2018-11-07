@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Threading.Tasks;
 
 namespace Roadie.Library.Caching
 {
@@ -109,6 +110,17 @@ namespace Roadie.Library.Caching
         public override bool Remove(string key, string region)
         {
             return this.Remove(key);
+        }
+
+        public async override Task<TOut> GetAsync<TOut>(string key, Func<Task<TOut>> getItem, string region)
+        {
+            var r = this.Get<TOut>(key, region);
+            if (r == null)
+            {
+                r = await getItem();
+                this.Add(key, r, region);
+            }
+            return r;
         }
     }
 }

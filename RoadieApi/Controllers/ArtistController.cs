@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
-using Roadie.Library.Data;
+using Roadie.Library.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,46 +30,34 @@ namespace Roadie.Api.Controllers
                 return this._artistService;
             }
         }
-        public ArtistController(IArtistService artistService, IRoadieDbContext RoadieDbContext, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration)
-            : base(RoadieDbContext, cacheManager, configuration)
+        public ArtistController(IArtistService artistService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration)
+            : base(cacheManager, configuration)
         {
             this._logger = logger.CreateLogger("RoadieApi.Controllers.ArtistController");
             this._artistService = artistService;
         }
 
-        [EnableQuery]
-        public IActionResult Get()
-        {
-            return Ok(this._RoadieDbContext.Artists.ProjectToType<models.Artist>());
-        }
+        //[EnableQuery]
+        //public IActionResult Get()
+        //{
+        //    return Ok(this._RoadieDbContext.Artists.ProjectToType<models.Artist>());
+        //}
 
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            //var key = id.ToString();
-            //var result = this._cacheManager.Get<models.Artist>(key, () =>
-            //{
-            //    var d = this._RoadieDbContext.Artists
-            //                                 .Include(x => x.AssociatedArtists).Include("AssociatedArtists.AssociatedArtist")
-            //                                 .FirstOrDefault(x => x.RoadieId == id);
-            //    if (d != null)
-            //    {
-            //        //   var info = d.AssociatedArtists.Adapt<models.AssociatedArtistInfo>();
-            //        return d.Adapt<models.Artist>();
-            //    }
-            //    return null;
-            //}, key);
-            //if (result == null)
-            //{
-            //    return NotFound();
-            //}
-            //return Ok(result);
-
             var key = id.ToString();
-            var result = await this.ArtistService.ArtistById(null, id, (inc ?? "stats,images,associatedartists,collections,playlists,contributions,labels").ToLower().Split(","));
-            
+            var result = await this._cacheManager.GetAsync<Artist>(key, async () =>
+            {
+                var op = await this.ArtistService.ArtistById(null, id, (inc ?? "stats,imaes,associatedartists,collections,playlists,contributions,labels").ToLower().Split(","));
+                return op.Data;
+            }, key);
+            if (result == null)
+            {
+                return NotFound();
+            }
             return Ok(result);
         }
     }

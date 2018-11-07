@@ -4,6 +4,7 @@ using Newtonsoft.Json.Serialization;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Roadie.Library.Caching
 {
@@ -170,6 +171,11 @@ namespace Roadie.Library.Caching
                 this._logger.LogTrace("Get Cache Hit Key [{0}], Region [{1}]", key, region);
             }
             return result;
+        }
+
+        public override Task<TOut> GetAsync<TOut>(string key, Func<Task<TOut>> getItem, string region)
+        {
+            throw new NotImplementedException();
         }
     }
 

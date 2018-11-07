@@ -18,38 +18,38 @@ namespace Roadie.Api.Controllers
     [Authorize]
     public class LabelController : EntityControllerBase
     {
-        public LabelController(IRoadieDbContext RoadieDbContext, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration)
-            : base(RoadieDbContext, cacheManager, configuration)
+        public LabelController(ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration)
+            : base( cacheManager, configuration)
         {
             this._logger = logger.CreateLogger("RoadieApi.Controllers.LabelController"); ;
         }
 
-        [EnableQuery]
-        public IActionResult Get()
-        {
-            return Ok(this._RoadieDbContext.Labels.ProjectToType<models.Label>());
-        }
+        //[EnableQuery]
+        //public IActionResult Get()
+        //{
+        //    return Ok(this._RoadieDbContext.Labels.ProjectToType<models.Label>());
+        //}
 
-        [HttpGet("{id}")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
-        public IActionResult Get(Guid id)
-        {
-            var key = id.ToString();
-            var result = this._cacheManager.Get<models.Label>(key, () =>
-            {
-                var d = this._RoadieDbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
-                if (d != null)
-                {
-                    return d.Adapt<models.Label>();
-                }
-                return null;
-            }, key);
-            if (result == null)
-            {
-                return NotFound();
-            }
-            return Ok(result);
-        }
+        //[HttpGet("{id}")]
+        //[ProducesResponseType(200)]
+        //[ProducesResponseType(404)]
+        //public IActionResult Get(Guid id)
+        //{
+        //    var key = id.ToString();
+        //    var result = this._cacheManager.Get<models.Label>(key, () =>
+        //    {
+        //        var d = this._RoadieDbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
+        //        if (d != null)
+        //        {
+        //            return d.Adapt<models.Label>();
+        //        }
+        //        return null;
+        //    }, key);
+        //    if (result == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    return Ok(result);
+        //}
     }
 }

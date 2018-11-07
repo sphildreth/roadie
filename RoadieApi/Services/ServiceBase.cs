@@ -87,6 +87,16 @@ namespace Roadie.Api.Services
             return MakeThumbnailImage(id, "artist");
         }
 
+        protected Image MakeCollectionThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "collection");
+        }
+
+        protected Image MakePlaylistThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "playlist");
+        }
+
         protected Image MakeImage(Guid id, int width = 200, int height = 200)
         {
             return new Image($"{this.HttpContext.ImageBaseUrl }/{id}/{ width }/{ height }");
@@ -100,6 +110,11 @@ namespace Roadie.Api.Services
         protected Image MakeLabelThumbnailImage(Guid id)
         {
             return MakeThumbnailImage(id, "label");
+        }
+
+        protected Image MakeUserThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "user");
         }
 
         private Image MakeThumbnailImage(Guid id, string type)

@@ -25,14 +25,21 @@ namespace Roadie.Api.Services
     #pragma warning disable 1998
     public class ArtistService : ServiceBase, IArtistService
     {
+        private ICollectionService CollectionService { get; } = null;
+        private IPlaylistService PlaylistService { get; } = null;
+
         public ArtistService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
                              IHttpContext httpContext,
                              data.IRoadieDbContext context,
                              ICacheManager cacheManager,
-                             ILogger<ArtistService> logger)
+                             ILogger<ArtistService> logger,
+                             ICollectionService collectionService,
+                             IPlaylistService playlistService)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
+            this.CollectionService = collectionService;
+            this.PlaylistService = playlistService;
         }
 
         public async Task<OperationResult<bool>> AddArtist(Artist artist)
@@ -75,7 +82,7 @@ namespace Roadie.Api.Services
                                      where b.BookmarkTargetId == artist.Id
                                      where b.BookmarkType == BookmarkType.Artist
                                      select b.RoadieId).FirstOrDefault();
-            result.Genres = artist.Genres.Select(x => new DataToken { Text = x.Genre.Name, Value = x.Genre.RoadieId });
+            result.Genres = artist.Genres.Select(x => new DataToken { Text = x.Genre.Name, Value = x.Genre.RoadieId.ToString() });
             if (includes != null && includes.Any())
             {
                 if (includes.Contains("releases"))
@@ -104,7 +111,7 @@ namespace Roadie.Api.Services
                                             trackArtist = new DataToken
                                             {
                                                 Text = ta.Name,
-                                                Value = ta.RoadieId
+                                                Value = ta.RoadieId.ToString()
                                             };
                                         }
                                     }
@@ -165,7 +172,7 @@ namespace Roadie.Api.Services
                                                     select new DataToken
                                                     {
                                                         Text = a.Name,
-                                                        Value = a.RoadieId
+                                                        Value = a.RoadieId.ToString()
                                                     });
 
                     result.AssociatedArtists = (from aa in this.DbContext.ArtistAssociations
@@ -175,26 +182,25 @@ namespace Roadie.Api.Services
                                                 select new DataToken
                                                 {
                                                     Text = a.Name,
-                                                    Value = a.RoadieId
+                                                    Value = a.RoadieId.ToString()
                                                 });
                 }
-                // TODO once other services are in place
-                //if (includes.Contains("collections"))
-                //{
-                //    var r = this.CollectionModule.CollectionList(request: new PagedRequestModel(), artistId: artist.roadieId);
-                //    if (r.IsSuccess)
-                //    {
-                //        result.CollectionsWithArtistReleases = r.Rows.GroupBy(x => x.roadieId).Select(x => x.First()).OrderBy(x => x.Name).ToArray();
-                //    }
-                //}
-                //if (includes.Contains("playlists"))
-                //{
-                //    var r = this.PlaylistModule.PlaylistList(request: new PagedRequestModel(), artistId: artist.roadieId);
-                //    if (r.IsSuccess)
-                //    {
-                //        result.PlaylistsWithArtistReleases = r.Rows.GroupBy(x => x.roadieId).Select(x => x.First()).OrderBy(x => x.Name).ToArray();
-                //    }
-                //}
+                if (includes.Contains("collections"))
+                {
+                    var r = await this.CollectionService.CollectionList(request: new PagedRequest(), artistId: artist.RoadieId);
+                    if (r.IsSuccess)
+                    {
+                        result.CollectionsWithArtistReleases = r.Rows.ToArray();
+                    }
+                }
+                if (includes.Contains("playlists"))
+                {
+                    var r = await this.PlaylistService.PlaylistList(request: new PagedRequest(), artistId: artist.RoadieId);
+                    if (r.IsSuccess)
+                    {
+                        result.PlaylistsWithArtistReleases = r.Rows.ToArray();
+                    }
+                }
                 if (includes.Contains("contributions"))
                 {
                     result.ArtistContributionReleases = (from t in this.DbContext.Tracks
@@ -209,7 +215,7 @@ namespace Roadie.Api.Services
                                                              Release = new DataToken
                                                              {
                                                                  Text = r.Title,
-                                                                 Value = r.RoadieId
+                                                                 Value = r.RoadieId.ToString()
                                                              },
                                                              ArtistId = r.Artist.RoadieId,
                                                              ArtistName = r.Artist.Name,
@@ -257,7 +263,7 @@ namespace Roadie.Api.Services
                                                Label = new DataToken
                                                {
                                                    Text = l.Name,
-                                                   Value = l.RoadieId,
+                                                   Value = l.RoadieId.ToString()
                                                },
                                                SortName = l.SortName,
                                                CreatedDate = l.CreatedDate,

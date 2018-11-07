@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Roadie.Library.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -13,7 +14,7 @@ namespace Roadie.Library.Models.Collections
         public DataToken Release { get; set; }
         public int? CollectionCount { get; set; }
         public string CollectionType { get; set; }
-        public string ThumbnailUrl { get; set; }
+        public Image Thumbnail { get; set; }
         public int PercentComplete
         {
             get

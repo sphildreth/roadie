@@ -1,4 +1,6 @@
 ﻿using Newtonsoft.Json;
+using Roadie.Library.Models.Collections;
+using Roadie.Library.Models.Playlists;
 using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Statistics;
 using Roadie.Library.Models.Users;
@@ -88,6 +90,10 @@ namespace Roadie.Library.Models
         }
 
         public UserArtist UserArtist { get; set; }
+
+        public IEnumerable<CollectionList> CollectionsWithArtistReleases { get; set; }
+
+        public IEnumerable<PlaylistList> PlaylistsWithArtistReleases { get; set; }
 
         public Artist()
         {

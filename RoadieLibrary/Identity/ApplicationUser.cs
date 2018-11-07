@@ -99,7 +99,7 @@ namespace Roadie.Library.Identity
 
         [Column("RoadieId")]
         [StringLength(36)]
-        public string RoadieId { get; set; }
+        public Guid RoadieId { get; set; }
 
         public ICollection<UsersInRoles> Roles { get; set; }
 

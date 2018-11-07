@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Roadie.Library.Caching
 {
@@ -24,7 +25,9 @@ namespace Roadie.Library.Caching
 
         TOut Get<TOut>(string key);
 
-        TOut Get<TOut>(string key, Func<TOut> getItem, string region);
+    //    Task<TOut> GetAsync<TOut>(string key, Func<Task<TOut>> getItem, string region, CachePolicy policy);
+
+        Task<TOut> GetAsync<TOut>(string key, Func<Task<TOut>> getItem, string region);
 
         TOut Get<TOut>(string key, Func<TOut> getItem, string region, CachePolicy policy);
 

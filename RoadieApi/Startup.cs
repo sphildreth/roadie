@@ -160,6 +160,8 @@ namespace Roadie.Api
                 return settings;
             });
 
+            services.AddScoped<ICollectionService, CollectionService>();
+            services.AddScoped<IPlaylistService, PlaylistService>();
             services.AddScoped<IArtistService, ArtistService>();
 
             var securityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration["Tokens:PrivateKey"]));

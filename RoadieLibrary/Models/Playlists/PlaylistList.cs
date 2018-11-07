@@ -9,8 +9,8 @@ namespace Roadie.Library.Models.Playlists
     {
         public DataToken Playlist { get; set; }
         public DataToken User { get; set; }
-        public string ThumbnailUrl { get; set; }
+        public Image Thumbnail { get; set; }
         public int? PlaylistCount { get; set; }
-        public string UserThumbnailUrl { get; set; }
+        public Image UserThumbnail { get; set; }
     }
 }
