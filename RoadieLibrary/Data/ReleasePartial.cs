@@ -8,11 +8,16 @@ namespace Roadie.Library.Data
 {
     public partial class Release
     {
+        public static string CacheRegionKey(Guid Id)
+        {
+            return string.Format("urn:release:{0}", Id);
+        }
+
         public string CacheRegion
         {
             get
             {
-                return string.Format("urn:release:{0}", this.RoadieId);
+                return Release.CacheRegionKey(this.RoadieId);
             }
         }
 

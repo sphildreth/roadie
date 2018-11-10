@@ -12,13 +12,13 @@ namespace Roadie.Library
         public const string NotModified = "NotModified";
         public const string OkMessage = "OK";
 
-        private List<string> _messages = new List<string>();
         private List<Exception> _errors = new List<Exception>();
-
+        private List<string> _messages = new List<string>();
         public Dictionary<string, object> AdditionalData { get; set; }
         public T Data { get; set; }
         public IEnumerable<Exception> Errors { get; set; }
         public bool IsSuccess { get; set; }
+
         public IEnumerable<string> Messages
         {
             get
@@ -26,10 +26,20 @@ namespace Roadie.Library
                 return this._messages;
             }
         }
+
         public long OperationTime { get; set; }
 
         public OperationResult()
         {
+        }
+
+        public OperationResult(IEnumerable<string> messages = null)
+        {
+            if (messages != null && messages.Any())
+            {
+                this.AdditionalData = new Dictionary<string, object>();
+                messages.ToList().ForEach(x => this.AddMessage(x));
+            }
         }
 
         public OperationResult(string message = null)
@@ -49,21 +59,20 @@ namespace Roadie.Library
             this.AddError(error);
         }
 
-        public void AddMessage(string message)
-        {
-            if(!string.IsNullOrEmpty(message))
-            {
-                this._messages.Add(message);
-            }
-        }
-
         public void AddError(Exception exception)
         {
-            if(exception != null)
+            if (exception != null)
             {
                 this._errors.Add(exception);
             }
         }
 
+        public void AddMessage(string message)
+        {
+            if (!string.IsNullOrEmpty(message))
+            {
+                this._messages.Add(message);
+            }
+        }
     }
 }

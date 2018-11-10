@@ -129,14 +129,16 @@ namespace Roadie.Api
             //    return settings;
             //});
 
-            var cacheManager = new MemoryCacheManager(this._loggerFactory.CreateLogger<MemoryCacheManager>(), new CachePolicy(TimeSpan.FromHours(1)));
+            var cacheManager = new MemoryCacheManager(this._loggerFactory.CreateLogger<MemoryCacheManager>(), new CachePolicy(TimeSpan.FromHours(4)));
             services.AddSingleton<ICacheManager>(cacheManager);
 
-            services.AddEntityFrameworkMySql().AddDbContext<ApplicationUserDbContext>(options =>
-                options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection")));
+            services.AddDbContextPool<ApplicationUserDbContext>(
+                options => options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection")
+            ));
 
-            services.AddEntityFrameworkMySql().AddDbContext<IRoadieDbContext, RoadieDbContext>(options =>
-                options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection")));
+            services.AddDbContextPool<IRoadieDbContext, RoadieDbContext>( 
+                options => options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection")
+            ));
 
             services.AddIdentity<ApplicationUser, ApplicationRole>()
                 .AddEntityFrameworkStores<ApplicationUserDbContext>()
@@ -164,7 +166,7 @@ namespace Roadie.Api
             services.AddScoped<IPlaylistService, PlaylistService>();
             services.AddScoped<IArtistService, ArtistService>();
 
-            var securityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration["Tokens:PrivateKey"]));
+            var securityKey = new SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration["Tokens:PrivateKey"]));
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -204,7 +206,7 @@ namespace Roadie.Api
                 })
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
-            services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
+            services.AddHttpContextAccessor();
             services.AddScoped<IHttpContext>(factory =>
             {
                 var actionContext = factory.GetService<IActionContextAccessor>()

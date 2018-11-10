@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.Caching
 {
-    public interface ICacheManager : IDisposable
+    public interface ICacheManager 
     {
         bool Add<TCacheValue>(string key, TCacheValue value);
 

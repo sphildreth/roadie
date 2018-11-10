@@ -34,8 +34,6 @@ namespace Roadie.Library.Caching
 
         public abstract void ClearRegion(string region);
 
-        public abstract void Dispose();
-
         public abstract bool Exists<TOut>(string key);
 
         public abstract bool Exists<TOut>(string key, string region);

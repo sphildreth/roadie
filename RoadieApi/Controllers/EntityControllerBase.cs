@@ -8,7 +8,7 @@ using Roadie.Library.Data;
 
 namespace Roadie.Api.Controllers
 {
-    public abstract class EntityControllerBase : ODataController
+    public abstract class EntityControllerBase :  ODataController
     {
         protected readonly ICacheManager _cacheManager;
         protected readonly IConfiguration _configuration;
@@ -16,13 +16,7 @@ namespace Roadie.Api.Controllers
 
         protected ILogger _logger;
 
-        protected IRoadieSettings RoadieSettings
-        {
-            get
-            {
-                return this._roadieSettings;
-            }
-        }
+        protected IRoadieSettings RoadieSettings => this._roadieSettings;
 
         public EntityControllerBase(ICacheManager cacheManager, IConfiguration configuration)
         {

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace Roadie.Library.Caching
@@ -17,32 +18,23 @@ namespace Roadie.Library.Caching
 
         public override bool Add<TCacheValue>(string key, TCacheValue value)
         {
-            using (var entry = _cache.CreateEntry(key))
-            {
-                _cache.Set(key, value);
-                return true;
-            }
+            _cache.Set(key, value);
+            return true;
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value, string region)
         {
-            using (var entry = _cache.CreateEntry(key))
-            {
-                _cache.Set(key, value, DateTimeOffset.MaxValue);
-                return true;
-            }
+            _cache.Set(key, value, this._defaultPolicy.ExpiresAfter);
+            return true;
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value, CachePolicy policy)
         {
-            using (var entry = _cache.CreateEntry(key))
+            _cache.Set(key, value, new MemoryCacheEntryOptions
             {
-                _cache.Set(key, value, new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpiration = DateTimeOffset.UtcNow.Add(policy.ExpiresAfter) // new DateTimeOffset(DateTime.UtcNow, policy.ExpiresAfter)
-                });
-                return true;
-            }
+                AbsoluteExpiration = DateTimeOffset.UtcNow.Add(policy.ExpiresAfter) // new DateTimeOffset(DateTime.UtcNow, policy.ExpiresAfter)
+            });
+            return true;
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value, string region, CachePolicy policy)
@@ -58,11 +50,6 @@ namespace Roadie.Library.Caching
         public override void ClearRegion(string region)
         {
             this.Clear();
-        }
-
-        public override void Dispose()
-        {
-            //  throw new NotImplementedException();
         }
 
         public override bool Exists<TOut>(string key)
@@ -119,6 +106,11 @@ namespace Roadie.Library.Caching
             {
                 r = await getItem();
                 this.Add(key, r, region);
+                Trace.WriteLine($"-+> Cache Miss for Key [{ key }], Region [{ region }]");
+            }
+            else
+            {
+                Trace.WriteLine($"-!> Cache Hit for Key [{ key }], Region [{ region }]");
             }
             return r;
         }

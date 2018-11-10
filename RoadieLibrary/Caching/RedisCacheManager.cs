@@ -83,13 +83,6 @@ namespace Roadie.Library.Caching
             this.Clear();
         }
 
-        // Dispose() calls Dispose(true)
-        public override void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
         public override bool Exists<TOut>(string key)
         {
             return this.Exists<TOut>(key, null);

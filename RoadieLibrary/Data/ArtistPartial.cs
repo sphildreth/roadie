@@ -7,11 +7,16 @@ namespace Roadie.Library.Data
 {
     public partial class Artist
     {
+        public static string CacheRegionKey(Guid Id)
+        {
+            return string.Format("urn:artist:{0}", Id);
+        }
+
         public string CacheRegion
         {
             get
             {
-                return string.Format("urn:artist:{0}", this.RoadieId);
+                return Artist.CacheRegionKey(this.RoadieId);
             }
         }
 

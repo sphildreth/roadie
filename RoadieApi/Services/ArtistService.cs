@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -47,21 +48,29 @@ namespace Roadie.Api.Services
             throw new NotImplementedException();
         }
 
-
         public async Task<OperationResult<Artist>> ArtistById(User roadieUser, Guid id, IEnumerable<string> includes)
+        {
+            var sw = Stopwatch.StartNew();
+            sw.Start();
+            var cacheKey = string.Format("urn:artist_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
+            var result = await this.CacheManager.GetAsync<OperationResult<Artist>>(cacheKey, async () => {
+                return await this.ArtistByIdAction(roadieUser, id, includes);
+            }, data.Artist.CacheRegionKey(id));
+            sw.Stop();
+            return new OperationResult<Artist>(result.Messages)
+            {
+                Data = result.Data,
+                Errors = result.Errors,                
+                IsSuccess = result != null,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        private async Task<OperationResult<Artist>> ArtistByIdAction(User roadieUser, Guid id, IEnumerable<string> includes)
         {
             roadieUser = roadieUser ?? new User();
             var sw = Stopwatch.StartNew();
             sw.Start();
-            var cacheRegion = (new data.Artist { RoadieId = id }).CacheRegion;
-            var cacheKey = string.Format("urn:artist_result_model:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
-            var resultInCache = this._cacheManager.Get<OperationResult<Artist>>(cacheKey, cacheRegion);
-            if (resultInCache != null)
-            {
-                sw.Stop();
-                resultInCache.OperationTime = sw.ElapsedMilliseconds;
-                return resultInCache;
-            }
 
             var artist = this.DbContext.Artists
                                        .Include(x => x.Genres)
@@ -284,14 +293,12 @@ namespace Roadie.Api.Services
                 }
             }
             sw.Stop();
-            resultInCache = new OperationResult<Artist>
+            return new OperationResult<Artist>
             {
                 Data = result,
                 IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
             };
-            this._cacheManager.Add(cacheKey, resultInCache, cacheRegion);
-            return resultInCache;
         }
 
         public async Task<OperationResult<Artist>> ArtistByName(string name, IEnumerable<string> includes)
