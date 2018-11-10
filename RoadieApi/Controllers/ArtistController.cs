@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
+using Roadie.Library.Identity;
 using Roadie.Library.Models;
 using System;
 using System.Net;
@@ -19,11 +21,14 @@ namespace Roadie.Api.Controllers
     {
         private IArtistService ArtistService { get; }
 
-        public ArtistController(IArtistService artistService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration)
+        private UserManager<ApplicationUser> UserManager { get; }
+
+        public ArtistController(IArtistService artistService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration)
         {
             this._logger = logger.CreateLogger("RoadieApi.Controllers.ArtistController");
             this.ArtistService = artistService;
+            this.UserManager = userManager;
         }
 
         //[EnableQuery]

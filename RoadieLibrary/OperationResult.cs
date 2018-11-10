@@ -12,8 +12,8 @@ namespace Roadie.Library
         public const string NotModified = "NotModified";
         public const string OkMessage = "OK";
 
-        private List<Exception> _errors = new List<Exception>();
-        private List<string> _messages = new List<string>();
+        private List<Exception> _errors;
+        private List<string> _messages;
         public Dictionary<string, object> AdditionalData { get; set; }
         public T Data { get; set; }
         public IEnumerable<Exception> Errors { get; set; }
@@ -63,6 +63,10 @@ namespace Roadie.Library
         {
             if (exception != null)
             {
+                if(this._errors == null)
+                {
+                    this._errors = new List<Exception>();
+                }
                 this._errors.Add(exception);
             }
         }
@@ -71,6 +75,10 @@ namespace Roadie.Library
         {
             if (!string.IsNullOrEmpty(message))
             {
+                if(this._messages == null)
+                {
+                    this._messages = new List<string>();
+                }
                 this._messages.Add(message);
             }
         }

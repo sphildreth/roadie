@@ -16,9 +16,9 @@ namespace Roadie.Library.Identity
         [StringLength(200)]
         public string Description { get; set; }
 
-        [Column("id")]
-        [Key]
-        public override int Id { get; set; }
+        //[Column("id")]
+        //[Key]
+        //public override int Id { get; set; }
 
         [Column("isLocked")]
         public bool? IsLocked { get; set; }
@@ -35,9 +35,11 @@ namespace Roadie.Library.Identity
         [StringLength(36)]
         public string RoadieId { get; set; }
 
+        public virtual ICollection<ApplicationRoleClaim> RoleClaims { get; set; }
+
         [Column("status")]
         public short? Status { get; set; }
 
-        public ICollection<UsersInRoles> Users { get; set; }
+        public virtual ICollection<ApplicationUserRole> UserRoles { get; set; }
     }
 }

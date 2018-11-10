@@ -1,9 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Identity;
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Roadie.Api.Services
 {
@@ -16,9 +19,12 @@ namespace Roadie.Api.Services
             this._configuration = configuration;
         }
 
-        public string GenerateToken(ApplicationUser user)
+        public async Task<string> GenerateToken(ApplicationUser user, UserManager<ApplicationUser> userManager)
         {
             var utcNow = DateTime.UtcNow;
+
+            var roles = await userManager.GetRolesAsync(user);
+            var userRoles = roles.Select(r => new Claim(ClaimTypes.Role, r)).ToArray();
 
             var tokenHandler = new JwtSecurityTokenHandler();
 
@@ -28,7 +34,7 @@ namespace Roadie.Api.Services
                         new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
                         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                         new Claim(JwtRegisteredClaimNames.Iat, utcNow.ToString())
-            };
+            }.Union(userRoles);
 
             var now = DateTime.UtcNow;
             var securityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration.GetValue<String>("Tokens:PrivateKey")));

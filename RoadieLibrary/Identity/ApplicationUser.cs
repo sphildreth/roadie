@@ -14,12 +14,14 @@ namespace Roadie.Library.Identity
         [StringLength(100)]
         public string ApiToken { get; set; }
 
-        public ICollection<UserArtist> ArtistRatings { get; set; }
+        public virtual ICollection<UserArtist> ArtistRatings { get; set; }
 
         [Column("avatar", TypeName = "blob")]
         public byte[] Avatar { get; set; }
 
         public ICollection<Bookmark> Bookmarks { get; set; }
+
+        public virtual ICollection<ApplicationUserClaim> Claims { get; set; }
 
         [Column("createdDate")]
         public DateTime? CreatedDate { get; set; }
@@ -101,7 +103,7 @@ namespace Roadie.Library.Identity
         [StringLength(36)]
         public Guid RoadieId { get; set; }
 
-        public ICollection<UsersInRoles> Roles { get; set; }
+        //    public virtual ICollection<UsersInRoles> Roles { get; set; }
 
         [Column("status")]
         public short? Status { get; set; }
@@ -122,5 +124,7 @@ namespace Roadie.Library.Identity
         [Required]
         [StringLength(20)]
         public string Username { get; set; }
+
+        public virtual ICollection<ApplicationUserRole> UserRoles { get; set; }
     }
 }

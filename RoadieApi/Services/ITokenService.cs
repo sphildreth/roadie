@@ -1,4 +1,5 @@
-﻿using Roadie.Library.Data;
+﻿using Microsoft.AspNetCore.Identity;
+using Roadie.Library.Data;
 using Roadie.Library.Identity;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,6 @@ namespace Roadie.Api.Services
 {
     public interface ITokenService
     {
-        string GenerateToken(ApplicationUser user);
+        Task<string> GenerateToken(ApplicationUser user, UserManager<ApplicationUser> userManager);
     }
 }

@@ -37,6 +37,8 @@ namespace Roadie.Library.Data
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            base.OnModelCreating(builder);
+
             builder
                 .Entity<Release>()
                 .Property(e => e.ReleaseType)

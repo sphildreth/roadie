@@ -33,16 +33,16 @@ namespace Roadie.Api
         private readonly IConfiguration _configuration;
         private readonly ILoggerFactory _loggerFactory;
 
-        public static string AssemblyDirectory
-        {
-            get
-            {
-                string codeBase = Assembly.GetExecutingAssembly().CodeBase;
-                var uri = new UriBuilder(codeBase);
-                string path = Uri.UnescapeDataString(uri.Path);
-                return Path.GetDirectoryName(path);
-            }
-        }
+        //public static string AssemblyDirectory
+        //{
+        //    get
+        //    {
+        //        string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+        //        var uri = new UriBuilder(codeBase);
+        //        string path = Uri.UnescapeDataString(uri.Path);
+        //        return Path.GetDirectoryName(path);
+        //    }
+        //}
 
         public Startup(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
@@ -55,21 +55,7 @@ namespace Roadie.Api
                      src => src.Artist.RoadieId)
                 .Compile();
 
-            //TypeAdapterConfig<Roadie.Library.Data.ReleaseMedia, Roadie.Library.Models.Releases.ReleaseMediaList>
-            //    .NewConfig()
-            //    .Map(rml => rml.Id,
-            //         src => src.RoadieId)
-            //    .Compile();
-
-            //TypeAdapterConfig<Roadie.Library.Data.Track, Roadie.Library.Models.TrackList>
-            //    .NewConfig()
-            //    .Map(rml => rml.ReleaseArtistId,
-            //         src => src.Artist.RoadieId)
-            //    .Compile();
-
             TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
-
-
 
         }
 
@@ -113,22 +99,6 @@ namespace Roadie.Api
 
             services.AddSingleton<IHttpEncoder, HttpEncoder>();
 
-            //services.AddSingleton<IRoadieSettings, RoadieSettings>(options =>
-            //{
-            //    var settingsPath = Path.Combine(AssemblyDirectory, "settings.json");
-            //    var settings = new RoadieSettings();
-            //    if (File.Exists(settingsPath))
-            //    {
-            //        var settingsFileContents = File.ReadAllText(settingsPath);
-            //        var fromSettingsFile = Newtonsoft.Json.JsonConvert.DeserializeObject<RoadieSettings>(settingsFileContents);
-            //        if (fromSettingsFile != null)
-            //        {
-            //            settings.MergeWith(fromSettingsFile);
-            //        }
-            //    }
-            //    return settings;
-            //});
-
             var cacheManager = new MemoryCacheManager(this._loggerFactory.CreateLogger<MemoryCacheManager>(), new CachePolicy(TimeSpan.FromHours(4)));
             services.AddSingleton<ICacheManager>(cacheManager);
 
@@ -141,13 +111,13 @@ namespace Roadie.Api
             ));
 
             services.AddIdentity<ApplicationUser, ApplicationRole>()
-                .AddEntityFrameworkStores<ApplicationUserDbContext>()
-                .AddClaimsPrincipalFactory<ApplicationClaimsFactory>();
+                .AddRoles<ApplicationRole>()
+                .AddEntityFrameworkStores<ApplicationUserDbContext>();
 
             services.AddAuthorization(options =>
             {
-                options.AddPolicy("Admin", policy => policy.RequireClaim("Admin"));
-                options.AddPolicy("Editor", policy => policy.RequireClaim("Editor"));
+                options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+                options.AddPolicy("Editor", policy => policy.RequireRole("Editor"));
             });
 
             services.Configure<IConfiguration>(this._configuration);
@@ -210,7 +180,7 @@ namespace Roadie.Api
             services.AddScoped<IHttpContext>(factory =>
             {
                 var actionContext = factory.GetService<IActionContextAccessor>()
-                                               .ActionContext;
+                                           .ActionContext;
                 return new HttpContext(new UrlHelper(actionContext));
             });
         }

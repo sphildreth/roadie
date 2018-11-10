@@ -54,7 +54,8 @@ namespace Roadie.Api.Controllers
                     }
                     // If successful login return OK with generated token
                     var user = await userManager.FindByNameAsync(model.Username);
-                    return Ok(this.tokenService.GenerateToken(user));
+                    var t = await this.tokenService.GenerateToken(user, this.userManager);
+                    return Ok(t);
                 }
                 catch (Exception ex)
                 {
@@ -76,7 +77,7 @@ namespace Roadie.Api.Controllers
             if (!String.IsNullOrWhiteSpace(username))
             {
                 var user = await userManager.FindByNameAsync(username);
-                return Ok(this.tokenService.GenerateToken(user));
+                return Ok(await this.tokenService.GenerateToken(user, this.userManager));
             }
             else
             {
@@ -103,7 +104,7 @@ namespace Roadie.Api.Controllers
                 if (identityResult.Succeeded)
                 {
                     await signInManager.SignInAsync(user, isPersistent: false);
-                    return Ok(this.tokenService.GenerateToken(user));
+                    return Ok(this.tokenService.GenerateToken(user, this.userManager));
                 }
                 else
                 {
@@ -129,7 +130,7 @@ namespace Roadie.Api.Controllers
                 if (identityResult.Succeeded)
                 {
                     await signInManager.SignInAsync(user, isPersistent: false);
-                    return Ok(this.tokenService.GenerateToken(user));
+                    return Ok(this.tokenService.GenerateToken(user, this.userManager));
                 }
                 else
                 {
