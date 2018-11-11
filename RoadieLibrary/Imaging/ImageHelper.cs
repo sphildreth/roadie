@@ -4,6 +4,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,6 +13,7 @@ namespace Roadie.Library.Imaging
 {
     public static class ImageHelper
     {
+
         public static byte[] ConvertToJpegFormat(byte[] imageBytes)
         {
             if (imageBytes == null)

@@ -23,6 +23,12 @@ namespace Roadie.Library
             this.AddMessage(message);
         }
 
+        public FileOperationResult(bool isNotFoundResult, string message)
+        {
+            this.IsNotFoundResult = isNotFoundResult;
+            this.AddMessage(message);
+        }
+
         public FileOperationResult(IEnumerable<string> messages = null)
         {
             if (messages != null && messages.Any())
@@ -30,6 +36,11 @@ namespace Roadie.Library
                 this.AdditionalData = new Dictionary<string, object>();
                 messages.ToList().ForEach(x => this.AddMessage(x));
             }
+        }
+
+        public FileOperationResult(bool isNotFoundResult, IEnumerable<string> messages = null)
+        {
+            this.IsNotFoundResult = isNotFoundResult;
         }
     }
 }

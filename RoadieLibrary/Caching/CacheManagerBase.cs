@@ -73,5 +73,7 @@ namespace Roadie.Library.Caching
         {
             return JsonConvert.SerializeObject(o, this._serializerSettings);
         }
+       
+
     }
 }

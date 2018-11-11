@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Roadie.Library.Utility;
+using Microsoft.EntityFrameworkCore;
 
 namespace Roadie.Api.Services
 {
@@ -120,6 +121,17 @@ namespace Roadie.Api.Services
         private Image MakeThumbnailImage(Guid id, string type)
         {
             return new Image($"{this.HttpContext.ImageBaseUrl }/{ type }/thumbnail/{id}");
+        }
+
+        protected data.Artist GetArtist(Guid id)
+        {
+            return this.CacheManager.Get(data.Artist.CacheUrn(id), () =>
+            {
+                return this.DbContext.Artists
+                                    .Include(x => x.Genres)
+                                    .Include("Genres.Genre")
+                                    .FirstOrDefault(x => x.RoadieId == id);
+            }, data.Artist.CacheRegionUrn(id));
         }
     }
 }

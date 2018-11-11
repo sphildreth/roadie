@@ -20,6 +20,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
+using Roadie.Library.Imaging;
 using Roadie.Library.Utility;
 using System;
 using models = Roadie.Library.Models;
@@ -123,6 +124,8 @@ namespace Roadie.Api
                 settings.ContentPath = hostingEnvironment.WebRootPath;
                 return settings;
             });
+
+            services.AddSingleton<IDefaultNotFoundImages, DefaultNotFoundImages>();
 
             services.AddScoped<ICollectionService, CollectionService>();
             services.AddScoped<IPlaylistService, PlaylistService>();

@@ -25,9 +25,9 @@ namespace Roadie.Library.Caching
 
         TOut Get<TOut>(string key);
 
-    //    Task<TOut> GetAsync<TOut>(string key, Func<Task<TOut>> getItem, string region, CachePolicy policy);
-
         Task<TOut> GetAsync<TOut>(string key, Func<Task<TOut>> getItem, string region);
+
+        TOut Get<TOut>(string key, Func<TOut> getItem, string region);
 
         TOut Get<TOut>(string key, Func<TOut> getItem, string region, CachePolicy policy);
 

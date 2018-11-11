@@ -55,7 +55,7 @@ namespace Roadie.Api.Services
             var cacheKey = string.Format("urn:artist_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
             var result = await this.CacheManager.GetAsync<OperationResult<Artist>>(cacheKey, async () => {
                 return await this.ArtistByIdAction(roadieUser, id, includes);
-            }, data.Artist.CacheRegionKey(id));
+            }, data.Artist.CacheRegionUrn(id));
             sw.Stop();
             return new OperationResult<Artist>(result.Messages)
             {
@@ -72,10 +72,8 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             sw.Start();
 
-            var artist = this.DbContext.Artists
-                                       .Include(x => x.Genres)
-                                       .Include("Genres.Genre")
-                                       .FirstOrDefault(x => x.RoadieId == id);
+            var artist = this.GetArtist(id);
+
             if (artist == null)
             {
                 sw.Stop();

@@ -13,6 +13,7 @@ namespace Roadie.Library
         public T Data { get; set; }
         public IEnumerable<Exception> Errors { get; set; }
         public bool IsSuccess { get; set; }
+        public bool IsNotFoundResult { get; set; }
 
         public IEnumerable<string> Messages
         {

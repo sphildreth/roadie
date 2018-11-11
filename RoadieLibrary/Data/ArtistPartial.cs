@@ -7,16 +7,29 @@ namespace Roadie.Library.Data
 {
     public partial class Artist
     {
-        public static string CacheRegionKey(Guid Id)
+        public static string CacheRegionUrn(Guid Id)
         {
-            return string.Format("urn:artist:{0}", Id);
+            return $"urn:artist:{ Id}";
+        }
+
+        public static string CacheUrn(Guid Id)
+        {
+            return $"urn:artist_by_id:{ Id }";
+        }
+
+        public string CacheKey
+        {
+            get
+            {
+                return Artist.CacheUrn(this.RoadieId);
+            }
         }
 
         public string CacheRegion
         {
             get
             {
-                return Artist.CacheRegionKey(this.RoadieId);
+                return Artist.CacheRegionUrn(this.RoadieId);
             }
         }
 

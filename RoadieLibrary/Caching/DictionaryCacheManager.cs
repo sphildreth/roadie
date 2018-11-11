@@ -78,12 +78,18 @@ namespace Roadie.Library.Caching
 
         public override TOut Get<TOut>(string key, Func<TOut> getItem, string region)
         {
-            return Get<TOut>(key);
+            return Get<TOut>(key, getItem, region, this._defaultPolicy);
         }
 
         public override TOut Get<TOut>(string key, Func<TOut> getItem, string region, CachePolicy policy)
         {
-            return Get<TOut>(key);
+            var r = this.Get<TOut>(key, region);
+            if (r == null)
+            {
+                r = getItem();
+                this.Add(key, r, region, policy);
+            }
+            return r;
         }
 
         public override bool Remove(string key)
