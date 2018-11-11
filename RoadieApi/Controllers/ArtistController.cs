@@ -21,14 +21,11 @@ namespace Roadie.Api.Controllers
     {
         private IArtistService ArtistService { get; }
 
-        private UserManager<ApplicationUser> UserManager { get; }
-
         public ArtistController(IArtistService artistService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
-            : base(cacheManager, configuration)
+            : base(cacheManager, configuration, userManager)
         {
             this._logger = logger.CreateLogger("RoadieApi.Controllers.ArtistController");
             this.ArtistService = artistService;
-            this.UserManager = userManager;
         }
 
         //[EnableQuery]
@@ -43,7 +40,7 @@ namespace Roadie.Api.Controllers
         public async Task<ActionResult<Artist>> Get(Guid id, string inc = null)
         {
             var result = await this.ArtistService.ArtistById(null, id, (inc ?? Artist.DefaultIncludes).ToLower().Split(","));
-            if (result == null)
+            if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
             }

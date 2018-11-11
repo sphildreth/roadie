@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
+using Roadie.Library.Identity;
 using System;
 using System.Net;
 using System.Threading.Tasks;
@@ -18,8 +20,8 @@ namespace Roadie.Api.Controllers
     {
         private IImageService ImageService { get; }
 
-        public ImageController(IImageService imageService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration)
-            : base(cacheManager, configuration)
+        public ImageController(IImageService imageService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+            : base(cacheManager, configuration, userManager)
         {
             this._logger = logger.CreateLogger("RoadieApi.Controllers.ImageController");
             this.ImageService = imageService;
@@ -197,6 +199,22 @@ namespace Roadie.Api.Controllers
                         fileDownloadName: $"{ result.Data.Caption ?? id.ToString()}.jpg",
                         lastModified: result.LastModified,
                         entityTag: result.ETag);
+        }
+
+        [HttpPost("{id}")]
+        [Authorize(Policy ="Editor")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var result = await this.ImageService.Delete(await this.CurrentUserModel(), id);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
         }
     }
 }

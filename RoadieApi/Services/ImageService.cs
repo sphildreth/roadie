@@ -9,6 +9,7 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.Models;
+using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
 using System.Diagnostics;
@@ -417,6 +418,38 @@ namespace Roadie.Api.Services
                 this.Logger.LogError($"Error fetching User Thumbnail [{ id }]", ex);
             }
             return new FileOperationResult<Image>(OperationMessages.ErrorOccured);
+        }
+
+        public async Task<OperationResult<bool>> Delete(User roadieUser, Guid id)
+        {
+            var sw = Stopwatch.StartNew();
+            var image = this.DbContext.Images
+                                      .Include("Release")
+                                      .Include("Artist")
+                                      .FirstOrDefault(x => x.RoadieId == id);
+            if (image == null)
+            {
+                return new OperationResult<bool>(true, string.Format("Image Not Found [{0}]", id));
+            }
+            if(image.ArtistId.HasValue)
+            {
+                this.CacheManager.ClearRegion(data.Artist.CacheRegionUrn(image.Artist.RoadieId));
+            }
+            if(image.ReleaseId.HasValue)
+            {
+                this.CacheManager.ClearRegion(data.Release.CacheRegionUrn(image.Release.RoadieId));
+            }
+            this.DbContext.Images.Remove(image);
+            await this.DbContext.SaveChangesAsync();
+            this.CacheManager.ClearRegion(data.Image.CacheRegionUrn(id));
+            this.Logger.LogInformation($"Deleted Image [{ id }], By User [{ roadieUser.ToString() }]");
+            sw.Stop();
+            return new OperationResult<bool>
+            {
+                Data = true,
+                IsSuccess = true,
+                OperationTime = sw.ElapsedMilliseconds
+            };
         }
     }
 }

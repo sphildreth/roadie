@@ -13,5 +13,9 @@ namespace Roadie.Library.Models.Users
         public Guid UserId { get; set; }
         public int Id { get; set; }
 
+        public override string ToString()
+        {
+            return $"Id [{ Id }], RoadieId [{ UserId }], UserName [{ UserName }]";
+        }
     }
 }

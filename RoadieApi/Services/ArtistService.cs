@@ -76,11 +76,7 @@ namespace Roadie.Api.Services
 
             if (artist == null)
             {
-                sw.Stop();
-                return new OperationResult<Artist>(string.Format("Artist Not Found [{0}]", id))
-                {
-                    OperationTime = sw.ElapsedMilliseconds
-                };
+                return new OperationResult<Artist>(true, string.Format("Artist Not Found [{0}]", id));
             }
             var result = artist.Adapt<Artist>();
             result.Thumbnail = base.MakeArtistThumbnailImage(id);

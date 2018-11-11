@@ -41,6 +41,11 @@ namespace Roadie.Library
         public FileOperationResult(bool isNotFoundResult, IEnumerable<string> messages = null)
         {
             this.IsNotFoundResult = isNotFoundResult;
+            if (messages != null && messages.Any())
+            {
+                this.AdditionalData = new Dictionary<string, object>();
+                messages.ToList().ForEach(x => this.AddMessage(x));
+            }
         }
     }
 }

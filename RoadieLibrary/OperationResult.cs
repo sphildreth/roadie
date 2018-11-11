@@ -38,6 +38,22 @@ namespace Roadie.Library
             }
         }
 
+        public OperationResult(bool isNotFoundResult, IEnumerable<string> messages = null)
+        {
+            this.IsNotFoundResult = isNotFoundResult;
+            if (messages != null && messages.Any())
+            {
+                this.AdditionalData = new Dictionary<string, object>();
+                messages.ToList().ForEach(x => this.AddMessage(x));
+            }
+        }
+
+        public OperationResult(bool isNotFoundResult, string message)
+        {
+            this.IsNotFoundResult = isNotFoundResult;
+            this.AddMessage(message);
+        }
+
         public OperationResult(string message = null)
         {
             this.AdditionalData = new Dictionary<string, object>();
