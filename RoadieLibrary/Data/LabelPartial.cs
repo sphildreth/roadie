@@ -5,16 +5,29 @@ namespace Roadie.Library.Data
 {
     public partial class Label
     {
-        public static string CacheRegionKey(Guid Id)
+        public static string CacheRegionUrn(Guid Id)
         {
             return string.Format("urn:label:{0}", Id);
+        }
+
+        public static string CacheUrn(Guid Id)
+        {
+            return $"urn:label_by_id:{ Id }";
+        }
+
+        public string CacheKey
+        {
+            get
+            {
+                return Label.CacheUrn(this.RoadieId);
+            }
         }
 
         public string CacheRegion
         {
             get
             {
-                return Label.CacheRegionKey(this.RoadieId);
+                return Label.CacheRegionUrn(this.RoadieId);
             }
         }
 

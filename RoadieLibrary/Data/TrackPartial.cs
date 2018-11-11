@@ -10,16 +10,29 @@ namespace Roadie.Library.Data
 {
     public partial class Track
     {
-        public static string CacheRegionKey(Guid Id)
+        public static string CacheRegionUrn(Guid Id)
         {
             return string.Format("urn:track:{0}", Id);
+        }
+
+        public static string CacheUrn(Guid Id)
+        {
+            return $"urn:track_by_id:{ Id }";
+        }
+
+        public string CacheKey
+        {
+            get
+            {
+                return Track.CacheUrn(this.RoadieId);
+            }
         }
 
         public string CacheRegion
         {
             get
             {
-                return Track.CacheRegionKey(this.RoadieId);
+                return Track.CacheRegionUrn(this.RoadieId);
             }
         }
 

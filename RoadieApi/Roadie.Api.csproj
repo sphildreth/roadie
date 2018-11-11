@@ -22,16 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="wwwroot\Images\artist.gif" />
-    <None Include="wwwroot\Images\collection.gif" />
-    <None Include="wwwroot\Images\image-not-found.gif" />
-    <None Include="wwwroot\Images\label.gif" />
-    <None Include="wwwroot\Images\release.gif" />
-    <None Include="wwwroot\Images\track.gif" />
-    <None Include="wwwroot\Images\user.gif" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\RoadieLibrary\Roadie.Library.csproj" />
   </ItemGroup>
 

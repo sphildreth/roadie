@@ -126,5 +126,7 @@ namespace Roadie.Library.Identity
         public string Username { get; set; }
 
         public virtual ICollection<ApplicationUserRole> UserRoles { get; set; }
+
+
     }
 }
