@@ -19,7 +19,7 @@ namespace Roadie.Api.Controllers
     [Produces("application/json")]
     [Route("image")]
     [ApiController]
-    [Authorize]
+  //  [Authorize]
     public class ImageController : EntityControllerBase
     {
         private IImageService ImageService { get; }
@@ -36,29 +36,6 @@ namespace Roadie.Api.Controllers
         //{
         //    return Ok(this._RoadieDbContext.Tracks.ProjectToType<models.Image>());
         //}
-
-        //[HttpGet("{id}")]
-        //[ProducesResponseType(200)]
-        //[ProducesResponseType(404)]
-        //public IActionResult Get(Guid id)
-        //{
-        //    var key = id.ToString();
-        //    var result = this._cacheManager.Get<models.Image>(key, () =>
-        //    {
-        //        var d = this._RoadieDbContext.Images.FirstOrDefault(x => x.RoadieId == id);
-        //        if (d != null)
-        //        {
-        //            return d.Adapt<models.Image>();
-        //        }
-        //        return null;
-        //    }, key);
-        //    if (result == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    return Ok(result);
-        //}
-
 
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
@@ -77,7 +54,7 @@ namespace Roadie.Api.Controllers
             }
             return File(fileContents:result.Data.Bytes, 
                         contentType: result.ContentType, 
-                        fileDownloadName: result.Data.Caption ?? id.ToString(),
+                        fileDownloadName: $"{ result.Data.Caption ?? id.ToString()}.jpg",
                         lastModified: result.LastModified, 
                         entityTag: result.ETag);
         }

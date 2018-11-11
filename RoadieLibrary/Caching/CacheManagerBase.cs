@@ -8,12 +8,12 @@ namespace Roadie.Library.Caching
     public abstract class CacheManagerBase : ICacheManager
     {
         protected readonly CachePolicy _defaultPolicy = null;
-        protected readonly ILogger _logger = null;
+        protected ILogger Logger { get; }
         protected readonly JsonSerializerSettings _serializerSettings = null;
 
         public CacheManagerBase(ILogger logger, CachePolicy defaultPolicy)
         {
-            this._logger = logger;
+            this.Logger = logger;
             this._defaultPolicy = defaultPolicy;
             this._serializerSettings = new JsonSerializerSettings
             {
@@ -64,7 +64,7 @@ namespace Roadie.Library.Caching
             }
             catch (Exception ex)
             {
-                this._logger.LogError(ex, null, null);
+                this.Logger.LogError(ex, null, null);
             }
             return default(TOut);
         }

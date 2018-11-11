@@ -62,7 +62,7 @@ namespace Roadie.Library.Caching
         {
             if (this._doTraceLogging)
             {
-                this._logger.LogTrace("Added [{0}], Region [{1}]", key, region);
+                this.Logger.LogTrace("Added [{0}], Region [{1}]", key, region);
             }
             return this.Redis.StringSet(key, this.Serialize(value));
         }
@@ -74,7 +74,7 @@ namespace Roadie.Library.Caching
             server.FlushAllDatabases();
             if (this._doTraceLogging)
             {
-                this._logger.LogTrace("Cleared Cache");
+                this.Logger.LogTrace("Cleared Cache");
             }
         }
 
@@ -156,12 +156,12 @@ namespace Roadie.Library.Caching
             {
                 if (this._doTraceLogging)
                 {
-                    this._logger.LogTrace("Get Cache Miss Key [{0}], Region [{1}]", key, region);
+                    this.Logger.LogTrace("Get Cache Miss Key [{0}], Region [{1}]", key, region);
                 }
             }
             else if (this._doTraceLogging)
             {
-                this._logger.LogTrace("Get Cache Hit Key [{0}], Region [{1}]", key, region);
+                this.Logger.LogTrace("Get Cache Hit Key [{0}], Region [{1}]", key, region);
             }
             return result;
         }

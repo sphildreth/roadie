@@ -1,50 +1,50 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace Roadie.Library.Caching
 {
-    public class MemoryCacheManager : CacheManagerBase
+    public class DictionaryCacheManager : CacheManagerBase
     {
-        private MemoryCache _cache;
+        private Dictionary<string, object> Cache { get; }
 
-        public MemoryCacheManager(ILogger logger, CachePolicy defaultPolicy)
+        public DictionaryCacheManager(ILogger logger, CachePolicy defaultPolicy)
             : base(logger, defaultPolicy)
         {
-            this._cache = new MemoryCache(new MemoryCacheOptions());
+            this.Cache = new Dictionary<string, object>();
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value)
         {
-            _cache.Set(key, value);
+            if(this.Cache.ContainsKey(key))
+            {
+                this.Cache.Remove(key);
+            }
+            this.Cache.Add(key, value);
             return true;
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value, string region)
         {
-            _cache.Set(key, value, this._defaultPolicy.ExpiresAfter);
-            return true;
+            return this.Add(key, value);
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value, CachePolicy policy)
         {
-            _cache.Set(key, value, new MemoryCacheEntryOptions
-            {
-                AbsoluteExpiration = DateTimeOffset.UtcNow.Add(policy.ExpiresAfter) // new DateTimeOffset(DateTime.UtcNow, policy.ExpiresAfter)
-            });
-            return true;
+            return this.Add(key, value);
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value, string region, CachePolicy policy)
         {
-            return this.Add(key, value, policy);
+            return this.Add(key, value);
         }
 
         public override void Clear()
         {
-            this._cache = new MemoryCache(new MemoryCacheOptions());
+            this.Cache.Clear();
         }
 
         public override void ClearRegion(string region)
@@ -54,7 +54,7 @@ namespace Roadie.Library.Caching
 
         public override bool Exists<TOut>(string key)
         {
-            return this.Get<TOut>(key) != null;
+            return this.Cache.ContainsKey(key);
         }
 
         public override bool Exists<TOut>(string key, string region)
@@ -64,33 +64,34 @@ namespace Roadie.Library.Caching
 
         public override TOut Get<TOut>(string key)
         {
-            return this._cache.Get<TOut>(key);
+            if(!this.Cache.ContainsKey(key))
+            {
+                return default(TOut);
+            }
+            return (TOut)this.Cache[key];
         }
 
         public override TOut Get<TOut>(string key, string region)
         {
-            return this.Get<TOut>(key);
+            return Get<TOut>(key);
         }
 
         public override TOut Get<TOut>(string key, Func<TOut> getItem, string region)
         {
-            return this.Get<TOut>(key, getItem, region, this._defaultPolicy);
+            return Get<TOut>(key);
         }
 
         public override TOut Get<TOut>(string key, Func<TOut> getItem, string region, CachePolicy policy)
         {
-            var r = this.Get<TOut>(key, region);
-            if (r == null)
-            {
-                r = getItem();
-                this.Add(key, r, region, policy);
-            }
-            return r;
+            return Get<TOut>(key);
         }
 
         public override bool Remove(string key)
         {
-            this._cache.Remove(key);
+            if(this.Cache.ContainsKey(key))
+            {
+                this.Cache.Remove(key);
+            }
             return true;
         }
 

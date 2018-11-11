@@ -61,8 +61,6 @@ namespace Roadie.Api
                 app.UseDeveloperExceptionPage();
             }
 
-            loggerFactory.AddConsole(LogLevel.Trace);
-
             app.UseCors("Cors");
             app.UseAuthentication();
             //app.UseSwagger();
@@ -93,7 +91,7 @@ namespace Roadie.Api
 
             services.AddSingleton<IHttpEncoder, HttpEncoder>();
 
-            var cacheManager = new MemoryCacheManager(this._loggerFactory.CreateLogger<MemoryCacheManager>(), new CachePolicy(TimeSpan.FromHours(4)));
+            var cacheManager = new DictionaryCacheManager(this._loggerFactory.CreateLogger<DictionaryCacheManager>(), new CachePolicy(TimeSpan.FromHours(4)));
             services.AddSingleton<ICacheManager>(cacheManager);
 
             services.AddDbContextPool<ApplicationUserDbContext>(

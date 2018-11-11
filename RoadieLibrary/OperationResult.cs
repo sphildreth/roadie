@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace Roadie.Library
 {
+    [Serializable]
     public class OperationResult<T>
     {
         private List<Exception> _errors;

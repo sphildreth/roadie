@@ -14,6 +14,10 @@ namespace Roadie.Library
         public DateTimeOffset? LastModified { get; set; }
         public string ContentType { get; set; }
 
+        public FileOperationResult()
+        {
+        }
+
         public FileOperationResult(string message)
         {
             this.AddMessage(message);

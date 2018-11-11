@@ -6,6 +6,8 @@ using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Extensions;
+using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.Utility;
 using System;
@@ -31,21 +33,25 @@ namespace Roadie.Api.Services
         public async Task<FileOperationResult<Image>> ImageById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
         {
             var sw = Stopwatch.StartNew();
-            sw.Start();
-            var cacheKey = string.Format("urn:image_by_id_operation:{0}", id);
-            var result = await this.CacheManager.GetAsync<FileOperationResult<Image>>(cacheKey, async () =>
+            var result = (await this.CacheManager.GetAsync($"urn:image_by_id_operation:{id}", async () =>
             {
                 return await this.ImageByIdAction(id, etag);
-            }, data.Image.CacheRegionKey(id));
-
+            }, data.Image.CacheRegionKey(id))).Adapt<FileOperationResult<Image>>();
             if (result.ETag == etag)
             {
                 return new FileOperationResult<Image>(OperationMessages.NotModified);
             }
+            if ((width.HasValue || height.HasValue) && result?.Data?.Bytes != null)
+            {
+                result.Data.Bytes = ImageHelper.ResizeImage(result?.Data?.Bytes, width.Value, height.Value);
+                result.ETag = EtagHelper.GenerateETag(this.HttpEncoder, result.Data.Bytes);
+                result.LastModified = DateTime.UtcNow;
+                this.Logger.LogInformation($"ImageById: Resized [{ id }], Width [{ width.Value }], Height [{ height.Value }]");
+            }
             sw.Stop();
             return new FileOperationResult<Image>(result.Messages)
             {
-                Data = result?.Data,
+                Data = result.Data,
                 ETag = result.ETag,
                 LastModified = result.LastModified,
                 ContentType = result.ContentType,
