@@ -8,6 +8,7 @@ namespace Roadie.Library.Models
     {
         public Guid? ArtistId { get; set; }
 
+
         public byte[] Bytes { get; set; }
 
         [MaxLength(100)]

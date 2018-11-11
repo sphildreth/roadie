@@ -6,12 +6,6 @@ namespace Roadie.Library
 {
     public class OperationResult<T>
     {
-        public const string Key = "Bearer ";
-        public const string NewKey = "__new__";
-        public const string NoImageDataFound = "NO_IMAGE_DATA_FOUND";
-        public const string NotModified = "NotModified";
-        public const string OkMessage = "OK";
-
         private List<Exception> _errors;
         private List<string> _messages;
         public Dictionary<string, object> AdditionalData { get; set; }

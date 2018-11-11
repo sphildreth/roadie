@@ -12,7 +12,7 @@ namespace Roadie.Library.Models.Pagination
         {
             get
             {
-                return this.Message == OperationResult<T>.OkMessage;
+                return this.Message == OperationMessages.OkMessage;
             }
         }
 
@@ -27,7 +27,7 @@ namespace Roadie.Library.Models.Pagination
 
         public PagedResult()
         {
-            this.Message = OperationResult<T>.OkMessage;
+            this.Message = OperationMessages.OkMessage;
         }
     }
 }

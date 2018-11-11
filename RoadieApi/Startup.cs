@@ -22,8 +22,6 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
 using Roadie.Library.Utility;
 using System;
-using System.IO;
-using System.Reflection;
 using models = Roadie.Library.Models;
 
 namespace Roadie.Api
@@ -32,17 +30,6 @@ namespace Roadie.Api
     {
         private readonly IConfiguration _configuration;
         private readonly ILoggerFactory _loggerFactory;
-
-        //public static string AssemblyDirectory
-        //{
-        //    get
-        //    {
-        //        string codeBase = Assembly.GetExecutingAssembly().CodeBase;
-        //        var uri = new UriBuilder(codeBase);
-        //        string path = Uri.UnescapeDataString(uri.Path);
-        //        return Path.GetDirectoryName(path);
-        //    }
-        //}
 
         public Startup(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
@@ -55,8 +42,15 @@ namespace Roadie.Api
                      src => src.Artist.RoadieId)
                 .Compile();
 
-            TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
+            TypeAdapterConfig<Roadie.Library.Data.Image, Roadie.Library.Models.Image>
+                .NewConfig()
+                .Map(i => i.ArtistId,
+                     src => src.Artist == null ? null : (Guid?)src.Artist.RoadieId)
+                .Map(i => i.ReleaseId,
+                     src => src.Release == null ? null : (Guid?)src.Release.RoadieId)
+                .Compile();
 
+            TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -106,7 +100,7 @@ namespace Roadie.Api
                 options => options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection")
             ));
 
-            services.AddDbContextPool<IRoadieDbContext, RoadieDbContext>( 
+            services.AddDbContextPool<IRoadieDbContext, RoadieDbContext>(
                 options => options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection")
             ));
 
@@ -135,6 +129,7 @@ namespace Roadie.Api
             services.AddScoped<ICollectionService, CollectionService>();
             services.AddScoped<IPlaylistService, PlaylistService>();
             services.AddScoped<IArtistService, ArtistService>();
+            services.AddScoped<IImageService, ImageService>();
 
             var securityKey = new SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration["Tokens:PrivateKey"]));
             services.AddAuthentication(options =>

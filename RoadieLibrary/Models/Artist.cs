@@ -14,7 +14,7 @@ namespace Roadie.Library.Models
     [Serializable]
     public class Artist : EntityModelBase
     {
-        public const string DefaultIncludes = "stats,imaes,associatedartists,collections,playlists,contributions,labels";
+        public const string DefaultIncludes = "stats,images,associatedartists,collections,playlists,contributions,labels";
 
         public IEnumerable<ReleaseList> ArtistContributionReleases;
         public IEnumerable<LabelList> ArtistLabels;

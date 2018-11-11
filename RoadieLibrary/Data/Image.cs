@@ -26,5 +26,8 @@ namespace Roadie.Library.Data
         [Column("url")]
         [MaxLength(500)]
         public string Url { get; set; }
+
+        public Artist Artist { get; set; }
+        public Release Release { get; set; }
     }
 }

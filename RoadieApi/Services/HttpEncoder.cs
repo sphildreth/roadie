@@ -1,4 +1,5 @@
-﻿using Roadie.Library.Encoding;
+﻿using Microsoft.AspNetCore.WebUtilities;
+using Roadie.Library.Encoding;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +23,16 @@ namespace Roadie.Api.Services
         public string UrlEncode(string s)
         {
             return HttpUtility.UrlEncode(s);
+        }
+
+        public string UrlEncodeBase64(byte[] input)
+        {
+            return WebEncoders.Base64UrlEncode(input);
+        }
+
+        public string UrlEncodeBase64(string input)
+        {
+            return WebEncoders.Base64UrlEncode(System.Text.Encoding.ASCII.GetBytes(input));
         }
     }
 }

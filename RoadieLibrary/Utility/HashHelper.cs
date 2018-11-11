@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using Roadie.Library.Encoding;
+using System.Linq;
+using System.Security.Cryptography;
 
 namespace Roadie.Library.Utility
 {
@@ -6,19 +8,22 @@ namespace Roadie.Library.Utility
     {
         public static string CreateMD5(string input)
         {
-            // Use input string to calculate MD5 hash
-            using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
+            if (string.IsNullOrEmpty(input))
             {
-                byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
-                byte[] hashBytes = md5.ComputeHash(inputBytes);
+                return null;
+            }
+            return CreateMD5(System.Text.Encoding.ASCII.GetBytes(input));
+        }
 
-                // Convert the byte array to hexadecimal string
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < hashBytes.Length; i++)
-                {
-                    sb.Append(hashBytes[i].ToString("X2"));
-                }
-                return sb.ToString();
+        public static string CreateMD5(byte[] bytes)
+        {
+            if (bytes == null || !bytes.Any())
+            {
+                return null;
+            }
+            using (var md5 = System.Security.Cryptography.MD5.Create())
+            {
+                return System.Text.Encoding.ASCII.GetString(md5.ComputeHash(bytes));
             }
         }
     }

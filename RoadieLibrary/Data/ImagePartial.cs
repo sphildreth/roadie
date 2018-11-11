@@ -1,4 +1,6 @@
-﻿using Roadie.Library.Imaging;
+﻿using Microsoft.Net.Http.Headers;
+using Roadie.Library.Imaging;
+using Roadie.Library.Utility;
 using System;
 using System.Linq;
 
@@ -6,14 +8,16 @@ namespace Roadie.Library.Data
 {
     public partial class Image
     {
-        public string Etag
+        public static string CacheRegionKey(Guid Id)
+        {
+            return string.Format("urn:image:{0}", Id);
+        }
+
+        public string CacheRegion
         {
             get
             {
-                using (var md5 = System.Security.Cryptography.MD5.Create())
-                {
-                    return String.Concat(md5.ComputeHash(System.Text.Encoding.Default.GetBytes(string.Format("{0}{1}", this.RoadieId, this.LastUpdated))).Select(x => x.ToString("D2")));
-                }
+                return Image.CacheRegionKey(this.RoadieId);
             }
         }
 
@@ -25,5 +29,7 @@ namespace Roadie.Library.Data
             }
             return ImageHasher.AverageHash(this.Bytes).ToString();
         }
+
+
     }
 }

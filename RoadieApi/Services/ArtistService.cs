@@ -59,9 +59,9 @@ namespace Roadie.Api.Services
             sw.Stop();
             return new OperationResult<Artist>(result.Messages)
             {
-                Data = result.Data,
-                Errors = result.Errors,                
-                IsSuccess = result != null,
+                Data = result?.Data,
+                Errors = result?.Errors,                
+                IsSuccess = result?.IsSuccess ?? false,
                 OperationTime = sw.ElapsedMilliseconds
             };
         }
