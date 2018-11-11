@@ -39,6 +39,14 @@ namespace Roadie.Library.Data
         {
             base.OnModelCreating(builder);
 
+            //builder
+            //    .Entity<Artist>()
+            //    .Property(e => e.Status)
+            //    .HasConversion(
+            //        v => v.ToString(),
+            //        v => string.IsNullOrEmpty(v) ? Statuses.Incomplete : (Statuses)Enum.Parse(typeof(Statuses), v))
+            //    .HasDefaultValue(Statuses.Incomplete);
+
             builder
                 .Entity<Release>()
                 .Property(e => e.ReleaseType)

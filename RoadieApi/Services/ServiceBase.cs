@@ -133,5 +133,14 @@ namespace Roadie.Api.Services
                                     .FirstOrDefault(x => x.RoadieId == id);
             }, data.Artist.CacheRegionUrn(id));
         }
+
+        protected data.Release GetRelease(Guid id)
+        {
+            return this.CacheManager.Get(data.Release.CacheUrn(id), () =>
+            {
+                return this.DbContext.Releases
+                                    .FirstOrDefault(x => x.RoadieId == id);
+            }, data.Release.CacheRegionUrn(id));
+        }
     }
 }

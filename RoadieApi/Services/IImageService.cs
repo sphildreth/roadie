@@ -9,5 +9,6 @@ namespace Roadie.Api.Services
     {
         Task<FileOperationResult<Library.Models.Image>> ImageById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
         Task<FileOperationResult<Library.Models.Image>> ArtistThumbnail(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+        Task<FileOperationResult<Library.Models.Image>> ReleaseThumbnail(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
     }
 }

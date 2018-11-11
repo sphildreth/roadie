@@ -63,7 +63,28 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> ArtistThumbnail(Guid id, int? width, int? height)
         {
-            var result = await this.ImageService.ArtistThumbnail(id, width, height);
+            var result = await this.ImageService.ArtistThumbnail(id, width ?? this.RoadieSettings.Thumbnails.Width, height ?? this.RoadieSettings.Thumbnails.Height);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return File(fileContents: result.Data.Bytes,
+                        contentType: result.ContentType,
+                        fileDownloadName: $"{ result.Data.Caption ?? id.ToString()}.jpg",
+                        lastModified: result.LastModified,
+                        entityTag: result.ETag);
+        }
+
+        [HttpGet("thumbnail/release/{id}/{width:int?}/{height:int?}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> ReleaseThumbnail(Guid id, int? width, int? height)
+        {
+            var result = await this.ImageService.ReleaseThumbnail(id, width ?? this.RoadieSettings.Thumbnails.Width, height ?? this.RoadieSettings.Thumbnails.Height);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();

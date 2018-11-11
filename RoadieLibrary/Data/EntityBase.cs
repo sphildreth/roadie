@@ -27,7 +27,7 @@ namespace Roadie.Library.Data
         public Guid RoadieId { get; set; }
 
         [Column("status", TypeName = "enum")]
-        public Statuses Status { get; set; }
+        public Statuses? Status { get; set; }
 
         public EntityBase()
         {

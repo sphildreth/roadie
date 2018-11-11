@@ -10,11 +10,12 @@ namespace Roadie.Library.Imaging
     {
         private Image _artist;
         private Image _collection;
-        private Image _image;
         private Image _label;
+        private Image _playlist;
         private Image _release;
         private Image _track;
         private Image _user;
+
 
         public Image Artist
         {
@@ -28,23 +29,24 @@ namespace Roadie.Library.Imaging
         {
             get
             {
-                return this._artist ?? (this._artist = MakeImageFromFile(MakeImagePath(@"images/collection.jpg")));
+                return this._collection ?? (this._collection = MakeImageFromFile(MakeImagePath(@"images/collection.jpg")));
             }
         }
 
-        public Image Image
-        {
-            get
-            {
-                return this._artist ?? (this._artist = MakeImageFromFile(MakeImagePath(@"images/image.jpg")));
-            }
-        }
 
         public Image Label
         {
             get
             {
-                return this._artist ?? (this._artist = MakeImageFromFile(MakeImagePath(@"images/label.jpg")));
+                return this._label ?? (this._label = MakeImageFromFile(MakeImagePath(@"images/label.jpg")));
+            }
+        }
+
+        public Image Playlist
+        {
+            get
+            {
+                return this._playlist ?? (this._playlist = MakeImageFromFile(MakeImagePath(@"images/playlist.jpg")));
             }
         }
 
@@ -52,7 +54,7 @@ namespace Roadie.Library.Imaging
         {
             get
             {
-                return this._artist ?? (this._artist = MakeImageFromFile(MakeImagePath(@"images/release.jpg")));
+                return this._release ?? (this._release = MakeImageFromFile(MakeImagePath(@"images/release.jpg")));
             }
         }
 
@@ -60,7 +62,7 @@ namespace Roadie.Library.Imaging
         {
             get
             {
-                return this._artist ?? (this._artist = MakeImageFromFile(MakeImagePath(@"images/track.jpg")));
+                return this._track ?? (this._track = MakeImageFromFile(MakeImagePath(@"images/track.jpg")));
             }
         }
 
@@ -68,7 +70,7 @@ namespace Roadie.Library.Imaging
         {
             get
             {
-                return this._artist ?? (this._artist = MakeImageFromFile(MakeImagePath(@"images/user.jpg")));
+                return this._user ?? (this._user = MakeImageFromFile(MakeImagePath(@"images/user.jpg")));
             }
         }
 
