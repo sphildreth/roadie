@@ -1,7 +1,8 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
-using Roadie.Library.Logging;
+
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.Utility;
 using System.IO;
@@ -12,8 +13,8 @@ namespace Roadie.Library.MetaData.FileName
 {
     public class FileNameHelper : MetaDataProviderBase
     {
-        public FileNameHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService)
-            : base(configuration, cacheManager, loggingService)
+        public FileNameHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger)
+            : base(configuration, cacheManager, logger)
         { }
 
         /// <summary>

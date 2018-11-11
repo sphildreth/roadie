@@ -1,8 +1,8 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Extensions;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.SearchEngines.MetaData;
 using Roadie.Library.Utility;
@@ -25,7 +25,8 @@ namespace Roadie.Library.MetaData.MusicBrainz
             }
         }
 
-        public MusicBrainzProvider(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger) : base(configuration, cacheManager, logger)
+        public MusicBrainzProvider(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger) 
+            : base(configuration, cacheManager, logger)
         {
         }
 
@@ -70,7 +71,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
             }
             if (release == null)
             {
-                this.Logger.Warning("MusicBrainzReleaseById: MusicBrainzId [{0}], No MusicBrainz Release Found", musicBrainzId);
+                this.Logger.LogWarning("MusicBrainzReleaseById: MusicBrainzId [{0}], No MusicBrainz Release Found", musicBrainzId);
             }
             return release;
         }
@@ -181,7 +182,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
             ArtistSearchResult result = null;
             try
             {
-                this.Logger.Trace("MusicBrainzProvider:PerformArtistSearch:{0}", query);
+                this.Logger.LogTrace("MusicBrainzProvider:PerformArtistSearch:{0}", query);
                 // Find the Artist
                 var artistCacheKey = string.Format("uri:musicbrainz:ArtistSearchResult:{0}", query);
                 result = this.CacheManager.Get<ArtistSearchResult>(artistCacheKey);
@@ -194,7 +195,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
                     }
                     catch (Exception ex)
                     {
-                        this.Logger.Error(ex);
+                        this.Logger.LogError(ex);
                     }
                     if (artistResult == null || artistResult.artists == null || artistResult.count < 1)
                     {
@@ -301,15 +302,15 @@ namespace Roadie.Library.MetaData.MusicBrainz
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex);
+                this.Logger.LogError(ex);
             }
             if (result == null)
             {
-                this.Logger.Warning("MusicBrainzArtist: ArtistName [{0}], No MusicBrainz Artist Found", query);
+                this.Logger.LogWarning("MusicBrainzArtist: ArtistName [{0}], No MusicBrainz Artist Found", query);
             }
             else
             {
-                this.Logger.Trace("MusicBrainzArtist: Result [{0}]", query, result.ToString());
+                this.Logger.LogTrace("MusicBrainzArtist: Result [{0}]", query, result.ToString());
             }
             return new OperationResult<IEnumerable<ArtistSearchResult>>
             {
@@ -393,15 +394,15 @@ namespace Roadie.Library.MetaData.MusicBrainz
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, ex.Serialize());
+                this.Logger.LogError(ex, ex.Serialize());
             }
             if (result == null)
             {
-                this.Logger.Warning("MusicBrainzArtist: ArtistName [{0}], ReleaseTitle [{0}], No MusicBrainz Release Found", artistName, query);
+                this.Logger.LogWarning("MusicBrainzArtist: ArtistName [{0}], ReleaseTitle [{0}], No MusicBrainz Release Found", artistName, query);
             }
             else
             {
-                this.Logger.Trace("MusicBrainzArtist: Result [{0}]", query, result.ToString());
+                this.Logger.LogTrace("MusicBrainzArtist: Result [{0}]", query, result.ToString());
             }
             return new OperationResult<IEnumerable<ReleaseSearchResult>>
             {
@@ -491,7 +492,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex);
+                this.Logger.LogError(ex);
             }
             return null;
         }

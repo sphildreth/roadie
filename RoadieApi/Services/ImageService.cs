@@ -10,8 +10,10 @@ using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Users;
+using Roadie.Library.SearchEngines.Imaging;
 using Roadie.Library.Utility;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -450,6 +452,34 @@ namespace Roadie.Api.Services
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             };
+        }
+
+        public async Task<OperationResult<IEnumerable<ImageSearchResult>>> ImageProvidersSearch(string query)
+        {
+            throw new NotImplementedException();
+
+            //var sw = new Stopwatch();
+            //sw.Start();
+            //var errors = new List<string>();
+            //IEnumerable<ImageSearchResult> searchResults = null;
+            //try
+            //{
+            //    var manager = new ImageSearchManager(this.Configuration, this.CacheManager, this.Logger);
+            //    searchResults = await manager.ImageSearch(query);
+            //}
+            //catch (System.Exception ex)
+            //{
+            //    this._logger.Error(ex);
+            //    errors.Add(ex.ToString());
+            //}
+            //sw.Stop();
+            //return new ImageSearchResultModel
+            //{
+            //    IsSuccess = true,
+            //    OperationTime = sw.ElapsedMilliseconds,
+            //    Errors = errors,
+            //    SearchResults = searchResults
+            //};
         }
     }
 }

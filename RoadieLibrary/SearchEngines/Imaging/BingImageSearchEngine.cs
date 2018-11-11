@@ -1,6 +1,6 @@
-﻿using RestSharp;
+﻿using Microsoft.Extensions.Logging;
+using RestSharp;
 using Roadie.Library.Configuration;
-using Roadie.Library.Logging;
 using Roadie.Library.SearchEngines.Imaging.BingModels;
 using System;
 using System.Collections.Generic;
@@ -16,8 +16,8 @@ namespace Roadie.Library.SearchEngines.Imaging
     /// </summary>
     public class BingImageSearchEngine : ImageSearchEngineBase
     {
-        public BingImageSearchEngine(IRoadieSettings configuration, ILogger loggingService, string requestIp = null, string referrer = null)
-            : base(configuration, loggingService, "https://api.cognitive.microsoft.com", requestIp, referrer)
+        public BingImageSearchEngine(IRoadieSettings configuration, ILogger logger, string requestIp = null, string referrer = null)
+            : base(configuration, logger, "https://api.cognitive.microsoft.com", requestIp, referrer)
         {
             this._apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "BingImageSearch") ?? new ApiKey();
         }
@@ -80,7 +80,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             }
             if (response.Data == null || response.Data.value == null)
             {
-                this.LoggingService.Warning("Response Is Null on PerformImageSearch [" + Newtonsoft.Json.JsonConvert.SerializeObject(response) + "]");
+                this.Logger.LogWarning("Response Is Null on PerformImageSearch [" + Newtonsoft.Json.JsonConvert.SerializeObject(response) + "]");
                 return null;
             }
             return response.Data.value.Select(x => new ImageSearchResult

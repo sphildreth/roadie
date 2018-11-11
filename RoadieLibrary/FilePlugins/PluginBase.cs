@@ -1,8 +1,8 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Factories;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.Utility;
 using System;
@@ -19,7 +19,7 @@ namespace Roadie.Library.FilePlugins
         protected readonly IRoadieSettings _configuration = null;
         protected readonly IHttpEncoder _httpEncoder = null;
         protected readonly ImageFactory _imageFactory = null;
-        protected readonly ILogger _loggingService = null;
+        protected readonly ILogger _logger = null;
         protected readonly ReleaseFactory _releaseFactory = null;
         protected Audio _audioPlugin = null;
         protected ID3TagsHelper _id3TagsHelper = null;
@@ -101,7 +101,7 @@ namespace Roadie.Library.FilePlugins
         {
             get
             {
-                return this._loggingService;
+                return this._logger;
             }
         }
 
@@ -121,7 +121,7 @@ namespace Roadie.Library.FilePlugins
             this._releaseFactory = releaseFactory;
             this._imageFactory = imageFactory;
             this._cacheManager = cacheManager;
-            this._loggingService = logger;
+            this._logger = logger;
         }
 
         /// <summary>

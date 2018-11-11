@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -7,7 +8,6 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.Imaging;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.MetaData.MusicBrainz;
@@ -85,7 +85,8 @@ namespace Roadie.Library.Factories
             }
         }
 
-        public ReleaseFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, LabelFactory labelFactory = null, ArtistFactory artistFactory = null) : base(configuration, context, cacheManager, logger, httpEncoder)
+        public ReleaseFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, LabelFactory labelFactory = null, ArtistFactory artistFactory = null) 
+            : base(configuration, context, cacheManager, logger, httpEncoder)
         {
             this._labelFactory = labelFactory ?? new LabelFactory(configuration, httpEncoder, context, CacheManager, logger);
             this._artistFactory = artistFactory ?? new ArtistFactory(configuration, httpEncoder, context, CacheManager, logger);
@@ -123,7 +124,7 @@ namespace Roadie.Library.Factories
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.Error(ex, ex.Serialize());
+                    this.Logger.LogError(ex, ex.Serialize());
                 }
                 if (inserted > 0 && release.Id > 0)
                 {
@@ -157,7 +158,7 @@ namespace Roadie.Library.Factories
                                 }
                                 catch (Exception ex)
                                 {
-                                    this._logger.Error(ex, "Sql [" + sql + "]");
+                                    this._logger.LogError(ex, "Sql [" + sql + "]");
                                 }
                             }
                         }
@@ -180,7 +181,7 @@ namespace Roadie.Library.Factories
                         }
                         catch (Exception ex)
                         {
-                            this.Logger.Error(ex);
+                            this.Logger.LogError(ex);
                         }
                     }
 
@@ -207,7 +208,7 @@ namespace Roadie.Library.Factories
                         }
                         catch (Exception ex)
                         {
-                            this.Logger.Error(ex);
+                            this.Logger.LogError(ex);
                         }
                     }
                     if (doAddTracksInDatabase)
@@ -274,17 +275,17 @@ namespace Roadie.Library.Factories
                             }
                             catch (Exception ex)
                             {
-                                this.Logger.Error(ex);
+                                this.Logger.LogError(ex);
                             }
                         }
                     }
 
-                    this.Logger.Info("Added New Release: [{0}]", release.ToString());
+                    this.Logger.LogInformation("Added New Release: [{0}]", release.ToString());
                 }
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, ex.Serialize());
+                this.Logger.LogError(ex, ex.Serialize());
             }
             return new OperationResult<Data.Release>
             {
@@ -315,7 +316,7 @@ namespace Roadie.Library.Factories
             var newReleaseFolder = release.ReleaseFileFolder(artistFolder);
             if (!oldReleaseFolder.Equals(newReleaseFolder, StringComparison.OrdinalIgnoreCase))
             {
-                this.Logger.Trace("Moving Release From Folder [{0}] To [{1}]", oldReleaseFolder, newReleaseFolder);
+                this.Logger.LogTrace("Moving Release From Folder [{0}] To [{1}]", oldReleaseFolder, newReleaseFolder);
 
                 // Create the new release folder
                 if (!Directory.Exists(newReleaseFolder))
@@ -402,12 +403,12 @@ namespace Roadie.Library.Factories
                         if (File.Exists(trackPath))
                         {
                             File.Delete(trackPath);
-                            this.Logger.Warning("x For Release [{0}], Deleted File [{1}]", release.Id, trackPath);
+                            this.Logger.LogWarning("x For Release [{0}], Deleted File [{1}]", release.Id, trackPath);
                         }
                     }
                     catch (Exception ex)
                     {
-                        this.Logger.Error(ex, string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath, track.Id, ex.Serialize()));
+                        this.Logger.LogError(ex, string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath, track.Id, ex.Serialize()));
                     }
                 }
                 try
@@ -416,7 +417,7 @@ namespace Roadie.Library.Factories
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.Error(ex);
+                    this.Logger.LogError(ex);
                 }
             }
             this.DbContext.Releases.Remove(release);
@@ -429,7 +430,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, string.Format("Error Clearing Cache For Release [{0}] Exception [{1}]", release.Id, ex.Serialize()));
+                this.Logger.LogError(ex, string.Format("Error Clearing Cache For Release [{0}] Exception [{1}]", release.Id, ex.Serialize()));
             }
             sw.Stop();
             return new OperationResult<bool>
@@ -520,7 +521,7 @@ namespace Roadie.Library.Factories
                 sw.Stop();
                 if (release == null || !release.IsValid)
                 {
-                    this._logger.Info("ReleaseFactory: Release Not Found For Artist [{0}] MetaData [{1}]", artist.ToString(), metaData.ToString());
+                    this._logger.LogInformation("ReleaseFactory: Release Not Found For Artist [{0}] MetaData [{1}]", artist.ToString(), metaData.ToString());
                     if (doFindIfNotInDatabase)
                     {
                         OperationResult<Data.Release> releaseSearch = new OperationResult<Data.Release>();
@@ -531,7 +532,7 @@ namespace Roadie.Library.Factories
                         catch (Exception ex)
                         {
                             sw.Stop();
-                            this.Logger.Error(ex);
+                            this.Logger.LogError(ex);
                             return new OperationResult<Data.Release>
                             {
                                 OperationTime = sw.ElapsedMilliseconds,
@@ -568,7 +569,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex);
+                this.Logger.LogError(ex);
             }
             return new OperationResult<Data.Release>();
         }
@@ -792,7 +793,7 @@ namespace Roadie.Library.Factories
                         if (File.Exists(mergedFileToDelete))
                         {
                             File.Delete(mergedFileToDelete);
-                            this.Logger.Warning("x Deleted Merged File [{0}]", mergedFileToDelete);
+                            this.Logger.LogWarning("x Deleted Merged File [{0}]", mergedFileToDelete);
                         }
                     }
                     catch
@@ -855,7 +856,7 @@ namespace Roadie.Library.Factories
 
                     if (this.ITunesReleaseSearchEngine.IsEnabled)
                     {
-                        this.Logger.Trace("ITunesReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
+                        this.Logger.LogTrace("ITunesReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
                         var iTunesResult = await this.ITunesReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
                         if (iTunesResult.IsSuccess)
                         {
@@ -911,7 +912,7 @@ namespace Roadie.Library.Factories
 
                     if (this.MusicBrainzReleaseSearchEngine.IsEnabled)
                     {
-                        this.Logger.Trace("MusicBrainzReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
+                        this.Logger.LogTrace("MusicBrainzReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
                         var mbResult = await this.MusicBrainzReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
                         if (mbResult.IsSuccess)
                         {
@@ -972,7 +973,7 @@ namespace Roadie.Library.Factories
 
                     if (this.LastFmReleaseSearchEngine.IsEnabled)
                     {
-                        this.Logger.Trace("LastFmReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
+                        this.Logger.LogTrace("LastFmReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
                         var lastFmResult = await this.LastFmReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
                         if (lastFmResult.IsSuccess)
                         {
@@ -1035,7 +1036,7 @@ namespace Roadie.Library.Factories
 
                     if (this.SpotifyReleaseSearchEngine.IsEnabled)
                     {
-                        this.Logger.Trace("SpotifyReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
+                        this.Logger.LogTrace("SpotifyReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
                         var spotifyResult = await this.SpotifyReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
                         if (spotifyResult.IsSuccess)
                         {
@@ -1093,7 +1094,7 @@ namespace Roadie.Library.Factories
 
                     if (this.DiscogsReleaseSearchEngine.IsEnabled)
                     {
-                        this.Logger.Trace("DiscogsReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
+                        this.Logger.LogTrace("DiscogsReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
                         var discogsResult = await this.DiscogsReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
                         if (discogsResult.IsSuccess)
                         {
@@ -1141,14 +1142,14 @@ namespace Roadie.Library.Factories
                 }
                 catch (Exception ex)
                 {
-                    this._logger.Error(ex);
+                    this._logger.LogError(ex);
                 }
 
-                this.Logger.Trace("Metadata Providers Search Complete. [{0}]", sw.ElapsedMilliseconds);
+                this.Logger.LogTrace("Metadata Providers Search Complete. [{0}]", sw.ElapsedMilliseconds);
             }
             else
             {
-                this.Logger.Trace("Skipped Metadata Providers Search, DontDoMetaDataProvidersSearchArtists set for Artist [{0}].", metaData.Artist);
+                this.Logger.LogTrace("Skipped Metadata Providers Search, DontDoMetaDataProvidersSearchArtists set for Artist [{0}].", metaData.Artist);
             }
 
             if (result.AlternateNames != null)
@@ -1318,7 +1319,7 @@ namespace Roadie.Library.Factories
                     {
                         // Read image and convert to jpeg
                         result.Thumbnail = File.ReadAllBytes(coverFileName);
-                        this.Logger.Debug("Using Release Cover File [{0}]", coverFileName);
+                        this.Logger.LogDebug("Using Release Cover File [{0}]", coverFileName);
                     }
                 }
             }
@@ -1356,7 +1357,7 @@ namespace Roadie.Library.Factories
                 var release = releaseToScan ?? this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == releaseId);
                 if (release == null)
                 {
-                    this.Logger.Fatal("Unable To Find Release [{0}]", releaseId);
+                    this.Logger.LogCritical("Unable To Find Release [{0}]", releaseId);
                     return new OperationResult<bool>();
                 }
                 // This is recorded from metadata and if set then used to gauage if the release is complete
@@ -1366,7 +1367,7 @@ namespace Roadie.Library.Factories
                 var releaseDirectory = new DirectoryInfo(releasePath);
                 if (!Directory.Exists(releasePath))
                 {
-                    this.Logger.Warning("Unable To Find Release Folder [{0}] For Release [{1}]", releasePath, release.ToString());
+                    this.Logger.LogWarning("Unable To Find Release Folder [{0}] For Release [{1}]", releasePath, release.ToString());
                 }
                 var now = DateTime.UtcNow;
 
@@ -1381,7 +1382,7 @@ namespace Roadie.Library.Factories
 
                         if (!File.Exists(trackPath))
                         {
-                            this.Logger.Warning("Track [{0}], File [{1}] Not Found.", existingTrack.ToString(), trackPath);
+                            this.Logger.LogWarning("Track [{0}], File [{1}] Not Found.", existingTrack.ToString(), trackPath);
                             if (!doJustInfo)
                             {
                                 existingTrack.UpdateTrackMissingFile(now);
@@ -1560,13 +1561,13 @@ namespace Roadie.Library.Factories
                         }
                         else
                         {
-                            this.Logger.Fatal("Release Track File Has Invalid MetaData [{0}]", audioMetaData.ToString());
+                            this.Logger.LogWarning("Release Track File Has Invalid MetaData [{0}]", audioMetaData.ToString());
                         }
                     }
                 }
                 else
                 {
-                    this.Logger.Warning("Unable To Find Releaes Path [{0}] For Release [{1}]", releasePath, release.ToString());
+                    this.Logger.LogWarning("Unable To Find Releaes Path [{0}] For Release [{1}]", releasePath, release.ToString());
                 }
                 var releaseMediaNumbersFound = new List<short?>();
                 foreach (var kp in releaseMediaTracksFound)
@@ -1582,7 +1583,7 @@ namespace Roadie.Library.Factories
                         var areTracksForRelaseMediaSequential = releaseMediaFoundInFolderTrackNumbers.Zip(releaseMediaFoundInFolderTrackNumbers.Skip(1), (a, b) => (a + 1) == b).All(x => x);
                         if (!areTracksForRelaseMediaSequential)
                         {
-                            this.Logger.Debug("ReleaseMedia [{0}] Track Numbers Are Not Sequential", releaseMedia.Id);
+                            this.Logger.LogDebug("ReleaseMedia [{0}] Track Numbers Are Not Sequential", releaseMedia.Id);
                         }
                         releaseMedia.TrackCount = kp.Value;
                         releaseMedia.LastUpdated = now;
@@ -1627,17 +1628,17 @@ namespace Roadie.Library.Factories
                         await this.DbContext.SaveChangesAsync();
                         this.CacheManager.ClearRegion(release.Artist.CacheRegion);
                         this.CacheManager.ClearRegion(release.CacheRegion);
-                        this.Logger.Info("Update Thumbnail using Release Cover File [{0}]", coverFileName);
+                        this.Logger.LogInformation("Update Thumbnail using Release Cover File [{0}]", coverFileName);
                     }
                 }
 
                 sw.Stop();
-                this.Logger.Info("Scanned Release [{0}] Folder [{1}], Modified Release [{2}], OperationTime [{3}]", release.ToString(), releasePath, modifiedRelease, sw.ElapsedMilliseconds);
+                this.Logger.LogInformation("Scanned Release [{0}] Folder [{1}], Modified Release [{2}], OperationTime [{3}]", release.ToString(), releasePath, modifiedRelease, sw.ElapsedMilliseconds);
                 result = true;
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, "ReleasePath [" + releasePath + "] " + ex.Serialize());
+                this.Logger.LogError(ex, "ReleasePath [" + releasePath + "] " + ex.Serialize());
                 resultErrors.Add(ex);
             }
             return new OperationResult<bool>
@@ -1716,7 +1717,7 @@ namespace Roadie.Library.Factories
                     }
                     catch (Exception ex)
                     {
-                        this.Logger.Error(ex);
+                        this.Logger.LogError(ex);
                     }
                 }
             }

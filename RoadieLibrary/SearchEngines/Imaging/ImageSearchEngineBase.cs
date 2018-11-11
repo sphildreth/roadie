@@ -1,6 +1,6 @@
-﻿using RestSharp;
+﻿using Microsoft.Extensions.Logging;
+using RestSharp;
 using Roadie.Library.Configuration;
-using Roadie.Library.Logging;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -16,7 +16,7 @@ namespace Roadie.Library.SearchEngines.Imaging
         protected readonly string _referrer = null;
         protected readonly string _requestIp = null;
         protected ApiKey _apiKey = null;
-        protected ILogger _loggingService = null;
+        protected ILogger _logger = null;
 
         protected ApiKey ApiKey
         {
@@ -34,15 +34,15 @@ namespace Roadie.Library.SearchEngines.Imaging
             }
         }
 
-        protected ILogger LoggingService
+        protected ILogger Logger
         {
             get
             {
-                return this._loggingService;
+                return this._logger;
             }
         }
 
-        public ImageSearchEngineBase(IRoadieSettings configuration, ILogger loggingService, string baseUrl, string requestIp = null, string referrer = null)
+        public ImageSearchEngineBase(IRoadieSettings configuration, ILogger logger, string baseUrl, string requestIp = null, string referrer = null)
         {
             this._configuratio = configuration;
             if (string.IsNullOrEmpty(referrer) || referrer.StartsWith("http://localhost"))
@@ -55,7 +55,7 @@ namespace Roadie.Library.SearchEngines.Imaging
                 requestIp = "192.30.252.128";
             }
             this._requestIp = requestIp;
-            this._loggingService = loggingService;
+            this._logger = logger;
 
             this._client = new RestClient(baseUrl);
             this._client.UserAgent = WebHelper.UserAgent;

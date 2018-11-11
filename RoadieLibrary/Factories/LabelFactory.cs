@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
-using Roadie.Library.Logging;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -45,12 +45,12 @@ namespace Roadie.Library.Factories
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.Error(ex);
+                    this.Logger.LogError(ex);
                 }
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex);
+                this.Logger.LogError(ex);
             }
             return new OperationResult<Label>
             {
@@ -96,7 +96,7 @@ namespace Roadie.Library.Factories
                 sw.Stop();
                 if (Label == null || !Label.IsValid)
                 {
-                    this._logger.Info("LabelFactory: Label Not Found By Name [{0}]", LabelName);
+                    this._logger.LogInformation("LabelFactory: Label Not Found By Name [{0}]", LabelName);
                     if (doFindIfNotInDatabase)
                     {
                         OperationResult<Label> LabelSearch = null;
@@ -106,7 +106,7 @@ namespace Roadie.Library.Factories
                         }
                         catch (Exception ex)
                         {
-                            this.Logger.Error(ex);
+                            this.Logger.LogError(ex);
                         }
                         if (LabelSearch.IsSuccess)
                         {
@@ -137,7 +137,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex);
+                this.Logger.LogError(ex);
             }
             return new OperationResult<Label>();
         }

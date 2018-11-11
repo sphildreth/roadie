@@ -1,8 +1,8 @@
-﻿using RestSharp;
+﻿using Microsoft.Extensions.Logging;
+using RestSharp;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData;
 using Roadie.Library.Utility;
 using System;
@@ -24,8 +24,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             }
         }
 
-        public SpotifyHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService)
-            : base(configuration, cacheManager, loggingService)
+        public SpotifyHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger)
+            : base(configuration, cacheManager, logger)
         {
         }
 
@@ -34,7 +34,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             ArtistSearchResult data = null;
             try
             {
-                this.Logger.Trace("SpotifyHelper:PerformArtistSearch:{0}", query);
+                this.Logger.LogTrace("SpotifyHelper:PerformArtistSearch:{0}", query);
                 var request = this.BuildSearchRequest(query, 1, "artist");
 
                 var client = new RestClient("http://api.spotify.com/v1");
@@ -80,7 +80,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex);
+                this.Logger.LogError(ex);
             }
             return new OperationResult<IEnumerable<ArtistSearchResult>>
             {
@@ -212,7 +212,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, ex.Serialize());
+                this.Logger.LogError(ex, ex.Serialize());
             }
             return new OperationResult<IEnumerable<ReleaseSearchResult>>();
         }

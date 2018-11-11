@@ -1,10 +1,10 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
 using Roadie.Library.Imaging;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.Processors;
 using Roadie.Library.Utility;
@@ -103,7 +103,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, ex.Serialize());
+                this.Logger.LogError(ex, ex.Serialize());
             }
             return imageMetaData;
         }

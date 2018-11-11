@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -7,7 +8,6 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.Imaging;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.Processors;
 using Roadie.Library.Utility;
@@ -119,7 +119,7 @@ namespace Roadie.Library.Factories
                         }
                         catch (Exception ex)
                         {
-                            this._logger.Error(ex, "Sql [" + sql + "] Exception [" + ex.Serialize() + "]");
+                            this._logger.LogError(ex, "Sql [" + sql + "] Exception [" + ex.Serialize() + "]");
                         }
                     }
                     if (ArtistImages != null && ArtistImages.Any(x => x.Status == Statuses.New))
@@ -136,12 +136,12 @@ namespace Roadie.Library.Factories
                         }
                         inserted = await this.DbContext.SaveChangesAsync();
                     }
-                    this.Logger.Info("Added New Artist: [{0}]", artist.ToString());
+                    this.Logger.LogInformation("Added New Artist: [{0}]", artist.ToString());
                 }
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, ex.Serialize());
+                this.Logger.LogError(ex, ex.Serialize());
             }
             return new OperationResult<Artist>
             {
@@ -174,13 +174,13 @@ namespace Roadie.Library.Factories
                     this.DbContext.Artists.Remove(Artist);
                     await this.DbContext.SaveChangesAsync();
                     this._cacheManager.ClearRegion(Artist.CacheRegion);
-                    this.Logger.Info(string.Format("x DeleteArtist [{0}]", Artist.Id));
+                    this.Logger.LogInformation(string.Format("x DeleteArtist [{0}]", Artist.Id));
                     isSuccess = true;
                 }
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, ex.Serialize());
+                this.Logger.LogError(ex, ex.Serialize());
                 return new OperationResult<bool>
                 {
                     Errors = new Exception[1] { ex }
@@ -206,7 +206,7 @@ namespace Roadie.Library.Factories
             sw.Stop();
             if (Artist == null || !Artist.IsValid)
             {
-                this._logger.Trace("ArtistFactory: Artist Not Found By External Ids: MusicbrainzId [{0}], iTunesIs [{1}], AmgId [{2}], SpotifyId [{3}]", musicBrainzId, iTunesId, amgId, spotifyId);
+                this._logger.LogTrace("ArtistFactory: Artist Not Found By External Ids: MusicbrainzId [{0}], iTunesIs [{1}], AmgId [{2}], SpotifyId [{3}]", musicBrainzId, iTunesId, amgId, spotifyId);
             }
             return new OperationResult<Artist>
             {
@@ -240,7 +240,7 @@ namespace Roadie.Library.Factories
                 sw.Stop();
                 if (Artist == null || !Artist.IsValid)
                 {
-                    this._logger.Info("ArtistFactory: Artist Not Found By Name [{0}]", ArtistName);
+                    this._logger.LogInformation("ArtistFactory: Artist Not Found By Name [{0}]", ArtistName);
                     if (doFindIfNotInDatabase)
                     {
                         OperationResult<Artist> ArtistSearch = null;
@@ -250,7 +250,7 @@ namespace Roadie.Library.Factories
                         }
                         catch (Exception ex)
                         {
-                            this.Logger.Error(ex, ex.Serialize());
+                            this.Logger.LogError(ex, ex.Serialize());
                         }
                         if (ArtistSearch.IsSuccess)
                         {
@@ -263,7 +263,7 @@ namespace Roadie.Library.Factories
                                 if (!addResult.IsSuccess)
                                 {
                                     sw.Stop();
-                                    this.Logger.Fatal("Unable To Add Artist For MetaData [{0}]", metaData.ToString());
+                                    this.Logger.LogWarning("Unable To Add Artist For MetaData [{0}]", metaData.ToString());
                                     return new OperationResult<Artist>
                                     {
                                         OperationTime = sw.ElapsedMilliseconds,
@@ -292,7 +292,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, ex.Serialize());
+                this.Logger.LogError(ex, ex.Serialize());
             }
             return new OperationResult<Artist>();
         }
@@ -360,7 +360,7 @@ namespace Roadie.Library.Factories
                 }
                 catch (Exception ex)
                 {
-                    this._logger.Warning(ex.ToString());
+                    this._logger.LogWarning(ex.ToString());
                 }
                 var artistFolder = ArtistToMerge.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
                 foreach (var release in this.DbContext.Releases.Include("Artist").Where(x => x.ArtistId == ArtistToMerge.Id).ToArray())
@@ -452,7 +452,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, "iTunesArtistSearch: " + ex.Serialize());
+                this.Logger.LogError(ex, "iTunesArtistSearch: " + ex.Serialize());
             }
             try
             {
@@ -511,7 +511,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, "MusicBrainzArtistSearch: " + ex.Serialize());
+                this.Logger.LogError(ex, "MusicBrainzArtistSearch: " + ex.Serialize());
             }
             try
             {
@@ -570,7 +570,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, "LastFMArtistSearch: " + ex.Serialize());
+                this.Logger.LogError(ex, "LastFMArtistSearch: " + ex.Serialize());
             }
             try
             {
@@ -621,7 +621,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, "SpotifyArtistSearch: " + ex.Serialize());
+                this.Logger.LogError(ex, "SpotifyArtistSearch: " + ex.Serialize());
             }
             try
             {
@@ -665,7 +665,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, "DiscogsArtistSearch: " + ex.Serialize());
+                this.Logger.LogError(ex, "DiscogsArtistSearch: " + ex.Serialize());
             }
             try
             {
@@ -697,7 +697,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, "WikipediaArtistSearch: " + ex.Serialize());
+                this.Logger.LogError(ex, "WikipediaArtistSearch: " + ex.Serialize());
             }
             try
             {
@@ -757,7 +757,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, "CombiningResults: " + ex.Serialize());
+                this.Logger.LogError(ex, "CombiningResults: " + ex.Serialize());
             }
             result.SortName = result.SortName.ToTitleCase();
             if (!string.IsNullOrEmpty(result.ArtistType))
@@ -801,7 +801,7 @@ namespace Roadie.Library.Factories
                         break;
 
                     default:
-                        this.Logger.Warning(string.Format("Unknown Artist Type [{0}]", result.ArtistType));
+                        this.Logger.LogWarning(string.Format("Unknown Artist Type [{0}]", result.ArtistType));
                         result.ArtistType = "Other";
                         break;
                 }
@@ -834,7 +834,7 @@ namespace Roadie.Library.Factories
                 var Artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == ArtistId);
                 if (Artist == null)
                 {
-                    this.Logger.Fatal("Unable To Find Artist [{0}]", ArtistId);
+                    this.Logger.LogWarning("Unable To Find Artist [{0}]", ArtistId);
                     return new OperationResult<bool>();
                 }
 
@@ -848,7 +848,7 @@ namespace Roadie.Library.Factories
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.Error(ex, ex.Serialize());
+                    this.Logger.LogError(ex, ex.Serialize());
                 }
                 if (ArtistSearch.IsSuccess)
                 {
@@ -860,7 +860,7 @@ namespace Roadie.Library.Factories
                         await this.DbContext.SaveChangesAsync();
                         sw.Stop();
                         this.CacheManager.ClearRegion(Artist.CacheRegion);
-                        this.Logger.Info("Scanned RefreshArtistMetadata [{0}], OperationTime [{1}]", Artist.ToString(), sw.ElapsedMilliseconds);
+                        this.Logger.LogInformation("Scanned RefreshArtistMetadata [{0}], OperationTime [{1}]", Artist.ToString(), sw.ElapsedMilliseconds);
                     }
                     else
                     {
@@ -870,7 +870,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, ex.Serialize());
+                this.Logger.LogError(ex, ex.Serialize());
                 resultErrors.Add(ex);
             }
             return new OperationResult<bool>
@@ -895,7 +895,7 @@ namespace Roadie.Library.Factories
                 var Artist = this.DbContext.Artists.Include("releases").FirstOrDefault(x => x.RoadieId == artistId);
                 if (Artist == null)
                 {
-                    this.Logger.Fatal("Unable To Find Artist [{0}]", artistId);
+                    this.Logger.LogWarning("Unable To Find Artist [{0}]", artistId);
                     return new OperationResult<bool>();
                 }
                 var releaseScannedCount = 0;
@@ -914,7 +914,7 @@ namespace Roadie.Library.Factories
                         }
                         catch (Exception ex)
                         {
-                            this.Logger.Error(ex, ex.Serialize());
+                            this.Logger.LogError(ex, ex.Serialize());
                         }
                     }
                 }
@@ -934,11 +934,11 @@ namespace Roadie.Library.Factories
                 }
                 sw.Stop();
                 this.CacheManager.ClearRegion(Artist.CacheRegion);
-                this.Logger.Info("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", Artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
+                this.Logger.LogInformation("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", Artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, ex.Serialize());
+                this.Logger.LogError(ex, ex.Serialize());
                 resultErrors.Add(ex);
             }
             return new OperationResult<bool>
@@ -999,14 +999,14 @@ namespace Roadie.Library.Factories
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.Error(ex, ex.Serialize());
+                    this.Logger.LogError(ex, ex.Serialize());
                 }
             }
 
             var newArtistFolder = Artist.ArtistFileFolder(this.Configuration, destinationFolder ?? this.Configuration.LibraryFolder);
             if (!originalArtistFolder.Equals(newArtistFolder, StringComparison.OrdinalIgnoreCase))
             {
-                this.Logger.Trace("Moving Artist From Folder [{0}] To  [{1}]", originalArtistFolder, newArtistFolder);
+                this.Logger.LogTrace("Moving Artist From Folder [{0}] To  [{1}]", originalArtistFolder, newArtistFolder);
                 //  Directory.Move(originalArtistFolder, Artist.ArtistFileFolder(destinationFolder ?? SettingsHelper.Instance.LibraryFolder));
                 // TODO if name changed then update Artist track files to have new Artist name
             }
@@ -1057,7 +1057,7 @@ namespace Roadie.Library.Factories
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, ex.Serialize());
+                this.Logger.LogError(ex, ex.Serialize());
             }
             return null;
         }

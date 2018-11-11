@@ -1,10 +1,10 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
 using Roadie.Library.FilePlugins;
-using Roadie.Library.Logging;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -28,11 +28,11 @@ namespace Roadie.Library.Processors
             }
         }
 
-        public FolderProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger loggingService)
-            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, loggingService)
+        public FolderProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
+            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, logger)
         {
             SimpleContract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(destinationRoot), "Invalid Destination Folder");
-            this._fileProcessor = new FileProcessor(configuration, httpEncoder, destinationRoot, context, cacheManager, loggingService);
+            this._fileProcessor = new FileProcessor(configuration, httpEncoder, destinationRoot, context, cacheManager, logger);
         }
 
         public OperationResult<bool> DeleteEmptyFolders(DirectoryInfo processingFolder)
@@ -44,7 +44,7 @@ namespace Roadie.Library.Processors
             }
             catch (Exception ex)
             {
-                this.LoggingService.Error(ex, string.Format("Error Deleting Empty Folder [{0}] Error [{1}]", processingFolder.FullName, ex.Serialize()));
+                this.Logger.LogError(ex, string.Format("Error Deleting Empty Folder [{0}] Error [{1}]", processingFolder.FullName, ex.Serialize()));
             }
             return result;
         }
@@ -75,7 +75,7 @@ namespace Roadie.Library.Processors
                             if (!Path.GetFileNameWithoutExtension(file).ToLower().Equals("cover"))
                             {
                                 File.Delete(file);
-                                this.LoggingService.Info("x Deleted File [{0}], Was foud in in FileExtensionsToDelete", file);
+                                this.Logger.LogInformation("x Deleted File [{0}], Was foud in in FileExtensionsToDelete", file);
                             }
                         }
                     }
@@ -88,7 +88,7 @@ namespace Roadie.Library.Processors
             }
             await this.PostProcessFolder(inboundFolder, pluginResultInfos, doJustInfo);
             sw.Stop();
-            this.LoggingService.Info("** Completed! Processed Folder [{0}]: Processed Files [{1}] : Elapsed Time [{2}]", inboundFolder.FullName.ToString(), processedFiles, sw.Elapsed);
+            this.Logger.LogInformation("** Completed! Processed Folder [{0}]: Processed Files [{1}] : Elapsed Time [{2}]", inboundFolder.FullName.ToString(), processedFiles, sw.Elapsed);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -137,7 +137,7 @@ namespace Roadie.Library.Processors
             if (this.Configuration.Processing.DoFolderArtistNameSet && inboundFolder.Name.StartsWith("~"))
             {
                 var artist = inboundFolder.Name.Replace("~", "");
-                this.LoggingService.Info("Setting Folder File Tags To [{0}]", artist);
+                this.Logger.LogInformation("Setting Folder File Tags To [{0}]", artist);
                 if (!doJustInfo)
                 {
                     foreach (var file in inboundFolder.GetFiles("*.*", SearchOption.AllDirectories))

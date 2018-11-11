@@ -1,8 +1,8 @@
-﻿using RestSharp;
+﻿using Microsoft.Extensions.Logging;
+using RestSharp;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData;
 using System.Collections.Generic;
 using System.Linq;

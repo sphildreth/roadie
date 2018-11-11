@@ -1,8 +1,8 @@
-﻿using Orthogonal.NTagLite;
+﻿using Microsoft.Extensions.Logging;
+using Orthogonal.NTagLite;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.Utility;
 using System;
@@ -15,8 +15,8 @@ namespace Roadie.Library.MetaData.ID3Tags
 {
     public class ID3TagsHelper : MetaDataProviderBase
     {
-        public ID3TagsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService)
-            : base(configuration, cacheManager, loggingService)
+        public ID3TagsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger)
+            : base(configuration, cacheManager, logger)
         {
         }
 
@@ -96,7 +96,7 @@ namespace Roadie.Library.MetaData.ID3Tags
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, string.Format("MetaData [{0}], Filename [{1}]", metaData.ToString(), filename));
+                this.Logger.LogError(ex, string.Format("MetaData [{0}], Filename [{1}]", metaData.ToString(), filename));
             }
             return false;
         }
@@ -138,7 +138,7 @@ namespace Roadie.Library.MetaData.ID3Tags
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
+                this.Logger.LogError(ex, "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
             }
             sw.Stop();
             return new OperationResult<AudioMetaData>
@@ -184,7 +184,7 @@ namespace Roadie.Library.MetaData.ID3Tags
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
+                this.Logger.LogError(ex, "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
             }
             sw.Stop();
             return new OperationResult<AudioMetaData>

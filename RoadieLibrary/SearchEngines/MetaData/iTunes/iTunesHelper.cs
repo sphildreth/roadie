@@ -1,6 +1,6 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData;
 using Roadie.Library.SearchEngines.Imaging;
 using System.Linq;
@@ -20,10 +20,10 @@ namespace Roadie.Library.SearchEngines.MetaData.iTunes
             }
         }
 
-        public iTunesHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService)
-            : base(configuration, cacheManager, loggingService)
+        public iTunesHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger)
+            : base(configuration, cacheManager, logger)
         {
-            this._iTunesSearchEngine = new ITunesSearchEngine(configuration, cacheManager, loggingService);
+            this._iTunesSearchEngine = new ITunesSearchEngine(configuration, cacheManager, logger);
         }
 
         public async Task<OperationResult<ArtistSearchResult>> SearchForArtist(string artistName)

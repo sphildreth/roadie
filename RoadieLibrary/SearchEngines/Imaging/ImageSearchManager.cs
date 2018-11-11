@@ -1,14 +1,14 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Imaging;
-using Roadie.Library.Logging;
 using Roadie.Library.Utility;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Roadie.Library.SearchEngines.Imaging
 {
-    public class ImageSearchManager
+    public class ImageSearchManager : IImageSearchManager
     {
         private readonly IImageSearchEngine _bingSearchEngine = null;
         private readonly IImageSearchEngine _itunesSearchEngine = null;
@@ -21,10 +21,10 @@ namespace Roadie.Library.SearchEngines.Imaging
             }
         }
 
-        public ImageSearchManager(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService, string requestIp = null, string referrer = null)
+        public ImageSearchManager(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, string requestIp = null, string referrer = null)
         {
-            this._bingSearchEngine = new BingImageSearchEngine(configuration, loggingService, requestIp, referrer);
-            this._itunesSearchEngine = new ITunesSearchEngine(configuration, cacheManager, loggingService, requestIp, referrer);
+            this._bingSearchEngine = new BingImageSearchEngine(configuration, logger, requestIp, referrer);
+            this._itunesSearchEngine = new ITunesSearchEngine(configuration, cacheManager, logger, requestIp, referrer);
         }
 
         public async Task<IEnumerable<ImageSearchResult>> ImageSearch(string query, int? resultsCount = null)

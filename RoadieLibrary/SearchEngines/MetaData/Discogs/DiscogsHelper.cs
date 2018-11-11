@@ -1,8 +1,8 @@
-﻿using RestSharp;
+﻿using Microsoft.Extensions.Logging;
+using RestSharp;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData;
 using Roadie.Library.Utility;
 using System;
@@ -27,7 +27,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             }
         }
 
-        public DiscogsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService) : base(configuration, cacheManager, loggingService)
+        public DiscogsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger) : base(configuration, cacheManager, logger)
         {
             this._apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey") ?? new ApiKey();
         }
@@ -37,7 +37,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             ArtistSearchResult data = null;
             try
             {
-                this.Logger.Trace("DiscogsHelper:PerformArtistSearch:{0}", query);
+                this.Logger.LogTrace("DiscogsHelper:PerformArtistSearch:{0}", query);
                 var request = this.BuildSearchRequest(query, 1, "artist");
 
                 var client = new RestClient("https://api.discogs.com/database");
@@ -105,7 +105,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex);
+                this.Logger.LogError(ex);
             }
             return new OperationResult<IEnumerable<ArtistSearchResult>>
             {
@@ -181,7 +181,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex);
+                this.Logger.LogError(ex);
             }
             return new OperationResult<IEnumerable<LabelSearchResult>>
             {
@@ -308,7 +308,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex);
+                this.Logger.LogError(ex);
             }
             return new OperationResult<IEnumerable<ReleaseSearchResult>>
             {

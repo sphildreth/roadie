@@ -1,10 +1,10 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
 using Roadie.Library.Factories;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData.FileName;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.MetaData.LastFm;
@@ -209,7 +209,7 @@ namespace Roadie.Library.MetaData.Audio
                 {
                     if (string.IsNullOrEmpty(result.Artist) || string.IsNullOrEmpty(result.Release))
                     {
-                        this.Logger.Warning("File [{0}] MetaData [{1}]: Unable to Determine Artist and Release; aborting getting info.", fileInfo.FullName, result.ToString());
+                        this.Logger.LogWarning("File [{0}] MetaData [{1}]: Unable to Determine Artist and Release; aborting getting info.", fileInfo.FullName, result.ToString());
                         return result;
                     }
                 }
@@ -228,7 +228,7 @@ namespace Roadie.Library.MetaData.Audio
                 }
                 if (!result.IsValid)
                 {
-                    this.Logger.Warning("File [{0}] MetaData Invalid, TagSources [{1}] MetaData [{2}]", fileInfo.FullName, string.Join(",", tagSources), result.ToString());
+                    this.Logger.LogWarning("File [{0}] MetaData Invalid, TagSources [{1}] MetaData [{2}]", fileInfo.FullName, string.Join(",", tagSources), result.ToString());
                 }
                 else
                 {
@@ -241,7 +241,7 @@ namespace Roadie.Library.MetaData.Audio
                             result.Images = tagImages != null && tagImages.Any() ? tagImages : null;
                             if (result.Images == null || !result.Images.Any())
                             {
-                                this.Logger.Trace("File [{0} No Images Set and Unable to Find Images", fileInfo.FullName);
+                                this.Logger.LogTrace("File [{0} No Images Set and Unable to Find Images", fileInfo.FullName);
                             }
                         }
                         this.WriteTags(result, fileInfo);
@@ -257,7 +257,7 @@ namespace Roadie.Library.MetaData.Audio
                     result.SetArtistName(artistNameReplaceKp.Key);
                 }
             }
-            this.Logger.Info("File [{0}], TagSources [{1}] MetaData [{2}]", fileInfo.Name, string.Join(",", tagSources), result.ToString());
+            this.Logger.LogInformation("File [{0}], TagSources [{1}] MetaData [{2}]", fileInfo.Name, string.Join(",", tagSources), result.ToString());
             return result;
         }
 
@@ -381,7 +381,7 @@ namespace Roadie.Library.MetaData.Audio
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, string.Format("Error With ID3TagsHelper.MetaDataForFile From File [{0}]", fileInfo.FullName));
+                this.Logger.LogError(ex, string.Format("Error With ID3TagsHelper.MetaDataForFile From File [{0}]", fileInfo.FullName));
             }
             return new AudioMetaData
             {

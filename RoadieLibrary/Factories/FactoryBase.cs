@@ -1,8 +1,8 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.MetaData.MusicBrainz;
 using Roadie.Library.SearchEngines.Imaging;

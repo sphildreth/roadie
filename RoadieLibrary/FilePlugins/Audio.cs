@@ -1,10 +1,10 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
 using Roadie.Library.Factories;
 using Roadie.Library.Imaging;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.MetaData.MusicBrainz;
@@ -75,7 +75,8 @@ namespace Roadie.Library.FilePlugins
             ReleaseFactory releaseFactory,
             ImageFactory imageFactory,
             ICacheManager cacheManager,
-            ILogger logger) : base(configuration, httpEncoder, artistFactory, releaseFactory, imageFactory, cacheManager, logger)
+            ILogger logger) 
+            : base(configuration, httpEncoder, artistFactory, releaseFactory, imageFactory, cacheManager, logger)
         {
         }
 
@@ -92,7 +93,7 @@ namespace Roadie.Library.FilePlugins
                 var minWeight = this.MinWeightToDelete;
                 if (metaData.ValidWeight < minWeight && minWeight > 0)
                 {
-                    this.Logger.Trace("Invalid File{3}: ValidWeight [{0}], Under MinWeightToDelete [{1}]. Deleting File [{2}]", metaData.ValidWeight, minWeight, fileInfo.FullName, doJustInfo ? " [Read Only Mode] " : string.Empty);
+                    this.Logger.LogTrace("Invalid File{3}: ValidWeight [{0}], Under MinWeightToDelete [{1}]. Deleting File [{2}]", metaData.ValidWeight, minWeight, fileInfo.FullName, doJustInfo ? " [Read Only Mode] " : string.Empty);
                     if (!doJustInfo)
                     {
                         fileInfo.Delete();
@@ -118,17 +119,17 @@ namespace Roadie.Library.FilePlugins
             var artistFolder = await this.DetermineArtistFolder(dr, metaData, doJustInfo);
             if (string.IsNullOrEmpty(artistFolder))
             {
-                this.Logger.Warning("Unable To Find ArtistFolder [{0}] For MetaData [{1}]", artistFolder, metaData.ToString());
+                this.Logger.LogWarning("Unable To Find ArtistFolder [{0}] For MetaData [{1}]", artistFolder, metaData.ToString());
                 return new OperationResult<bool>("Unable To Find Artist Folder");
             }
             var releaseFolder = await this.DetermineReleaseFolder(artistFolder, metaData, doJustInfo, submissionId);
             if (string.IsNullOrEmpty(releaseFolder))
             {
-                this.Logger.Warning("Unable To Find ReleaseFolder For MetaData [{0}]", metaData.ToString());
+                this.Logger.LogWarning("Unable To Find ReleaseFolder For MetaData [{0}]", metaData.ToString());
                 return new OperationResult<bool>("Unable To Find Release Folder");
             }
             destinationName = FolderPathHelper.TrackFullPath(this.Configuration, metaData, dr, artistFolder);
-            this.Logger.Trace("Info: FileInfo [{0}], Artist Folder [{1}], Destination Name [{2}]", fileInfo.FullName, artistFolder, destinationName);
+            this.Logger.LogTrace("Info: FileInfo [{0}], Artist Folder [{1}], Destination Name [{2}]", fileInfo.FullName, artistFolder, destinationName);
 
             if (doJustInfo)
             {
@@ -147,7 +148,7 @@ namespace Roadie.Library.FilePlugins
                 {
                     var i = new FileInfo(imageFile);
                     var iName = i.Name.ToLower().Trim();
-                    this.Logger.Debug("Found Image File [{0}] [{1}]", imageFile, iName);
+                    this.Logger.LogDebug("Found Image File [{0}] [{1}]", imageFile, iName);
                     var isCoverArtType = iName.StartsWith("cover") || iName.StartsWith("folder") || iName.StartsWith("front") || iName.StartsWith("release") || iName.StartsWith("album");
                     if (isCoverArtType)
                     {
@@ -164,7 +165,7 @@ namespace Roadie.Library.FilePlugins
                                 File.WriteAllBytes(coverFileName, imageBytes);
                                 i.Delete();
                             }
-                            this.Logger.Debug("Found Image File [{0}], Moved to release folder", i.Name);
+                            this.Logger.LogDebug("Found Image File [{0}], Moved to release folder", i.Name);
                             break;
                         }
                     }
@@ -187,7 +188,7 @@ namespace Roadie.Library.FilePlugins
                 {
                     if (!existingMetaData.IsValid || (currentBitRate > existingBitRate))
                     {
-                        this.Logger.Trace("Newer Is Better: Deleting Existing File [{0}]", existing);
+                        this.Logger.LogTrace("Newer Is Better: Deleting Existing File [{0}]", existing);
                         if (!doJustInfo)
                         {
                             existing.Delete();
@@ -196,7 +197,7 @@ namespace Roadie.Library.FilePlugins
                     }
                     else
                     {
-                        this.Logger.Trace("Existing [{0}] Is Better or Equal: Deleting Found File [{1}]", existing, fileInfo.FullName);
+                        this.Logger.LogTrace("Existing [{0}] Is Better or Equal: Deleting Found File [{1}]", existing, fileInfo.FullName);
                         if (!doJustInfo)
                         {
                             fileInfo.Delete();
@@ -206,7 +207,7 @@ namespace Roadie.Library.FilePlugins
             }
             else
             {
-                this.Logger.Trace("Moving File To [{0}]", destinationName);
+                this.Logger.LogTrace("Moving File To [{0}]", destinationName);
                 if (!doJustInfo)
                 {
                     fileInfo.MoveTo(destinationName);
@@ -240,7 +241,7 @@ namespace Roadie.Library.FilePlugins
             }
             catch (Exception ex)
             {
-                this._loggingService.Error(ex, ex.Serialize());
+                this._logger.LogError(ex, ex.Serialize());
             }
             return null;
         }

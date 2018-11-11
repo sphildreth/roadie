@@ -1,10 +1,11 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
 using Roadie.Library.FilePlugins;
-using Roadie.Library.Logging;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,7 +36,7 @@ namespace Roadie.Library.Processors
                         {
                             if (t.GetInterface("IFilePlugin") != null && !t.IsAbstract && !t.IsInterface)
                             {
-                                IFilePlugin plugin = Activator.CreateInstance(t, new object[] { this.ArtistFactory, this.ReleaseFactory, this.ImageFactory, this.CacheManager, this.LoggingService }) as IFilePlugin;
+                                IFilePlugin plugin = Activator.CreateInstance(t, new object[] { this.ArtistFactory, this.ReleaseFactory, this.ImageFactory, this.CacheManager, this.Logger }) as IFilePlugin;
                                 plugins.Add(plugin);
                             }
                         }
@@ -114,7 +115,7 @@ namespace Roadie.Library.Processors
                                 if (File.Exists(fileInfo.FullName))
                                 {
                                     var df = Path.Combine(this.UnknownFolder, string.Format("{0}~{1}~{2}", Guid.NewGuid(), fileInfo.Directory.Name, fileInfo.Name));
-                                    this.LoggingService.Debug("Moving Unknown/Invalid File [{0}] -> [{1}] to UnknownFolder", fileInfo.FullName, df);
+                                    this.Logger.LogDebug("Moving Unknown/Invalid File [{0}] -> [{1}] to UnknownFolder", fileInfo.FullName, df);
                                     fileInfo.MoveTo(df);
                                 }
                             }
@@ -125,7 +126,7 @@ namespace Roadie.Library.Processors
             }
             catch (System.IO.PathTooLongException ex)
             {
-                this.LoggingService.Error(ex, string.Format("Error Processing File. File Name Too Long. Deleting."));
+                this.Logger.LogError(ex, string.Format("Error Processing File. File Name Too Long. Deleting."));
                 if (!doJustInfo)
                 {
                     fileInfo.Delete();
@@ -134,7 +135,7 @@ namespace Roadie.Library.Processors
             catch (Exception ex)
             {
                 var willMove = !fileInfo.DirectoryName.Equals(this.UnknownFolder);
-                this.LoggingService.Error(ex, string.Format("Error Processing File [{0}], WillMove [{1}]\n{2}", fileInfo.FullName, willMove, ex.Serialize()));
+                this.Logger.LogError(ex, string.Format("Error Processing File [{0}], WillMove [{1}]\n{2}", fileInfo.FullName, willMove, ex.Serialize()));
                 string newPath = null;
                 try
                 {
@@ -151,7 +152,7 @@ namespace Roadie.Library.Processors
                 }
                 catch (Exception ex1)
                 {
-                    this.LoggingService.Error(ex1, string.Format("Unable to move file [{0}] to [{1}]", fileInfo.FullName, newPath));
+                    this.Logger.LogError(ex1, string.Format("Unable to move file [{0}] to [{1}]", fileInfo.FullName, newPath));
                 }
             }
             return result;

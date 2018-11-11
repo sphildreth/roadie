@@ -1,10 +1,10 @@
 ﻿using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Objects;
+using Microsoft.Extensions.Logging;
 using RestSharp;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
-using Roadie.Library.Logging;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.SearchEngines.MetaData;
 using Roadie.Library.SearchEngines.MetaData.LastFm;
@@ -29,7 +29,7 @@ namespace Roadie.Library.MetaData.LastFm
             }
         }
 
-        public LastFmHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService) : base(configuration, cacheManager, loggingService)
+        public LastFmHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger) : base(configuration, cacheManager, logger)
         {
             this._apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey") ?? new ApiKey();
         }
@@ -38,7 +38,7 @@ namespace Roadie.Library.MetaData.LastFm
         {
             try
             {
-                this.Logger.Trace("LastFmHelper:PerformArtistSearch:{0}", query);
+                this.Logger.LogTrace("LastFmHelper:PerformArtistSearch:{0}", query);
                 var auth = new LastAuth(this.ApiKey.Key, this.ApiKey.KeySecret);
                 var albumApi = new ArtistApi(auth);
                 var response = await albumApi.GetInfoAsync(query);
@@ -74,7 +74,7 @@ namespace Roadie.Library.MetaData.LastFm
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex, ex.Serialize());
+                this.Logger.LogError(ex, ex.Serialize());
             }
             return new OperationResult<IEnumerable<ArtistSearchResult>>();
         }
@@ -162,7 +162,7 @@ namespace Roadie.Library.MetaData.LastFm
                     }
                     catch
                     {
-                        this.Logger.Warning("LastFmAPI: Error Getting Tracks For Artist [{0}], Release [{1}]", artist, Release);
+                        this.Logger.LogWarning("LastFmAPI: Error Getting Tracks For Artist [{0}], Release [{1}]", artist, Release);
                     }
                 }
 
@@ -199,7 +199,7 @@ namespace Roadie.Library.MetaData.LastFm
             }
             catch (System.Exception ex)
             {
-                this.Logger.Error(ex, string.Format("LastFm: Error Getting Tracks For Artist [{0}], Release [{1}]", artist, Release));
+                this.Logger.LogError(ex, string.Format("LastFm: Error Getting Tracks For Artist [{0}], Release [{1}]", artist, Release));
             }
             return result;
         }

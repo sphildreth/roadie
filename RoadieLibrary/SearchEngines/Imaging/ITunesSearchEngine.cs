@@ -1,8 +1,8 @@
-﻿using RestSharp;
+﻿using Microsoft.Extensions.Logging;
+using RestSharp;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
-using Roadie.Library.Logging;
 using Roadie.Library.SearchEngines.MetaData;
 using System;
 using System.Collections.Generic;
@@ -91,7 +91,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             }
             catch (Exception ex)
             {
-                this.LoggingService.Error(ex);
+                this.Logger.LogError(ex);
             }
             return new OperationResult<IEnumerable<ArtistSearchResult>>
             {
@@ -131,7 +131,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             }
             catch (Exception ex)
             {
-                this.LoggingService.Error(ex.Serialize());
+                this.Logger.LogError(ex.Serialize());
             }
             return result;
         }
@@ -181,7 +181,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             }
             catch (Exception ex)
             {
-                this.LoggingService.Error(ex);
+                this.Logger.LogError(ex);
             }
             return new OperationResult<IEnumerable<ReleaseSearchResult>>
             {

@@ -64,7 +64,7 @@ namespace Roadie.Library.Caching
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex, null, null);
+                this.Logger.LogError(ex);
             }
             return default(TOut);
         }

@@ -1,6 +1,6 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
-using Roadie.Library.Logging;
 
 namespace Roadie.Library.MetaData
 {
@@ -8,7 +8,7 @@ namespace Roadie.Library.MetaData
     {
         protected readonly ICacheManager _cacheManager = null;
         protected readonly IRoadieSettings _configuration = null;
-        protected readonly ILogger _loggingService = null;
+        protected readonly ILogger _logger = null;
 
         protected ApiKey _apiKey = null;
 
@@ -48,15 +48,15 @@ namespace Roadie.Library.MetaData
         {
             get
             {
-                return this._loggingService;
+                return this._logger;
             }
         }
 
-        public MetaDataProviderBase(IRoadieSettings configuration, ICacheManager cacheManager, ILogger loggingService)
+        public MetaDataProviderBase(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger)
         {
             this._configuration = configuration;
             this._cacheManager = cacheManager;
-            this._loggingService = loggingService;
+            this._logger = logger;
 
             System.Net.ServicePointManager.ServerCertificateValidationCallback += delegate (object sender, System.Security.Cryptography.X509Certificates.X509Certificate certificate,
                         System.Security.Cryptography.X509Certificates.X509Chain chain,

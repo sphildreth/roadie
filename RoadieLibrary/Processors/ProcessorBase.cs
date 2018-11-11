@@ -1,9 +1,10 @@
-﻿using Roadie.Library.Caching;
+﻿using Microsoft.Extensions.Logging;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Factories;
-using Roadie.Library.Logging;
+
 
 namespace Roadie.Library.Processors
 {
@@ -33,7 +34,7 @@ namespace Roadie.Library.Processors
         {
             get
             {
-                return this._artistFactory ?? (this._artistFactory = new ArtistFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.LoggingService));
+                return this._artistFactory ?? (this._artistFactory = new ArtistFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.Logger));
             }
             set
             {
@@ -93,7 +94,7 @@ namespace Roadie.Library.Processors
         {
             get
             {
-                return this._imageFactory ?? (this._imageFactory = new ImageFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.LoggingService));
+                return this._imageFactory ?? (this._imageFactory = new ImageFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.Logger));
             }
             set
             {
@@ -101,7 +102,7 @@ namespace Roadie.Library.Processors
             }
         }
 
-        protected ILogger LoggingService
+        protected ILogger Logger
         {
             get
             {
@@ -113,7 +114,7 @@ namespace Roadie.Library.Processors
         {
             get
             {
-                return this._releaseFactory ?? (this._releaseFactory = new ReleaseFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.LoggingService));
+                return this._releaseFactory ?? (this._releaseFactory = new ReleaseFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.Logger));
             }
             set
             {
