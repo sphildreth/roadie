@@ -6,11 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Data;
 using Roadie.Library.Identity;
+using Roadie.Library.Models.Pagination;
 using System;
 using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
 using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
@@ -21,10 +25,13 @@ namespace Roadie.Api.Controllers
     [Authorize]
     public class ReleaseController : EntityControllerBase
     {
-        public ReleaseController(ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+        private IReleaseService ReleaseService { get; }
+
+        public ReleaseController(IReleaseService releaseService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
             this._logger = logger.CreateLogger("RoadieApi.Controllers.ReleaseController"); ;
+            this.ReleaseService = releaseService;
         }
 
         //[EnableQuery]
@@ -61,5 +68,34 @@ namespace Roadie.Api.Controllers
         //    }
         //    return Ok(result);
         //}
+
+        [HttpPost]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> List(PagedRequest request, string inc)
+        {
+            var result = await this.ReleaseService.ReleaseList(user: await this.CurrentUserModel(),
+                                                               request: request,
+                                                               includes: (inc ?? models.Releases.Release.DefaultIncludes).ToLower().Split(","));
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("random")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> RandomList(PagedRequest request, string inc)
+        {
+            var result = await this.ReleaseService.ReleaseList(user: await this.CurrentUserModel(),
+                                                               request: request,
+                                                               doRandomize: true,
+                                                               includes: (inc ?? models.Releases.Release.DefaultIncludes).ToLower().Split(","));
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
     }
 }

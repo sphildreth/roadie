@@ -93,12 +93,12 @@ namespace Roadie.Library.Utility
         public string ToFullFormattedString()
         {
             var yearsFormatted = this.YearsFormatted;
-            return string.Format("{0}{1}", string.IsNullOrEmpty(yearsFormatted) ? string.Empty : yearsFormatted + ":", this.ToString("{DaysFormatted}:{HoursForamtted}:{MinutesFormatted}:{SecondsFormatted}"));
+            return $"{ (string.IsNullOrEmpty(yearsFormatted) ? string.Empty : yearsFormatted + ":") }{ this.ToString() }";
         }
 
-        public string ToString(string format)
+        public override string ToString()
         {
-            return format.FormatWith(this);
+            return $"{ DaysFormatted}:{ HoursForamtted}:{ MinutesFormatted }";
         }
     }
 }

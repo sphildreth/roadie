@@ -8,6 +8,8 @@ namespace Roadie.Library.Models.Releases
     [Serializable]
     public class Release : EntityModelBase
     {
+        public const string DefaultIncludes = "tracks";
+
         [MaxLength(50)]
         public string AmgId { get; set; }
 

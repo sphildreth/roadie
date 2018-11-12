@@ -4,6 +4,7 @@ namespace Roadie.Library.Configuration
 {
     public interface IRoadieSettings
     {
+        string ConnectionString { get; set; }
         string ContentPath { get; set; }
         Dictionary<string, List<string>> ArtistNameReplace { get; set; }
         Converting Converting { get; set; }

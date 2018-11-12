@@ -37,11 +37,13 @@ namespace Roadie.Api
             this._configuration = configuration;
             this._loggerFactory = loggerFactory;
 
-            TypeAdapterConfig<Roadie.Library.Data.Release, Roadie.Library.Models.Releases.ReleaseList>
-                .NewConfig()
-                .Map(rml => rml.ArtistId,
-                     src => src.Artist.RoadieId)
-                .Compile();
+            //TypeAdapterConfig<Roadie.Library.Data.Release, Roadie.Library.Models.Releases.ReleaseList>
+            //    .NewConfig()
+            //    .Map(rml => rml.Artist.Value,
+            //         src => src.Artist.RoadieId)
+            //    .Map(rml => rml.Artist.Text,
+            //         src => src.Artist.Name)
+            //    .Compile();
 
             TypeAdapterConfig<Roadie.Library.Data.Image, Roadie.Library.Models.Image>
                 .NewConfig()
@@ -122,15 +124,18 @@ namespace Roadie.Api
                 configuration.GetSection("RoadieSettings").Bind(settings);
                 var hostingEnvironment = ctx.GetService<IHostingEnvironment>();
                 settings.ContentPath = hostingEnvironment.WebRootPath;
+                settings.ConnectionString = this._configuration.GetConnectionString("RoadieDatabaseConnection");
                 return settings;
             });
 
             services.AddSingleton<IDefaultNotFoundImages, DefaultNotFoundImages>();
-
+            services.AddScoped<IStatisticsService, StatisticsService>();
             services.AddScoped<ICollectionService, CollectionService>();
             services.AddScoped<IPlaylistService, PlaylistService>();
             services.AddScoped<IArtistService, ArtistService>();
             services.AddScoped<IImageService, ImageService>();
+            services.AddScoped<IReleaseService, ReleaseService>();
+            services.AddScoped<ITrackService, TrackService>();
 
             var securityKey = new SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration["Tokens:PrivateKey"]));
             services.AddAuthentication(options =>

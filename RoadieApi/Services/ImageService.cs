@@ -30,7 +30,7 @@ namespace Roadie.Api.Services
                              IHttpContext httpContext,
                              data.IRoadieDbContext context,
                              ICacheManager cacheManager,
-                             ILogger<ArtistService> logger,
+                             ILogger<ImageService> logger,
                              IDefaultNotFoundImages defaultNotFoundImages)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
@@ -422,7 +422,7 @@ namespace Roadie.Api.Services
             return new FileOperationResult<Image>(OperationMessages.ErrorOccured);
         }
 
-        public async Task<OperationResult<bool>> Delete(User roadieUser, Guid id)
+        public async Task<OperationResult<bool>> Delete(User user, Guid id)
         {
             var sw = Stopwatch.StartNew();
             var image = this.DbContext.Images
@@ -444,7 +444,7 @@ namespace Roadie.Api.Services
             this.DbContext.Images.Remove(image);
             await this.DbContext.SaveChangesAsync();
             this.CacheManager.ClearRegion(data.Image.CacheRegionUrn(id));
-            this.Logger.LogInformation($"Deleted Image [{ id }], By User [{ roadieUser.ToString() }]");
+            this.Logger.LogInformation($"Deleted Image [{ id }], By User [{ user.ToString() }]");
             sw.Stop();
             return new OperationResult<bool>
             {
@@ -456,30 +456,28 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<IEnumerable<ImageSearchResult>>> ImageProvidersSearch(string query)
         {
-            throw new NotImplementedException();
-
-            //var sw = new Stopwatch();
-            //sw.Start();
-            //var errors = new List<string>();
-            //IEnumerable<ImageSearchResult> searchResults = null;
-            //try
-            //{
-            //    var manager = new ImageSearchManager(this.Configuration, this.CacheManager, this.Logger);
-            //    searchResults = await manager.ImageSearch(query);
-            //}
-            //catch (System.Exception ex)
-            //{
-            //    this._logger.Error(ex);
-            //    errors.Add(ex.ToString());
-            //}
-            //sw.Stop();
-            //return new ImageSearchResultModel
-            //{
-            //    IsSuccess = true,
-            //    OperationTime = sw.ElapsedMilliseconds,
-            //    Errors = errors,
-            //    SearchResults = searchResults
-            //};
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            IEnumerable<ImageSearchResult> searchResults = null;
+            try
+            {
+                var manager = new ImageSearchManager(this.Configuration, this.CacheManager, this.Logger);
+                searchResults = await manager.ImageSearch(query);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+            return new OperationResult<IEnumerable<ImageSearchResult>>
+            {
+                Data = searchResults,
+                IsSuccess = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
         }
     }
 }

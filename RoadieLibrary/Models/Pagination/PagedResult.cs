@@ -17,10 +17,12 @@ namespace Roadie.Library.Models.Pagination
         }
 
         public IEnumerable<T> Rows { get; set; }
-        public int Current { get; set; }
-        public int PageCount { get; set; }
-        public int RowCount { get; set; }
-        public int Total { get; set; }
+
+        public int CurrentPage { get; set; }
+        public int TotalPages { get; set; }
+        public int TotalCount { get; set; }
+
+
         public string Message { get; set; }
 
         public long OperationTime { get; set; }

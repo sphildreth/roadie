@@ -24,7 +24,7 @@ namespace Roadie.Api.Services
                              IHttpContext httpContext,
                              data.IRoadieDbContext dbContext,
                              ICacheManager cacheManager,
-                             ILogger<ArtistService> logger)
+                             ILogger<CollectionService> logger)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
         }
@@ -76,15 +76,13 @@ namespace Roadie.Api.Services
                           }).Distinct();
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } }) : request.OrderValue(null);
             var rowCount = result.Count();
-            var collectionTotalCount = this.DbContext.Collections.Count();
             var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             sw.Stop();
             return new Library.Models.Pagination.PagedResult<CollectionList>
             {
-                RowCount = rowCount,
-                Current = request.CurrentValue,
-                PageCount = (int)Math.Ceiling((double)rowCount / request.LimitValue),
-                Total = collectionTotalCount,
+                TotalCount = rowCount,
+                CurrentPage = request.PageValue,
+                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
             };

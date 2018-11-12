@@ -203,6 +203,7 @@ namespace Roadie.Api.Controllers
 
         [HttpPost("{id}")]
         [Authorize(Policy ="Editor")]
+        [ProducesResponseType(200)]
         public async Task<IActionResult> Delete(Guid id)
         {
             var result = await this.ImageService.Delete(await this.CurrentUserModel(), id);

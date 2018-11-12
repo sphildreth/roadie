@@ -24,7 +24,7 @@ namespace Roadie.Api.Services
                              IHttpContext httpContext,
                              data.IRoadieDbContext dbContext,
                              ICacheManager cacheManager,
-                             ILogger<ArtistService> logger)
+                             ILogger<PlaylistService> logger)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
         }
@@ -72,15 +72,13 @@ namespace Roadie.Api.Services
                           }).Distinct();
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Playlist.Text", "ASC" } }) : request.OrderValue(null);
             var rowCount = result.Count();
-            var playlistTotalCount = this.DbContext.Playlists.Include("User").Where(x => (userId == null && x.IsPublic) || (userId != null && x.User.RoadieId == userId)).Count();
             var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             sw.Stop();
             return new Library.Models.Pagination.PagedResult<PlaylistList>
             {
-                RowCount = rowCount,
-                Current = request.CurrentValue,
-                PageCount = (int)Math.Ceiling((double)rowCount / request.LimitValue),
-                Total = playlistTotalCount,
+                TotalCount = rowCount,
+                CurrentPage = request.PageValue,
+                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
             };

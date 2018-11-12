@@ -1,7 +1,9 @@
 ﻿using Microsoft.Net.Http.Headers;
 using Roadie.Library;
 using Roadie.Library.Models.Users;
+using Roadie.Library.SearchEngines.Imaging;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Services
@@ -12,9 +14,11 @@ namespace Roadie.Api.Services
 
         Task<FileOperationResult<Library.Models.Image>> CollectionThumbnail(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
-        Task<OperationResult<bool>> Delete(User roadieUser, Guid id);
+        Task<OperationResult<bool>> Delete(User user, Guid id);
 
         Task<FileOperationResult<Library.Models.Image>> ImageById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+
+        Task<OperationResult<IEnumerable<ImageSearchResult>>> ImageProvidersSearch(string query);
 
         Task<FileOperationResult<Library.Models.Image>> LabelThumbnail(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 

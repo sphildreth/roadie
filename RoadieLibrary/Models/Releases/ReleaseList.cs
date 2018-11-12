@@ -11,10 +11,9 @@ namespace Roadie.Library.Models.Releases
     public class ReleaseList : EntityInfoModelBase
     {
         public DataToken Release { get; set; }
-        public Guid ArtistId { get; set; }
-        public string ArtistName { get; set; }
+        public DataToken Artist { get; set; }
         public Image ArtistThumbnail { get; set; }
-        public LibraryStatus LibraryStatus { get; set; }
+        public LibraryStatus? LibraryStatus { get; set; }
         public IEnumerable<ReleaseMediaList> Media { get; set; }
         public short? Rating { get; set; }
 
@@ -43,5 +42,6 @@ namespace Roadie.Library.Models.Releases
         public int? TrackCount { get; set; }
         public int? TrackPlayedCount { get; set; }
         public short? UserRating { get; set; }
+        public Statuses? Status { get; set; }
     }
 }

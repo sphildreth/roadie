@@ -7,6 +7,10 @@ namespace Roadie.Library.Configuration
     public sealed class RoadieSettings : IRoadieSettings
     {
         /// <summary>
+        /// Set to the Roadie Database for DbDataReader operations
+        /// </summary>
+        public string ConnectionString { get; set; }
+        /// <summary>
         /// If the artist name is found in the values then use the key.
         /// <remark>This was desgined to handle 'AC/DC' type names as they contain the ID3 v2.3 spec artist seperator</remark>
         /// </summary>

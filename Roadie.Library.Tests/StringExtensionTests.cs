@@ -256,7 +256,7 @@ namespace Roadie.Library.Tests
             Assert.NotNull(ti);
             Assert.True(ti.Seconds > 0);
 
-            var s = ti.ToString("{DaysFormatted}:{HoursForamtted}:{MinutesFormatted}:{Seconds}");
+            var s = ti.ToString();
             var s1 = ti.ToFullFormattedString();
             Assert.Equal(s, s1);
 

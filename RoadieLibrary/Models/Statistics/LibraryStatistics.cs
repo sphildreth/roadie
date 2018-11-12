@@ -101,7 +101,8 @@ namespace Roadie.Library.Models.Statistics
                 if (this.TotalTrackDuration.HasValue)
                 {
                     var ti = new TimeInfo(this.TotalTrackDuration.Value);
-                    return ti.ToFullFormattedString();
+                    var t= ti.ToFullFormattedString();
+                    return t;
                 }
                 return "--:--:--";
             }

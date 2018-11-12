@@ -5,11 +5,15 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Data;
 using Roadie.Library.Identity;
+using Roadie.Library.Models.Pagination;
 using System;
 using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
 using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
@@ -20,10 +24,13 @@ namespace Roadie.Api.Controllers
     [Authorize]
     public class TrackController : EntityControllerBase
     {
-        public TrackController(ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+        private ITrackService TrackService { get; }
+
+        public TrackController(ITrackService trackService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.TrackController"); ;
+            this._logger = logger.CreateLogger("RoadieApi.Controllers.TrackController");
+            this.TrackService = trackService;
         }
 
         //[EnableQuery]
@@ -53,5 +60,32 @@ namespace Roadie.Api.Controllers
         //    }
         //    return Ok(result);
         //}
+
+        [HttpPost("playactivity")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> PlayActivity(PagedRequest request)
+        {
+            var result = await this.TrackService.PlayActivityList(request);
+                                                               
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("playactivity/{userId}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> PlayActivity(PagedRequest request, Guid userId)
+        {
+            var user = await this.UserManager.FindByIdAsync(userId.ToString());
+            var result = await this.TrackService.PlayActivityList(request, user.Adapt<Library.Models.Users.User>());
+
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
     }
 }

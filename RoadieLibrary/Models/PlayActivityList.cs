@@ -8,7 +8,7 @@ namespace Roadie.Library.Models
     public class PlayActivityList
     {
         public DataToken Artist { get; set; }
-        public string ArtistThumbnailUrl { get; set; }
+        public Image ArtistThumbnail { get; set; }
 
         public string PlayedDate
         {
@@ -24,13 +24,13 @@ namespace Roadie.Library.Models
         public int? Rating { get; set; }
         public DataToken Release { get; set; }
         public string ReleasePlayUrl { get; set; }
-        public string ReleaseThumbnailUrl { get; set; }
+        public Image ReleaseThumbnail { get; set; }
         public DataToken Track { get; set; }
         public DataToken TrackArtist { get; set; }
         public string TrackPlayUrl { get; set; }
         public DataToken User { get; set; }
         public int? UserRating { get; set; }
-        public string UserThumbnailUrl { get; set; }
+        public Image UserThumbnail { get; set; }
         public UserTrack UserTrack { get; set; }
     }
 }

@@ -20,12 +20,12 @@ namespace Roadie.Library.Models.Pagination
             }
         }
 
-        public int? Current { get; set; }
-        public int CurrentValue
+        public int? Page { get; set; }
+        public int PageValue
         {
             get
             {
-                return this.Current ?? 1;
+                return this.Page ?? 1;
             }
         }
         public string Sort { get; set; }
@@ -43,20 +43,17 @@ namespace Roadie.Library.Models.Pagination
                 return this.Limit ?? 50;
             }
         }
-        public int? Skip { get; set; }
         public int SkipValue
         {
             get
             {
-                if (this.Current.HasValue)
+                if (this.Page.HasValue)
                 {
-                    return (this.Current.Value * this.LimitValue) - this.LimitValue;
+                    return (this.Page.Value * this.LimitValue) - this.LimitValue;
                 }
                 return 0;
             }
         }
-        public string Inc { get; set; }
-
         public string Filter { get; set; }
         public string Filtervalue
         {
@@ -88,13 +85,13 @@ namespace Roadie.Library.Models.Pagination
         }
 
         public bool FilterOnlyMissing { get; set; }
-        public string UserId { get; set; }
-        public string UserIdValue
-        {
-            get
-            {
-                return this.UserId ?? string.Empty;
-            }
-        }
+
+        public Guid? FilterToArtistId { get; set; }
+
+        public int? FilterMinimumRating { get; set; }
+
+        public PagedRequest()
+        { }
+
     }
 }

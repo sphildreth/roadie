@@ -220,8 +220,11 @@ namespace Roadie.Api.Services
                                                                  Text = r.Title,
                                                                  Value = r.RoadieId.ToString()
                                                              },
-                                                             ArtistId = r.Artist.RoadieId,
-                                                             ArtistName = r.Artist.Name,
+                                                             Artist = new DataToken
+                                                             {
+                                                                 Value = r.Artist.RoadieId.ToString(),
+                                                                 Text = r.Artist.Name
+                                                             },
                                                              ArtistThumbnail = MakeArtistThumbnailImage(r.Artist.RoadieId),
                                                              Rating = userR != null ? userR.Rating : r.Rating,
                                                              ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ r.RoadieId}",
