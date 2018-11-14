@@ -6,7 +6,7 @@ namespace Roadie.Library.Models.Users
     {
         public DateTime? LastPlayed { get; set; }
         public int? PlayedCount { get; set; }
-        public Guid TrackId { get; set; }
-        public Guid UserId { get; set; }
+        public DataToken Track { get; set; }
+        public DataToken User { get; set; }
     }
 }

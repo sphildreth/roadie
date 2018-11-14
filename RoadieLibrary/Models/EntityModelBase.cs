@@ -26,12 +26,6 @@ namespace Roadie.Library.Models
             }
         }
 
-        /// <summary>
-        /// Set when the user has created a bookmark for the object.
-        /// </summary>
-        public Guid? UserBookmarkId { get; set; }
-
-
         public DateTime? BeginDate { get; set; }
 
         [Required]
@@ -85,6 +79,8 @@ namespace Roadie.Library.Models
                 return this.URLs.Split('|');
             }
         }
+
+        public BookmarkList UserBookmark { get; set; }
 
         public EntityModelBase()
         {

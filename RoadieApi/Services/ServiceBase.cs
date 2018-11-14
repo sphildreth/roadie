@@ -1,12 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Mapster;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
 using Roadie.Library.Models;
+using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using data = Roadie.Library.Data;
 
@@ -123,6 +126,9 @@ namespace Roadie.Api.Services
             return this.CacheManager.Get(data.Release.CacheUrn(id), () =>
             {
                 return this.DbContext.Releases
+                                    .Include(x => x.Artist)
+                                    .Include(x => x.Genres)
+                                    .Include("Genres.Genre")
                                     .FirstOrDefault(x => x.RoadieId == id);
             }, data.Release.CacheRegionUrn(id));
         }
@@ -143,6 +149,105 @@ namespace Roadie.Api.Services
                 return this.DbContext.Tracks
                                     .FirstOrDefault(x => x.RoadieId == id);
             }, data.Track.CacheRegionUrn(id));
+        }
+
+        protected List<BookmarkList> GetUserBookmarks(User roadieUser)
+        {
+            return this.CacheManager.Get($"urn:user_bookmarks:{ roadieUser.Id }", () =>
+            {
+                var bookmarks = from b in this.DbContext.Bookmarks
+                                join a in this.DbContext.Artists on b.BookmarkTargetId equals a.Id into aa
+                                from a in aa.DefaultIfEmpty()
+                                join r in this.DbContext.Releases on b.BookmarkTargetId equals r.Id into rr
+                                from r in rr.DefaultIfEmpty()
+                                join t in this.DbContext.Tracks on b.BookmarkTargetId equals t.Id into tt
+                                from t in tt.DefaultIfEmpty()
+                                join p in this.DbContext.Playlists on b.BookmarkTargetId equals p.Id into pp
+                                from p in pp.DefaultIfEmpty()
+                                join c in this.DbContext.Collections on b.BookmarkTargetId equals c.Id into cc
+                                from c in cc.DefaultIfEmpty()
+                                join l in this.DbContext.Labels on b.BookmarkTargetId equals l.Id into ll
+                                from l in ll.DefaultIfEmpty()
+                                where b.UserId == roadieUser.Id
+                                select new
+                                {
+                                    b,
+                                    a,
+                                    r,
+                                    t,
+                                    p,
+                                    c,
+                                    l
+                                };
+
+                var result = new List<BookmarkList>();
+                foreach (var bookmark in bookmarks)
+                {
+                    var b = bookmark.b.Adapt<BookmarkList>();
+                    if(bookmark.a != null)
+                    {
+                        b.Bookmark = new DataToken
+                        {
+                            Text = bookmark.a.Name,
+                            Value = bookmark.a.RoadieId.ToString()
+                        };
+                        b.Thumbnail = this.MakeArtistThumbnailImage(bookmark.a.RoadieId);
+                        continue;
+                    }
+                    if (bookmark.r != null)
+                    {
+                        b.Bookmark = new DataToken
+                        {
+                            Text = bookmark.r.Title,
+                            Value = bookmark.r.RoadieId.ToString()
+                        };
+                        b.Thumbnail = this.MakeReleaseThumbnailImage(bookmark.r.RoadieId);
+                        continue;
+                    }
+                    if (bookmark.t != null)
+                    {
+                        b.Bookmark = new DataToken
+                        {
+                            Text = bookmark.t.Title,
+                            Value = bookmark.t.RoadieId.ToString()
+                        };
+                        b.Thumbnail = this.MakeTrackThumbnailImage(bookmark.t.RoadieId);
+                        continue;
+                    }
+                    if (bookmark.p != null)
+                    {
+                        b.Bookmark = new DataToken
+                        {
+                            Text = bookmark.p.Name,
+                            Value = bookmark.p.RoadieId.ToString()
+                        };
+                        b.Thumbnail = this.MakePlaylistThumbnailImage(bookmark.p.RoadieId);
+                        continue;
+                    }
+                    if (bookmark.c != null)
+                    {
+                        b.Bookmark = new DataToken
+                        {
+                            Text = bookmark.c.Name,
+                            Value = bookmark.c.RoadieId.ToString()
+                        };
+                        b.Thumbnail = this.MakeCollectionThumbnailImage(bookmark.c.RoadieId);
+                        continue;
+                    }
+                    if (bookmark.l != null)
+                    {
+                        b.Bookmark = new DataToken
+                        {
+                            Text = bookmark.l.Name,
+                            Value = bookmark.l.RoadieId.ToString()
+                        };
+                        b.Thumbnail = this.MakeLabelThumbnailImage(bookmark.l.RoadieId);
+                        continue;
+                    }
+                    result.Add(b);
+                }
+                return result;
+            }, ApplicationUser.CacheRegionUrn(roadieUser.UserId));
         }
 
         protected Image MakeArtistThumbnailImage(Guid id)
@@ -173,6 +278,11 @@ namespace Roadie.Api.Services
         protected Image MakeReleaseThumbnailImage(Guid id)
         {
             return MakeThumbnailImage(id, "release");
+        }
+
+        protected Image MakeTrackThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "track");
         }
 
         protected Image MakeUserThumbnailImage(Guid id)

@@ -1,4 +1,4 @@
-﻿using Roadie.Library.Models.Collections;
+﻿using Roadie.Library.Enums;
 using System;
 
 namespace Roadie.Library.Models.Releases
@@ -6,8 +6,10 @@ namespace Roadie.Library.Models.Releases
     [Serializable]
     public class ReleaseInCollection
     {
-        public Collection Collection { get; set; }
+        public DataToken Collection { get; set; }
 
+        public Image CollectionImage { get; set; }
+        public CollectionType? CollectionType { get; set; }
         public int ListNumber { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Roadie.Library.Models.Users;
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -9,8 +10,6 @@ namespace Roadie.Library.Models
     {
         [MaxLength(50)]
         public string AmgId { get; set; }
-
-        //        public Artist Artist { get; set; }
 
         public Guid ArtistId { get; set; }
 
@@ -50,5 +49,7 @@ namespace Roadie.Library.Models
 
         [Required]
         public short TrackNumber { get; set; }
+
+        public UserTrack UserRating { get; set; }
     }
 }

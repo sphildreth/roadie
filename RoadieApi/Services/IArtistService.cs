@@ -11,7 +11,7 @@ namespace Roadie.Api.Services
     public interface IArtistService
     {
         Task<OperationResult<bool>> AddArtist(Artist artist);
-        Task<OperationResult<Artist>> ArtistById(User roadieUser, Guid id, IEnumerable<string> includes);
+        Task<OperationResult<Artist>> ById(User roadieUser, Guid id, IEnumerable<string> includes);
         Task<OperationResult<Artist>> ArtistByName(string name, IEnumerable<string> includes);
         Task<OperationResult<bool>> DeleteArtist(Guid id);
         Task<OperationResult<bool>> DeleteArtistReleases(Guid roadieId);

@@ -40,34 +40,23 @@ namespace Roadie.Api.Controllers
         //    return Ok(this._RoadieDbContext.Releases.ProjectToType<models.Releases.Release>());
         //}
 
-        //[HttpGet("{id}")]
-        //[ProducesResponseType(200)]
-        //[ProducesResponseType(404)]
-        //public IActionResult Get(Guid id)
-        //{
-        //    var key = id.ToString();
-        //    var result = this._cacheManager.Get<models.Releases.Release>(key, () =>
-        //    {
-        //        var d = this._RoadieDbContext
-        //                    .Releases
-        //                    .Include(x => x.Artist)
-        //                    .Include(x => x.Labels).Include("Labels.Label")
-        //                    .Include(x => x.Medias).Include("Medias.Tracks")
-        //                    .Include(x => x.Genres).Include("Genres.Genre")
-        //                    .Include(x => x.Collections).Include("Collections.Collection")
-        //                    .FirstOrDefault(x => x.RoadieId == id);
-        //        if (d != null)
-        //        {
-        //            return d.Adapt<models.Releases.Release>();
-        //        }
-        //        return null;
-        //    }, key);
-        //    if (result == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    return Ok(result);
-        //}
+        [HttpGet("{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<Artist>> Get(Guid id, string inc = null)
+        {
+            var result = await this.ReleaseService.ById(await this.CurrentUserModel(), id, (inc ?? models.Releases.Release.DefaultIncludes).ToLower().Split(","));
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
 
         [HttpPost]
         [ProducesResponseType(200)]

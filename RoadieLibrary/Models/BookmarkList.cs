@@ -9,7 +9,7 @@ namespace Roadie.Library.Models
     public class BookmarkList : EntityInfoModelBase
     {
         public DataToken Bookmark { get; set; }
-        public string ThumbnailUrl { get; set; }
+        public Image Thumbnail { get; set; }
         public BookmarkType Type { get; set; }
     }
 }

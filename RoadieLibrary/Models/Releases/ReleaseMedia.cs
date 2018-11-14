@@ -13,6 +13,6 @@ namespace Roadie.Library.Models.Releases
         [Required]
         public short TrackCount { get; set; }
 
-        public List<Track> Tracks { get; set; }
+        public List<TrackList> Tracks { get; set; }
     }
 }

@@ -48,14 +48,24 @@ namespace Roadie.Api.Services
             throw new NotImplementedException();
         }
 
-        public async Task<OperationResult<Artist>> ArtistById(User roadieUser, Guid id, IEnumerable<string> includes)
+        public async Task<OperationResult<Artist>> ById(User roadieUser, Guid id, IEnumerable<string> includes)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
             var cacheKey = string.Format("urn:artist_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
             var result = await this.CacheManager.GetAsync<OperationResult<Artist>>(cacheKey, async () => {
-                return await this.ArtistByIdAction(roadieUser, id, includes);
+                return await this.ArtistByIdAction(id, includes);
             }, data.Artist.CacheRegionUrn(id));
+            if(result?.Data != null && roadieUser != null)
+            {
+                var artist = this.GetArtist(id);
+                result.Data.UserBookmark = this.GetUserBookmarks(roadieUser).FirstOrDefault(x => x.Type == BookmarkType.Artist && x.Bookmark.Value == artist.RoadieId.ToString());
+                var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == roadieUser.Id);
+                if (userArtist != null)
+                {
+                    result.Data.UserRating = userArtist.Adapt<UserArtist>();
+                }                
+            }
             sw.Stop();
             return new OperationResult<Artist>(result.Messages)
             {
@@ -66,9 +76,8 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<Artist>> ArtistByIdAction(User roadieUser, Guid id, IEnumerable<string> includes)
+        private async Task<OperationResult<Artist>> ArtistByIdAction(Guid id, IEnumerable<string> includes)
         {
-            roadieUser = roadieUser ?? new User();
             var sw = Stopwatch.StartNew();
             sw.Start();
 
@@ -80,11 +89,7 @@ namespace Roadie.Api.Services
             }
             var result = artist.Adapt<Artist>();
             result.Thumbnail = base.MakeArtistThumbnailImage(id);
-            result.UserBookmarkId = (from b in this.DbContext.Bookmarks
-                                     where b.UserId == roadieUser.Id
-                                     where b.BookmarkTargetId == artist.Id
-                                     where b.BookmarkType == BookmarkType.Artist
-                                     select b.RoadieId).FirstOrDefault();
+
             result.Genres = artist.Genres.Select(x => new DataToken { Text = x.Genre.Name, Value = x.Genre.RoadieId.ToString() });
             if (includes != null && includes.Any())
             {
@@ -209,10 +214,7 @@ namespace Roadie.Api.Services
                     result.ArtistContributionReleases = (from t in this.DbContext.Tracks
                                                          join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                                          join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
-                                                         join userR in this.DbContext.UserReleases on r.Id equals userR.ReleaseId into userRas
-                                                         from userR in userRas.DefaultIfEmpty()
                                                          where t.ArtistId == artist.Id
-                                                         where (userR == null || userR.Id == roadieUser.Id)
                                                          select new ReleaseList
                                                          {
                                                              Release = new DataToken
@@ -226,9 +228,8 @@ namespace Roadie.Api.Services
                                                                  Text = r.Artist.Name
                                                              },
                                                              ArtistThumbnail = MakeArtistThumbnailImage(r.Artist.RoadieId),
-                                                             Rating = userR != null ? userR.Rating : r.Rating,
+                                                             Rating = r.Rating,
                                                              ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ r.RoadieId}",
-                                                             UserRating = userR != null ? (short?)userR.Rating : null,
                                                              LibraryStatus = r.LibraryStatus ?? LibraryStatus.Incomplete,
                                                              ReleaseDateDateTime = r.ReleaseDate,
                                                              TrackCount = r.TrackCount,
@@ -278,15 +279,6 @@ namespace Roadie.Api.Services
                                                TrackCount = trackCount,
                                                Thumbnail = MakeLabelThumbnailImage(l.RoadieId)
                                            }).ToArray().GroupBy(x => x.Label.Value).Select(x => x.First()).OrderBy(x => x.SortName).ThenBy(x => x.Label.Text).ToArray();
-                }
-            }
-
-            if (roadieUser != null)
-            {
-                var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == roadieUser.Id);
-                if (userArtist != null)
-                {
-                    result.UserArtist = userArtist.Adapt<UserArtist>();
                 }
             }
             sw.Stop();

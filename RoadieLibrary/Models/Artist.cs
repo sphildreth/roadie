@@ -91,7 +91,7 @@ namespace Roadie.Library.Models
             }
         }
 
-        public UserArtist UserArtist { get; set; }
+        public UserArtist UserRating { get; set; }
 
         public IEnumerable<CollectionList> CollectionsWithArtistReleases { get; set; }
 

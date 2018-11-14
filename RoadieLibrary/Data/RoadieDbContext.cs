@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Roadie.Library.Enums;
 using Roadie.Library.Identity;
 using System;
@@ -75,8 +76,8 @@ namespace Roadie.Library.Data
                 .Entity<Bookmark>()
                 .Property(e => e.BookmarkType)
                 .HasConversion(
-                    v => v.ToString(),
-                    v => (BookmarkType)Enum.Parse(typeof(BookmarkType), v))
+                    v => v,
+                    v => (BookmarkType)Enum.Parse(typeof(BookmarkType), v.ToString()))
                 .HasDefaultValue(BookmarkType.Unknown);
 
             builder.Entity<ReleaseLabel>()

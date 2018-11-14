@@ -5,7 +5,7 @@ namespace Roadie.Library.Models.Users
     [Serializable]
     public class UserRelease : UserRatingBase
     {
-        public Guid ReleaseId { get; set; }
-        public Guid UserId { get; set; }
+        public DataToken Release { get; set; }
+        public DataToken User { get; set; }
     }
 }

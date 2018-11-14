@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -13,6 +14,7 @@ namespace Roadie.Library
         public T Data { get; set; }
         public IEnumerable<Exception> Errors { get; set; }
         public bool IsSuccess { get; set; }
+        [JsonIgnore]
         public bool IsNotFoundResult { get; set; }
 
         public IEnumerable<string> Messages

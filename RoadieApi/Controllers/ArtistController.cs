@@ -39,7 +39,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<ActionResult<Artist>> Get(Guid id, string inc = null)
         {
-            var result = await this.ArtistService.ArtistById(null, id, (inc ?? Artist.DefaultIncludes).ToLower().Split(","));
+            var result = await this.ArtistService.ById(await this.CurrentUserModel(), id, (inc ?? Artist.DefaultIncludes).ToLower().Split(","));
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
