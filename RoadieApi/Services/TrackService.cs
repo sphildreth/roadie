@@ -44,7 +44,7 @@ namespace Roadie.Api.Services
                               join u in this.DbContext.Users on usertrack.UserId equals u.Id
                               join releaseArtist in this.DbContext.Artists on r.ArtistId equals releaseArtist.Id
                               where ((user == null && !(u.IsPrivate ?? false)) || (user != null && (usertrack != null && usertrack.User.Id == user.Id)))
-                              where (request.Filtervalue.Length == 0 || (request.Filtervalue.Length > 0 && (
+                              where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
                                         t.Title != null && t.Title.ToLower().Contains(request.Filter.ToLower()) ||
                                         t.AlternateNames != null && t.AlternateNames.ToLower().Contains(request.Filter.ToLower())
                               )))

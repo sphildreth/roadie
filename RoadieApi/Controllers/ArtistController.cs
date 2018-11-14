@@ -5,11 +5,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
+using Roadie.Library.Data;
 using Roadie.Library.Identity;
-using Roadie.Library.Models;
+using Roadie.Library.Models.Pagination;
 using System;
 using System.Net;
 using System.Threading.Tasks;
+using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
 {
@@ -39,11 +41,25 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<ActionResult<Artist>> Get(Guid id, string inc = null)
         {
-            var result = await this.ArtistService.ById(await this.CurrentUserModel(), id, (inc ?? Artist.DefaultIncludes).ToLower().Split(","));
+            var result = await this.ArtistService.ById(await this.CurrentUserModel(), id, (inc ?? models.Artist.DefaultIncludes).ToLower().Split(","));
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
             }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> List(PagedRequest request, string inc)
+        {
+            var result = await this.ArtistService.List(roadieUser: await this.CurrentUserModel(),
+                                                        request: request,
+                                                        includes: (inc ?? models.Releases.Release.DefaultIncludes).ToLower().Split(","));
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

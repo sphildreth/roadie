@@ -6,6 +6,6 @@ namespace Roadie.Library.Models.Users
     public class UserArtist : UserRatingBase
     {
         public DataToken Artist { get; set; }
-        public DataToken UserId { get; set; }
+        public DataToken User { get; set; }
     }
 }

@@ -48,7 +48,7 @@ namespace Roadie.Api.Services
                           join u in this.DbContext.Users on pl.UserId equals u.Id
                           where ((userId == null && pl.IsPublic) || (userId != null && u.RoadieId == userId || pl.IsPublic))
                           where (artistId == null || (artistId != null && a.RoadieId == artistId))
-                          where (request.Filtervalue.Length == 0 || (request.Filtervalue.Length > 0 && (
+                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
                                     pl.Name != null && pl.Name.ToLower().Contains(request.Filter.ToLower()))
                           ))
                           select new PlaylistList

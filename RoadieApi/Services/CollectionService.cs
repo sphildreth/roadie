@@ -48,7 +48,7 @@ namespace Roadie.Api.Services
                           from a in aas.DefaultIfEmpty()
                           where (releaseId == null || (releaseId != null && r.RoadieId == releaseId))
                           where (artistId == null || (artistId != null && a.RoadieId == artistId))
-                          where (request.Filtervalue.Length == 0 || (request.Filtervalue.Length > 0 && (
+                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
                                     c.Name != null && c.Name.ToLower().Contains(request.Filter.ToLower()))
                           ))
                           select new CollectionList

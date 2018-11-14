@@ -138,6 +138,9 @@ namespace Roadie.Api.Services
             return this.CacheManager.Get(ApplicationUser.CacheUrn(id), () =>
             {
                 return this.DbContext.Users
+                                    .Include(x => x.ArtistRatings)
+                                    .Include(x => x.ReleaseRatings)
+                                    .Include(x => x.TrackRatings)
                                     .FirstOrDefault(x => x.RoadieId == id);
             }, ApplicationUser.CacheRegionUrn(id));
         }

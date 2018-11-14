@@ -55,7 +55,7 @@ namespace Roadie.Library.Models.Pagination
             }
         }
         public string Filter { get; set; }
-        public string Filtervalue
+        public string FilterValue
         {
             get
             {

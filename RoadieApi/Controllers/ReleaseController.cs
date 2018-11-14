@@ -1,9 +1,6 @@
-﻿using Mapster;
-using Microsoft.AspNet.OData;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
@@ -12,7 +9,6 @@ using Roadie.Library.Data;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using System;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using models = Roadie.Library.Models;
@@ -57,12 +53,11 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-
         [HttpPost]
         [ProducesResponseType(200)]
         public async Task<IActionResult> List(PagedRequest request, string inc)
         {
-            var result = await this.ReleaseService.ReleaseList(user: await this.CurrentUserModel(),
+            var result = await this.ReleaseService.List(user: await this.CurrentUserModel(),
                                                                request: request,
                                                                includes: (inc ?? models.Releases.Release.DefaultIncludes).ToLower().Split(","));
             if (!result.IsSuccess)
@@ -76,7 +71,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> RandomList(PagedRequest request, string inc)
         {
-            var result = await this.ReleaseService.ReleaseList(user: await this.CurrentUserModel(),
+            var result = await this.ReleaseService.List(user: await this.CurrentUserModel(),
                                                                request: request,
                                                                doRandomize: true,
                                                                includes: (inc ?? models.Releases.Release.DefaultIncludes).ToLower().Split(","));

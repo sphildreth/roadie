@@ -1,7 +1,6 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -18,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 
@@ -43,11 +43,6 @@ namespace Roadie.Api.Services
             this.PlaylistService = playlistService;
         }
 
-        public async Task<OperationResult<bool>> AddArtist(Artist artist)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<OperationResult<Artist>> ById(User roadieUser, Guid id, IEnumerable<string> includes)
         {
             var sw = Stopwatch.StartNew();
@@ -63,7 +58,12 @@ namespace Roadie.Api.Services
                 var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == roadieUser.Id);
                 if (userArtist != null)
                 {
-                    result.Data.UserRating = userArtist.Adapt<UserArtist>();
+                    result.Data.UserRating = new UserArtist
+                    {
+                        IsDisliked = userArtist.IsDisliked ?? false,
+                        IsFavorite = userArtist.IsFavorite ?? false,
+                        Rating = userArtist.Rating
+                    };
                 }                
             }
             sw.Stop();
@@ -290,79 +290,83 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Artist>> ArtistByName(string name, IEnumerable<string> includes)
+        public async Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
         {
-            throw new NotImplementedException();
+            var sw = new Stopwatch();
+            sw.Start();
+            if (!string.IsNullOrEmpty(request.Sort))
+            {
+                request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
+                request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
+            }
+            var result = (from a in this.DbContext.Artists
+                            where (request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value)
+                            where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue)))
+                            select new ArtistList
+                            {
+                                DatabaseId = a.Id,
+                                Id = a.RoadieId,
+                                Artist = new DataToken
+                                {
+                                    Text = a.Name,
+                                    Value = a.RoadieId.ToString()
+                                },
+                                Thumbnail = this.MakeArtistThumbnailImage(a.RoadieId),
+                                Rating = a.Rating,
+                                CreatedDate = a.CreatedDate,
+                                LastUpdated = a.LastUpdated,
+                                ArtistPlayedCount = 0,
+                                ArtistReleaseCount = 0,
+                                ArtistTrackCount = 0,
+                                SortName = a.SortName
+                            }).Distinct();
+
+            ArtistList[] rows = null;
+            var rowCount = result.Count();
+            if (doRandomize ?? false)
+            {
+                request.Limit = request.LimitValue > roadieUser.RandomReleaseLimit ? roadieUser.RandomReleaseLimit : request.LimitValue;
+                rows = result.OrderBy(x => Guid.NewGuid()).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            }
+            else
+            {
+                string sortBy = null;
+                if (request.ActionValue == User.ActionKeyUserRated)
+                {
+                    sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Rating", "DESC" }, { "Artist.Text", "ASC" } }) : request.OrderValue(null);
+                }
+                else
+                {
+                    sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Artist.Text", "ASC" } }) : request.OrderValue(null);
+                }
+                rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            }
+            if(rows.Any() && roadieUser != null)
+            {
+                foreach(var userArtistRating in this.GetUser(roadieUser.UserId).ArtistRatings.Where(x => rows.Select(r => r.DatabaseId).Contains(x.ArtistId)))
+                {
+                    var row = rows.FirstOrDefault(x => x.DatabaseId == userArtistRating.ArtistId);
+                    if(row != null)
+                    {
+                        row.UserRating = new UserArtist
+                        {
+                            IsDisliked = userArtistRating.IsDisliked ?? false,
+                            IsFavorite = userArtistRating.IsFavorite ?? false,
+                            Rating = userArtistRating.Rating
+                        };
+                    }
+                }
+            }
+            sw.Stop();
+            return new Library.Models.Pagination.PagedResult<ArtistList>
+            {
+                TotalCount = rowCount,
+                CurrentPage = request.PageValue,
+                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
+                OperationTime = sw.ElapsedMilliseconds,
+                Rows = rows
+            };
         }
 
-        public async Task<OperationResult<bool>> DeleteArtist(Guid id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult<bool>> DeleteArtistReleases(Guid roadieId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<PagedResult<ArtistList>> List(PagedRequest request)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult<bool>> MergeArtists(Guid artistId, Guid mergeInfoArtistId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult<bool>> MergeReleases(Guid artistId, string releaseIdToMerge, string releaseIdToMergeInto, bool addAsMedia)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult<bool>> RefreshArtistMetaData(Guid artistId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult<bool>> RescanArtist(Guid artistId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult<bool>> SetImage(Guid id, byte[] imageBytes)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult<bool>> SetImageByImageId(Guid artistId, Guid imageId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult<bool>> SetImageViaUrl(Guid id, string imageUrl)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult<bool>> SetUserRating(Guid artistId, Guid userId, short rating)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult<bool>> ToggleUserDislikeArtist(Guid artistId, Guid UserId, bool dislike)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult<bool>> ToggleUserFavoriteArtist(Guid artistId, Guid UserId, bool favorite)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult<bool>> UpdateArtist(Artist ea)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

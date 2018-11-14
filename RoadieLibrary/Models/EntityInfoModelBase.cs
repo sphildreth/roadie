@@ -8,6 +8,13 @@ namespace Roadie.Library.Models
     [Serializable]
     public abstract class EntityInfoModelBase
     {
+        /// <summary>
+        /// This is the "id" of the record in the database and is only used during composition, not stored in cache and not returned in results.
+        /// </summary>
+        [AdaptIgnore]
+        [JsonIgnore]
+        public int DatabaseId { get; set; }
+
         [Key]
         [Required]
         [AdaptMember("RoadieId")]

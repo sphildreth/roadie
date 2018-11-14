@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using Newtonsoft.Json;
 using Roadie.Library.Enums;
+using Roadie.Library.Models.Users;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -41,7 +42,7 @@ namespace Roadie.Library.Models.Releases
         public Image Thumbnail { get; set; }
         public int? TrackCount { get; set; }
         public int? TrackPlayedCount { get; set; }
-        public short? UserRating { get; set; }
+        public UserRelease UserRating { get; set; }
         public Statuses? Status { get; set; }
     }
 }
