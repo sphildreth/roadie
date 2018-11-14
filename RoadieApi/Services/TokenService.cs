@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
-using Roadie.Library.Data;
 using Roadie.Library.Identity;
 using System;
 using System.IdentityModel.Tokens.Jwt;

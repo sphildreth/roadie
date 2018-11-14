@@ -58,8 +58,7 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> List(PagedRequest request, string inc)
         {
             var result = await this.ReleaseService.List(user: await this.CurrentUserModel(),
-                                                               request: request,
-                                                               includes: (inc ?? models.Releases.Release.DefaultIncludes).ToLower().Split(","));
+                                                               request: request);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
@@ -69,12 +68,11 @@ namespace Roadie.Api.Controllers
 
         [HttpPost("random")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> RandomList(PagedRequest request, string inc)
+        public async Task<IActionResult> RandomList(PagedRequest request)
         {
             var result = await this.ReleaseService.List(user: await this.CurrentUserModel(),
                                                                request: request,
-                                                               doRandomize: true,
-                                                               includes: (inc ?? models.Releases.Release.DefaultIncludes).ToLower().Split(","));
+                                                               doRandomize: true);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

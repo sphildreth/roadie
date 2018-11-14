@@ -1,7 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
-using Roadie.Library.Models.Pagination;
+﻿using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Playlists;
+using System;
+using System.Threading.Tasks;
 
 namespace Roadie.Api.Services
 {

@@ -133,6 +133,15 @@ namespace Roadie.Api.Services
             }, data.Release.CacheRegionUrn(id));
         }
 
+        protected data.Track GetTrack(Guid id)
+        {
+            return this.CacheManager.Get(data.Track.CacheUrn(id), () =>
+            {
+                return this.DbContext.Tracks
+                                    .FirstOrDefault(x => x.RoadieId == id);
+            }, data.Track.CacheRegionUrn(id));
+        }
+
         protected ApplicationUser GetUser(Guid id)
         {
             return this.CacheManager.Get(ApplicationUser.CacheUrn(id), () =>
@@ -143,15 +152,6 @@ namespace Roadie.Api.Services
                                     .Include(x => x.TrackRatings)
                                     .FirstOrDefault(x => x.RoadieId == id);
             }, ApplicationUser.CacheRegionUrn(id));
-        }
-
-        protected data.Track GetTrack(Guid id)
-        {
-            return this.CacheManager.Get(data.Track.CacheUrn(id), () =>
-            {
-                return this.DbContext.Tracks
-                                    .FirstOrDefault(x => x.RoadieId == id);
-            }, data.Track.CacheRegionUrn(id));
         }
 
         protected List<BookmarkList> GetUserBookmarks(User roadieUser)
@@ -187,7 +187,7 @@ namespace Roadie.Api.Services
                 foreach (var bookmark in bookmarks)
                 {
                     var b = bookmark.b.Adapt<BookmarkList>();
-                    if(bookmark.a != null)
+                    if (bookmark.a != null)
                     {
                         b.Bookmark = new DataToken
                         {
@@ -295,7 +295,7 @@ namespace Roadie.Api.Services
 
         private Image MakeThumbnailImage(Guid id, string type)
         {
-            return new Image($"{this.HttpContext.ImageBaseUrl }/{ type }/thumbnail/{id}");
+            return new Image($"{this.HttpContext.ImageBaseUrl }/thumbnail/{ type }/{id}");
         }
     }
 }

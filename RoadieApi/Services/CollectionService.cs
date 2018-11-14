@@ -6,6 +6,7 @@ using Roadie.Library.Enums;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Collections;
 using Roadie.Library.Models.Pagination;
+using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -29,7 +30,7 @@ namespace Roadie.Api.Services
         {
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<CollectionList>> CollectionList(PagedRequest request, Guid? releaseId = null, Guid? artistId = null)
+        public async Task<Library.Models.Pagination.PagedResult<CollectionList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null, Guid? artistId = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -40,28 +41,14 @@ namespace Roadie.Api.Services
                 request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
             }
             var result = (from c in this.DbContext.Collections
-                          join cr in this.DbContext.CollectionReleases on c.Id equals cr.CollectionId into crs
-                          from cr in crs.DefaultIfEmpty()
-                          join r in this.DbContext.Releases on cr.ReleaseId equals r.Id into rs
-                          from r in rs.DefaultIfEmpty()
-                          join a in this.DbContext.Artists on r.ArtistId equals a.Id into aas
-                          from a in aas.DefaultIfEmpty()
-                          where (releaseId == null || (releaseId != null && r.RoadieId == releaseId))
-                          where (artistId == null || (artistId != null && a.RoadieId == artistId))
-                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
-                                    c.Name != null && c.Name.ToLower().Contains(request.Filter.ToLower()))
-                          ))
+                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && c.Name.Contains(request.Filter)))
                           select new CollectionList
                           {
+                              DatabaseId = c.Id,
                               Collection = new DataToken
                               {
                                   Text = c.Name,
                                   Value = c.RoadieId.ToString()
-                              },
-                              Release = new DataToken
-                              {
-                                  Text = artistId != null && r != null ? r.Title : null,
-                                  Value = artistId != null && r != null ? r.RoadieId.ToString() : null
                               },
                               Id = c.RoadieId,
                               CollectionCount = c.CollectionCount,
@@ -69,11 +56,23 @@ namespace Roadie.Api.Services
                               CollectionFoundCount = (from crc in this.DbContext.CollectionReleases
                                                       where crc.CollectionId == c.Id
                                                       select crc.Id).Count(),
-                              CollectionPosition = (releaseId != null || artistId != null) ? (int?)cr.ListNumber : null,
                               CreatedDate = c.CreatedDate,
                               LastUpdated = c.LastUpdated,
                               Thumbnail = MakeCollectionThumbnailImage(c.RoadieId)
-                          }).Distinct();
+                          });
+            if(artistId.HasValue || releaseId.HasValue)
+            {
+                result = (from re in result
+                          join cr in this.DbContext.CollectionReleases on re.DatabaseId equals cr.CollectionId into crs
+                          from cr in crs.DefaultIfEmpty()
+                          join r in this.DbContext.Releases on cr.ReleaseId equals r.Id into rs
+                          from r in rs.DefaultIfEmpty()
+                          join a in this.DbContext.Artists on r.ArtistId equals a.Id into aas
+                          from a in aas.DefaultIfEmpty()
+                          where (releaseId == null || r.RoadieId == releaseId)
+                          where (artistId == null ||  a.RoadieId == artistId)
+                          select re);
+            }
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } }) : request.OrderValue(null);
             var rowCount = result.Count();
             var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();

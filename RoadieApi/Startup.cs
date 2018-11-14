@@ -136,6 +136,8 @@ namespace Roadie.Api
             services.AddScoped<IImageService, ImageService>();
             services.AddScoped<IReleaseService, ReleaseService>();
             services.AddScoped<ITrackService, TrackService>();
+            services.AddScoped<ILabelService, LabelService>();
+
 
             var securityKey = new SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration["Tokens:PrivateKey"]));
             services.AddAuthentication(options =>

@@ -1,5 +1,4 @@
 ﻿using Mapster;
-using Microsoft.AspNet.OData;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -7,14 +6,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
-using Roadie.Library.Data;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using System;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
 {
@@ -66,7 +62,7 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> PlayActivity(PagedRequest request)
         {
             var result = await this.TrackService.PlayActivityList(request);
-                                                               
+
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

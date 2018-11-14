@@ -13,20 +13,20 @@ using System.Threading.Tasks;
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("label")]
+    [Route("collection")]
     [ApiController]
     [Authorize]
-    public class LabelController : EntityControllerBase
+    public class CollectionController : EntityControllerBase
     {
-        private ILabelService LabelService { get; }
+        private ICollectionService CollectionService { get; }
 
-        public LabelController(ILabelService labelService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+        public CollectionController(ICollectionService collectionService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
             this._logger = logger.CreateLogger("RoadieApi.Controllers.LabelController");
-            this.LabelService = labelService;
+            this.CollectionService = collectionService;
         }
-            
+
         //[EnableQuery]
         //public IActionResult Get()
         //{
@@ -59,8 +59,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> List(PagedRequest request)
         {
-            var result = await this.LabelService.List(roadieUser: await this.CurrentUserModel(),
-                                                        request: request);
+            var result = await this.CollectionService.List(roadieUser: await this.CurrentUserModel(),
+                                                           request: request);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

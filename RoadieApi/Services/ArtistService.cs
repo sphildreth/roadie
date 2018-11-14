@@ -23,7 +23,8 @@ using data = Roadie.Library.Data;
 
 namespace Roadie.Api.Services
 {
-    #pragma warning disable 1998
+#pragma warning disable 1998
+
     public class ArtistService : ServiceBase, IArtistService
     {
         private ICollectionService CollectionService { get; } = null;
@@ -48,10 +49,11 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             sw.Start();
             var cacheKey = string.Format("urn:artist_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
-            var result = await this.CacheManager.GetAsync<OperationResult<Artist>>(cacheKey, async () => {
+            var result = await this.CacheManager.GetAsync<OperationResult<Artist>>(cacheKey, async () =>
+            {
                 return await this.ArtistByIdAction(id, includes);
             }, data.Artist.CacheRegionUrn(id));
-            if(result?.Data != null && roadieUser != null)
+            if (result?.Data != null && roadieUser != null)
             {
                 var artist = this.GetArtist(id);
                 result.Data.UserBookmark = this.GetUserBookmarks(roadieUser).FirstOrDefault(x => x.Type == BookmarkType.Artist && x.Bookmark.Value == artist.RoadieId.ToString());
@@ -64,13 +66,14 @@ namespace Roadie.Api.Services
                         IsFavorite = userArtist.IsFavorite ?? false,
                         Rating = userArtist.Rating
                     };
-                }                
+                }
             }
             sw.Stop();
             return new OperationResult<Artist>(result.Messages)
             {
                 Data = result?.Data,
-                Errors = result?.Errors,                
+                Errors = result?.Errors,
+                IsNotFoundResult = result?.IsNotFoundResult ?? false,
                 IsSuccess = result?.IsSuccess ?? false,
                 OperationTime = sw.ElapsedMilliseconds
             };
@@ -195,7 +198,8 @@ namespace Roadie.Api.Services
                 }
                 if (includes.Contains("collections"))
                 {
-                    var r = await this.CollectionService.CollectionList(request: new PagedRequest(), artistId: artist.RoadieId);
+                    var r = await this.CollectionService.List(roadieUser: null, 
+                                                              request: new PagedRequest(), artistId: artist.RoadieId);
                     if (r.IsSuccess)
                     {
                         result.CollectionsWithArtistReleases = r.Rows.ToArray();
@@ -290,7 +294,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
+        public async Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -300,26 +304,26 @@ namespace Roadie.Api.Services
                 request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
             }
             var result = (from a in this.DbContext.Artists
-                            where (request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value)
-                            where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue)))
-                            select new ArtistList
-                            {
-                                DatabaseId = a.Id,
-                                Id = a.RoadieId,
-                                Artist = new DataToken
-                                {
-                                    Text = a.Name,
-                                    Value = a.RoadieId.ToString()
-                                },
-                                Thumbnail = this.MakeArtistThumbnailImage(a.RoadieId),
-                                Rating = a.Rating,
-                                CreatedDate = a.CreatedDate,
-                                LastUpdated = a.LastUpdated,
-                                ArtistPlayedCount = 0,
-                                ArtistReleaseCount = 0,
-                                ArtistTrackCount = 0,
-                                SortName = a.SortName
-                            }).Distinct();
+                          where (request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value)
+                          where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue)))
+                          select new ArtistList
+                          {
+                              DatabaseId = a.Id,
+                              Id = a.RoadieId,
+                              Artist = new DataToken
+                              {
+                                  Text = a.Name,
+                                  Value = a.RoadieId.ToString()
+                              },
+                              Thumbnail = this.MakeArtistThumbnailImage(a.RoadieId),
+                              Rating = a.Rating,
+                              CreatedDate = a.CreatedDate,
+                              LastUpdated = a.LastUpdated,
+                              ArtistPlayedCount = 0,
+                              ArtistReleaseCount = 0,
+                              ArtistTrackCount = 0,
+                              SortName = a.SortName
+                          }).Distinct();
 
             ArtistList[] rows = null;
             var rowCount = result.Count();
@@ -341,12 +345,12 @@ namespace Roadie.Api.Services
                 }
                 rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }
-            if(rows.Any() && roadieUser != null)
+            if (rows.Any() && roadieUser != null)
             {
-                foreach(var userArtistRating in this.GetUser(roadieUser.UserId).ArtistRatings.Where(x => rows.Select(r => r.DatabaseId).Contains(x.ArtistId)))
+                foreach (var userArtistRating in this.GetUser(roadieUser.UserId).ArtistRatings.Where(x => rows.Select(r => r.DatabaseId).Contains(x.ArtistId)))
                 {
                     var row = rows.FirstOrDefault(x => x.DatabaseId == userArtistRating.ArtistId);
-                    if(row != null)
+                    if (row != null)
                     {
                         row.UserRating = new UserArtist
                         {
@@ -367,6 +371,5 @@ namespace Roadie.Api.Services
                 Rows = rows
             };
         }
-
     }
 }

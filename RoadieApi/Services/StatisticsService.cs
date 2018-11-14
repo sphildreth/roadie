@@ -1,24 +1,13 @@
-﻿using Mapster;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Microsoft.Net.Http.Headers;
+﻿using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
-using Roadie.Library.Data;
 using Roadie.Library.Encoding;
-using Roadie.Library.Identity;
-using Roadie.Library.Imaging;
-using Roadie.Library.Models;
 using Roadie.Library.Models.Statistics;
-using Roadie.Library.Models.Users;
-using Roadie.Library.SearchEngines.Imaging;
 using Roadie.Library.Utility;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 
@@ -113,7 +102,7 @@ namespace Roadie.Api.Services
                     }
                 }
             }
-            
+
             sw.Stop();
             return new OperationResult<LibraryStats>
             {
@@ -121,7 +110,6 @@ namespace Roadie.Api.Services
                 OperationTime = sw.ElapsedMilliseconds,
                 Data = result
             };
-
         }
     }
 }

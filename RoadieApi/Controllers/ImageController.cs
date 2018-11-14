@@ -15,7 +15,7 @@ namespace Roadie.Api.Controllers
     [Produces("application/json")]
     [Route("image")]
     [ApiController]
-    [Authorize]
+  //  [Authorize]
     public class ImageController : EntityControllerBase
     {
         private IImageService ImageService { get; }
@@ -75,12 +75,29 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
+        [HttpPost("{id}")]
+        [Authorize(Policy = "Editor")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var result = await this.ImageService.Delete(await this.CurrentUserModel(), id);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
         [HttpGet("{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, int? width, int? height)
         {
-            var result = await this.ImageService.ImageById(id, width, height);
+            var result = await this.ImageService.ById(id, width, height);
             if (result == null)
             {
                 return NotFound();
@@ -199,23 +216,6 @@ namespace Roadie.Api.Controllers
                         fileDownloadName: $"{ result.Data.Caption ?? id.ToString()}.jpg",
                         lastModified: result.LastModified,
                         entityTag: result.ETag);
-        }
-
-        [HttpPost("{id}")]
-        [Authorize(Policy ="Editor")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            var result = await this.ImageService.Delete(await this.CurrentUserModel(), id);
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
         }
     }
 }

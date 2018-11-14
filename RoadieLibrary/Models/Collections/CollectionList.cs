@@ -12,6 +12,7 @@ namespace Roadie.Library.Models.Collections
         public int? CollectionFoundCount { get; set; }
         public int? CollectionPosition { get; set; }
         public DataToken Release { get; set; }
+        public DataToken Artist { get; set; }
         public int? CollectionCount { get; set; }
         public string CollectionType { get; set; }
         public Image Thumbnail { get; set; }

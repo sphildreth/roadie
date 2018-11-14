@@ -65,7 +65,39 @@ namespace Roadie.Api.Services
                                                     etag: etag);
         }
 
-        public async Task<FileOperationResult<Image>> ImageById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        public async Task<OperationResult<bool>> Delete(User user, Guid id)
+        {
+            var sw = Stopwatch.StartNew();
+            var image = this.DbContext.Images
+                                      .Include("Release")
+                                      .Include("Artist")
+                                      .FirstOrDefault(x => x.RoadieId == id);
+            if (image == null)
+            {
+                return new OperationResult<bool>(true, string.Format("Image Not Found [{0}]", id));
+            }
+            if (image.ArtistId.HasValue)
+            {
+                this.CacheManager.ClearRegion(data.Artist.CacheRegionUrn(image.Artist.RoadieId));
+            }
+            if (image.ReleaseId.HasValue)
+            {
+                this.CacheManager.ClearRegion(data.Release.CacheRegionUrn(image.Release.RoadieId));
+            }
+            this.DbContext.Images.Remove(image);
+            await this.DbContext.SaveChangesAsync();
+            this.CacheManager.ClearRegion(data.Image.CacheRegionUrn(id));
+            this.Logger.LogInformation($"Deleted Image [{ id }], By User [{ user.ToString() }]");
+            sw.Stop();
+            return new OperationResult<bool>
+            {
+                Data = true,
+                IsSuccess = true,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<FileOperationResult<Image>> ById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
         {
             return await this.GetImageFileOperation(type: "ImageById",
                                                     regionUrn: data.Image.CacheRegionUrn(id),
@@ -77,6 +109,32 @@ namespace Roadie.Api.Services
                                                         return await this.ImageByIdAction(id, etag);
                                                     },
                                                     etag: etag);
+        }
+
+        public async Task<OperationResult<IEnumerable<ImageSearchResult>>> ImageProvidersSearch(string query)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            IEnumerable<ImageSearchResult> searchResults = null;
+            try
+            {
+                var manager = new ImageSearchManager(this.Configuration, this.CacheManager, this.Logger);
+                searchResults = await manager.ImageSearch(query);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+            return new OperationResult<IEnumerable<ImageSearchResult>>
+            {
+                Data = searchResults,
+                IsSuccess = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
         }
 
         public async Task<FileOperationResult<Image>> LabelThumbnail(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
@@ -420,64 +478,6 @@ namespace Roadie.Api.Services
                 this.Logger.LogError($"Error fetching User Thumbnail [{ id }]", ex);
             }
             return new FileOperationResult<Image>(OperationMessages.ErrorOccured);
-        }
-
-        public async Task<OperationResult<bool>> Delete(User user, Guid id)
-        {
-            var sw = Stopwatch.StartNew();
-            var image = this.DbContext.Images
-                                      .Include("Release")
-                                      .Include("Artist")
-                                      .FirstOrDefault(x => x.RoadieId == id);
-            if (image == null)
-            {
-                return new OperationResult<bool>(true, string.Format("Image Not Found [{0}]", id));
-            }
-            if(image.ArtistId.HasValue)
-            {
-                this.CacheManager.ClearRegion(data.Artist.CacheRegionUrn(image.Artist.RoadieId));
-            }
-            if(image.ReleaseId.HasValue)
-            {
-                this.CacheManager.ClearRegion(data.Release.CacheRegionUrn(image.Release.RoadieId));
-            }
-            this.DbContext.Images.Remove(image);
-            await this.DbContext.SaveChangesAsync();
-            this.CacheManager.ClearRegion(data.Image.CacheRegionUrn(id));
-            this.Logger.LogInformation($"Deleted Image [{ id }], By User [{ user.ToString() }]");
-            sw.Stop();
-            return new OperationResult<bool>
-            {
-                Data = true,
-                IsSuccess = true,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-        }
-
-        public async Task<OperationResult<IEnumerable<ImageSearchResult>>> ImageProvidersSearch(string query)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-            IEnumerable<ImageSearchResult> searchResults = null;
-            try
-            {
-                var manager = new ImageSearchManager(this.Configuration, this.CacheManager, this.Logger);
-                searchResults = await manager.ImageSearch(query);
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex);
-                errors.Add(ex);
-            }
-            sw.Stop();
-            return new OperationResult<IEnumerable<ImageSearchResult>>
-            {
-                Data = searchResults,
-                IsSuccess = !errors.Any(),
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
         }
     }
 }

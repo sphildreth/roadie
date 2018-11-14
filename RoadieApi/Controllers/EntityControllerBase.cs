@@ -5,21 +5,20 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
-using Roadie.Library.Data;
 using Roadie.Library.Identity;
-using models = Roadie.Library.Models.Users;
 using System.Threading.Tasks;
+using models = Roadie.Library.Models.Users;
 
 namespace Roadie.Api.Controllers
 {
-    public abstract class EntityControllerBase :  ODataController
+    public abstract class EntityControllerBase : ODataController
     {
+        protected ILogger _logger;
+        private models.User _currentUser = null;
         protected ICacheManager CacheManager { get; }
         protected IConfiguration Configuration { get; }
         protected IRoadieSettings RoadieSettings { get; }
         protected UserManager<ApplicationUser> UserManager { get; }
-
-        protected ILogger _logger;
 
         public EntityControllerBase(ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
         {
@@ -29,15 +28,13 @@ namespace Roadie.Api.Controllers
             this.RoadieSettings = new RoadieSettings();
             this.Configuration.GetSection("RoadieSettings").Bind(this.RoadieSettings);
             this.UserManager = userManager;
-
         }
 
-        private models.User _currentUser = null;
         protected async Task<models.User> CurrentUserModel()
         {
-            if(this._currentUser == null)
+            if (this._currentUser == null)
             {
-                if(this.User.Identity.IsAuthenticated)
+                if (this.User.Identity.IsAuthenticated)
                 {
                     var user = await this.UserManager.GetUserAsync(User);
                     this._currentUser = user.Adapt<models.User>();
