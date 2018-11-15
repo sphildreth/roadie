@@ -13,24 +13,24 @@ using System.Threading.Tasks;
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("track")]
+    [Route("bookmark")]
     [ApiController]
     [Authorize]
-    public class TrackController : EntityControllerBase
+    public class BookmarkController : EntityControllerBase
     {
-        private ITrackService TrackService { get; }
+        private IBookmarkService BookmarkService { get; }
 
-        public TrackController(ITrackService trackService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+        public BookmarkController(IBookmarkService bookmarkService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.TrackController");
-            this.TrackService = trackService;
+            this._logger = logger.CreateLogger("RoadieApi.Controllers.BookmarkController");
+            this.BookmarkService = bookmarkService;
         }
 
         //[EnableQuery]
         //public IActionResult Get()
         //{
-        //    return Ok(this._RoadieDbContext.Tracks.ProjectToType<models.Track>());
+        //    return Ok(this._RoadieDbContext.Labels.ProjectToType<models.Label>());
         //}
 
         //[HttpGet("{id}")]
@@ -39,12 +39,12 @@ namespace Roadie.Api.Controllers
         //public IActionResult Get(Guid id)
         //{
         //    var key = id.ToString();
-        //    var result = this._cacheManager.Get<models.Track>(key, () =>
+        //    var result = this._cacheManager.Get<models.Label>(key, () =>
         //    {
-        //        var d = this._RoadieDbContext.Tracks.FirstOrDefault(x => x.RoadieId == id);
+        //        var d = this._RoadieDbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
         //        if (d != null)
         //        {
-        //            return d.Adapt<models.Track>();
+        //            return d.Adapt<models.Label>();
         //        }
         //        return null;
         //    }, key);
@@ -57,10 +57,10 @@ namespace Roadie.Api.Controllers
 
         [HttpPost]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List(PagedRequest request, string inc)
+        public async Task<IActionResult> List(PagedRequest request)
         {
-            var result = await this.TrackService.List(roadieUser: await this.CurrentUserModel(),
-                                                      request: request);
+            var result = await this.BookmarkService.List(roadieUser: await this.CurrentUserModel(),
+                                                         request: request);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

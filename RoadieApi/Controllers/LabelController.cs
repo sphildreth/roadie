@@ -26,7 +26,7 @@ namespace Roadie.Api.Controllers
             this._logger = logger.CreateLogger("RoadieApi.Controllers.LabelController");
             this.LabelService = labelService;
         }
-            
+
         //[EnableQuery]
         //public IActionResult Get()
         //{

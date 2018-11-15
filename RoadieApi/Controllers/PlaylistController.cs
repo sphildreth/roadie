@@ -1,5 +1,4 @@
-﻿using Mapster;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -7,10 +6,6 @@ using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Identity;
-using Roadie.Library.Models.Pagination;
-using System;
-using System.Net;
-using System.Threading.Tasks;
 
 namespace Roadie.Api.Controllers
 {
@@ -25,7 +20,7 @@ namespace Roadie.Api.Controllers
         public PlaylistController(IPlaylistService playlistService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.TrackController");
+            this._logger = logger.CreateLogger("RoadieApi.Controllers.PlaylistController");
             this.PlaylistService = playlistService;
         }
 
@@ -56,32 +51,5 @@ namespace Roadie.Api.Controllers
         //    }
         //    return Ok(result);
         //}
-
-        [HttpPost("playactivity")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> PlayActivity(PagedRequest request)
-        {
-            var result = await this.PlaylistService.List(request);
-
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
-        [HttpPost("playactivity/{userId}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> PlayActivity(PagedRequest request, Guid userId)
-        {
-            var user = await this.UserManager.FindByIdAsync(userId.ToString());
-            var result = await this.PlaylistService.List(request, user.Adapt<Library.Models.Users.User>());
-
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Roadie.Library.Enums;
+﻿using Newtonsoft.Json;
+using Roadie.Library.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,6 +11,8 @@ namespace Roadie.Library.Models
     {
         public DataToken Bookmark { get; set; }
         public Image Thumbnail { get; set; }
-        public BookmarkType Type { get; set; }
+        public BookmarkType? Type { get; set; }
+        [JsonIgnore]
+        public int BookmarkTargetId { get; set; }
     }
 }

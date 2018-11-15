@@ -23,7 +23,7 @@ namespace Roadie.Api.Controllers
         public CollectionController(ICollectionService collectionService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.LabelController");
+            this._logger = logger.CreateLogger("RoadieApi.Controllers.CollectionController");
             this.CollectionService = collectionService;
         }
 

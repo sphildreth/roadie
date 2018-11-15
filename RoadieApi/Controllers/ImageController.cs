@@ -15,7 +15,7 @@ namespace Roadie.Api.Controllers
     [Produces("application/json")]
     [Route("image")]
     [ApiController]
-  //  [Authorize]
+    //  [Authorize]
     public class ImageController : EntityControllerBase
     {
         private IImageService ImageService { get; }

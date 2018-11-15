@@ -16,7 +16,7 @@ using data = Roadie.Library.Data;
 
 namespace Roadie.Api.Services
 {
-    public class PlayActivityService : ServiceBase
+    public class PlayActivityService : ServiceBase, IPlayActivityService
     {
         public PlayActivityService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
@@ -28,7 +28,7 @@ namespace Roadie.Api.Services
         {
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<PlayActivityList>> List(PagedRequest request, User user = null)
+        public async Task<Library.Models.Pagination.PagedResult<PlayActivityList>> List(PagedRequest request, User roadieUser = null)
         {
             try
             {
@@ -43,7 +43,7 @@ namespace Roadie.Api.Services
                               join usertrack in this.DbContext.UserTracks on t.Id equals usertrack.TrackId
                               join u in this.DbContext.Users on usertrack.UserId equals u.Id
                               join releaseArtist in this.DbContext.Artists on r.ArtistId equals releaseArtist.Id
-                              where ((user == null && !(u.IsPrivate ?? false)) || (user != null && (usertrack != null && usertrack.User.Id == user.Id)))
+                              where ((roadieUser == null && !(u.IsPrivate ?? false)) || (roadieUser != null && (usertrack != null && usertrack.User.Id == roadieUser.Id)))
                               where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
                                         t.Title != null && t.Title.ToLower().Contains(request.Filter.ToLower()) ||
                                         t.AlternateNames != null && t.AlternateNames.ToLower().Contains(request.Filter.ToLower())

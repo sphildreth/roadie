@@ -37,12 +37,18 @@ namespace Roadie.Api.Controllers
                 if (this.User.Identity.IsAuthenticated)
                 {
                     var user = await this.UserManager.GetUserAsync(User);
-                    this._currentUser = user.Adapt<models.User>();
-                    this._currentUser.IsAdmin = User.IsInRole("Admin");
-                    this._currentUser.IsEditor = User.IsInRole("Editor");
+                    this._currentUser = this.UserModelForUser(user);
                 }
             }
             return this._currentUser;
+        }
+
+        protected models.User UserModelForUser(ApplicationUser user)
+        {
+            var result = user.Adapt<models.User>();
+            result.IsAdmin = User.IsInRole("Admin");
+            result.IsEditor = User.IsInRole("Editor");
+            return result;
         }
     }
 }
