@@ -11,7 +11,13 @@ namespace Roadie.Library.Models
     [Serializable]
     public class TrackList : EntityInfoModelBase
     {
+        public int? MediaNumber { get; set; }
         public int? TrackNumber { get; set; }
+        public DataToken Track { get; set; }
+        public DataToken Release { get; set; }
+        public Image ReleaseThumbnail { get; set; }
+        public DataToken Artist { get; set; }
+        public Image ArtistThumbnail { get; set; }
         public DataToken TrackArtist { get; set; }
         public Image TrackArtistThumbnail { get; set; }
         public string Title { get; set; }
@@ -31,7 +37,7 @@ namespace Roadie.Library.Models
             }
         }
         public short? Rating { get; set; }
-        public UserTrack UserTrack { get; set; }
+        public UserTrack UserRating { get; set; }
         public int? PlayedCount { get; set; }
         public int? FavoriteCount { get; set; }
         public Image Thumbnail { get; set; }

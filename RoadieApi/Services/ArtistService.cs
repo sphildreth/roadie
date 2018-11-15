@@ -207,7 +207,7 @@ namespace Roadie.Api.Services
                 }
                 if (includes.Contains("playlists"))
                 {
-                    var r = await this.PlaylistService.PlaylistList(request: new PagedRequest(), artistId: artist.RoadieId);
+                    var r = await this.PlaylistService.List(request: new PagedRequest(), artistId: artist.RoadieId);
                     if (r.IsSuccess)
                     {
                         result.PlaylistsWithArtistReleases = r.Rows.ToArray();

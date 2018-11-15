@@ -15,18 +15,18 @@ using System.Threading.Tasks;
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("track")]
+    [Route("playlist")]
     [ApiController]
     [Authorize]
-    public class TrackController : EntityControllerBase
+    public class PlaylistController : EntityControllerBase
     {
-        private ITrackService TrackService { get; }
+        private IPlaylistService PlaylistService { get; }
 
-        public TrackController(ITrackService trackService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+        public PlaylistController(IPlaylistService playlistService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
             this._logger = logger.CreateLogger("RoadieApi.Controllers.TrackController");
-            this.TrackService = trackService;
+            this.PlaylistService = playlistService;
         }
 
         //[EnableQuery]
@@ -57,12 +57,26 @@ namespace Roadie.Api.Controllers
         //    return Ok(result);
         //}
 
-        [HttpPost]
+        [HttpPost("playactivity")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List(PagedRequest request, string inc)
+        public async Task<IActionResult> PlayActivity(PagedRequest request)
         {
-            var result = await this.TrackService.List(roadieUser: await this.CurrentUserModel(),
-                                                      request: request);
+            var result = await this.PlaylistService.List(request);
+
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("playactivity/{userId}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> PlayActivity(PagedRequest request, Guid userId)
+        {
+            var user = await this.UserManager.FindByIdAsync(userId.ToString());
+            var result = await this.PlaylistService.List(request, user.Adapt<Library.Models.Users.User>());
+
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

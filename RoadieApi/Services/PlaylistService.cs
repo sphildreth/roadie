@@ -5,6 +5,7 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Playlists;
+using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ namespace Roadie.Api.Services
         {
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<PlaylistList>> PlaylistList(PagedRequest request, Guid? userId = null, Guid? artistId = null)
+        public async Task<Library.Models.Pagination.PagedResult<PlaylistList>> List(PagedRequest request, User roadieUser = null, Guid? artistId = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -45,10 +46,10 @@ namespace Roadie.Api.Services
                           join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
                           join a in this.DbContext.Artists on r.ArtistId equals a.Id
                           join u in this.DbContext.Users on pl.UserId equals u.Id
-                          where ((userId == null && pl.IsPublic) || (userId != null && u.RoadieId == userId || pl.IsPublic))
+                          where ((roadieUser == null && pl.IsPublic) || (roadieUser != null && u.RoadieId == roadieUser.UserId || pl.IsPublic))
                           where (artistId == null || (artistId != null && a.RoadieId == artistId))
                           where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
-                                    pl.Name != null && pl.Name.ToLower().Contains(request.Filter.ToLower()))
+                                    pl.Name != null && pl.Name.Contains(request.FilterValue))
                           ))
                           select new PlaylistList
                           {

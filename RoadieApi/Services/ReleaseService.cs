@@ -70,7 +70,7 @@ namespace Roadie.Api.Services
                                 var releaseTrack = media.Tracks.FirstOrDefault(x => x.Id == releaseUserTrack.t.RoadieId);
                                 if (releaseTrack != null)
                                 {
-                                    releaseTrack.UserTrack = new UserTrack
+                                    releaseTrack.UserRating = new UserTrack
                                     {
                                         Rating = releaseUserTrack.ut.Rating,
                                         IsDisliked = releaseUserTrack.ut.IsDisliked ?? false,
