@@ -45,5 +45,6 @@ namespace Roadie.Library.Models
                 this._tooltip = value;
             }
         }
+        public object Data { get; set; }
     }
 }

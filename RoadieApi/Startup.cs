@@ -141,6 +141,8 @@ namespace Roadie.Api
             services.AddScoped<IBookmarkService, BookmarkService>();
             services.AddScoped<IPlayActivityService, PlayActivityService>();
             services.AddScoped<IGenreService, GenreService>();
+            services.AddScoped<ISubsonicService, SubsonicService>();
+            services.AddScoped<IUserService, UserService>();
 
             var securityKey = new SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration["Tokens:PrivateKey"]));
             services.AddAuthentication(options =>

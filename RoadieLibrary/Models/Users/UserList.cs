@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Roadie.Library.Models.Statistics;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,36 +11,20 @@ namespace Roadie.Library.Models.Users
     {
         public DataToken User { get; set; }
         
-        public string ThumbnailUrl { get; set; }
+        public Image Thumbnail { get; set; }
 
-        [JsonIgnore]
-        public DateTime? RegisteredDateTime { get; set; }
-        public string RegisteredOn
-        {
-            get
-            {
-                return this.RegisteredDateTime.HasValue ? this.RegisteredDateTime.Value.ToString("s") : null;
-            }
-        }
+        public DateTime? Registered { get; set; }
 
-        [JsonIgnore]
-        public DateTime? LastLoginDateTime { get; set; }
-        public string LastLogin
-        {
-            get
-            {
-                return this.LastLoginDateTime.HasValue ? this.LastLoginDateTime.Value.ToString("s") : null;
-            }
-        }
+        public DateTime? LastLoginDate { get; set; }
 
-        [JsonIgnore]
-        public DateTime? LastApiAccessDateTime { get; set; }
-        public string LastApiAccess
-        {
-            get
-            {
-                return this.LastApiAccessDateTime.HasValue ? this.LastApiAccessDateTime.Value.ToString("s") : null;
-            }
-        }
+        public DateTime? LastApiAccessDate { get; set; }
+
+        public DateTime? RegisteredDate { get; set; }
+
+        public bool IsEditor { get; set; }
+
+        public bool? IsPrivate { get; set; }
+
+        public UserStatistics Statistics { get; set; }
     }
 }

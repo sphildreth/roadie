@@ -31,8 +31,7 @@
   <ItemGroup>
     <Folder Include="Factories\" />
     <Folder Include="FilePlugins\" />
-    <Folder Include="Models\ThirdPartyApi\" />
-    <Folder Include="Models\ThirdPartyApi\Subsonic\" />
+    <Folder Include="Models\Subsonic\" />
     <Folder Include="Processors\" />
     <Folder Include="SearchEngines\MetaData\Audio\" />
   </ItemGroup>
