@@ -198,7 +198,7 @@ namespace Roadie.Api.Services
                 }
                 if (includes.Contains("collections"))
                 {
-                    var r = await this.CollectionService.List(roadieUser: null, 
+                    var r = await this.CollectionService.List(roadieUser: null,
                                                               request: new PagedRequest(), artistId: artist.RoadieId);
                     if (r.IsSuccess)
                     {

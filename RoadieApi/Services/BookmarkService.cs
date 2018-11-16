@@ -1,16 +1,10 @@
-﻿using Mapster;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Roadie.Library;
+﻿using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
-using Roadie.Library.Extensions;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
-using Roadie.Library.Models.Releases;
-using Roadie.Library.Models.Statistics;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
@@ -46,7 +40,6 @@ namespace Roadie.Api.Services
                 request.Sort = request.Sort.Replace("bookmarkType", "bookmarkTypeValue");
                 request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
                 request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
-
             }
 
             var result = (from b in this.DbContext.Bookmarks
@@ -61,27 +54,26 @@ namespace Roadie.Api.Services
                               Type = b.BookmarkType,
                               BookmarkTargetId = b.BookmarkTargetId
                           });
-                          
 
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "CreatedDate", "DESC" } }) : request.OrderValue(null);
             var rowCount = result.Count();
             BookmarkList[] rows = rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
 
             var datas = (from b in rows
-                          join a in this.DbContext.Artists on b.BookmarkTargetId equals a.Id into aa
-                          from a in aa.DefaultIfEmpty()
-                          join r in this.DbContext.Releases on b.BookmarkTargetId equals r.Id into rr
-                          from r in rr.DefaultIfEmpty()
-                          join t in this.DbContext.Tracks on b.BookmarkTargetId equals t.Id into tt
-                          from t in rr.DefaultIfEmpty()
-                          join p in this.DbContext.Playlists on b.BookmarkTargetId equals p.Id into pp
-                          from p in pp.DefaultIfEmpty()
-                          join c in this.DbContext.Collections on b.BookmarkTargetId equals c.Id into cc
-                          from c in cc.DefaultIfEmpty()
-                          join l in this.DbContext.Labels on b.BookmarkTargetId equals l.Id into ll
-                          from l in ll.DefaultIfEmpty()
-                          select new
-                          { b,a,r,t,p,c,l});
+                         join a in this.DbContext.Artists on b.BookmarkTargetId equals a.Id into aa
+                         from a in aa.DefaultIfEmpty()
+                         join r in this.DbContext.Releases on b.BookmarkTargetId equals r.Id into rr
+                         from r in rr.DefaultIfEmpty()
+                         join t in this.DbContext.Tracks on b.BookmarkTargetId equals t.Id into tt
+                         from t in rr.DefaultIfEmpty()
+                         join p in this.DbContext.Playlists on b.BookmarkTargetId equals p.Id into pp
+                         from p in pp.DefaultIfEmpty()
+                         join c in this.DbContext.Collections on b.BookmarkTargetId equals c.Id into cc
+                         from c in cc.DefaultIfEmpty()
+                         join l in this.DbContext.Labels on b.BookmarkTargetId equals l.Id into ll
+                         from l in ll.DefaultIfEmpty()
+                         select new
+                         { b, a, r, t, p, c, l });
 
             foreach (var row in rows)
             {
@@ -96,6 +88,7 @@ namespace Roadie.Api.Services
                         };
                         row.Thumbnail = this.MakeArtistThumbnailImage(d.a.RoadieId);
                         break;
+
                     case BookmarkType.Release:
                         row.Bookmark = new DataToken
                         {
@@ -104,6 +97,7 @@ namespace Roadie.Api.Services
                         };
                         row.Thumbnail = this.MakeReleaseThumbnailImage(d.r.RoadieId);
                         break;
+
                     case BookmarkType.Track:
                         row.Bookmark = new DataToken
                         {
@@ -112,6 +106,7 @@ namespace Roadie.Api.Services
                         };
                         row.Thumbnail = this.MakeTrackThumbnailImage(d.t.RoadieId);
                         break;
+
                     case BookmarkType.Playlist:
                         row.Bookmark = new DataToken
                         {
@@ -120,6 +115,7 @@ namespace Roadie.Api.Services
                         };
                         row.Thumbnail = this.MakePlaylistThumbnailImage(d.p.RoadieId);
                         break;
+
                     case BookmarkType.Collection:
                         row.Bookmark = new DataToken
                         {
@@ -128,6 +124,7 @@ namespace Roadie.Api.Services
                         };
                         row.Thumbnail = this.MakeCollectionThumbnailImage(d.c.RoadieId);
                         break;
+
                     case BookmarkType.Label:
                         row.Bookmark = new DataToken
                         {
@@ -139,7 +136,6 @@ namespace Roadie.Api.Services
                 }
             };
             sw.Stop();
-
 
             sw.Stop();
             return new Library.Models.Pagination.PagedResult<BookmarkList>

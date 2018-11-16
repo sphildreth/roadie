@@ -6,9 +6,6 @@ using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Identity;
-using Roadie.Library.Models.Pagination;
-using System.Net;
-using System.Threading.Tasks;
 
 namespace Roadie.Api.Controllers
 {
@@ -26,7 +23,5 @@ namespace Roadie.Api.Controllers
             this._logger = logger.CreateLogger("RoadieApi.Controllers.SubsonicController");
             this.SubsonicService = subsonicService;
         }
-
-
     }
 }

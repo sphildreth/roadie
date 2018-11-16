@@ -80,12 +80,12 @@ namespace Roadie.Api.Services
                     var userTracks = this.DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == row.DatabaseId).ToArray();
 
                     var mostPlayedArtist = (from a in this.DbContext.Artists
-                                             join r in this.DbContext.Releases on a.Id equals r.ArtistId
-                                             join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                             join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                             join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
-                                             where ut.UserId == row.DatabaseId
-                                             select new { a, ut.PlayedCount })
+                                            join r in this.DbContext.Releases on a.Id equals r.ArtistId
+                                            join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                            join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                            join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
+                                            where ut.UserId == row.DatabaseId
+                                            select new { a, ut.PlayedCount })
                                              .GroupBy(a => a.a)
                                              .Select(x => new DataToken
                                              {
@@ -103,10 +103,12 @@ namespace Roadie.Api.Services
                                              where ut.UserId == row.DatabaseId
                                              select new { r, ut.PlayedCount })
                                              .GroupBy(r => r.r)
-                                             .Select(x => new DataToken {
+                                             .Select(x => new DataToken
+                                             {
                                                  Text = x.Key.Title,
                                                  Value = x.Key.RoadieId.ToString(),
-                                                 Data = x.Sum(t => t.PlayedCount) })
+                                                 Data = x.Sum(t => t.PlayedCount)
+                                             })
                                              .OrderByDescending(x => x.Data)
                                              .FirstOrDefault();
 

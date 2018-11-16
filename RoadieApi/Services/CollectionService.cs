@@ -60,7 +60,7 @@ namespace Roadie.Api.Services
                               LastUpdated = c.LastUpdated,
                               Thumbnail = MakeCollectionThumbnailImage(c.RoadieId)
                           });
-            if(artistId.HasValue || releaseId.HasValue)
+            if (artistId.HasValue || releaseId.HasValue)
             {
                 result = (from re in result
                           join cr in this.DbContext.CollectionReleases on re.DatabaseId equals cr.CollectionId into crs
@@ -70,7 +70,7 @@ namespace Roadie.Api.Services
                           join a in this.DbContext.Artists on r.ArtistId equals a.Id into aas
                           from a in aas.DefaultIfEmpty()
                           where (releaseId == null || r.RoadieId == releaseId)
-                          where (artistId == null ||  a.RoadieId == artistId)
+                          where (artistId == null || a.RoadieId == artistId)
                           select re);
             }
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } }) : request.OrderValue(null);

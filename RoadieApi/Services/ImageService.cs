@@ -51,6 +51,20 @@ namespace Roadie.Api.Services
                                                     etag: etag);
         }
 
+        public async Task<FileOperationResult<Image>> ById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return await this.GetImageFileOperation(type: "ImageById",
+                                                    regionUrn: data.Image.CacheRegionUrn(id),
+                                                    id: id,
+                                                    width: width,
+                                                    height: height,
+                                                    action: async () =>
+                                                    {
+                                                        return await this.ImageByIdAction(id, etag);
+                                                    },
+                                                    etag: etag);
+        }
+
         public async Task<FileOperationResult<Image>> CollectionThumbnail(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
         {
             return await this.GetImageFileOperation(type: "CollectionThumbnail",
@@ -95,20 +109,6 @@ namespace Roadie.Api.Services
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             };
-        }
-
-        public async Task<FileOperationResult<Image>> ById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await this.GetImageFileOperation(type: "ImageById",
-                                                    regionUrn: data.Image.CacheRegionUrn(id),
-                                                    id: id,
-                                                    width: width,
-                                                    height: height,
-                                                    action: async () =>
-                                                    {
-                                                        return await this.ImageByIdAction(id, etag);
-                                                    },
-                                                    etag: etag);
         }
 
         public async Task<OperationResult<IEnumerable<ImageSearchResult>>> ImageProvidersSearch(string query)

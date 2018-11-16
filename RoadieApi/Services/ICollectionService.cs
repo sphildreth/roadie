@@ -8,7 +8,6 @@ namespace Roadie.Api.Services
 {
     public interface ICollectionService
     {
-
         Task<PagedResult<CollectionList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null, Guid? artistId = null);
     }
 }
