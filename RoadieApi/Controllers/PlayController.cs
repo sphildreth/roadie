@@ -34,7 +34,8 @@ namespace Roadie.Api.Controllers
         [HttpGet("track/{id}")]
         public async Task<FileStreamResult> StreamTrack(Guid id)
         {
-            var track = await this.TrackService.ById(await this.CurrentUserModel(), id, null);
+            var user = await this.CurrentUserModel();
+            var track = await this.TrackService.ById(user, id, null);
             if (track == null || track.IsNotFoundResult)
             {
                 Response.StatusCode = (int)HttpStatusCode.NotFound;
@@ -61,8 +62,8 @@ namespace Roadie.Api.Controllers
             Response.Headers.Add("Cache-Control", info.Data.CacheControl);
             Response.Headers.Add("Expires", info.Data.Expires);
             var stream = new MemoryStream(info.Data.Bytes);
-            await this.PlayActivityService.CreatePlayActivity(await this.CurrentUserModel(), info.Data);
-            this._logger.LogInformation($"StreamTrack [{ info.Data.ToString() }]");
+            var playListUser = await this.PlayActivityService.CreatePlayActivity(user, info.Data);
+            this._logger.LogInformation($"StreamTrack PlayActivity `{ playListUser }`, StreamInfo `{ info.Data.ToString() }`");
             return new FileStreamResult(stream, info.Data.ContentType)
             {
                 FileDownloadName = info.Data.FileName

@@ -32,5 +32,10 @@ namespace Roadie.Library.Models
         public int? UserRating { get; set; }
         public Image UserThumbnail { get; set; }
         public UserTrack UserTrack { get; set; }
+
+        public override string ToString()
+        {
+            return $"User [{ this.User }], Artist [{ this.Artist }], Release [{ this.Release }], Track [{ this.Track}]";
+        }
     }
 }

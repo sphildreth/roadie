@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OData.Edm;
 using Newtonsoft.Json;
+using Roadie.Api.Hubs;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -72,6 +73,10 @@ namespace Roadie.Api
             //    c.SwaggerEndpoint("/swagger/v1/swagger.json", "MyComics API v1");
             //    c.RoutePrefix = string.Empty;
             //});
+            app.UseSignalR(routes =>
+            {
+                routes.MapHub<PlayActivityHub>("playActivityHub");
+            });
             app.UseMvc(b =>
             {
                 b.Select().Expand().Filter().OrderBy().MaxTop(100).Count();
@@ -175,6 +180,8 @@ namespace Roadie.Api
             //});
 
             services.AddOData();
+
+            services.AddSignalR();
 
             services.AddMvc()
                 .AddJsonOptions(options =>

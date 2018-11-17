@@ -10,6 +10,6 @@ namespace Roadie.Api.Services
     {
         Task<PagedResult<PlayActivityList>> List(PagedRequest request, User roadieUser = null);
 
-        Task<OperationResult<UserTrack>> CreatePlayActivity(User roadieUser, TrackStreamInfo streamInfo);
+        Task<OperationResult<PlayActivityList>> CreatePlayActivity(User roadieUser, TrackStreamInfo streamInfo);
     }
 }
