@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Mapster;
+using Microsoft.Extensions.Logging;
+using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
@@ -23,7 +25,7 @@ namespace Roadie.Api.Services
                              IHttpContext httpContext,
                              data.IRoadieDbContext dbContext,
                              ICacheManager cacheManager,
-                             ILogger<StatisticsService> logger)
+                             ILogger<PlayActivityService> logger)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
         }
@@ -103,6 +105,97 @@ namespace Roadie.Api.Services
                 this.Logger.LogError(ex);
             }
             return new Library.Models.Pagination.PagedResult<PlayActivityList>();
+        }
+
+        public async Task<OperationResult<UserTrack>> CreatePlayActivity(User roadieUser, TrackStreamInfo streamInfo)
+        {
+            var sw = Stopwatch.StartNew();
+
+            var track = this.GetTrack(streamInfo.Track.Value);
+            if (track == null)
+            {
+                return new OperationResult<UserTrack>($"CreatePlayActivity: Unable To Find Track [{ streamInfo.Track.Value }]");
+            }
+            if (!track.IsValid)
+            {
+                return new OperationResult<UserTrack>($"CreatePlayActivity: Invalid Track. Track Id [{streamInfo.Track.Value}], FilePath [{track.FilePath}], Filename [{track.FileName}]");
+            }
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<UserTrack>($"CreatePlayActivity: Unable To Find User [{ roadieUser.UserId }]");
+            }
+            var now = DateTime.UtcNow;
+            track.PlayedCount = (track.PlayedCount ?? 0) + 1;
+            var userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
+            if (userTrack == null)
+            {
+                userTrack = new data.UserTrack(now)
+                {
+                    UserId = user.Id,
+                    TrackId = track.Id
+                };
+                this.DbContext.UserTracks.Add(userTrack);
+            }
+            userTrack.LastPlayed = now;
+            userTrack.PlayedCount++;
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(track.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
+
+            // TODO publish with SignalR 
+
+            //if (!this.RoadieUser.isPrivate ?? false)
+            //{
+            //    try
+            //    {
+            //        var hub = GlobalHost.ConnectionManager.GetHubContext<Hubs.PlayActivityHub>();
+            //        var releaseArtist = track.releasemedia.release.artist;
+            //        artist trackArtist = track.artistId == null ? null : context.artists.FirstOrDefault(x => x.id == track.artistId);
+            //        hub.Clients.All.PlayActivity(new PlayActivityListModel
+            //        {
+            //            releaseTitle = track.releasemedia.release.title,
+            //            playedDateDateTime = userTrack.lastPlayed,
+            //            userId = this.RoadieUser.roadieId,
+            //            userName = this.RoadieUser.username,
+            //            releaseId = track.releasemedia.release.roadieId,
+            //            trackId = track.roadieId,
+            //            IsLocked = (track.isLocked ?? false) || (track.releasemedia.release.isLocked ?? false) || ((trackArtist ?? releaseArtist).isLocked ?? false),
+            //            createdDateTime = track.createdDate,
+            //            lastUpdatedDateTime = track.lastUpdated,
+            //            releasePlayUrl = this.Request.Url.BasePath + "/play/release/" + this.Base64BearerToken + "/" + track.releasemedia.release.roadieId,
+            //            rating = track.rating,
+            //            userRating = userTrack.rating,
+            //            releaseArtistId = releaseArtist.roadieId,
+            //            releaseArtistName = releaseArtist.name,
+            //            roadieId = track.roadieId,
+            //            status = track.status.ToString(),
+            //            title = track.title,
+            //            trackArtistId = trackArtist == null ? null : trackArtist.roadieId,
+            //            trackArtistName = trackArtist == null ? null : trackArtist.name,
+            //            trackPlayUrl = this.Request.Url.BasePath + "/play/track/" + this.Base64BearerToken + "/" + track.roadieId,
+            //            artistThumbnailUrl = this.Request.Url.BasePath + "/api/v1/image/artist/thumbnail/" + (trackArtist != null ? trackArtist.roadieId : releaseArtist.roadieId),
+            //            releaseThumbnailUrl = this.Request.Url.BasePath + "/api/v1/image/release/thumbnail/" + track.releasemedia.release.roadieId,
+            //            userThumbnailUrl = this.Request.Url.BasePath + "/api/v1/image/user/thumbnail/" + this.RoadieUser.roadieId
+            //        });
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        this.LoggingService.Error(ex.Serialize());
+            //    }
+            //}
+
+            await this.DbContext.SaveChangesAsync();
+            sw.Stop();
+            return new OperationResult<UserTrack>
+            {
+                Data = userTrack.Adapt<UserTrack>(),
+                IsSuccess = userTrack != null,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+
         }
     }
 }

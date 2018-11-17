@@ -17,6 +17,7 @@ namespace Roadie.Library.Models.Users
         public int? PlayerTrackLimit { get; set; }
         public int? RecentlyPlayedLimit { get; set; }
         public int? RandomReleaseLimit { get; set; }
+        public bool IsPrivate { get; set; }
 
         public override string ToString()
         {

@@ -20,7 +20,7 @@ namespace Roadie.Api.Services
                              IHttpContext httpContext,
                              data.IRoadieDbContext context,
                              ICacheManager cacheManager,
-                             ILogger<ArtistService> logger,
+                             ILogger<SubsonicService> logger,
                              ICollectionService collectionService,
                              IPlaylistService playlistService)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)

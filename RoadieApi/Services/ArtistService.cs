@@ -92,7 +92,6 @@ namespace Roadie.Api.Services
             }
             var result = artist.Adapt<Artist>();
             result.Thumbnail = base.MakeArtistThumbnailImage(id);
-
             result.Genres = artist.Genres.Select(x => new DataToken { Text = x.Genre.Name, Value = x.Genre.RoadieId.ToString() });
             if (includes != null && includes.Any())
             {
@@ -271,6 +270,7 @@ namespace Roadie.Api.Services
                                            orderby l.SortName
                                            select new LabelList
                                            {
+                                               Id = rl.RoadieId,
                                                Label = new DataToken
                                                {
                                                    Text = l.Name,

@@ -34,5 +34,17 @@ namespace Roadie.Library.Data
         [Column("userId")]
         [Required]
         public int UserId { get; set; }
+
+        public UserTrack()
+        { }
+
+        public UserTrack(DateTime? now = null)
+        {
+            PlayedCount = 0;
+            Rating = 0;
+            IsDisliked = false;
+            IsFavorite = false;
+            LastPlayed = now ?? DateTime.UtcNow;
+        }
     }
 }

@@ -1,7 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Mapster;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Extensions;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Users;
@@ -9,6 +13,7 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
@@ -23,9 +28,192 @@ namespace Roadie.Api.Services
                              IHttpContext httpContext,
                              data.IRoadieDbContext dbContext,
                              ICacheManager cacheManager,
-                             ILogger<StatisticsService> logger)
+                             ILogger<TrackService> logger)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
+        }
+
+        public async Task<OperationResult<Track>> ById(User roadieUser, Guid id, IEnumerable<string> includes)
+        {
+            var sw = Stopwatch.StartNew();
+            sw.Start();
+            var cacheKey = string.Format("urn:track_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
+            var result = await this.CacheManager.GetAsync<OperationResult<Track>>(cacheKey, async () =>
+            {
+                return await this.TrackByIdAction(id, includes);
+            }, data.Track.CacheRegionUrn(id));
+            if (result?.Data != null && roadieUser != null)
+            {
+                //var artist = this.GetArtist(id);
+                //result.Data.UserBookmark = this.GetUserBookmarks(roadieUser).FirstOrDefault(x => x.Type == BookmarkType.Artist && x.Bookmark.Value == artist.RoadieId.ToString());
+                //var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == roadieUser.Id);
+                //if (userArtist != null)
+                //{
+                //    result.Data.UserRating = new UserArtist
+                //    {
+                //        IsDisliked = userArtist.IsDisliked ?? false,
+                //        IsFavorite = userArtist.IsFavorite ?? false,
+                //        Rating = userArtist.Rating
+                //    };
+                //}
+
+                //if (this.RoadieUser != null)
+                //{
+                //    var userTrack = context.usertracks.FirstOrDefault(x => x.trackId == trackInfo.t.id && x.userId == this.RoadieUser.id);
+                //    if (userTrack != null)
+                //    {
+                //        result.UserTrack = Map.ObjectToObject<dto.UserTrack>(userTrack);
+                //        result.UserTrack.userId = this.RoadieUser.roadieId;
+                //        result.UserTrack.trackId = result.roadieId;
+                //        result.UserTrack.createdDateTime = userTrack.createdDate;
+                //        result.UserTrack.lastUpdatedDateTime = userTrack.lastUpdated;
+                //    }
+                //}
+
+            }
+            sw.Stop();
+            return new OperationResult<Track>(result.Messages)
+            {
+                Data = result?.Data,
+                Errors = result?.Errors,
+                IsNotFoundResult = result?.IsNotFoundResult ?? false,
+                IsSuccess = result?.IsSuccess ?? false,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        private async Task<OperationResult<Track>> TrackByIdAction(Guid id, IEnumerable<string> includes)
+        {
+            var sw = Stopwatch.StartNew();
+            sw.Start();
+
+            var track = this.GetTrack(id);
+
+            if (track == null)
+            {
+                return new OperationResult<Track>(true, string.Format("Track Not Found [{0}]", id));
+            }
+            var result = track.Adapt<Track>();
+            result.PlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{track.RoadieId}";
+            result.IsLocked = (track.IsLocked ?? false) || 
+                              (track.ReleaseMedia.IsLocked ?? false) || 
+                              (track.ReleaseMedia.Release.IsLocked ?? false ) || 
+                              (track.ReleaseMedia.Release.Artist.IsLocked ?? false);
+            result.Thumbnail = base.MakeTrackThumbnailImage(id);
+            result.ReleaseMediaId = track.ReleaseMedia.RoadieId.ToString();
+            result.Artist = new DataToken
+            {
+                Text = track.ReleaseMedia.Release.Artist.Name,
+                Value = track.ReleaseMedia.Release.Artist.RoadieId.ToString()
+            };
+            result.ArtistThumbnail = this.MakeArtistThumbnailImage(track.ReleaseMedia.Release.Artist.RoadieId);
+            result.Release = new DataToken
+            {
+                Text = track.ReleaseMedia.Release.Title,
+                Value = track.ReleaseMedia.Release.RoadieId.ToString()
+            };
+            result.ReleaseThumbnail = this.MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId);        
+            if(track.ArtistId.HasValue)
+            {
+                var trackArtist = this.DbContext.Artists.FirstOrDefault(x => x.Id == track.ArtistId);
+                if(trackArtist == null)
+                {
+                    this.Logger.LogWarning($"Unable to find Track Artist [{ track.ArtistId }");
+                } 
+                else
+                {
+                    result.TrackArtist = new DataToken
+                    {
+                        Text = trackArtist.Name,
+                        Value = trackArtist.RoadieId.ToString()
+                    };
+                    result.TrackArtistThumbnail = this.MakeArtistThumbnailImage(trackArtist.RoadieId);
+                }                
+            }
+            if (includes != null && includes.Any())
+            {
+                if (includes.Contains("stats"))
+                {
+                    var userTracks = (from t in this.DbContext.Tracks
+                                      join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId into tt
+                                      from ut in tt.DefaultIfEmpty()
+                                      where t.Id == track.Id
+                                      select ut).ToArray();
+                    if (userTracks.Any())
+                    {
+                        result.Statistics = new Library.Models.Statistics.TrackStatistics
+                        {
+                            DislikedCount = userTracks.Count(x => x.IsDisliked ?? false),
+                            FavoriteCount = userTracks.Count(x => x.IsFavorite ?? false),
+                            PlayedCount = userTracks.Sum(x => x.PlayedCount),
+                            FileSizeFormatted = ((long?)track.FileSize).ToFileSize(),                            
+                            Time = TimeSpan.FromSeconds(Math.Floor((double)track.Duration / 1000)).ToString(@"hh\:mm\:ss")
+                        };
+                    }
+                }
+            }
+
+
+            sw.Stop();
+            return new OperationResult<Track>
+            {
+                Data = result,
+                IsSuccess = result != null,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+
+        public static long DetermineByteEndFromHeaders(IHeaderDictionary headers, long fileLength)
+        {
+            var defaultFileLength = fileLength - 1;
+            if (headers == null || !headers.Any(x => x.Key == "Range"))
+            {
+                return defaultFileLength;
+            }
+            long? result = null;
+            var rangeHeader = headers["Range"];
+            string rangeEnd = null;
+            var rangeBegin = rangeHeader.FirstOrDefault();
+            if (!string.IsNullOrEmpty(rangeBegin))
+            {
+                //bytes=0-
+                rangeBegin = rangeBegin.Replace("bytes=", "");
+                var parts = rangeBegin.Split('-');
+                rangeBegin = parts[0];
+                if (parts.Length > 1)
+                {
+                    rangeEnd = parts[1];
+                }
+                if (!string.IsNullOrEmpty(rangeEnd))
+                {
+                    result = long.TryParse(rangeEnd, out long outValue) ? (int?)outValue : null;
+                }
+            }
+            return result ?? defaultFileLength;
+        }
+
+        public static long DetermineByteStartFromHeaders(IHeaderDictionary headers)
+        {
+            if (headers == null || !headers.Any(x => x.Key == "Range"))
+            {
+                return 0;
+            }
+            long result = 0;
+            var rangeHeader = headers["Range"];
+            var rangeBegin = rangeHeader.FirstOrDefault();
+            if (!string.IsNullOrEmpty(rangeBegin))
+            {
+                //bytes=0-
+                rangeBegin = rangeBegin.Replace("bytes=", "");
+                var parts = rangeBegin.Split('-');
+                rangeBegin = parts[0];
+                if (!string.IsNullOrEmpty(rangeBegin))
+                {
+                    long.TryParse(rangeBegin, out result);
+                }
+            }
+            return result;
         }
 
         public async Task<Library.Models.Pagination.PagedResult<TrackList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null)
@@ -167,6 +355,78 @@ namespace Roadie.Api.Services
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
+            };
+        }
+
+        public async Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes)
+        {
+            var track = this.GetTrack(trackId);
+            if (track == null)
+            {
+                return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Unable To Find Track [{ trackId }]");
+            }
+            if (!track.IsValid)
+            {
+                return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Invalid Track. Track Id [{trackId}], FilePath [{track.FilePath}], Filename [{track.FileName}]");
+            }
+            string trackPath = null;
+            try
+            {
+                trackPath = track.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
+            }
+            catch (Exception ex)
+            {
+                return new OperationResult<TrackStreamInfo>(ex);
+            }
+            var trackFileInfo = new FileInfo(trackPath);
+            if (!trackFileInfo.Exists)
+            {
+                track.UpdateTrackMissingFile();
+                await this.DbContext.SaveChangesAsync();
+                return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: TrackId [{trackId}] Unable to Find Track [{trackFileInfo.FullName}]");
+            }
+            var contentDurationTimeSpan = TimeSpan.FromMilliseconds((double)(track.Duration ?? 0));
+            var info = new TrackStreamInfo
+            {
+                FileName = this.HttpEncoder.UrlEncode(track.FileName).ToContentDispositionFriendly(),
+                ContentDisposition = $"attachment; filename=\"{ this.HttpEncoder.UrlEncode(track.FileName).ToContentDispositionFriendly() }\"",
+                ContentDuration = contentDurationTimeSpan.TotalSeconds.ToString(),
+            };
+            var cacheTimeout = 86400; // 24 hours
+            var contentLength = (endBytes - beginBytes) + 1;
+            info.Track = new DataToken
+            {
+                Text = track.Title,
+                Value = track.RoadieId.ToString()
+            };
+            info.BeginBytes = beginBytes;
+            info.EndBytes = endBytes;
+            info.ContentRange = $"bytes {beginBytes}-{endBytes}/{contentLength}";
+            info.ContentLength = contentLength.ToString();
+            info.IsFullRequest = beginBytes == 0 && endBytes == (trackFileInfo.Length - 1);
+            info.IsEndRangeRequest = beginBytes > 0 && endBytes != (trackFileInfo.Length - 1);
+            info.LastModified = (track.LastUpdated ?? track.CreatedDate).ToString("R");
+            info.Etag = track.Etag;
+            info.CacheControl = $"public, max-age={ cacheTimeout.ToString() } ";
+            info.Expires = DateTime.UtcNow.AddMinutes(cacheTimeout).ToString("R");
+            int bytesToRead = (int)(endBytes - beginBytes) + 1;
+            byte[] trackBytes = new byte[bytesToRead];
+            using (var fs = trackFileInfo.OpenRead())
+            {
+                try
+                {
+                    fs.Seek(beginBytes, SeekOrigin.Begin);
+                    var r = fs.Read(trackBytes, 0, bytesToRead);
+                }
+                catch (Exception ex)
+                {
+                    return new OperationResult<TrackStreamInfo>(ex);
+                }
+            }
+            info.Bytes = trackBytes;
+            return new OperationResult<TrackStreamInfo>
+            {
+                Data = info
             };
         }
     }

@@ -34,6 +34,7 @@ namespace Roadie.Library.Data
             this.RoadieId = Guid.NewGuid();
             this.Status = Statuses.Incomplete;
             this.CreatedDate = DateTime.UtcNow;
+            this.IsLocked = false;
         }
     }
 }

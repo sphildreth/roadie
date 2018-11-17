@@ -16,6 +16,14 @@ namespace Roadie.Library.Identity
             return $"urn:user_by_id:{ Id }";
         }
 
+        public string CacheRegion
+        {
+            get
+            {
+                return ApplicationUser.CacheRegionUrn(this.RoadieId);
+            }
+        }
+
         public string CacheKey
         {
             get

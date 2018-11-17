@@ -133,11 +133,25 @@ namespace Roadie.Api.Services
             }, data.Release.CacheRegionUrn(id));
         }
 
+        protected data.Track GetTrack(string id)
+        {
+            Guid trackId = Guid.Empty;
+            if(Guid.TryParse(id, out trackId))
+            {
+                return this.GetTrack(trackId);
+            }
+            return null;
+        }
+
         protected data.Track GetTrack(Guid id)
         {
             return this.CacheManager.Get(data.Track.CacheUrn(id), () =>
             {
                 return this.DbContext.Tracks
+                                     .Include(x => x.ReleaseMedia)
+                                     .Include(x => x.ReleaseMedia.Release)
+                                     .Include(x => x.ReleaseMedia.Release.Artist)
+                                     .Include(x => x.TrackArtist)
                                     .FirstOrDefault(x => x.RoadieId == id);
             }, data.Track.CacheRegionUrn(id));
         }

@@ -46,5 +46,10 @@ namespace Roadie.Library.Models
             }
         }
         public object Data { get; set; }
+
+        public override string ToString()
+        {
+            return $"Text [{ this.Text}], Value [{ this.Value }]";
+        }
     }
 }
