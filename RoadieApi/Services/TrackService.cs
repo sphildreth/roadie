@@ -94,7 +94,7 @@ namespace Roadie.Api.Services
                 return new OperationResult<Track>(true, string.Format("Track Not Found [{0}]", id));
             }
             var result = track.Adapt<Track>();
-            result.PlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{track.RoadieId}";
+            result.PlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{track.RoadieId}.mp3";
             result.IsLocked = (track.IsLocked ?? false) || 
                               (track.ReleaseMedia.IsLocked ?? false) || 
                               (track.ReleaseMedia.Release.IsLocked ?? false ) || 
@@ -285,7 +285,7 @@ namespace Roadie.Api.Services
                               ArtistThumbnail = this.MakeArtistThumbnailImage(x.releaseArtist.RoadieId),
                               Title = x.t.Title,
                               TrackArtistThumbnail = x.trackArtist != null ? this.MakeArtistThumbnailImage(x.trackArtist.RoadieId) : null,
-                              TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ x.t.RoadieId }",
+                              TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ x.t.RoadieId }.mp3",
                               Thumbnail = this.MakeTrackThumbnailImage(x.t.RoadieId)
                           });
             string sortBy = null;

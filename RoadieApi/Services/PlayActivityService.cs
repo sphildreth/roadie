@@ -88,7 +88,7 @@ namespace Roadie.Api.Services
                                   ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ r.RoadieId}",
                                   Rating = t.Rating,
                                   UserRating = usertrack.Rating,
-                                  TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ t.RoadieId}",
+                                  TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ t.RoadieId}.mp3",
                                   ArtistThumbnail = this.MakeArtistThumbnailImage(trackArtist != null ? trackArtist.RoadieId : releaseArtist.RoadieId),
                                   ReleaseThumbnail = this.MakeReleaseThumbnailImage(r.RoadieId),
                                   UserThumbnail = this.MakeUserThumbnailImage(u.RoadieId)
@@ -127,10 +127,10 @@ namespace Roadie.Api.Services
             {
                 return new OperationResult<PlayActivityList>($"CreatePlayActivity: Invalid Track. Track Id [{streamInfo.Track.Value}], FilePath [{track.FilePath}], Filename [{track.FileName}]");
             }
-            var user = this.GetUser(roadieUser.UserId);
+            var user = this.GetUser(roadieUser?.UserId);
             if (user == null)
             {
-                return new OperationResult<PlayActivityList>($"CreatePlayActivity: Unable To Find User [{ roadieUser.UserId }]");
+                return new OperationResult<PlayActivityList>($"CreatePlayActivity: Unable To Find User [{ roadieUser?.UserId }]");
             }
             var now = DateTime.UtcNow;
             track.PlayedCount = (track.PlayedCount ?? 0) + 1;
@@ -183,7 +183,7 @@ namespace Roadie.Api.Services
                 ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ track.ReleaseMedia.Release.RoadieId}",
                 Rating = track.Rating,
                 UserRating = userTrack.Rating,
-                TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ track.RoadieId}",
+                TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ track.RoadieId}.mp3",
                 ArtistThumbnail = this.MakeArtistThumbnailImage(track.TrackArtist != null ? track.TrackArtist.RoadieId : track.ReleaseMedia.Release.Artist.RoadieId),
                 ReleaseThumbnail = this.MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId),
                 UserThumbnail = this.MakeUserThumbnailImage(roadieUser.UserId)

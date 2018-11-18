@@ -75,7 +75,7 @@ namespace Roadie.Api
             //});
             app.UseSignalR(routes =>
             {
-                routes.MapHub<PlayActivityHub>("playActivityHub");
+                routes.MapHub<PlayActivityHub>("/playActivityHub");
             });
             app.UseMvc(b =>
             {

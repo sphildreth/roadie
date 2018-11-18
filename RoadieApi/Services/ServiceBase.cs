@@ -129,6 +129,9 @@ namespace Roadie.Api.Services
                                     .Include(x => x.Artist)
                                     .Include(x => x.Genres)
                                     .Include("Genres.Genre")
+                                    .Include(x => x.Medias)
+                                    .Include("Medias.Tracks")
+                                    .Include("Medias.Tracks.TrackArtist")
                                     .FirstOrDefault(x => x.RoadieId == id);
             }, data.Release.CacheRegionUrn(id));
         }
@@ -156,20 +159,29 @@ namespace Roadie.Api.Services
             }, data.Track.CacheRegionUrn(id));
         }
 
-        protected ApplicationUser GetUser(Guid id)
+        protected ApplicationUser GetUser(Guid? id)
         {
-            return this.CacheManager.Get(ApplicationUser.CacheUrn(id), () =>
+            if(!id.HasValue)
+            {
+                return null;
+            }
+            return this.CacheManager.Get(ApplicationUser.CacheUrn(id.Value), () =>
             {
                 return this.DbContext.Users
                                     .Include(x => x.ArtistRatings)
                                     .Include(x => x.ReleaseRatings)
                                     .Include(x => x.TrackRatings)
                                     .FirstOrDefault(x => x.RoadieId == id);
-            }, ApplicationUser.CacheRegionUrn(id));
+
+            }, ApplicationUser.CacheRegionUrn(id.Value));
         }
 
         protected List<BookmarkList> GetUserBookmarks(User roadieUser)
         {
+            if(roadieUser == null)
+            {
+                return null;
+            }
             return this.CacheManager.Get($"urn:user_bookmarks:{ roadieUser.Id }", () =>
             {
                 var bookmarks = from b in this.DbContext.Bookmarks
@@ -311,5 +323,6 @@ namespace Roadie.Api.Services
         {
             return new Image($"{this.HttpContext.ImageBaseUrl }/thumbnail/{ type }/{id}");
         }
+
     }
 }

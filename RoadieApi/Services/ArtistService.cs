@@ -246,6 +246,7 @@ namespace Roadie.Api.Services
                                                                                  select ut.PlayedCount ?? 0).Sum(),
                                                              Thumbnail = MakeReleaseThumbnailImage(r.RoadieId)
                                                          }).ToArray().GroupBy(x => x.Release.Value).Select(x => x.First()).OrderBy(x => x.Release.Text).ToArray();
+                    result.ArtistContributionReleases = result.ArtistContributionReleases.Any() ? result.ArtistContributionReleases : null;
                 }
                 if (includes.Contains("labels"))
                 {
@@ -283,6 +284,7 @@ namespace Roadie.Api.Services
                                                TrackCount = trackCount,
                                                Thumbnail = MakeLabelThumbnailImage(l.RoadieId)
                                            }).ToArray().GroupBy(x => x.Label.Value).Select(x => x.First()).OrderBy(x => x.SortName).ThenBy(x => x.Label.Text).ToArray();
+                    result.ArtistLabels = result.ArtistLabels.Any() ? result.ArtistLabels : null;
                 }
             }
             sw.Stop();
