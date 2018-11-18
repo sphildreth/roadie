@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("image")]
+    [Route("images")]
     [ApiController]
     //  [Authorize]
     public class ImageController : EntityControllerBase

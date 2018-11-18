@@ -8,14 +8,15 @@ using Roadie.Library.Caching;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("user")]
+    [Route("users")]
     [ApiController]
-    [Authorize]
+  //  [Authorize]
     public class UserController : EntityControllerBase
     {
         private IUserService UserService { get; }
@@ -55,9 +56,10 @@ namespace Roadie.Api.Controllers
         //    return Ok(result);
         //}
 
-        [HttpPost]
+
+        [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List(PagedRequest request)
+        public async Task<IActionResult> List([FromQuery]PagedRequest request)
         {
             var result = await this.UserService.List(request);
             if (!result.IsSuccess)
@@ -65,6 +67,12 @@ namespace Roadie.Api.Controllers
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
             return Ok(result);
+        }
+
+        public class PagingParams
+        {
+            public int Page { get; set; } = 1;
+            public int Limit { get; set; } = 5;
         }
     }
 }

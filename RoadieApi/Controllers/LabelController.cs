@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("label")]
+    [Route("labels")]
     [ApiController]
     [Authorize]
     public class LabelController : EntityControllerBase
@@ -55,9 +55,9 @@ namespace Roadie.Api.Controllers
         //    return Ok(result);
         //}
 
-        [HttpPost]
+        [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List(PagedRequest request)
+        public async Task<IActionResult> List([FromQuery]PagedRequest request)
         {
             var result = await this.LabelService.List(roadieUser: await this.CurrentUserModel(),
                                                         request: request);

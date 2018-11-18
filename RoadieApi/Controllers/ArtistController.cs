@@ -16,7 +16,7 @@ using models = Roadie.Library.Models;
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("artist")]
+    [Route("artists")]
     [ApiController]
     [Authorize]
     public class ArtistController : EntityControllerBase
@@ -53,9 +53,9 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-        [HttpPost]
+        [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List(PagedRequest request)
+        public async Task<IActionResult> List([FromQuery]PagedRequest request)
         {
             var result = await this.ArtistService.List(roadieUser: await this.CurrentUserModel(),
                                                         request: request);

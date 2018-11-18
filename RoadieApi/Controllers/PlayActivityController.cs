@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("playactivity")]
+    [Route("playactivities")]
     [ApiController]
     [Authorize]
     public class PlayActivityController : EntityControllerBase
@@ -29,9 +29,9 @@ namespace Roadie.Api.Controllers
             this.PlayActivityService = playActivityService;
         }
 
-        [HttpPost]
+        [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> PlayActivity(PagedRequest request)
+        public async Task<IActionResult> PlayActivity([FromQuery]PagedRequest request)
         {
             var result = await this.PlayActivityService.List(request);
             if (!result.IsSuccess)
@@ -41,9 +41,9 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-        [HttpPost("{userId}")]
+        [HttpGet("{userId}")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> PlayActivity([FromBody]PagedRequest request, Guid userId)
+        public async Task<IActionResult> PlayActivity([FromQuery]PagedRequest request, Guid userId)
         {
             var user = this.UserManager.Users.FirstOrDefault(x => x.RoadieId == userId);
             if (user == null)

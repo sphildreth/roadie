@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("collection")]
+    [Route("collections")]
     [ApiController]
     [Authorize]
     public class CollectionController : EntityControllerBase
@@ -55,9 +55,9 @@ namespace Roadie.Api.Controllers
         //    return Ok(result);
         //}
 
-        [HttpPost]
+        [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List(PagedRequest request)
+        public async Task<IActionResult> List([FromQuery]PagedRequest request)
         {
             var result = await this.CollectionService.List(roadieUser: await this.CurrentUserModel(),
                                                            request: request);

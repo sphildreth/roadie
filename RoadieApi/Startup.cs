@@ -38,14 +38,6 @@ namespace Roadie.Api
             this._configuration = configuration;
             this._loggerFactory = loggerFactory;
 
-            //TypeAdapterConfig<Roadie.Library.Data.Release, Roadie.Library.Models.Releases.ReleaseList>
-            //    .NewConfig()
-            //    .Map(rml => rml.Artist.Value,
-            //         src => src.Artist.RoadieId)
-            //    .Map(rml => rml.Artist.Text,
-            //         src => src.Artist.Name)
-            //    .Compile();
-
             TypeAdapterConfig<Roadie.Library.Data.Image, Roadie.Library.Models.Image>
                 .NewConfig()
                 .Map(i => i.ArtistId,
@@ -65,12 +57,18 @@ namespace Roadie.Api
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseCors("Cors");
+            // global cors policy
+            app.UseCors(x => x
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials());
+            
             app.UseAuthentication();
             //app.UseSwagger();
             //app.UseSwaggerUI(c =>
             //{
-            //    c.SwaggerEndpoint("/swagger/v1/swagger.json", "MyComics API v1");
+            //    c.SwaggerEndpoint("/swagger/swagger.json", "Roadie API");
             //    c.RoutePrefix = string.Empty;
             //});
             app.UseSignalR(routes =>

@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("bookmark")]
+    [Route("bookmarks")]
     [ApiController]
     [Authorize]
     public class BookmarkController : EntityControllerBase
@@ -55,9 +55,9 @@ namespace Roadie.Api.Controllers
         //    return Ok(result);
         //}
 
-        [HttpPost]
+        [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List(PagedRequest request)
+        public async Task<IActionResult> List([FromQuery]PagedRequest request)
         {
             var result = await this.BookmarkService.List(roadieUser: await this.CurrentUserModel(),
                                                          request: request);

@@ -8,6 +8,8 @@ using Roadie.Api.Services;
 using Roadie.Library.Identity;
 using System;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Controllers
@@ -51,11 +53,21 @@ namespace Roadie.Api.Controllers
                     if (!loginResult.Succeeded)
                     {
                         return BadRequest();
-                    }
-                    // If successful login return OK with generated token
+                    }                    
                     var user = await userManager.FindByNameAsync(model.Username);
+                    var now = DateTime.UtcNow;
+                    user.LastLogin = now;
+                    user.LastUpdated = now;
+                    await userManager.UpdateAsync(user);
                     var t = await this.tokenService.GenerateToken(user, this.userManager);
-                    return Ok(t);
+                    return Ok(new 
+                    {
+                        Id = user.RoadieId,
+                        Username = user.UserName,
+                        user.Email,
+                        user.LastLogin,
+                        Token = t
+                    });
                 }
                 catch (Exception ex)
                 {

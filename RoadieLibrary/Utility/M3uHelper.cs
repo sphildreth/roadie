@@ -5,8 +5,15 @@ using System.Text;
 
 namespace Roadie.Library.Utility
 {
+    /// <summary>
+    /// Helper to work with M3U files
+    /// <seealso cref="https://en.wikipedia.org/wiki/M3U"/>
+    /// </summary>
     public static class M3uHelper
     {
+        /// <summary>
+        /// For the given collection of tracks generate a M3U file in a single string
+        /// </summary>
         public static string M3uContentForTracks(IEnumerable<TrackList> tracks)
         {
             var result = new List<string>

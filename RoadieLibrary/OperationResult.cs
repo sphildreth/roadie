@@ -1,21 +1,63 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace Roadie.Library
 {
+    [Serializable]
+    public class AppException : Exception
+    {
+        public AppException() : base()
+        {
+        }
+
+        public AppException(string message) : base(message)
+        {
+        }
+
+        public AppException(string message, params object[] args)
+            : base(String.Format(CultureInfo.CurrentCulture, message, args))
+        {
+        }
+    }
+
     [Serializable]
     public class OperationResult<T>
     {
         private List<Exception> _errors;
         private List<string> _messages;
         public Dictionary<string, object> AdditionalData { get; set; }
+
+        /// <summary>
+        /// Client friendly exceptions
+        /// </summary>
+        [JsonProperty("errors")]
+        public IEnumerable<AppException> AppExceptions
+        {
+            get
+            {
+                if (this.Errors == null || !this.Errors.Any())
+                {
+                    return null;
+                }
+                return this.Errors.Select(x => new AppException(x.Message));
+            }
+        }
+
         public T Data { get; set; }
+
+        /// <summary>
+        /// Server side visible exceptions
+        /// </summary>
+        [JsonIgnore]
         public IEnumerable<Exception> Errors { get; set; }
-        public bool IsSuccess { get; set; }
+
         [JsonIgnore]
         public bool IsNotFoundResult { get; set; }
+
+        public bool IsSuccess { get; set; }
 
         public IEnumerable<string> Messages
         {
@@ -77,7 +119,7 @@ namespace Roadie.Library
         {
             if (exception != null)
             {
-                if(this._errors == null)
+                if (this._errors == null)
                 {
                     this._errors = new List<Exception>();
                 }
@@ -89,7 +131,7 @@ namespace Roadie.Library
         {
             if (!string.IsNullOrEmpty(message))
             {
-                if(this._messages == null)
+                if (this._messages == null)
                 {
                     this._messages = new List<string>();
                 }

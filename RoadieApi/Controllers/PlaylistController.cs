@@ -10,7 +10,7 @@ using Roadie.Library.Identity;
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("playlist")]
+    [Route("playlists")]
     [ApiController]
     [Authorize]
     public class PlaylistController : EntityControllerBase

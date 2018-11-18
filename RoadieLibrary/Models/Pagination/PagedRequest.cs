@@ -20,7 +20,7 @@ namespace Roadie.Library.Models.Pagination
             }
         }
 
-        public int? Page { get; set; }
+        public int? Page { get; set; } = 1;
         public int PageValue
         {
             get
@@ -30,7 +30,7 @@ namespace Roadie.Library.Models.Pagination
         }
         public string Sort { get; set; }
         public string Order { get; set; }
-        public int? Limit { get; set; }
+        public int? Limit { get; set; } = 10;
         public int LimitValue
         {
             get
@@ -84,7 +84,7 @@ namespace Roadie.Library.Models.Pagination
             return result.ToString();
         }
 
-        public bool FilterOnlyMissing { get; set; }
+        public bool? FilterOnlyMissing { get; set; }
 
         public Guid? FilterToArtistId { get; set; }
 

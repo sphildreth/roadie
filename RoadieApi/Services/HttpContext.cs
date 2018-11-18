@@ -11,7 +11,7 @@ namespace Roadie.Api.Services
         public HttpContext(IUrlHelper urlHelper)
         {
             this.BaseUrl = $"{ urlHelper.ActionContext.HttpContext.Request.Scheme}://{ urlHelper.ActionContext.HttpContext.Request.Host }";
-            this.ImageBaseUrl = $"{ this.BaseUrl}/image";
+            this.ImageBaseUrl = $"{ this.BaseUrl}/images";
         }
     }
 }

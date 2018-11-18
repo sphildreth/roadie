@@ -16,7 +16,7 @@ using models = Roadie.Library.Models;
 namespace Roadie.Api.Controllers
 {
     [Produces("application/json")]
-    [Route("release")]
+    [Route("releases")]
     [ApiController]
     [Authorize]
     public class ReleaseController : EntityControllerBase
@@ -53,9 +53,9 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-        [HttpPost]
+        [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List(PagedRequest request, string inc)
+        public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc)
         {
             var result = await this.ReleaseService.List(user: await this.CurrentUserModel(),
                                                                request: request);
