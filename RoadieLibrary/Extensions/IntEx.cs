@@ -1,4 +1,6 @@
-﻿namespace Roadie.Library.Extensions
+﻿using System;
+
+namespace Roadie.Library.Extensions
 {
     public static class IntEx
     {
@@ -9,6 +11,16 @@
                 return null;
             }
             return value.HasValue ? value : alternative;
+        }
+
+        public static int ToSecondsFromMilliseconds(this int? value)
+        {
+            if (value > 0)
+            {
+                var contentDurationTimeSpan = TimeSpan.FromMilliseconds((double)(value ?? 0));
+                return (int)contentDurationTimeSpan.TotalSeconds;
+            }
+            return 0;
         }
     }
 }

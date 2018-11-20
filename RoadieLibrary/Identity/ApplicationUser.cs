@@ -120,10 +120,10 @@ namespace Roadie.Library.Identity
 
         public ICollection<UserTrack> TrackRatings { get; set; }
 
-        [Column("username")]
-        [Required]
-        [StringLength(20)]
-        public string Username { get; set; }
+        //[Column("username")]
+        //[Required]
+        //[StringLength(20)]
+        //public string UserName { get; set; }
 
         public virtual ICollection<ApplicationUserRole> UserRoles { get; set; }
 

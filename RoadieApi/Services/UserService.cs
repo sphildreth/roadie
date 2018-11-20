@@ -46,7 +46,7 @@ namespace Roadie.Api.Services
             }
 
             var result = (from u in this.DbContext.Users
-                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (u.Username.Contains(request.FilterValue))))
+                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (u.UserName.Contains(request.FilterValue))))
                           select new UserList
                           {
                               DatabaseId = u.Id,

@@ -161,7 +161,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public long size;
+        public int size;
 
         /// <remarks/>
         [System.Xml.Serialization.XmlIgnoreAttribute()]
@@ -221,7 +221,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public double averageRating;
+        public short averageRating;
 
         /// <remarks/>
         [System.Xml.Serialization.XmlIgnoreAttribute()]
@@ -229,7 +229,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public long playCount;
+        public int playCount;
 
         /// <remarks/>
         [System.Xml.Serialization.XmlIgnoreAttribute()]
@@ -253,7 +253,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public System.DateTime starred;
+        public System.DateTime? starred;
 
         /// <remarks/>
         [System.Xml.Serialization.XmlIgnoreAttribute()]
@@ -1688,7 +1688,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 
         /// <remarks/>
         [System.Xml.Serialization.XmlTextAttribute()]
-        public string[] Text;
+        public string value;
     }
 
     /// <remarks/>
@@ -1718,7 +1718,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public System.DateTime starred;
+        public System.DateTime? starred;
 
         /// <remarks/>
         [System.Xml.Serialization.XmlIgnoreAttribute()]
@@ -1734,7 +1734,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public double averageRating;
+        public short averageRating;
 
         /// <remarks/>
         [System.Xml.Serialization.XmlIgnoreAttribute()]

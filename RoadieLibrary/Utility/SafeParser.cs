@@ -59,6 +59,20 @@ namespace Roadie.Library.Utility
             }
         }
 
+        public static Guid? ToGuid(object input)
+        {
+            if(input == null)
+            {
+                return null;
+            }
+            if (!Guid.TryParse(input.ToString(), out Guid result))
+            {
+                return null;
+            }
+            return result;
+        }
+
+
         public static DateTime? ToDateTime(object input)
         {
             if (input == null)

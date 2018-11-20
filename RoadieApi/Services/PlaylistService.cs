@@ -60,7 +60,7 @@ namespace Roadie.Api.Services
                               },
                               User = new DataToken
                               {
-                                  Text = u.Username,
+                                  Text = u.UserName,
                                   Value = u.RoadieId.ToString()
                               },
                               PlaylistCount = this.DbContext.PlaylistTracks.Where(x => x.PlayListId == pl.Id).Count(),

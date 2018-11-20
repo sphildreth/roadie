@@ -7,6 +7,7 @@ using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.ThirdPartyApi.Subsonic;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Controllers
@@ -42,6 +43,15 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result.Data, "musicFolders");
         }
 
+        [HttpGet("getMusicDirectory.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetMusicDirectory([FromQuery]Request request, string id)
+        {
+            var result = await this.SubsonicService.GetMusicDirectory(request, null, id);
+            return this.BuildResponse(request, result.Data, "directory");
+        }
+
+
         [HttpGet("getPlaylists.view")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetPlaylists([FromQuery]Request request, string username)
@@ -49,6 +59,43 @@ namespace Roadie.Api.Controllers
             var result = await this.SubsonicService.GetPlaylists(request, null, username);
             return this.BuildResponse(request, result.Data, "playlists");
         }
+
+        [HttpGet("getGenres.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetGenres([FromQuery]Request request)
+        {
+            var result = await this.SubsonicService.GetGenres(request);
+            return this.BuildResponse(request, result.Data, "genres");
+        }
+
+        [HttpGet("getPodcasts.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetPodcasts([FromQuery]Request request, bool includeEpisodes)
+        {
+            var result = await this.SubsonicService.GetPodcasts(request);
+            return this.BuildResponse(request, result.Data, "podcasts");
+        }
+
+        [HttpGet("getCoverArt.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetCoverArt([FromQuery]Request request, int? size)
+        {
+            var result = await this.SubsonicService.GetCoverArt(request, size);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return File(fileContents: result.Data.Bytes,
+                        contentType: result.ContentType,
+                        fileDownloadName: $"{ result.Data.Caption ??  request.id.ToString()}.jpg",
+                        lastModified: result.LastModified,
+                        entityTag: result.ETag);
+        }
+
 
         [HttpGet("ping.view")]
         [HttpPost("ping.view")]

@@ -1,4 +1,5 @@
 ﻿using Roadie.Library.Extensions;
+using Roadie.Library.Utility;
 using System;
 
 namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
@@ -6,6 +7,12 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
     [Serializable]
     public class Request
     {
+        public const string ArtistIdIdentifier = "A:";
+        public const string CollectionIdentifier = "C:";
+        public const string ReleaseIdIdentifier = "R:";
+        public const string TrackIdIdentifier = "T:";
+        public const string PlaylistdIdentifier = "P:";
+
         /// <summary>
         /// A unique string identifying the client application.
         /// </summary>
@@ -82,6 +89,77 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         /// The protocol version implemented by the client, i.e., the version of the subsonic-rest-api.xsd schema used (see below).
         /// </summary>
         public string v { get; set; }
+
+        /// <summary>
+        /// A string which uniquely identifies the music folder. Obtained by calls to getIndexes or getMusicDirectory.
+        /// </summary>
+        public string id { get; set; }
+
+        public Guid? ArtistId
+        {
+            get
+            {
+               if(string.IsNullOrEmpty(this.id))
+               {
+                    return null;
+               }
+               if(this.id.StartsWith(Request.ArtistIdIdentifier))
+               {
+                    return SafeParser.ToGuid(this.id.Replace(Request.ArtistIdIdentifier, ""));
+               }
+                return null;
+            }
+        }
+
+        public Guid? CollectionId
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this.id))
+                {
+                    return null;
+                }
+                if (this.id.StartsWith(Request.CollectionIdentifier))
+                {
+                    return SafeParser.ToGuid(this.id.Replace(Request.CollectionIdentifier, ""));
+                }
+                return null;
+            }
+        }
+
+        public Guid? ReleaseId
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this.id))
+                {
+                    return null;
+                }
+                if (this.id.StartsWith(Request.ReleaseIdIdentifier))
+                {
+                    return SafeParser.ToGuid(this.id.Replace(Request.ReleaseIdIdentifier, ""));
+                }
+                return null;
+            }
+        }
+
+        public Guid? PlaylistId
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this.id))
+                {
+                    return null;
+                }
+                if (this.id.StartsWith(Request.PlaylistdIdentifier))
+                {
+                    return SafeParser.ToGuid(this.id.Replace(Request.PlaylistdIdentifier, ""));
+                }
+                return null;
+            }
+        }
+
+
 
         //public user CheckPasswordGetUser(ICacheManager<object> cacheManager, RoadieDbContext context)
         //{

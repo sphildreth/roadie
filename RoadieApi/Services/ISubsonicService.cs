@@ -16,6 +16,10 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<Response>> GetPodcasts(Request request);
 
+        Task<OperationResult<Response>> GetMusicDirectory(Request request, Roadie.Library.Models.Users.User roadieUser, string id);
+
+        Task<FileOperationResult<Roadie.Library.Models.Image>> GetCoverArt(Request request, int? size);
+
         OperationResult<Response> Ping(Request request);
     }
 }
