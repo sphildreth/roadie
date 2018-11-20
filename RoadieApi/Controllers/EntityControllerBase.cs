@@ -1,11 +1,16 @@
 ﻿using Mapster;
 using Microsoft.AspNet.OData;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
+using System;
+using System.IO;
+using System.Net;
 using System.Threading.Tasks;
 using models = Roadie.Library.Models.Users;
 
@@ -49,6 +54,44 @@ namespace Roadie.Api.Controllers
             result.IsAdmin = User.IsInRole("Admin");
             result.IsEditor = User.IsInRole("Editor");
             return result;
+        }
+
+        protected async Task<FileStreamResult> StreamTrack(Guid id, ITrackService trackService, IPlayActivityService playActivityService)
+        {
+            var user = await this.CurrentUserModel();
+            var track = await trackService.ById(user, id, null);
+            if (track == null || track.IsNotFoundResult)
+            {
+                Response.StatusCode = (int)HttpStatusCode.NotFound;
+            }
+            var info = await trackService.TrackStreamInfo(id,
+                                                               Services.TrackService.DetermineByteStartFromHeaders(this.Request.Headers),
+                                                               Services.TrackService.DetermineByteEndFromHeaders(this.Request.Headers, track.Data.FileSize));
+            if (!info.IsSuccess)
+            {
+                Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            }
+            Response.Headers.Add("Content-Disposition", info.Data.ContentDisposition);
+            Response.Headers.Add("X-Content-Duration", info.Data.ContentDuration);
+            if (!info.Data.IsFullRequest)
+            {
+                Response.Headers.Add("Accept-Ranges", info.Data.AcceptRanges);
+                Response.Headers.Add("Content-Range", info.Data.ContentRange);
+            }
+            Response.Headers.Add("Content-Length", info.Data.ContentLength);
+            Response.ContentType = info.Data.ContentType;
+            Response.StatusCode = info.Data.IsFullRequest ? (int)HttpStatusCode.OK : (int)HttpStatusCode.PartialContent;
+            Response.Headers.Add("Last-Modified", info.Data.LastModified);
+            Response.Headers.Add("ETag", info.Data.Etag);
+            Response.Headers.Add("Cache-Control", info.Data.CacheControl);
+            Response.Headers.Add("Expires", info.Data.Expires);
+            var stream = new MemoryStream(info.Data.Bytes);
+            var playListUser = await playActivityService.CreatePlayActivity(user, info.Data);
+            this._logger.LogInformation($"StreamTrack PlayActivity `{ playListUser?.ToString() }`, StreamInfo `{ info.Data.ToString() }`");
+            return new FileStreamResult(stream, info.Data.ContentType)
+            {
+                FileDownloadName = info.Data.FileName
+            };
         }
     }
 }

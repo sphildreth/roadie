@@ -7,6 +7,8 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
     [Serializable]
     public class Request
     {
+        public const int MaxPageSize = 500;
+
         public const string ArtistIdIdentifier = "A:";
         public const string CollectionIdentifier = "C:";
         public const string ReleaseIdIdentifier = "R:";
@@ -159,6 +161,112 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
             }
         }
 
+        public Guid? TrackId
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this.id))
+                {
+                    return null;
+                }
+                if (this.id.StartsWith(Request.TrackIdIdentifier))
+                {
+                    return SafeParser.ToGuid(this.id.Replace(Request.TrackIdIdentifier, ""));
+                }
+                return null;
+            }
+        }
+
+        #region Paging and List Related
+
+        /// <summary>
+        /// The number of albums to return. Max 500.
+        /// </summary>
+        public int? Size { get; set; }
+
+        /// <summary>
+        /// The list offset. Useful if you for example want to page through the list of newest albums.
+        /// </summary>
+        public int? Offset { get; set; }
+
+        /// <summary>
+        /// The first year in the range. If fromYear > toYear a reverse chronological list is returned.
+        /// </summary>
+        public int? FromYear { get; set; }
+
+        /// <summary>
+        /// The last year in the range.
+        /// </summary>
+        public int? ToYear { get; set; }
+
+        /// <summary>
+        /// The name of the genre, e.g., "Rock".
+        /// </summary>
+        public string Genre { get; set; }
+
+        /// <summary>
+        /// Only return albums in the music folder with the given ID. See getMusicFolders.
+        /// </summary>
+        public int? MusicFolderId { get; set; }
+
+        public ListType Type { get; set; }
+
+        //var pagedRequest = new Library.Models.Pagination.PagedRequest
+        //{
+
+        //};
+
+        private Library.Models.Pagination.PagedRequest _pagedRequest;
+
+        public Library.Models.Pagination.PagedRequest PagedRequest
+        {
+            get
+            {
+                if(this._pagedRequest == null)
+                {
+                    var limit = this.Size ?? Request.MaxPageSize;
+                    var page = this.Offset > 0 ? (int)Math.Ceiling((decimal)this.Offset.Value / (decimal)limit) : 1;
+                    var pagedRequest = new Pagination.PagedRequest();
+                    switch (this.Type)
+                    {
+                        case ListType.Newest:
+                            pagedRequest.Sort = "CreatedDate";
+                            pagedRequest.Order = "DESC";
+                            break;
+                        case ListType.Highest:
+                            pagedRequest.Sort = "Rating";
+                            pagedRequest.Order = "DESC";
+                            pagedRequest.FilterRatedOnly = true;
+                            break;
+                        case ListType.Frequent:
+                            pagedRequest.Sort = "TrackPlayedCount";
+                            pagedRequest.Order = "DESC";
+                            break;
+                        case ListType.Recent:
+                            pagedRequest.Sort = "LastPlayed";
+                            pagedRequest.Order = "DESC";
+                            break;
+                        case ListType.AlphabeticalByName:
+                            break;
+                        case ListType.AlphabeticalByArtist:
+                            break;
+                        case ListType.Starred:
+                            pagedRequest.FilterRatedOnly = true;
+                            break;
+                        case ListType.ByGenre:
+                            break;
+                        default:
+                            break;
+                    }
+                    pagedRequest.Limit = limit;
+                    pagedRequest.Page = page;
+                    this._pagedRequest = pagedRequest;
+                }
+                return this._pagedRequest;
+            }
+        }
+
+        #endregion
 
 
         //public user CheckPasswordGetUser(ICacheManager<object> cacheManager, RoadieDbContext context)

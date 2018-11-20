@@ -68,40 +68,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("track/{id}.{mp3?}")]
         public async Task<FileStreamResult> StreamTrack(Guid id)
         {
-            var user = await this.CurrentUserModel();
-            var track = await this.TrackService.ById(user, id, null);
-            if (track == null || track.IsNotFoundResult)
-            {
-                Response.StatusCode = (int)HttpStatusCode.NotFound;
-            }
-            var info = await this.TrackService.TrackStreamInfo(id,
-                                                               Services.TrackService.DetermineByteStartFromHeaders(this.Request.Headers),
-                                                               Services.TrackService.DetermineByteEndFromHeaders(this.Request.Headers, track.Data.FileSize));
-            if (!info.IsSuccess)
-            {
-                Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-            }
-            Response.Headers.Add("Content-Disposition", info.Data.ContentDisposition);
-            Response.Headers.Add("X-Content-Duration", info.Data.ContentDuration);
-            if (!info.Data.IsFullRequest)
-            {
-                Response.Headers.Add("Accept-Ranges", info.Data.AcceptRanges);
-                Response.Headers.Add("Content-Range", info.Data.ContentRange);
-            }
-            Response.Headers.Add("Content-Length", info.Data.ContentLength);
-            Response.ContentType = info.Data.ContentType;
-            Response.StatusCode = info.Data.IsFullRequest ? (int)HttpStatusCode.OK : (int)HttpStatusCode.PartialContent;
-            Response.Headers.Add("Last-Modified", info.Data.LastModified);
-            Response.Headers.Add("ETag", info.Data.Etag);
-            Response.Headers.Add("Cache-Control", info.Data.CacheControl);
-            Response.Headers.Add("Expires", info.Data.Expires);
-            var stream = new MemoryStream(info.Data.Bytes);
-            var playListUser = await this.PlayActivityService.CreatePlayActivity(user, info.Data);
-            this._logger.LogInformation($"StreamTrack PlayActivity `{ playListUser?.ToString() }`, StreamInfo `{ info.Data.ToString() }`");
-            return new FileStreamResult(stream, info.Data.ContentType)
-            {
-                FileDownloadName = info.Data.FileName
-            };
+            return await base.StreamTrack(id, this.TrackService, this.PlayActivityService);
         }
     }
 }

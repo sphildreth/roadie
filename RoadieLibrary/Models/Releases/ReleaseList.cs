@@ -44,5 +44,7 @@ namespace Roadie.Library.Models.Releases
         public int? TrackPlayedCount { get; set; }
         public UserRelease UserRating { get; set; }
         public Statuses? Status { get; set; }
+        public DataToken Genre { get; set; }
+        public DateTime? LastPlayed { get; set; }
     }
 }

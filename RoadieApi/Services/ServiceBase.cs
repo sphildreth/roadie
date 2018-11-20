@@ -159,6 +159,21 @@ namespace Roadie.Api.Services
             }, data.Track.CacheRegionUrn(id));
         }
 
+        protected ApplicationUser GetUser(string username)
+        {
+            if (string.IsNullOrEmpty(username))
+            {
+                return null;
+            }
+            var userByUsername = this.CacheManager.Get(ApplicationUser.CacheUrnByUsername(username), () =>
+            {
+                return this.DbContext.Users
+                                    .FirstOrDefault(x => x.UserName == username);                                    
+
+            }, null);
+            return this.GetUser(userByUsername?.RoadieId);
+        }
+
         protected ApplicationUser GetUser(Guid? id)
         {
             if(!id.HasValue)

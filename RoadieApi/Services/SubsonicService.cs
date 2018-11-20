@@ -5,6 +5,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
 using Roadie.Library.Imaging;
+using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
@@ -28,6 +29,8 @@ namespace Roadie.Api.Services
     {
         public const string SubsonicVersion = "1.16.1";
 
+        private IReleaseService ReleaseService { get; }
+
         public SubsonicService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
                              IHttpContext httpContext,
@@ -35,9 +38,11 @@ namespace Roadie.Api.Services
                              ICacheManager cacheManager,
                              ILogger<SubsonicService> logger,
                              ICollectionService collectionService,
-                             IPlaylistService playlistService)
+                             IPlaylistService playlistService,
+                             IReleaseService releaseService)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
+            this.ReleaseService = releaseService;
         }
 
         public OperationResult<subsonic.Response> Ping(subsonic.Request request)
@@ -348,6 +353,7 @@ namespace Roadie.Api.Services
                                        genre = genre != null ? genre.Genre.Name : null,
                                        coverArt = subsonic.Request.ReleaseIdIdentifier + r.RoadieId.ToString(),
                                        created = collection.CreatedDate,
+                                       path = $"{ r.Artist.Name}/{ r.Title}/",
                                        playCount = playCount ?? 0
                                    }).ToArray();
 
@@ -480,12 +486,12 @@ namespace Roadie.Api.Services
             }
             else if(!string.IsNullOrEmpty(request.u))
             {
-                var userByUsername = this.DbContext.Users.FirstOrDefault(x => x.UserName == request.u);
-                if(userByUsername == null)
+                var user = this.GetUser(request.u);
+                if(user == null)
                 {
                     return new FileOperationResult<Roadie.Library.Models.Image>(true, $"Invalid Username [{ request.u}]");
                 }
-                result.Data.Bytes = userByUsername.Avatar;
+                result.Data.Bytes = user.Avatar;
             }
 
             if (size.HasValue && result.Data.Bytes != null)
@@ -506,6 +512,83 @@ namespace Roadie.Api.Services
                 IsSuccess = result?.IsSuccess ?? false,
                 OperationTime = sw.ElapsedMilliseconds
             };
+        }
+
+        public async Task<OperationResult<subsonic.Response>> GetAlbumList(subsonic.Request request, User roadieUser)
+        {
+            var releaseResult = new Library.Models.Pagination.PagedResult<ReleaseList>();
+
+            switch (request.Type)
+            {
+                case subsonic.ListType.Random:
+                    releaseResult = await this.ReleaseService.List(roadieUser, request.PagedRequest, true);
+                    break;
+                case subsonic.ListType.Highest:
+                case subsonic.ListType.Recent:
+                case subsonic.ListType.Newest:
+                case subsonic.ListType.Frequent:
+                    releaseResult = await this.ReleaseService.List(roadieUser, request.PagedRequest);
+                    break;
+                    break;
+                case subsonic.ListType.AlphabeticalByName:
+                    break;
+                case subsonic.ListType.AlphabeticalByArtist:
+                    break;
+                case subsonic.ListType.Starred:
+                    releaseResult = await this.ReleaseService.List(roadieUser, request.PagedRequest);
+                    break;
+                case subsonic.ListType.ByYear:
+                    break;
+                case subsonic.ListType.ByGenre:
+                    break;
+                default:
+                    return new OperationResult<subsonic.Response>($"Unknown Album List Type [{ request.Type}]");
+            }
+
+            if(!releaseResult.IsSuccess)
+            {
+                return new OperationResult<subsonic.Response>(releaseResult.Message);
+            }
+
+            var albums = releaseResult.Rows.Select(r => new subsonic.Child
+            {
+                id = subsonic.Request.ReleaseIdIdentifier + r.Id.ToString(),
+                parent = subsonic.Request.ArtistIdIdentifier + r.Artist.Value,
+                isDir = true,
+                title = r.Release.Text,
+                album = r.Release.Text,
+                albumId = subsonic.Request.ReleaseIdIdentifier + r.Id.ToString(),
+                artist = r.Artist.Text,
+                year = SafeParser.ToNumber<int>(r.ReleaseYear),
+           //     genre = r.Genre.Text,
+                coverArt = subsonic.Request.ReleaseIdIdentifier + r.Id.ToString(),
+                averageRating = r.Rating ?? 0,
+                averageRatingSpecified = true,
+                created = r.CreatedDate.Value,
+                createdSpecified = true,
+                path = $"{ r.Artist.Text}/{ r.Release.Text}/",
+                playCount = r.TrackPlayedCount ?? 0,
+                playCountSpecified = true,
+                starred = r.UserRating != null ? (r.UserRating.IsFavorite ? r.UserRating.RatedDate : null) : null,
+                userRating = r.UserRating != null ? r.UserRating.Rating ?? 0 : 0,
+                userRatingSpecified = r.UserRating != null && r.UserRating.Rating  != null
+            }).ToArray();
+
+            return new OperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok,
+                    ItemElementName = subsonic.ItemChoiceType.albumList,
+                    Item = new subsonic.AlbumList
+                    {
+                        album = albums
+                    }
+                }
+            };
+
         }
 
     }

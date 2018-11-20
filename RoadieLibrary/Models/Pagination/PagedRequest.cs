@@ -89,6 +89,7 @@ namespace Roadie.Library.Models.Pagination
         public Guid? FilterToArtistId { get; set; }
 
         public int? FilterMinimumRating { get; set; }
+        public bool FilterRatedOnly { get; internal set; }
 
         public PagedRequest()
         { }

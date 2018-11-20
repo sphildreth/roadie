@@ -110,16 +110,16 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
 
-            if (!string.IsNullOrEmpty(request.Sort))
-            {
-                request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
-                request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
-                request.Sort = request.Sort.Replace("ReleaseDate", "ReleaseDateDateTime");
-                request.Sort = request.Sort.Replace("releaseYear", "ReleaseDateDateTime");
-            }
-
             var result = (from r in this.DbContext.Releases.Include("Artist")
                           join a in this.DbContext.Artists on r.ArtistId equals a.Id
+                          let lastPlayed = (from ut in this.DbContext.UserTracks
+                                            join t in this.DbContext.Tracks on ut.TrackId equals t.Id
+                                            join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                            join rl in this.DbContext.Releases on rm.ReleaseId equals rl.Id
+                                            where rl.Id == r.Id
+                                            orderby ut.LastPlayed descending
+                                            select ut.LastPlayed                                            
+                                            ).FirstOrDefault()
                           where (request.FilterMinimumRating == null || r.Rating >= request.FilterMinimumRating.Value)
                           where (request.FilterToArtistId == null || r.Artist.RoadieId == request.FilterToArtistId)
                           where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || r.AlternateNames.Contains(request.FilterValue)))
@@ -146,6 +146,7 @@ namespace Roadie.Api.Services
                               TrackCount = r.TrackCount,
                               CreatedDate = r.CreatedDate,
                               LastUpdated = r.LastUpdated,
+                              LastPlayed = lastPlayed != null ? lastPlayed : null,
                               TrackPlayedCount = (from ut in this.DbContext.UserTracks
                                                   join t in this.DbContext.Tracks on ut.TrackId equals t.Id
                                                   join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
@@ -161,7 +162,8 @@ namespace Roadie.Api.Services
 
             if (doRandomize ?? false)
             {
-                request.Limit = request.LimitValue > roadieUser.RandomReleaseLimit ? roadieUser.RandomReleaseLimit : request.LimitValue;
+                var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
+                request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
                 rows = result.OrderBy(x => Guid.NewGuid()).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }
             else
@@ -175,6 +177,14 @@ namespace Roadie.Api.Services
                 {
                     sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Release.Text", "ASC" } }) : request.OrderValue(null);
                 }
+                if(request.FilterRatedOnly)
+                {
+                    result = result.Where(x => x.Rating.HasValue);
+                }
+                if(request.FilterMinimumRating.HasValue)
+                {
+                    result = result.Where(x => x.Rating.HasValue && x.Rating.Value >= request.FilterMinimumRating.Value);
+                }
                 rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }
             if (rows.Any() && roadieUser != null)
@@ -184,11 +194,14 @@ namespace Roadie.Api.Services
                     var row = rows.FirstOrDefault(x => x.DatabaseId == userReleaseRatings.ReleaseId);
                     if (row != null)
                     {
+                        var isDisliked = userReleaseRatings.IsDisliked ?? false;
+                        var isFavorite = userReleaseRatings.IsFavorite ?? false;
                         row.UserRating = new UserRelease
                         {
-                            IsDisliked = userReleaseRatings.IsDisliked ?? false,
-                            IsFavorite = userReleaseRatings.IsFavorite ?? false,
-                            Rating = userReleaseRatings.Rating
+                            IsDisliked = isDisliked,
+                            IsFavorite = isFavorite,
+                            Rating = userReleaseRatings.Rating,
+                            RatedDate = isDisliked || isFavorite ? (DateTime?)(userReleaseRatings.LastUpdated ?? userReleaseRatings.CreatedDate) : null
                         };
                     }
                 }

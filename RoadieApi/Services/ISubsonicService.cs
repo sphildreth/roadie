@@ -18,6 +18,8 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<Response>> GetMusicDirectory(Request request, Roadie.Library.Models.Users.User roadieUser, string id);
 
+        Task<OperationResult<Response>> GetAlbumList(Request request, Roadie.Library.Models.Users.User roadieUser);
+
         Task<FileOperationResult<Roadie.Library.Models.Image>> GetCoverArt(Request request, int? size);
 
         OperationResult<Response> Ping(Request request);
