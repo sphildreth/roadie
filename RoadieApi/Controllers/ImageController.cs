@@ -33,12 +33,12 @@ namespace Roadie.Api.Controllers
         //    return Ok(this._RoadieDbContext.Tracks.ProjectToType<models.Image>());
         //}
 
-        [HttpGet("thumbnail/artist/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("artist/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> ArtistThumbnail(Guid id, int? width, int? height)
         {
-            var result = await this.ImageService.ArtistThumbnail(id, width ?? this.RoadieSettings.Thumbnails.Width, height ?? this.RoadieSettings.Thumbnails.Height);
+            var result = await this.ImageService.ArtistImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
@@ -54,12 +54,13 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
-        [HttpGet("thumbnail/collection/{id}/{width:int?}/{height:int?}")]
+
+        [HttpGet("collection/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> CollectionThumbnail(Guid id, int? width, int? height)
         {
-            var result = await this.ImageService.CollectionThumbnail(id, width ?? this.RoadieSettings.Thumbnails.Width, height ?? this.RoadieSettings.Thumbnails.Height);
+            var result = await this.ImageService.CollectionImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
@@ -113,12 +114,12 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
-        [HttpGet("thumbnail/label/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("label/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> LabelThumbnail(Guid id, int? width, int? height)
         {
-            var result = await this.ImageService.LabelThumbnail(id, width ?? this.RoadieSettings.Thumbnails.Width, height ?? this.RoadieSettings.Thumbnails.Height);
+            var result = await this.ImageService.LabelImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
@@ -134,12 +135,12 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
-        [HttpGet("thumbnail/playlist/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("playlist/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> PlaylistThumbnail(Guid id, int? width, int? height)
         {
-            var result = await this.ImageService.PlaylistThumbnail(id, width ?? this.RoadieSettings.Thumbnails.Width, height ?? this.RoadieSettings.Thumbnails.Height);
+            var result = await this.ImageService.PlaylistImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
@@ -155,12 +156,12 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
-        [HttpGet("thumbnail/release/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("release/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> ReleaseThumbnail(Guid id, int? width, int? height)
         {
-            var result = await this.ImageService.ReleaseThumbnail(id, width ?? this.RoadieSettings.Thumbnails.Width, height ?? this.RoadieSettings.Thumbnails.Height);
+            var result = await this.ImageService.ReleaseImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
@@ -176,12 +177,12 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
-        [HttpGet("thumbnail/track/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("track/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> TrackThumbnail(Guid id, int? width, int? height)
         {
-            var result = await this.ImageService.TrackThumbnail(id, width ?? this.RoadieSettings.Thumbnails.Width, height ?? this.RoadieSettings.Thumbnails.Height);
+            var result = await this.ImageService.TrackImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
@@ -197,12 +198,12 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
-        [HttpGet("thumbnail/user/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("user/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> UserThumbnail(Guid id, int? width, int? height)
         {
-            var result = await this.ImageService.UserThumbnail(id, width ?? this.RoadieSettings.Thumbnails.Width, height ?? this.RoadieSettings.Thumbnails.Height);
+            var result = await this.ImageService.UserImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();

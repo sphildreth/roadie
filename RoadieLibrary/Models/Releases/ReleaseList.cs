@@ -46,5 +46,6 @@ namespace Roadie.Library.Models.Releases
         public Statuses? Status { get; set; }
         public DataToken Genre { get; set; }
         public DateTime? LastPlayed { get; set; }
+        public int? Duration { get; set; }
     }
 }

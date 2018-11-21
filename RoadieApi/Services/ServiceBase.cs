@@ -304,6 +304,7 @@ namespace Roadie.Api.Services
             return MakeThumbnailImage(id, "collection");
         }
 
+
         protected Image MakeImage(Guid id, int width = 200, int height = 200)
         {
             return new Image($"{this.HttpContext.ImageBaseUrl }/{id}/{ width }/{ height }");
@@ -336,7 +337,22 @@ namespace Roadie.Api.Services
 
         private Image MakeThumbnailImage(Guid id, string type)
         {
-            return new Image($"{this.HttpContext.ImageBaseUrl }/thumbnail/{ type }/{id}");
+            return this.MakeImage(id, type, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
+        }
+
+        protected Image MakeImage(Guid id, string type, ImageSize imageSize)
+        {
+            return this.MakeImage(id, type, imageSize.Width, imageSize.Height);
+        }
+
+
+        private Image MakeImage(Guid id, string type, int? width, int? height)
+        {
+            if (width.HasValue && height.HasValue)
+            {
+                return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}/{width}/{height}");
+            }
+            return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}");
         }
 
     }

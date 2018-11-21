@@ -382,7 +382,7 @@ namespace Roadie.Api.Services
                 }
                 if (includes.Contains("images"))
                 {
-                    var releaseImages = this.DbContext.Images.Where(x => x.ReleaseId == release.Id).Select(x => MakeImage(x.RoadieId, this.Configuration.LargeThumbnails.Width, this.Configuration.LargeThumbnails.Height)).ToArray();
+                    var releaseImages = this.DbContext.Images.Where(x => x.ReleaseId == release.Id).Select(x => MakeImage(x.RoadieId, this.Configuration.LargeImageSize.Width, this.Configuration.LargeImageSize.Height)).ToArray();
                     if (releaseImages != null && releaseImages.Any())
                     {
                         result.Images = releaseImages;

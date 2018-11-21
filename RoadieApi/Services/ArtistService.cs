@@ -171,7 +171,7 @@ namespace Roadie.Api.Services
                 }
                 if (includes.Contains("images"))
                 {
-                    result.Images = this.DbContext.Images.Where(x => x.ArtistId == artist.Id).Select(x => MakeImage(x.RoadieId, this.Configuration.LargeThumbnails.Width, this.Configuration.LargeThumbnails.Height)).ToArray();
+                    result.Images = this.DbContext.Images.Where(x => x.ArtistId == artist.Id).Select(x => MakeImage(x.RoadieId, this.Configuration.LargeImageSize.Width, this.Configuration.LargeImageSize.Height)).ToArray();
                 }
                 if (includes.Contains("associatedartists"))
                 {

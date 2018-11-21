@@ -71,7 +71,7 @@ namespace Roadie.Library.Factories
                         artist.Thumbnail = firstImageWithNotNullBytes.Bytes;
                         if (artist.Thumbnail != null)
                         {
-                            artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.Thumbnails.Width, this.Configuration.Thumbnails.Height);
+                            artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
                             artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
                         }
                     }
@@ -751,7 +751,7 @@ namespace Roadie.Library.Factories
                 }
                 if (result.Thumbnail != null)
                 {
-                    result.Thumbnail = ImageHelper.ResizeImage(result.Thumbnail, this.Configuration.Thumbnails.Width, this.Configuration.Thumbnails.Height);
+                    result.Thumbnail = ImageHelper.ResizeImage(result.Thumbnail, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
                     result.Thumbnail = ImageHelper.ConvertToJpegFormat(result.Thumbnail);
                 }
             }

@@ -7,18 +7,21 @@ namespace Roadie.Library.Configuration
     public sealed class RoadieSettings : IRoadieSettings
     {
         /// <summary>
-        /// Set to the Roadie Database for DbDataReader operations
-        /// </summary>
-        public string ConnectionString { get; set; }
-        /// <summary>
         /// If the artist name is found in the values then use the key.
         /// <remark>This was desgined to handle 'AC/DC' type names as they contain the ID3 v2.3 spec artist seperator</remark>
         /// </summary>
         public Dictionary<string, List<string>> ArtistNameReplace { get; set; }
+
+        /// <summary>
+        /// Set to the Roadie Database for DbDataReader operations
+        /// </summary>
+        public string ConnectionString { get; set; }
+
         /// <summary>
         /// This is the phsycial path to the content folder (which holds among other things place-holder images)
         /// </summary>
         public string ContentPath { get; set; }
+
         public Converting Converting { get; set; }
         public string DefaultTimeZone { get; set; }
         public string DiagnosticsPassword { get; set; }
@@ -27,13 +30,14 @@ namespace Roadie.Library.Configuration
         public FilePlugins FilePlugins { get; set; }
         public string InboundFolder { get; set; }
         public Integrations Integrations { get; set; }
-        public Thumbnails LargeThumbnails { get; set; }
+        public ImageSize LargeImageSize { get; set; }
         public string LibraryFolder { get; set; }
         public string ListenAddress { get; set; }
-        public Thumbnails MediumThumbnails { get; set; }
+        public ImageSize MediumImageSize { get; set; }
         public Processing Processing { get; set; }
         public bool RecordNoResultSearches { get; set; }
         public RedisCache Redis { get; set; }
+        public ImageSize SmallImageSize { get; set; }
         public string SecretKey { get; set; }
         public string SingleArtistHoldingFolder { get; set; }
         public string SiteName { get; set; }
@@ -43,7 +47,7 @@ namespace Roadie.Library.Configuration
         public int SmtpPort { get; set; }
         public string SmtpUsername { get; set; }
         public bool SmtpUseSSl { get; set; }
-        public Thumbnails Thumbnails { get; set; }
+        public ImageSize ThumbnailImageSize { get; set; }
         public Dictionary<string, string> TrackPathReplace { get; set; }
         public bool UseSSLBehindProxy { get; set; }
         public string WebsocketAddress { get; set; }

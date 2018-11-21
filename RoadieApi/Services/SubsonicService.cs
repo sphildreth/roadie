@@ -59,7 +59,7 @@ namespace Roadie.Api.Services
         /// <summary>
         /// Returns a list of random, newest, highest rated etc. albums. Similar to the album lists on the home page of the Subsonic web interface.
         /// </summary>
-        public async Task<OperationResult<subsonic.Response>> GetAlbumList(subsonic.Request request, User roadieUser, string version)
+        public async Task<OperationResult<subsonic.Response>> GetAlbumList(subsonic.Request request, User roadieUser, subsonic.AlbumListVersions version)
         {
             var releaseResult = new Library.Models.Pagination.PagedResult<ReleaseList>();
 
@@ -90,22 +90,44 @@ namespace Roadie.Api.Services
                 return new OperationResult<subsonic.Response>(releaseResult.Message);
             }
 
-            var albums = this.SubsonicChildrenForReleases(releaseResult.Rows, null);
-
-            return new OperationResult<subsonic.Response>
+            switch (version)
             {
-                IsSuccess = true,
-                Data = new subsonic.Response
-                {
-                    version = SubsonicService.SubsonicVersion,
-                    status = subsonic.ResponseStatus.ok,
-                    ItemElementName = subsonic.ItemChoiceType.albumList,
-                    Item = new subsonic.AlbumList
+                case subsonic.AlbumListVersions.One:
+                    return new OperationResult<subsonic.Response>
                     {
-                        album = albums
-                    }
-                }
-            };
+                        IsSuccess = true,
+                        Data = new subsonic.Response
+                        {
+                            version = SubsonicService.SubsonicVersion,
+                            status = subsonic.ResponseStatus.ok,
+                            ItemElementName = subsonic.ItemChoiceType.albumList,
+                            Item = new subsonic.AlbumList
+                            {
+                                album = this.SubsonicChildrenForReleases(releaseResult.Rows, null)
+                            }
+                        }
+                    };
+                    
+                case subsonic.AlbumListVersions.Two:
+                    return new OperationResult<subsonic.Response>
+                    {
+                        IsSuccess = true,
+                        Data = new subsonic.Response
+                        {
+                            version = SubsonicService.SubsonicVersion,
+                            status = subsonic.ResponseStatus.ok,
+                            ItemElementName = subsonic.ItemChoiceType.albumList2,
+                            Item = new subsonic.AlbumList2
+                            {
+                                album = this.SubsonicAlbumID3ForReleases(releaseResult.Rows, null)
+                            }
+                        }
+                    };
+                    
+                default:
+                    return new OperationResult<subsonic.Response>($"Unknown AlbumListVersions [{ version }]");
+            }
+
         }
 
 
@@ -122,7 +144,7 @@ namespace Roadie.Api.Services
 
             if (request.ArtistId != null)
             {
-                var artistImage = await this.ImageService.ArtistThumbnail(request.ArtistId.Value, size, size);
+                var artistImage = await this.ImageService.ArtistImage(request.ArtistId.Value, size, size);
                 if (!artistImage.IsSuccess)
                 {
                     return artistImage;
@@ -131,7 +153,7 @@ namespace Roadie.Api.Services
             }
             else if (request.TrackId != null)
             {
-                var trackimage = await this.ImageService.TrackThumbnail(request.TrackId.Value, size, size);
+                var trackimage = await this.ImageService.TrackImage(request.TrackId.Value, size, size);
                 if (!trackimage.IsSuccess)
                 {
                     return trackimage;
@@ -433,7 +455,7 @@ namespace Roadie.Api.Services
                                  comment = playlist.Description,
                                  owner = u.UserName,
                                  songCount = trackCount,
-                                 duration = playListDuration ?? 0,
+                                 duration = playListDuration.ToSecondsFromMilliseconds(),
                                  created = playlist.CreatedDate,
                                  changed = playlist.LastUpdated ?? playlist.CreatedDate,
                                  coverArt = this.MakePlaylistThumbnailImage(playlist.RoadieId).Url,
@@ -573,7 +595,7 @@ namespace Roadie.Api.Services
                         artistId = subsonic.Request.ArtistIdIdentifier + release.Artist.RoadieId.ToString(),
                         coverArt = subsonic.Request.ReleaseIdIdentifier + release.RoadieId.ToString(),
                         created = release.CreatedDate,
-                        duration = releaseTracks.Rows.Sum(x => x.Duration) ?? 0,
+                        duration = release.Duration.ToSecondsFromMilliseconds(),
                         genre = genre == null ? null : genre.Genre.Name,
                         id = subsonic.Request.ReleaseIdIdentifier + release.RoadieId.ToString(),
                         name = release.Title,
@@ -590,6 +612,9 @@ namespace Roadie.Api.Services
             };
         }
 
+        /// <summary>
+        /// Get details about the software license. Takes no extra parameters. Roadies gives everyone a premium 1 year license everytime they ask :)
+        /// </summary>
         public OperationResult<subsonic.Response> GetLicense(subsonic.Request request)
         {
             return new OperationResult<subsonic.Response>
@@ -612,12 +637,80 @@ namespace Roadie.Api.Services
 
         }
 
+        public subsonic.ArtistInfo SubsonicArtistInfoForArtist(data.Artist artist)
+        {
+            return new subsonic.ArtistInfo
+            {
+                biography = artist.BioContext,
+                largeImageUrl = this.MakeImage(artist.RoadieId, "artist", this.Configuration.LargeImageSize).Url,
+                mediumImageUrl = this.MakeImage(artist.RoadieId, "artist", this.Configuration.MediumImageSize).Url,
+                musicBrainzId = artist.MusicBrainzId,
+                similarArtist = new subsonic.Artist[0],
+                smallImageUrl = this.MakeImage(artist.RoadieId, "artist", this.Configuration.SmallImageSize).Url
+            };
+        }
+
+        public subsonic.ArtistInfo2 SubsonicArtistInfo2InfoForArtist(data.Artist artist)
+        {
+            return new subsonic.ArtistInfo2
+            {
+                biography = artist.BioContext,
+                largeImageUrl = this.MakeImage(artist.RoadieId, "artist", this.Configuration.LargeImageSize).Url,
+                mediumImageUrl = this.MakeImage(artist.RoadieId, "artist", this.Configuration.MediumImageSize).Url,
+                musicBrainzId = artist.MusicBrainzId,
+                similarArtist = new subsonic.ArtistID3[0],
+                smallImageUrl = this.MakeImage(artist.RoadieId, "artist", this.Configuration.SmallImageSize).Url                 
+            };
+        }
+
         /// <summary>
         /// Returns artist info with biography, image URLs and similar artists, using data from last.fm.
         /// </summary>
-        public OperationResult<subsonic.Response> GetArtistInfo(subsonic.Request request, string id, int? count, bool includeNotPresent)
+        public async Task<OperationResult<subsonic.Response>> GetArtistInfo(subsonic.Request request, string id, int? count, bool includeNotPresent, subsonic.ArtistInfoVersion version)
         {
-            throw new NotImplementedException();
+            var artistId = SafeParser.ToGuid(id);
+            if(!artistId.HasValue)
+            {
+                return new OperationResult<subsonic.Response>(true, $"Invalid ArtistId [{ id }]");
+            }
+            var artist = this.GetArtist(artistId.Value);
+            if(artist == null)
+            {
+                return new OperationResult<subsonic.Response>(true, $"Invalid ArtistId [{ id }]");
+            }
+
+            switch (version)
+            {
+                case subsonic.ArtistInfoVersion.One:
+                    return new OperationResult<subsonic.Response>
+                    {
+                        IsSuccess = true,
+                        Data = new subsonic.Response
+                        {
+                            version = SubsonicService.SubsonicVersion,
+                            status = subsonic.ResponseStatus.ok,
+                            ItemElementName = subsonic.ItemChoiceType.artistInfo,
+                            Item = this.SubsonicArtistInfoForArtist(artist)
+                        }
+                    };
+
+                case subsonic.ArtistInfoVersion.Two:
+                    return new OperationResult<subsonic.Response>
+                    {
+                        IsSuccess = true,
+                        Data = new subsonic.Response
+                        {
+                            version = SubsonicService.SubsonicVersion,
+                            status = subsonic.ResponseStatus.ok,
+                            ItemElementName = subsonic.ItemChoiceType.artistInfo2,
+                            Item = this.SubsonicArtistInfo2InfoForArtist(artist)
+                        }
+                    };
+
+                default:
+                    return new OperationResult<subsonic.Response>($"Unknown ArtistInfoVersion [{ version }]");
+            }
+
         }
 
         /// <summary>
@@ -644,7 +737,6 @@ namespace Roadie.Api.Services
             throw new NotImplementedException();
         }
 
-        //getAlbumList2
         //getArtists
         //getStarred2
         //search3
@@ -718,6 +810,28 @@ namespace Roadie.Api.Services
             };
         }
 
+        private subsonic.AlbumID3 SubsonicAlbumID3ForRelease(ReleaseList r, string parent, string path)
+        {
+            return new subsonic.AlbumID3
+            {
+                id = subsonic.Request.ReleaseIdIdentifier + r.Id.ToString(),
+                artistId = r.Artist.Value,
+                name = r.Release.Text,
+                songCount = r.TrackCount ?? 0,
+                duration = r.Duration.ToSecondsFromMilliseconds(),                 
+                artist = r.Artist.Text,
+                coverArt = subsonic.Request.ReleaseIdIdentifier + r.Id.ToString(),
+                created = r.CreatedDate.Value,
+                genre = r.Genre.Text,
+                playCount = r.TrackPlayedCount ?? 0,
+                playCountSpecified = true,
+                starred = r.UserRating?.RatedDate ?? DateTime.UtcNow,
+                starredSpecified = r.UserRating?.IsFavorite ?? false,
+                year = SafeParser.ToNumber<int>(r.ReleaseYear),
+                yearSpecified = true
+            };
+        }
+
         private subsonic.Child SubsonicChildForTrack(TrackList t)
         {
             return new subsonic.Child
@@ -772,6 +886,15 @@ namespace Roadie.Api.Services
                 return new subsonic.Child[0];
             }
             return r.Select(x => this.SubsonicChildForRelease(x, parent, $"{ x.Artist.Text}/{ x.Release.Text}/")).ToArray();
+        }
+
+        private subsonic.AlbumID3[] SubsonicAlbumID3ForReleases(IEnumerable<ReleaseList> r, string parent)
+        {
+            if (r == null || !r.Any())
+            {
+                return new subsonic.AlbumID3[0];
+            }
+            return r.Select(x => this.SubsonicAlbumID3ForRelease(x, parent, $"{ x.Artist.Text}/{ x.Release.Text}/")).ToArray();
         }
 
         private subsonic.Child[] SubsonicChildrenForTracks(IEnumerable<TrackList> tracks)

@@ -6,7 +6,7 @@ namespace Roadie.Api.Services
 {
     public interface ISubsonicService
     {
-        Task<OperationResult<Response>> GetAlbumList(Request request, Roadie.Library.Models.Users.User roadieUser, string version);
+        Task<OperationResult<Response>> GetAlbumList(Request request, Roadie.Library.Models.Users.User roadieUser, AlbumListVersions version);
 
         Task<FileOperationResult<Roadie.Library.Models.Image>> GetCoverArt(Request request, int? size);
 
@@ -28,5 +28,6 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<Response>> Search(Request request, Roadie.Library.Models.Users.User roadieUser);
         Task<OperationResult<Response>> GetAlbum(Request request, Roadie.Library.Models.Users.User roadieUser);
+        Task<OperationResult<Response>> GetArtistInfo(Request request, string id, int? count, bool includeNotPresent, ArtistInfoVersion version);
     }
 }

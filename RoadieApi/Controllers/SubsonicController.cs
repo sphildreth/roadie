@@ -37,7 +37,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetAlbumList([FromQuery]Request request)
         {
-            var result = await this.SubsonicService.GetAlbumList(request, null, "1");
+            var result = await this.SubsonicService.GetAlbumList(request, null, AlbumListVersions.One);
             return this.BuildResponse(request, result.Data, "albumList");
         }
 
@@ -46,8 +46,26 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetAlbumList2([FromQuery]Request request)
         {
-            var result = await this.SubsonicService.GetAlbumList(request, null, "2");
+            var result = await this.SubsonicService.GetAlbumList(request, null, AlbumListVersions.Two);
             return this.BuildResponse(request, result.Data, "albumList");
+        }
+
+        [HttpGet("getArtistInfo.view")]
+        [HttpPost("getArtistInfo.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetArtistInfo([FromQuery]Request request, string id, int? count, bool? includeNotPresent)
+        {
+            var result = await this.SubsonicService.GetArtistInfo(request, id, count, includeNotPresent ?? false, ArtistInfoVersion.One);
+            return this.BuildResponse(request, result.Data, "artistInfo");
+        }
+
+        [HttpGet("getArtistInfo2.view")]
+        [HttpPost("getArtistInfo2.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetArtistInfo2([FromQuery]Request request, string id, int? count, bool? includeNotPresent)
+        {
+            var result = await this.SubsonicService.GetArtistInfo(request, id, count, includeNotPresent ?? false, ArtistInfoVersion.Two);
+            return this.BuildResponse(request, result.Data, "artistInfo2");
         }
 
         [HttpGet("getCoverArt.view")]

@@ -1326,7 +1326,7 @@ namespace Roadie.Library.Factories
 
             if (result.Thumbnail != null)
             {
-                result.Thumbnail = ImageHelper.ResizeImage(result.Thumbnail, this.Configuration.Thumbnails.Width, this.Configuration.Thumbnails.Height);
+                result.Thumbnail = ImageHelper.ResizeImage(result.Thumbnail, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
                 result.Thumbnail = ImageHelper.ConvertToJpegFormat(result.Thumbnail);
             }
             sw.Stop();
@@ -1622,7 +1622,7 @@ namespace Roadie.Library.Factories
                     {
                         // Read image and convert to jpeg
                         release.Thumbnail = File.ReadAllBytes(coverFileName);
-                        release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.Thumbnails.Width, this.Configuration.Thumbnails.Height);
+                        release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
                         release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
                         release.LastUpdated = now;
                         await this.DbContext.SaveChangesAsync();

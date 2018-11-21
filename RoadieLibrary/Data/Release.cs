@@ -25,6 +25,9 @@ namespace Roadie.Library.Data
 
         public ICollection<CollectionRelease> Collections { get; set; }
 
+        [Column("duration")]
+        public int? Duration { get; set; }
+
         [Column("discogsId")]
         [MaxLength(50)]
         public string DiscogsId { get; set; }
