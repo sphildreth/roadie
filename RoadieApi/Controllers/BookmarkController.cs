@@ -23,7 +23,7 @@ namespace Roadie.Api.Controllers
         public BookmarkController(IBookmarkService bookmarkService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.BookmarkController");
+            this.Logger = logger.CreateLogger("RoadieApi.Controllers.BookmarkController");
             this.BookmarkService = bookmarkService;
         }
 

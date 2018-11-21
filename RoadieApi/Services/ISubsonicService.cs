@@ -6,9 +6,15 @@ namespace Roadie.Api.Services
 {
     public interface ISubsonicService
     {
+        Task<OperationResult<Response>> GetAlbumList(Request request, Roadie.Library.Models.Users.User roadieUser, string version);
+
+        Task<FileOperationResult<Roadie.Library.Models.Image>> GetCoverArt(Request request, int? size);
+
         Task<OperationResult<Response>> GetGenres(Request request);
 
-        Task<OperationResult<Response>> GetIndexes(Request request, string musicFolderId = null, long? ifModifiedSince = null);
+        Task<OperationResult<Response>> GetIndexes(Request request, Roadie.Library.Models.Users.User roadieUser, string musicFolderId = null, long? ifModifiedSince = null);
+
+        Task<OperationResult<Response>> GetMusicDirectory(Request request, Roadie.Library.Models.Users.User roadieUser, string id);
 
         Task<OperationResult<Response>> GetMusicFolders(Request request);
 
@@ -16,12 +22,11 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<Response>> GetPodcasts(Request request);
 
-        Task<OperationResult<Response>> GetMusicDirectory(Request request, Roadie.Library.Models.Users.User roadieUser, string id);
-
-        Task<OperationResult<Response>> GetAlbumList(Request request, Roadie.Library.Models.Users.User roadieUser);
-
-        Task<FileOperationResult<Roadie.Library.Models.Image>> GetCoverArt(Request request, int? size);
-
         OperationResult<Response> Ping(Request request);
+
+        OperationResult<Response> GetLicense(Request request);
+
+        Task<OperationResult<Response>> Search(Request request, Roadie.Library.Models.Users.User roadieUser);
+        Task<OperationResult<Response>> GetAlbum(Request request, Roadie.Library.Models.Users.User roadieUser);
     }
 }

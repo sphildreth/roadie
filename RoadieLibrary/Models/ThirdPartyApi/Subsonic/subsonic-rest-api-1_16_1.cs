@@ -253,7 +253,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public System.DateTime? starred;
+        public System.DateTime starred;
 
         /// <remarks/>
         [System.Xml.Serialization.XmlIgnoreAttribute()]
@@ -1718,7 +1718,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public System.DateTime? starred;
+        public System.DateTime starred;
 
         /// <remarks/>
         [System.Xml.Serialization.XmlIgnoreAttribute()]

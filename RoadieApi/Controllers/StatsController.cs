@@ -21,7 +21,7 @@ namespace Roadie.Api.Controllers
         public StatsController(IStatisticsService statisticsService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.StatsController");
+            this.Logger = logger.CreateLogger("RoadieApi.Controllers.StatsController");
             this.StatisticsService = statisticsService;
         }
 

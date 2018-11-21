@@ -441,7 +441,8 @@ namespace Roadie.Api.Services
                 };
                 if (track.Thumbnail == null || !track.Thumbnail.Any())
                 {
-                    image = this.DefaultNotFoundImages.Track;
+                    // If no track image is found then return image for release
+                    return await this.ReleaseThumbnailAction(track.ReleaseMedia.Release.RoadieId, etag);                   
                 }
                 return GenerateFileOperationResult(id, image, etag);
             }

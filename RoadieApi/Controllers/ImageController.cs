@@ -23,7 +23,7 @@ namespace Roadie.Api.Controllers
         public ImageController(IImageService imageService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.ImageController");
+            this.Logger = logger.CreateLogger("RoadieApi.Controllers.ImageController");
             this.ImageService = imageService;
         }
 

@@ -7,13 +7,28 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
     [Serializable]
     public class Request
     {
-        public const int MaxPageSize = 500;
-
         public const string ArtistIdIdentifier = "A:";
         public const string CollectionIdentifier = "C:";
+        public const int MaxPageSize = 100;
+        public const string PlaylistdIdentifier = "P:";
         public const string ReleaseIdIdentifier = "R:";
         public const string TrackIdIdentifier = "T:";
-        public const string PlaylistdIdentifier = "P:";
+
+        public Guid? ArtistId
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this.id))
+                {
+                    return null;
+                }
+                if (this.id.StartsWith(Request.ArtistIdIdentifier))
+                {
+                    return SafeParser.ToGuid(this.id.Replace(Request.ArtistIdIdentifier, ""));
+                }
+                return null;
+            }
+        }
 
         /// <summary>
         /// A unique string identifying the client application.
@@ -25,10 +40,31 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         /// </summary>
         public string callback { get; set; }
 
+        public Guid? CollectionId
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this.id))
+                {
+                    return null;
+                }
+                if (this.id.StartsWith(Request.CollectionIdentifier))
+                {
+                    return SafeParser.ToGuid(this.id.Replace(Request.CollectionIdentifier, ""));
+                }
+                return null;
+            }
+        }
+
         /// <summary>
         /// Request data to be returned in this format. Supported values are "xml", "json" (since 1.4.0) and "jsonp" (since 1.6.0). If using jsonp, specify name of javascript callback function using a callback parameter.
         /// </summary>
         public string f { get; set; }
+
+        /// <summary>
+        /// A string which uniquely identifies the music folder. Obtained by calls to getIndexes or getMusicDirectory.
+        /// </summary>
+        public string id { get; set; }
 
         public bool IsCallbackSet
         {
@@ -38,14 +74,17 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
             }
         }
 
-        
+        /// <summary>
+        /// Request data to be returned in this format. Supported values are "xml", "json" (since 1.4.0) and "jsonp" (since 1.6.0). If using jsonp, specify name of javascript callback function using a callback parameter.
+        /// </summary>
         public bool IsJSONRequest
         {
+            // Default should be false (XML)
             get
             {
                 if (string.IsNullOrEmpty(this.f))
                 {
-                    return true;
+                    return false;
                 }
                 return this.f.ToLower().StartsWith("j");
             }
@@ -72,48 +111,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
             }
         }
 
-        /// <summary>
-        /// A random string ("salt") used as input for computing the password hash. See below for details.
-        /// </summary>
-        public string s { get; set; }
-
-        /// <summary>
-        /// The authentication token computed as md5(password + salt). See below for details
-        /// </summary>
-        public string t { get; set; }
-
-        /// <summary>
-        /// The username
-        /// </summary>
-        public string u { get; set; }
-
-        /// <summary>
-        /// The protocol version implemented by the client, i.e., the version of the subsonic-rest-api.xsd schema used (see below).
-        /// </summary>
-        public string v { get; set; }
-
-        /// <summary>
-        /// A string which uniquely identifies the music folder. Obtained by calls to getIndexes or getMusicDirectory.
-        /// </summary>
-        public string id { get; set; }
-
-        public Guid? ArtistId
-        {
-            get
-            {
-               if(string.IsNullOrEmpty(this.id))
-               {
-                    return null;
-               }
-               if(this.id.StartsWith(Request.ArtistIdIdentifier))
-               {
-                    return SafeParser.ToGuid(this.id.Replace(Request.ArtistIdIdentifier, ""));
-               }
-                return null;
-            }
-        }
-
-        public Guid? CollectionId
+        public Guid? PlaylistId
         {
             get
             {
@@ -121,13 +119,18 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
                 {
                     return null;
                 }
-                if (this.id.StartsWith(Request.CollectionIdentifier))
+                if (this.id.StartsWith(Request.PlaylistdIdentifier))
                 {
-                    return SafeParser.ToGuid(this.id.Replace(Request.CollectionIdentifier, ""));
+                    return SafeParser.ToGuid(this.id.Replace(Request.PlaylistdIdentifier, ""));
                 }
                 return null;
             }
         }
+
+        /// <summary>
+        /// Search query.
+        /// </summary>
+        public string Query { get; set; }
 
         public Guid? ReleaseId
         {
@@ -145,21 +148,15 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
             }
         }
 
-        public Guid? PlaylistId
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(this.id))
-                {
-                    return null;
-                }
-                if (this.id.StartsWith(Request.PlaylistdIdentifier))
-                {
-                    return SafeParser.ToGuid(this.id.Replace(Request.PlaylistdIdentifier, ""));
-                }
-                return null;
-            }
-        }
+        /// <summary>
+        /// A random string ("salt") used as input for computing the password hash. See below for details.
+        /// </summary>
+        public string s { get; set; }
+
+        /// <summary>
+        /// The authentication token computed as md5(password + salt). See below for details
+        /// </summary>
+        public string t { get; set; }
 
         public Guid? TrackId
         {
@@ -177,27 +174,44 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
             }
         }
 
+        /// <summary>
+        /// The username
+        /// </summary>
+        public string u { get; set; }
+
+        /// <summary>
+        /// The protocol version implemented by the client, i.e., the version of the subsonic-rest-api.xsd schema used (see below).
+        /// </summary>
+        public string v { get; set; }
+
         #region Paging and List Related
 
-        /// <summary>
-        /// The number of albums to return. Max 500.
-        /// </summary>
-        public int? Size { get; set; }
+        private Library.Models.Pagination.PagedRequest _pagedRequest;
 
         /// <summary>
-        /// The list offset. Useful if you for example want to page through the list of newest albums.
+        /// Maximum number of albums to return.
         /// </summary>
-        public int? Offset { get; set; }
+        public int? AlbumCount { get; set; }
+
+        /// <summary>
+        /// Search result offset for albums. Used for paging.
+        /// </summary>
+        public int? AlbumOffset { get; set; }
+
+        /// <summary>
+        /// Maximum number of artists to return.
+        /// </summary>
+        public int? ArtistCount { get; set; }
+
+        /// <summary>
+        /// Search result offset for artists. Used for paging.
+        /// </summary>
+        public int? ArtistOffset { get; set; }
 
         /// <summary>
         /// The first year in the range. If fromYear > toYear a reverse chronological list is returned.
         /// </summary>
         public int? FromYear { get; set; }
-
-        /// <summary>
-        /// The last year in the range.
-        /// </summary>
-        public int? ToYear { get; set; }
 
         /// <summary>
         /// The name of the genre, e.g., "Rock".
@@ -209,65 +223,97 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         /// </summary>
         public int? MusicFolderId { get; set; }
 
-        public ListType Type { get; set; }
-
-        //var pagedRequest = new Library.Models.Pagination.PagedRequest
-        //{
-
-        //};
-
-        private Library.Models.Pagination.PagedRequest _pagedRequest;
+        /// <summary>
+        /// The list offset. Useful if you for example want to page through the list of newest albums.
+        /// </summary>
+        public int? Offset { get; set; }
 
         public Library.Models.Pagination.PagedRequest PagedRequest
         {
             get
             {
-                if(this._pagedRequest == null)
+                var limit = this.Size ?? Request.MaxPageSize;
+                var page = this.Offset > 0 ? (int)Math.Ceiling((decimal)this.Offset.Value / (decimal)limit) : 1;
+                var pagedRequest = new Pagination.PagedRequest();
+                switch (this.Type)
                 {
-                    var limit = this.Size ?? Request.MaxPageSize;
-                    var page = this.Offset > 0 ? (int)Math.Ceiling((decimal)this.Offset.Value / (decimal)limit) : 1;
-                    var pagedRequest = new Pagination.PagedRequest();
-                    switch (this.Type)
-                    {
-                        case ListType.Newest:
-                            pagedRequest.Sort = "CreatedDate";
-                            pagedRequest.Order = "DESC";
-                            break;
-                        case ListType.Highest:
-                            pagedRequest.Sort = "Rating";
-                            pagedRequest.Order = "DESC";
-                            pagedRequest.FilterRatedOnly = true;
-                            break;
-                        case ListType.Frequent:
-                            pagedRequest.Sort = "TrackPlayedCount";
-                            pagedRequest.Order = "DESC";
-                            break;
-                        case ListType.Recent:
-                            pagedRequest.Sort = "LastPlayed";
-                            pagedRequest.Order = "DESC";
-                            break;
-                        case ListType.AlphabeticalByName:
-                            break;
-                        case ListType.AlphabeticalByArtist:
-                            break;
-                        case ListType.Starred:
-                            pagedRequest.FilterRatedOnly = true;
-                            break;
-                        case ListType.ByGenre:
-                            break;
-                        default:
-                            break;
-                    }
-                    pagedRequest.Limit = limit;
-                    pagedRequest.Page = page;
-                    this._pagedRequest = pagedRequest;
+                    case ListType.Newest:
+                        pagedRequest.Sort = "CreatedDate";
+                        pagedRequest.Order = "DESC";
+                        break;
+
+                    case ListType.Highest:
+                        pagedRequest.Sort = "Rating";
+                        pagedRequest.Order = "DESC";
+                        pagedRequest.FilterRatedOnly = true;
+                        break;
+
+                    case ListType.Frequent:
+                        pagedRequest.Sort = "TrackPlayedCount";
+                        pagedRequest.Order = "DESC";
+                        break;
+
+                    case ListType.Recent:
+                        pagedRequest.Sort = "LastPlayed";
+                        pagedRequest.Order = "DESC";
+                        break;
+
+                    case ListType.AlphabeticalByName:
+                        pagedRequest.Sort = "Release.Text";
+                        pagedRequest.Order = "ASC";
+                        break;
+
+                    case ListType.AlphabeticalByArtist:
+                        pagedRequest.Sort = "Artist.Text";
+                        pagedRequest.Order = "ASC";
+                        break;
+
+                    case ListType.Starred:
+                        pagedRequest.FilterRatedOnly = true;
+                        pagedRequest.Sort = "Rating";
+                        pagedRequest.Order = "DESC";
+                        break;
+
+                    case ListType.ByGenre:
+                        pagedRequest.Sort = "Genre.Text";
+                        pagedRequest.Order = "ASC";
+                        break;
+
+                    case ListType.ByYear:
+                        pagedRequest.Sort = "ReleaseDate";
+                        pagedRequest.Order = "ASC";
+                        break;
                 }
-                return this._pagedRequest;
+                pagedRequest.Limit = limit;
+                pagedRequest.Page = page;
+                return pagedRequest;
             }
         }
 
-        #endregion
+        /// <summary>
+        /// The number of albums to return. Max 500.
+        /// <see>Various *Count properties depending on objects being searched and client version.</see>
+        /// </summary>
+        public int? Size { get; set; }
 
+        /// <summary>
+        /// Maximum number of songs to return.
+        /// </summary>
+        public int? SongCount { get; set; }
+
+        /// <summary>
+        /// Search result offset for songs. Used for paging.
+        /// </summary>
+        public int? SongOffset { get; set; }
+
+        /// <summary>
+        /// The last year in the range.
+        /// </summary>
+        public int? ToYear { get; set; }
+
+        public ListType Type { get; set; }
+
+        #endregion Paging and List Related
 
         //public user CheckPasswordGetUser(ICacheManager<object> cacheManager, RoadieDbContext context)
         //{

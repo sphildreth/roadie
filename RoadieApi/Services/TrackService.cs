@@ -221,24 +221,18 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
 
-            if (!string.IsNullOrEmpty(request.Sort))
-            {
-                request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
-                request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
-                request.Sort = request.Sort.Replace("artist", "TrackArtistName, ReleaseArtistName");
-            }
-
             var resultQuery = (from t in this.DbContext.Tracks
                                join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
                                join trackArtist in this.DbContext.Artists on t.ArtistId equals trackArtist.Id into tas
                                from trackArtist in tas.DefaultIfEmpty()
-                               join releaseArtist in this.DbContext.Artists on r.ArtistId equals releaseArtist.Id
-                               where (t.Hash != null || releaseId != null)
-                               where (request.FilterMinimumRating == null || t.Rating >= request.FilterMinimumRating.Value)
-                               where (request.FilterToArtistId == null || r.Artist.RoadieId == request.FilterToArtistId)
-                               where (request.FilterValue == "" || (t.Title.Contains(request.FilterValue) || t.AlternateNames.Contains(request.FilterValue)))
+                               join releaseArtist in this.DbContext.Artists on r.ArtistId equals releaseArtist.Id into aa
+                               from releaseArtist in aa.DefaultIfEmpty()
+                               where (t.Hash != null)
                                where (releaseId == null || (releaseId != null && r.RoadieId == releaseId))
+                               where (request.FilterToArtistId == null || request.FilterToArtistId != null && r.Artist.RoadieId == request.FilterToArtistId)
+                               where (request.FilterMinimumRating == null || t.Rating >= request.FilterMinimumRating.Value)
+                               where (request.FilterValue == "" || (t.Title.Contains(request.FilterValue) || t.AlternateNames.Contains(request.FilterValue)))
                                select new { t, rm, r, trackArtist, releaseArtist });
 
             if (!string.IsNullOrEmpty(request.FilterValue))
@@ -281,6 +275,8 @@ namespace Roadie.Api.Services
                               LastUpdated = x.t.LastUpdated,
                               ReleaseThumbnail = this.MakeReleaseThumbnailImage(x.r.RoadieId),
                               Duration = x.t.Duration,
+                              FileSize = x.t.FileSize,
+                              ReleaseDate = x.r.ReleaseDate,
                               Rating = x.t.Rating,
                               ArtistThumbnail = this.MakeArtistThumbnailImage(x.releaseArtist.RoadieId),
                               Title = x.t.Title,

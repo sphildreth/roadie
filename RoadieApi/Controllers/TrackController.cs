@@ -26,7 +26,7 @@ namespace Roadie.Api.Controllers
         public TrackController(ITrackService trackService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.TrackController");
+            this.Logger = logger.CreateLogger("RoadieApi.Controllers.TrackController");
             this.TrackService = trackService;
         }
 

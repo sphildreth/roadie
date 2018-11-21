@@ -36,6 +36,7 @@ namespace Roadie.Library.Models
                 return this.Duration.HasValue ? TimeSpan.FromSeconds(this.Duration.Value / 1000).ToString(@"mm\:ss") : "--:--";
             }
         }
+        public short? ReleaseRating { get; set; }
         public short? Rating { get; set; }
         public UserTrack UserRating { get; set; }
         public int? PlayedCount { get; set; }
@@ -59,5 +60,20 @@ namespace Roadie.Library.Models
                 return this.PartTitles.Split('|');
             }
         }
+
+        [JsonIgnore]
+        public DateTime? ReleaseDate { get; set; }
+        public int? Year
+        {
+            get
+            {
+                if(this.ReleaseDate.HasValue)
+                {
+                    return this.ReleaseDate.Value.Year;
+                }
+                return null; 
+            }
+        }
+        public int? FileSize { get; set; }
     }
 }

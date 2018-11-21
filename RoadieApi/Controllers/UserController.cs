@@ -24,7 +24,7 @@ namespace Roadie.Api.Controllers
         public UserController(IUserService userService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.LabelController");
+            this.Logger = logger.CreateLogger("RoadieApi.Controllers.LabelController");
             this.UserService = userService;
         }
 

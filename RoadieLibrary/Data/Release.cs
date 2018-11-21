@@ -50,6 +50,9 @@ namespace Roadie.Library.Data
         [MaxLength(65535)]
         public string LastFMSummary { get; set; }
 
+        [Column("lastPlayed")]
+        public DateTime? LastPlayed { get; set; }
+
         [Column("libraryStatus")]
         public LibraryStatus? LibraryStatus { get; set; }
 
@@ -61,6 +64,9 @@ namespace Roadie.Library.Data
         [Column("musicBrainzId")]
         [MaxLength(100)]
         public string MusicBrainzId { get; set; }
+
+        [Column("playedCount")]
+        public int? PlayedCount { get; set; }
 
         [Column("profile", TypeName = "text")]
         [MaxLength(65535)]

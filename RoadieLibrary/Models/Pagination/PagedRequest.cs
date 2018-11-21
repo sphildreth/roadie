@@ -37,21 +37,33 @@ namespace Roadie.Library.Models.Pagination
             {
                 if (this.Limit.HasValue && this.Limit.Value == -1)
                 {
-                    // Something sane other than Int.MaxLimit
+                    // Suppose to mean return all, this limits tos something sane other than Int.MaxLimit
                     return 500;
                 }
                 return this.Limit ?? 50;
             }
         }
+        private int? _skipValue;
         public int SkipValue
         {
             get
             {
-                if (this.Page.HasValue)
+                if (!this._skipValue.HasValue)
                 {
-                    return (this.Page.Value * this.LimitValue) - this.LimitValue;
+                    if (this.Page.HasValue)
+                    {
+                        this._skipValue = (this.Page.Value * this.LimitValue) - this.LimitValue;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
                 }
-                return 0;
+                return this._skipValue.Value;
+            }
+            set
+            {
+                this._skipValue = value;
             }
         }
         public string Filter { get; set; }
@@ -87,6 +99,7 @@ namespace Roadie.Library.Models.Pagination
         public bool? FilterOnlyMissing { get; set; }
 
         public Guid? FilterToArtistId { get; set; }
+        public Guid? FilterToCollectionId { get; set; }
 
         public int? FilterMinimumRating { get; set; }
         public bool FilterRatedOnly { get; internal set; }

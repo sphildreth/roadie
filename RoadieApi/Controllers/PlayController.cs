@@ -28,7 +28,7 @@ namespace Roadie.Api.Controllers
         public PlayController(ITrackService trackService, IReleaseService releaseService, IPlayActivityService playActivityService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
                             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.PlayController");
+            this.Logger = logger.CreateLogger("RoadieApi.Controllers.PlayController");
             this.TrackService = trackService;
             this.PlayActivityService = playActivityService;
             this.ReleaseService = releaseService;

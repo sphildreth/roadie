@@ -110,18 +110,19 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
 
+            IEnumerable<int> collectionReleaseIds = null;
+            if(request.FilterToCollectionId.HasValue)
+            {
+                collectionReleaseIds = (from cr in this.DbContext.CollectionReleases
+                                        join r in this.DbContext.Releases on cr.ReleaseId equals r.Id
+                                        where cr.RoadieId == request.FilterToCollectionId.Value
+                                        select r.Id).ToArray();
+            }
             var result = (from r in this.DbContext.Releases.Include("Artist")
                           join a in this.DbContext.Artists on r.ArtistId equals a.Id
-                          let lastPlayed = (from ut in this.DbContext.UserTracks
-                                            join t in this.DbContext.Tracks on ut.TrackId equals t.Id
-                                            join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                            join rl in this.DbContext.Releases on rm.ReleaseId equals rl.Id
-                                            where rl.Id == r.Id
-                                            orderby ut.LastPlayed descending
-                                            select ut.LastPlayed                                            
-                                            ).FirstOrDefault()
                           where (request.FilterMinimumRating == null || r.Rating >= request.FilterMinimumRating.Value)
                           where (request.FilterToArtistId == null || r.Artist.RoadieId == request.FilterToArtistId)
+                          where (request.FilterToCollectionId == null || collectionReleaseIds.Contains(r.Id))
                           where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || r.AlternateNames.Contains(request.FilterValue)))
                           select new ReleaseList
                           {
@@ -146,13 +147,8 @@ namespace Roadie.Api.Services
                               TrackCount = r.TrackCount,
                               CreatedDate = r.CreatedDate,
                               LastUpdated = r.LastUpdated,
-                              LastPlayed = lastPlayed != null ? lastPlayed : null,
-                              TrackPlayedCount = (from ut in this.DbContext.UserTracks
-                                                  join t in this.DbContext.Tracks on ut.TrackId equals t.Id
-                                                  join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                                  join rl in this.DbContext.Releases on rm.ReleaseId equals rl.Id
-                                                  where rl.Id == r.Id
-                                                  select ut.PlayedCount ?? 0).Sum(),
+                              LastPlayed = r.LastPlayed,
+                              TrackPlayedCount = r.PlayedCount,
                               Thumbnail = this.MakeReleaseThumbnailImage(r.RoadieId)
                           }).Distinct();
 
@@ -187,22 +183,46 @@ namespace Roadie.Api.Services
                 }
                 rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }
-            if (rows.Any() && roadieUser != null)
+            if (rows.Any())
             {
-                foreach (var userReleaseRatings in this.GetUser(roadieUser.UserId).ReleaseRatings.Where(x => rows.Select(r => r.DatabaseId).Contains(x.ReleaseId)))
+                var rowIds = rows.Select(x => x.DatabaseId).ToArray();
+                var genreData = (from rg in this.DbContext.ReleaseGenres
+                                 join g in this.DbContext.Genres on rg.GenreId equals g.Id
+                                 where rowIds.Contains(rg.ReleaseId)
+                                 orderby rg.Id
+                                 select new
+                                 {
+                                     rg.ReleaseId,
+                                     dt = new DataToken
+                                     {
+                                         Text = g.Name,
+                                         Value = g.RoadieId.ToString()
+                                     }
+                                 }).ToArray();
+                
+                foreach (var release in rows)
                 {
-                    var row = rows.FirstOrDefault(x => x.DatabaseId == userReleaseRatings.ReleaseId);
-                    if (row != null)
+                    var genre = genreData.FirstOrDefault(x => x.ReleaseId == release.DatabaseId);
+                    release.Genre = genre?.dt ?? new DataToken();
+                }
+
+                if (roadieUser != null)
+                {
+                    foreach (var userReleaseRatings in this.GetUser(roadieUser.UserId).ReleaseRatings.Where(x => rows.Select(r => r.DatabaseId).Contains(x.ReleaseId)))
                     {
-                        var isDisliked = userReleaseRatings.IsDisliked ?? false;
-                        var isFavorite = userReleaseRatings.IsFavorite ?? false;
-                        row.UserRating = new UserRelease
+                        var row = rows.FirstOrDefault(x => x.DatabaseId == userReleaseRatings.ReleaseId);
+                        if (row != null)
                         {
-                            IsDisliked = isDisliked,
-                            IsFavorite = isFavorite,
-                            Rating = userReleaseRatings.Rating,
-                            RatedDate = isDisliked || isFavorite ? (DateTime?)(userReleaseRatings.LastUpdated ?? userReleaseRatings.CreatedDate) : null
-                        };
+                            var isDisliked = userReleaseRatings.IsDisliked ?? false;
+                            var isFavorite = userReleaseRatings.IsFavorite ?? false;
+                            row.UserRating = new UserRelease
+                            {
+                                IsDisliked = isDisliked,
+                                IsFavorite = isFavorite,
+                                Rating = userReleaseRatings.Rating,
+                                RatedDate = isDisliked || isFavorite ? (DateTime?)(userReleaseRatings.LastUpdated ?? userReleaseRatings.CreatedDate) : null
+                            };
+                        }
                     }
                 }
             }

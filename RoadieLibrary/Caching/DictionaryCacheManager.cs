@@ -9,6 +9,8 @@ namespace Roadie.Library.Caching
 {
     public class DictionaryCacheManager : CacheManagerBase
     {
+        static readonly object padlock = new object();
+
         private Dictionary<string, object> Cache { get; }
 
         public DictionaryCacheManager(ILogger logger, CachePolicy defaultPolicy)
@@ -19,12 +21,15 @@ namespace Roadie.Library.Caching
 
         public override bool Add<TCacheValue>(string key, TCacheValue value)
         {
-            if(this.Cache.ContainsKey(key))
+            lock (padlock)
             {
-                this.Cache.Remove(key);
+                if (this.Cache.ContainsKey(key))
+                {
+                    this.Cache.Remove(key);
+                }
+                this.Cache.Add(key, value);
+                return true;
             }
-            this.Cache.Add(key, value);
-            return true;
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value, string region)
@@ -44,31 +49,46 @@ namespace Roadie.Library.Caching
 
         public override void Clear()
         {
-            this.Cache.Clear();
+            lock (padlock)
+            {
+                this.Cache.Clear();
+            }
         }
 
         public override void ClearRegion(string region)
         {
-            this.Clear();
+            lock (padlock)
+            {
+                this.Clear();
+            }
         }
 
         public override bool Exists<TOut>(string key)
         {
-            return this.Cache.ContainsKey(key);
+            lock (padlock)
+            {
+                return this.Cache.ContainsKey(key);
+            }
         }
 
         public override bool Exists<TOut>(string key, string region)
         {
-            return this.Exists<TOut>(key);
+            lock (padlock)
+            {
+                return this.Exists<TOut>(key);
+            }
         }
 
         public override TOut Get<TOut>(string key)
         {
-            if(!this.Cache.ContainsKey(key))
+            lock (padlock)
             {
-                return default(TOut);
+                if (!this.Cache.ContainsKey(key))
+                {
+                    return default(TOut);
+                }
+                return (TOut)this.Cache[key];
             }
-            return (TOut)this.Cache[key];
         }
 
         public override TOut Get<TOut>(string key, string region)
@@ -83,22 +103,28 @@ namespace Roadie.Library.Caching
 
         public override TOut Get<TOut>(string key, Func<TOut> getItem, string region, CachePolicy policy)
         {
-            var r = this.Get<TOut>(key, region);
-            if (r == null)
+            lock (padlock)
             {
-                r = getItem();
-                this.Add(key, r, region, policy);
+                var r = this.Get<TOut>(key, region);
+                if (r == null)
+                {
+                    r = getItem();
+                    this.Add(key, r, region, policy);
+                }
+                return r;
             }
-            return r;
         }
 
         public override bool Remove(string key)
         {
-            if(this.Cache.ContainsKey(key))
+            lock (padlock)
             {
-                this.Cache.Remove(key);
+                if (this.Cache.ContainsKey(key))
+                {
+                    this.Cache.Remove(key);
+                }
+                return true;
             }
-            return true;
         }
 
         public override bool Remove(string key, string region)
@@ -120,6 +146,7 @@ namespace Roadie.Library.Caching
                 this.Logger.LogInformation($"-!> Cache Hit for Key [{ key }], Region [{ region }]");
             }
             return r;
+
         }
     }
 }

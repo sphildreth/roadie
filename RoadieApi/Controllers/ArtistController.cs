@@ -26,7 +26,7 @@ namespace Roadie.Api.Controllers
         public ArtistController(IArtistService artistService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.ArtistController");
+            this.Logger = logger.CreateLogger("RoadieApi.Controllers.ArtistController");
             this.ArtistService = artistService;
         }
 

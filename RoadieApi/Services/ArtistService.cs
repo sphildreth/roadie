@@ -300,11 +300,6 @@ namespace Roadie.Api.Services
         {
             var sw = new Stopwatch();
             sw.Start();
-            if (!string.IsNullOrEmpty(request.Sort))
-            {
-                request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
-                request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
-            }
             var result = (from a in this.DbContext.Artists
                           where (request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value)
                           where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue)))

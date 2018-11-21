@@ -18,8 +18,8 @@ namespace Roadie.Api.Controllers
 {
     public abstract class EntityControllerBase : ODataController
     {
-        protected ILogger _logger;
         private models.User _currentUser = null;
+        protected ILogger Logger { get; set; }
         protected ICacheManager CacheManager { get; }
         protected IConfiguration Configuration { get; }
         protected IRoadieSettings RoadieSettings { get; }
@@ -87,7 +87,7 @@ namespace Roadie.Api.Controllers
             Response.Headers.Add("Expires", info.Data.Expires);
             var stream = new MemoryStream(info.Data.Bytes);
             var playListUser = await playActivityService.CreatePlayActivity(user, info.Data);
-            this._logger.LogInformation($"StreamTrack PlayActivity `{ playListUser?.ToString() }`, StreamInfo `{ info.Data.ToString() }`");
+            this.Logger.LogInformation($"StreamTrack PlayActivity `{ playListUser?.ToString() }`, StreamInfo `{ info.Data.ToString() }`");
             return new FileStreamResult(stream, info.Data.ContentType)
             {
                 FileDownloadName = info.Data.FileName

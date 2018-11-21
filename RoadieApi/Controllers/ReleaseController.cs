@@ -26,7 +26,7 @@ namespace Roadie.Api.Controllers
         public ReleaseController(IReleaseService releaseService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.ReleaseController"); ;
+            this.Logger = logger.CreateLogger("RoadieApi.Controllers.ReleaseController"); ;
             this.ReleaseService = releaseService;
         }
 

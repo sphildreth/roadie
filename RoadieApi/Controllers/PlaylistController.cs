@@ -20,7 +20,7 @@ namespace Roadie.Api.Controllers
         public PlaylistController(IPlaylistService playlistService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this._logger = logger.CreateLogger("RoadieApi.Controllers.PlaylistController");
+            this.Logger = logger.CreateLogger("RoadieApi.Controllers.PlaylistController");
             this.PlaylistService = playlistService;
         }
 
