@@ -264,7 +264,7 @@ namespace Roadie.Api.Services
             return new FileOperationResult<Image>(OperationMessages.ErrorOccured);
         }
 
-        private FileOperationResult<Image> GenerateFileOperationResult(Guid id, data.Image image, EntityTagHeaderValue etag = null)
+        private FileOperationResult<Image> GenerateFileOperationResult(Guid id, data.Image image, EntityTagHeaderValue etag = null, string contentType = "image/jpeg")
         {
             var imageEtag = EtagHelper.GenerateETag(this.HttpEncoder, image.Bytes);
             if (EtagHelper.CompareETag(this.HttpEncoder, etag, imageEtag))
@@ -279,7 +279,7 @@ namespace Roadie.Api.Services
             {
                 IsSuccess = true,
                 Data = image.Adapt<Image>(),
-                ContentType = "image/jpeg",
+                ContentType = contentType,
                 LastModified = (image.LastUpdated ?? image.CreatedDate),
                 ETag = imageEtag
             };
@@ -473,7 +473,7 @@ namespace Roadie.Api.Services
                 {
                     image = this.DefaultNotFoundImages.User;
                 }
-                return GenerateFileOperationResult(id, image, etag);
+                return GenerateFileOperationResult(id, image, etag, "image/png");
             }
             catch (Exception ex)
             {

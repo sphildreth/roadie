@@ -34,11 +34,6 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
 
-            if (!string.IsNullOrEmpty(request.Sort))
-            {
-                request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
-                request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
-            }
             var result = (from pl in this.DbContext.Playlists
                           join pltr in this.DbContext.PlaylistTracks on pl.Id equals pltr.PlayListId
                           join t in this.DbContext.Tracks on pltr.TrackId equals t.Id
@@ -46,6 +41,11 @@ namespace Roadie.Api.Services
                           join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
                           join a in this.DbContext.Artists on r.ArtistId equals a.Id
                           join u in this.DbContext.Users on pl.UserId equals u.Id
+                          let duration = (from plt in this.DbContext.PlaylistTracks 
+                                          join t in this.DbContext.Tracks on plt.TrackId equals t.Id
+                                          select t.Duration).Sum()
+                          where (request.FilterToPlaylistId == null || pl.RoadieId == request.FilterToPlaylistId)
+                          where (request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId)
                           where ((roadieUser == null && pl.IsPublic) || (roadieUser != null && u.RoadieId == roadieUser.UserId || pl.IsPublic))
                           where (artistId == null || (artistId != null && a.RoadieId == artistId))
                           where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
@@ -64,6 +64,8 @@ namespace Roadie.Api.Services
                                   Value = u.RoadieId.ToString()
                               },
                               PlaylistCount = this.DbContext.PlaylistTracks.Where(x => x.PlayListId == pl.Id).Count(),
+                              IsPublic = pl.IsPublic,
+                              Duration = duration,
                               CreatedDate = pl.CreatedDate,
                               LastUpdated = pl.LastUpdated,
                               UserThumbnail = MakeUserThumbnailImage(u.RoadieId),

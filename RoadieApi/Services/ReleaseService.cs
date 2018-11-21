@@ -118,11 +118,21 @@ namespace Roadie.Api.Services
                                         where cr.RoadieId == request.FilterToCollectionId.Value
                                         select r.Id).ToArray();
             }
+            int[] favoriteReleaseIds = new int[0];
+            if (request.FilterFavoriteOnly)
+            {
+                favoriteReleaseIds = (from a in this.DbContext.Releases
+                                     join ur in this.DbContext.UserReleases on a.Id equals ur.ReleaseId
+                                     where ur.IsFavorite ?? false
+                                     select a.Id
+                                     ).ToArray();
+            }
             var result = (from r in this.DbContext.Releases.Include("Artist")
                           join a in this.DbContext.Artists on r.ArtistId equals a.Id
                           where (request.FilterMinimumRating == null || r.Rating >= request.FilterMinimumRating.Value)
                           where (request.FilterToArtistId == null || r.Artist.RoadieId == request.FilterToArtistId)
                           where (request.FilterToCollectionId == null || collectionReleaseIds.Contains(r.Id))
+                          where (!request.FilterFavoriteOnly || favoriteReleaseIds.Contains(r.Id))
                           where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || r.AlternateNames.Contains(request.FilterValue)))
                           select new ReleaseList
                           {

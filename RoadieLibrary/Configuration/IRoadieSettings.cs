@@ -4,9 +4,9 @@ namespace Roadie.Library.Configuration
 {
     public interface IRoadieSettings
     {
+        Dictionary<string, List<string>> ArtistNameReplace { get; set; }
         string ConnectionString { get; set; }
         string ContentPath { get; set; }
-        Dictionary<string, List<string>> ArtistNameReplace { get; set; }
         Converting Converting { get; set; }
         string DefaultTimeZone { get; set; }
         string DiagnosticsPassword { get; set; }
@@ -18,7 +18,6 @@ namespace Roadie.Library.Configuration
         ImageSize LargeImageSize { get; set; }
         string LibraryFolder { get; set; }
         string ListenAddress { get; set; }
-        ImageSize SmallImageSize { get; set; }
         ImageSize MediumImageSize { get; set; }
         Processing Processing { get; set; }
         bool RecordNoResultSearches { get; set; }
@@ -26,6 +25,7 @@ namespace Roadie.Library.Configuration
         string SecretKey { get; set; }
         string SingleArtistHoldingFolder { get; set; }
         string SiteName { get; set; }
+        ImageSize SmallImageSize { get; set; }
         string SmtpFromAddress { get; set; }
         string SmtpHost { get; set; }
         string SmtpPassword { get; set; }

@@ -300,9 +300,21 @@ namespace Roadie.Api.Services
         {
             var sw = new Stopwatch();
             sw.Start();
+
+            int[] favoriteArtistIds = new int[0];
+            if(request.FilterFavoriteOnly)
+            {
+                favoriteArtistIds = (from a in this.DbContext.Artists
+                                     join ua in this.DbContext.UserArtists on a.Id equals ua.ArtistId
+                                     where ua.IsFavorite ?? false
+                                     select a.Id
+                                     ).ToArray();
+            }
+
             var result = (from a in this.DbContext.Artists
                           where (request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value)
                           where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue)))
+                          where (!request.FilterFavoriteOnly || favoriteArtistIds.Contains(a.Id))
                           select new ArtistList
                           {
                               DatabaseId = a.Id,

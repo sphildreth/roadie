@@ -12,5 +12,7 @@ namespace Roadie.Library.Models.Playlists
         public Image Thumbnail { get; set; }
         public int? PlaylistCount { get; set; }
         public Image UserThumbnail { get; set; }
+        public bool IsPublic { get; set; }
+        public int? Duration { get; set; }
     }
 }

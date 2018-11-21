@@ -17,7 +17,7 @@ namespace Roadie.Library.Data
 
         public ICollection<PlaylistTrack> Tracks { get; set; }
 
-        public ApplicationUser User { get; set; }
+        public ApplicationUser Maintainer { get; set; }
 
         [Column("userId")]
         public int? UserId { get; set; }

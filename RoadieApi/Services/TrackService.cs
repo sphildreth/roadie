@@ -221,6 +221,26 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
 
+            IQueryable<int> favoriteTrackIds = (new int[0]).AsQueryable();
+            if (request.FilterFavoriteOnly)
+            {
+                favoriteTrackIds = (from t in this.DbContext.Tracks
+                                     join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
+                                     where ut.IsFavorite ?? false
+                                     select t.Id
+                                     );
+            }
+            IQueryable<int> playlistTrackIds = (new int[0]).AsQueryable();
+            if(request.FilterToPlaylistId.HasValue)
+            {
+                playlistTrackIds = (from plt in this.DbContext.PlaylistTracks
+                                    join p in this.DbContext.Playlists on plt.PlayListId equals p.Id
+                                    join t in this.DbContext.Tracks on plt.TrackId equals t.Id
+                                    where p.RoadieId == request.FilterToPlaylistId.Value
+                                    select t.Id
+                                    );
+            }
+
             var resultQuery = (from t in this.DbContext.Tracks
                                join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
@@ -233,6 +253,8 @@ namespace Roadie.Api.Services
                                where (request.FilterToArtistId == null || request.FilterToArtistId != null && r.Artist.RoadieId == request.FilterToArtistId)
                                where (request.FilterMinimumRating == null || t.Rating >= request.FilterMinimumRating.Value)
                                where (request.FilterValue == "" || (t.Title.Contains(request.FilterValue) || t.AlternateNames.Contains(request.FilterValue)))
+                               where (!request.FilterFavoriteOnly || favoriteTrackIds.Contains(t.Id))
+                               where (request.FilterToPlaylistId == null || playlistTrackIds.Contains(t.Id))
                                select new { t, rm, r, trackArtist, releaseArtist });
 
             if (!string.IsNullOrEmpty(request.FilterValue))
@@ -291,7 +313,8 @@ namespace Roadie.Api.Services
 
             if (doRandomize ?? false)
             {
-                request.Limit = request.LimitValue > roadieUser.RandomReleaseLimit ? roadieUser.RandomReleaseLimit : request.LimitValue;
+                var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
+                request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
                 rows = result.OrderBy(x => Guid.NewGuid()).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }
             else

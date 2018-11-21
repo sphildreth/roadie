@@ -41,6 +41,61 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result.Data, "albumList");
         }
 
+        [HttpGet("getRandomSongs.view")]
+        [HttpPost("getRandomSongs.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetRandomSongs([FromQuery]Request request)
+        {
+            var result = await this.SubsonicService.GetRandomSongs(request, null);
+            return this.BuildResponse(request, result.Data, "randomSongs");
+        }
+
+        [HttpGet("getUser.view")]
+        [HttpPost("getUser.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetUser([FromQuery]Request request, string username)
+        {
+            var result = await this.SubsonicService.GetUser(request, username);
+            return this.BuildResponse(request, result.Data, "user");
+        }
+
+        [HttpGet("getArtists.view")]
+        [HttpPost("getArtists.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetArtists([FromQuery]Request request)
+        {
+            var result = await this.SubsonicService.GetArtists(request, null);
+            return this.BuildResponse(request, result.Data, "artists");
+        }
+
+        [HttpGet("getStarred.view")]
+        [HttpPost("getStarred.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetStarred([FromQuery]Request request)
+        {
+            var result = await this.SubsonicService.GetStarred(request, null, StarredVersion.One);
+            return this.BuildResponse(request, result.Data, "starred");
+        }
+
+        [HttpGet("getStarred2.view")]
+        [HttpPost("getStarred2.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetStarred2([FromQuery]Request request)
+        {
+            var result = await this.SubsonicService.GetStarred(request, null, StarredVersion.Two);
+            return this.BuildResponse(request, result.Data, "starred");
+        }
+
+        [HttpGet("getAvatar.view")]
+        [HttpPost("getAvatar.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetAvatar([FromQuery]Request request, string username)
+        {
+            //[HttpGet("user/{id}/{width:int?}/{height:int?}")]
+            var user = await this.UserManager.FindByNameAsync(username);
+            return Redirect($"/images/user/{ user.RoadieId }/{this.RoadieSettings.ThumbnailImageSize.Width}/{this.RoadieSettings.ThumbnailImageSize.Height}");
+        }
+
         [HttpGet("getAlbumList2.view")]
         [HttpPost("getAlbumList2.view")]
         [ProducesResponseType(200)]
@@ -126,6 +181,15 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result.Data, "musicFolders");
         }
 
+        [HttpGet("getPlaylist.view")]
+        [HttpPost("getPlaylist.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetPlaylist([FromQuery]Request request, string id)
+        {
+            var result = await this.SubsonicService.GetPlaylist(request, null, id);
+            return this.BuildResponse(request, result.Data, "playlist");
+        }
+
         [HttpGet("getPlaylists.view")]
         [HttpPost("getPlaylists.view")]
         [ProducesResponseType(200)]
@@ -166,17 +230,34 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result.Data, "license");
         }
 
-
         /// <summary>
         /// Returns albums, artists and songs matching the given search criteria. Supports paging through the result.
         /// </summary>
+        [HttpGet("search.view")]
+        [HttpPost("search.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> Search([FromQuery]Request request)
+        {
+            var result = await this.SubsonicService.Search(request, null, SearchVersion.One);
+            return this.BuildResponse(request, result.Data, "searchResult");
+        }
+
         [HttpGet("search2.view")]
         [HttpPost("search2.view")]
         [ProducesResponseType(200)]        
         public async Task<IActionResult> Search2([FromQuery]Request request)
         {
-            var result = await this.SubsonicService.Search(request, null);
+            var result = await this.SubsonicService.Search(request, null, SearchVersion.Two);
             return this.BuildResponse(request, result.Data, "searchResult2");
+        }
+
+        [HttpGet("search3.view")]
+        [HttpPost("search3.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> Search3([FromQuery]Request request)
+        {
+            var result = await this.SubsonicService.Search(request, null, SearchVersion.Three);
+            return this.BuildResponse(request, result.Data, "searchResult3");
         }
 
         [HttpGet("getAlbum.view")]

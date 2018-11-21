@@ -36,7 +36,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("artist/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> ArtistThumbnail(Guid id, int? width, int? height)
+        public async Task<IActionResult> ArtistImage(Guid id, int? width, int? height)
         {
             var result = await this.ImageService.ArtistImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
@@ -58,7 +58,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("collection/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> CollectionThumbnail(Guid id, int? width, int? height)
+        public async Task<IActionResult> CollectionImage(Guid id, int? width, int? height)
         {
             var result = await this.ImageService.CollectionImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
@@ -117,7 +117,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("label/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> LabelThumbnail(Guid id, int? width, int? height)
+        public async Task<IActionResult> LabelImage(Guid id, int? width, int? height)
         {
             var result = await this.ImageService.LabelImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
@@ -138,7 +138,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("playlist/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> PlaylistThumbnail(Guid id, int? width, int? height)
+        public async Task<IActionResult> PlaylistImage(Guid id, int? width, int? height)
         {
             var result = await this.ImageService.PlaylistImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
@@ -159,7 +159,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("release/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> ReleaseThumbnail(Guid id, int? width, int? height)
+        public async Task<IActionResult> ReleaseImage(Guid id, int? width, int? height)
         {
             var result = await this.ImageService.ReleaseImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
@@ -180,7 +180,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("track/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> TrackThumbnail(Guid id, int? width, int? height)
+        public async Task<IActionResult> TrackImage(Guid id, int? width, int? height)
         {
             var result = await this.ImageService.TrackImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
@@ -198,10 +198,13 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
+        /// <summary>
+        /// NOTE that user images/avatars are PNG not JPG this is so it looks better in the menus/applications
+        /// </summary>
         [HttpGet("user/{id}/{width:int?}/{height:int?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> UserThumbnail(Guid id, int? width, int? height)
+        public async Task<IActionResult> UserImage(Guid id, int? width, int? height)
         {
             var result = await this.ImageService.UserImage(id, width ?? this.RoadieSettings.ThumbnailImageSize.Width, height ?? this.RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult)
@@ -214,7 +217,7 @@ namespace Roadie.Api.Controllers
             }
             return File(fileContents: result.Data.Bytes,
                         contentType: result.ContentType,
-                        fileDownloadName: $"{ result.Data.Caption ?? id.ToString()}.jpg",
+                        fileDownloadName: $"{ result.Data.Caption ?? id.ToString()}.png",
                         lastModified: result.LastModified,
                         entityTag: result.ETag);
         }

@@ -51,5 +51,10 @@ namespace Roadie.Library.Configuration
         public Dictionary<string, string> TrackPathReplace { get; set; }
         public bool UseSSLBehindProxy { get; set; }
         public string WebsocketAddress { get; set; }
+
+        public RoadieSettings()
+        {
+            this.ThumbnailImageSize = new ImageSize { Width = 80, Height = 80 };
+        }
     }
 }
