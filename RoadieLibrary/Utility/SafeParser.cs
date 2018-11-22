@@ -66,7 +66,7 @@ namespace Roadie.Library.Utility
                 return null;
             }
             var i = input.ToString();
-            if(i[1] == ':')
+            if(!string.IsNullOrEmpty(i) && i.Length > 0 && i[1] == ':')
             {
                 i = i.Substring(2, i.Length - 2);
             }

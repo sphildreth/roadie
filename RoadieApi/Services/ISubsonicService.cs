@@ -49,5 +49,7 @@ namespace Roadie.Api.Services
 
         Task<SubsonicOperationResult<Response>> GetArtist(Request request, Roadie.Library.Models.Users.User roadieUser);
         Task<SubsonicOperationResult<Response>> GetSong(Request request, Roadie.Library.Models.Users.User roadieUser);
+        Task<SubsonicOperationResult<Response>> GetTopSongs(Request request, Roadie.Library.Models.Users.User roadieUser, string artistId, int? count = 50);
+        Task<SubsonicOperationResult<Response>> GetSimliarSongs(Request request, Roadie.Library.Models.Users.User roadieUser, SimilarSongsVersion version, int? count = 50);
     }
 }

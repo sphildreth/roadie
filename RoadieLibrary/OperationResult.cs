@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Xml.Serialization;
 
 namespace Roadie.Library
 {
@@ -28,6 +29,9 @@ namespace Roadie.Library
     {
         private List<Exception> _errors;
         private List<string> _messages;
+
+        [JsonIgnore]
+        [XmlIgnore]
         public Dictionary<string, object> AdditionalData { get; set; }
 
         /// <summary>

@@ -106,6 +106,9 @@ namespace Roadie.Library.Models.Pagination
         public int? FilterMinimumRating { get; set; }
         public bool FilterRatedOnly { get; internal set; }
         public bool FilterFavoriteOnly { get; set; }
+        public bool FilterTopPlayedOnly { get; set; }
+        public int? FilterFromYear { get; internal set; }
+        public int? FilterToYear { get; internal set; }
 
         public PagedRequest()
         { }

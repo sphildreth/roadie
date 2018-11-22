@@ -117,7 +117,7 @@ namespace Roadie.Api.Services
             return this.CacheManager.Get(data.Playlist.CacheUrn(id), () =>
             {
                 return this.DbContext.Playlists
-                                    .Include(x => x.Maintainer)
+                                    .Include(x => x.User)
                                     .FirstOrDefault(x => x.RoadieId == id);
             }, data.Playlist.CacheRegionUrn(id));
         }

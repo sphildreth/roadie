@@ -133,6 +133,8 @@ namespace Roadie.Api.Services
                           where (request.FilterToArtistId == null || r.Artist.RoadieId == request.FilterToArtistId)
                           where (request.FilterToCollectionId == null || collectionReleaseIds.Contains(r.Id))
                           where (!request.FilterFavoriteOnly || favoriteReleaseIds.Contains(r.Id))
+                          where (request.FilterFromYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear)
+                          where (request.FilterToYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear)
                           where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || r.AlternateNames.Contains(request.FilterValue)))
                           select new ReleaseList
                           {

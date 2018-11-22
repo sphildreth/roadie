@@ -55,6 +55,10 @@ namespace Roadie.Library.Configuration
         public RoadieSettings()
         {
             this.ThumbnailImageSize = new ImageSize { Width = 80, Height = 80 };
+            this.SmallImageSize = new ImageSize { Width = 160, Height = 160 };
+            this.MediumImageSize = new ImageSize { Width = 320, Height = 320 };
+            this.LargeImageSize = new ImageSize { Width = 500, Height = 500 };
+
         }
     }
 }

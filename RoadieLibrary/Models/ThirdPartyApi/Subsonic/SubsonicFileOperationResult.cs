@@ -32,5 +32,10 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
         }
 
+        public SubsonicFileOperationResult(ErrorCodes error, string message = null)
+            : base(message)
+        {
+            this.ErrorCode = error;
+        }
     }
 }

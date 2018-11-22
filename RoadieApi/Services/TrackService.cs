@@ -240,7 +240,19 @@ namespace Roadie.Api.Services
                                     select t.Id
                                     );
             }
-
+            int[] topTrackids = new int[0];
+            if(request.FilterTopPlayedOnly)
+            {
+                // Get request number of top played songs for artist
+                topTrackids = (from t in this.DbContext.Tracks
+                               join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
+                               join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                               join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
+                               where r.RoadieId == request.FilterToArtistId
+                               orderby ut.PlayedCount descending
+                               select t.Id
+                               ).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            }
             var resultQuery = (from t in this.DbContext.Tracks
                                join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
@@ -251,11 +263,12 @@ namespace Roadie.Api.Services
                                where (t.Hash != null)
                                where (releaseId == null || (releaseId != null && r.RoadieId == releaseId))
                                where (request.FilterToTrackId == null || request.FilterToTrackId != null && t.RoadieId == request.FilterToTrackId)
-                               where (request.FilterToArtistId == null || request.FilterToArtistId != null && r.Artist.RoadieId == request.FilterToArtistId)
                                where (request.FilterMinimumRating == null || t.Rating >= request.FilterMinimumRating.Value)
                                where (request.FilterValue == "" || (t.Title.Contains(request.FilterValue) || t.AlternateNames.Contains(request.FilterValue)))
                                where (!request.FilterFavoriteOnly || favoriteTrackIds.Contains(t.Id))
                                where (request.FilterToPlaylistId == null || playlistTrackIds.Contains(t.Id))
+                               where (!request.FilterTopPlayedOnly || topTrackids.Contains(t.Id))
+                               where (request.FilterToArtistId == null || request.FilterToArtistId != null && r.Artist.RoadieId == request.FilterToArtistId)
                                select new { t, rm, r, trackArtist, releaseArtist });
 
             if (!string.IsNullOrEmpty(request.FilterValue))

@@ -280,8 +280,10 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
                         break;
 
                     case ListType.ByYear:
+                        pagedRequest.FilterFromYear = this.FromYear;
+                        pagedRequest.FilterToYear = this.ToYear;
                         pagedRequest.Sort = "ReleaseDate";
-                        pagedRequest.Order = "ASC";
+                        pagedRequest.Order = this.FromYear > this.ToYear ? "DESC" : "ASC";
                         break;
                 }
                 pagedRequest.Limit = limit;

@@ -15,6 +15,7 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
@@ -50,7 +51,6 @@ namespace Roadie.Api.Services
                                                     },
                                                     etag: etag);
         }
-
 
         public async Task<FileOperationResult<Image>> ById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
         {
@@ -217,13 +217,29 @@ namespace Roadie.Api.Services
                 {
                     return new FileOperationResult<Image>(true, string.Format("Artist Not Found [{0}]", id));
                 }
+                byte[] imageBytes = null;
+                string artistFolder = null;
+                try
+                {
+                    // See if artist images exists in artist folder
+                    var artistImages = Directory.GetFiles(artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder), "artist*.*");
+                    if (artistImages.Any())
+                    {
+                        imageBytes = File.ReadAllBytes(artistImages.First());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.Logger.LogError(ex, $"Error Reading Folder [{ artistFolder }] For Artist [{ artist.Id }]");
+                }
+                imageBytes = imageBytes ?? artist.Thumbnail;
                 var image = new data.Image
                 {
-                    Bytes = artist.Thumbnail,
+                    Bytes = imageBytes,
                     CreatedDate = artist.CreatedDate,
                     LastUpdated = artist.LastUpdated
                 };
-                if (artist.Thumbnail == null || !artist.Thumbnail.Any())
+                if (imageBytes == null || !imageBytes.Any())
                 {
                     image = this.DefaultNotFoundImages.Artist;
                 }
@@ -253,7 +269,7 @@ namespace Roadie.Api.Services
                 };
                 if (collection.Thumbnail == null || !collection.Thumbnail.Any())
                 {
-                    image = this.DefaultNotFoundImages.Label;
+                    image = this.DefaultNotFoundImages.Collection;
                 }
                 return GenerateFileOperationResult(id, image, etag);
             }
@@ -406,9 +422,26 @@ namespace Roadie.Api.Services
                 {
                     return new FileOperationResult<Image>(true, string.Format("Release Not Found [{0}]", id));
                 }
+                byte[] imageBytes = null;
+                string artistFolder = null;
+                try
+                {
+                    // See if cover art file exists in release folder
+                    artistFolder = release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                    var coverArtFiles = Directory.GetFiles(release.ReleaseFileFolder(artistFolder), "cover*.*");
+                    if (coverArtFiles.Any())
+                    {
+                        imageBytes = File.ReadAllBytes(coverArtFiles.First());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.Logger.LogError(ex, $"Error Reading Folder [{ artistFolder }] For Artist [{ release.Artist.Id }]");
+                }
+                imageBytes = imageBytes ?? release.Thumbnail;
                 var image = new data.Image
                 {
-                    Bytes = release.Thumbnail,
+                    Bytes = imageBytes,
                     CreatedDate = release.CreatedDate,
                     LastUpdated = release.LastUpdated
                 };
@@ -443,7 +476,7 @@ namespace Roadie.Api.Services
                 if (track.Thumbnail == null || !track.Thumbnail.Any())
                 {
                     // If no track image is found then return image for release
-                    return await this.ReleaseImageAction(track.ReleaseMedia.Release.RoadieId, etag);                   
+                    return await this.ReleaseImageAction(track.ReleaseMedia.Release.RoadieId, etag);
                 }
                 return GenerateFileOperationResult(id, image, etag);
             }
@@ -481,7 +514,5 @@ namespace Roadie.Api.Services
             }
             return new FileOperationResult<Image>(OperationMessages.ErrorOccured);
         }
-
-
     }
 }

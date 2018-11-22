@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -8,6 +9,10 @@ using Roadie.Library.Caching;
 using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.ThirdPartyApi.Subsonic;
+using Roadie.Library.Utility;
+using System;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -41,23 +46,24 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result, "album");
         }
 
-        [HttpGet("getAlbum.view")]
-        [HttpPost("getAlbum.view")]
+        [HttpGet("getSimilarSongs.view")]
+        [HttpPost("getSimilarSongs.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetSong([FromQuery]Request request, string id)
+        public async Task<IActionResult> GetSimilarSongs([FromQuery]Request request, int? count = 50)
         {
-            var result = await this.SubsonicService.GetAlbum(request, null);
-            return this.BuildResponse(request, result, "song");
+            var result = await this.SubsonicService.GetSimliarSongs(request, null, SimilarSongsVersion.One, count);
+            return this.BuildResponse(request, result, "similarSongs");
         }
 
-        [HttpGet("getArtist.view")]
-        [HttpPost("getArtist.view")]
+        [HttpGet("getSimilarSongs2.view")]
+        [HttpPost("getSimilarSongs2.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetArtist([FromQuery]Request request)
+        public async Task<IActionResult> GetSimilarSongs2([FromQuery]Request request, int? count = 50)
         {
-            var result = await this.SubsonicService.GetArtist(request, null);
-            return this.BuildResponse(request, result, "artist");
+            var result = await this.SubsonicService.GetSimliarSongs(request, null, SimilarSongsVersion.Two, count);
+            return this.BuildResponse(request, result, "similarSongs2");
         }
+
 
         [HttpGet("getAlbumInfo.view")]
         [HttpPost("getAlbumInfo.view")]
@@ -77,24 +83,6 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result, "albumInfo");
         }
 
-        [HttpGet("getVideos.view")]
-        [HttpPost("getVideos.view")]
-        [ProducesResponseType(200)]
-        public IActionResult GetVideos([FromQuery]Request request)
-        {
-            var result = this.SubsonicService.GetVideos(request);
-            return this.BuildResponse(request, result, "videos");
-        }
-
-        [HttpGet("getLyrics.view")]
-        [HttpPost("getLyrics.view")]
-        [ProducesResponseType(200)]
-        public IActionResult GetLyrics([FromQuery]Request request, string artist, string title)
-        {
-            var result = this.SubsonicService.GetLyrics(request, artist, title);
-            return this.BuildResponse(request, result, "lyrics ");
-        }
-
         [HttpGet("getAlbumList.view")]
         [HttpPost("getAlbumList.view")]
         [ProducesResponseType(200)]
@@ -111,6 +99,17 @@ namespace Roadie.Api.Controllers
         {
             var result = await this.SubsonicService.GetAlbumList(request, null, AlbumListVersions.Two);
             return this.BuildResponse(request, result, "albumList");
+        }
+
+        [HttpGet("getArtist.view")]
+        [HttpPost("getArtist.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetArtist([FromQuery]Request request)
+        {
+            var postedForm = Request.Form.FirstOrDefault();
+            request.id = request.id ?? (postedForm.Key == "id" ? postedForm.Value.FirstOrDefault() : string.Empty);
+            var result = await this.SubsonicService.GetArtist(request, null);
+            return this.BuildResponse(request, result, "artist");
         }
 
         [HttpGet("getArtistInfo.view")]
@@ -145,7 +144,6 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetAvatar([FromQuery]Request request, string username)
         {
-            //[HttpGet("user/{id}/{width:int?}/{height:int?}")]
             var user = await this.UserManager.FindByNameAsync(username);
             return Redirect($"/images/user/{ user.RoadieId }/{this.RoadieSettings.ThumbnailImageSize.Width}/{this.RoadieSettings.ThumbnailImageSize.Height}");
         }
@@ -197,6 +195,15 @@ namespace Roadie.Api.Controllers
         {
             var result = this.SubsonicService.GetLicense(request);
             return this.BuildResponse(request, result, "license");
+        }
+
+        [HttpGet("getLyrics.view")]
+        [HttpPost("getLyrics.view")]
+        [ProducesResponseType(200)]
+        public IActionResult GetLyrics([FromQuery]Request request, string artist, string title)
+        {
+            var result = this.SubsonicService.GetLyrics(request, artist, title);
+            return this.BuildResponse(request, result, "lyrics ");
         }
 
         [HttpGet("getMusicDirectory.view")]
@@ -253,6 +260,15 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result, "randomSongs");
         }
 
+        [HttpGet("getSong.view")]
+        [HttpPost("getSong.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetSong([FromQuery]Request request)
+        {
+            var result = await this.SubsonicService.GetSong(request, null);
+            return this.BuildResponse(request, result, "song");
+        }
+
         [HttpGet("getStarred.view")]
         [HttpPost("getStarred.view")]
         [ProducesResponseType(200)]
@@ -271,13 +287,31 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result, "starred");
         }
 
+        [HttpGet("getTopSongs.view")]
+        [HttpPost("getTopSongs.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetTopSongs([FromQuery]Request request, string artistId, int? count = 50)
+        {
+            var result = await this.SubsonicService.GetTopSongs(request, null, artistId, count);
+            return this.BuildResponse(request, result, "topSongs");
+        }
+
         [HttpGet("getUser.view")]
         [HttpPost("getUser.view")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetUser([FromQuery]Request request, string username)
         {
-            var result = await this.SubsonicService.GetUser(request, username);
+            var result = await this.SubsonicService.GetUser(request, username ?? request.u);
             return this.BuildResponse(request, result, "user");
+        }
+
+        [HttpGet("getVideos.view")]
+        [HttpPost("getVideos.view")]
+        [ProducesResponseType(200)]
+        public IActionResult GetVideos([FromQuery]Request request)
+        {
+            var result = this.SubsonicService.GetVideos(request);
+            return this.BuildResponse(request, result, "videos");
         }
 
         [HttpGet("ping.view")]
@@ -338,15 +372,36 @@ namespace Roadie.Api.Controllers
 
         #region Response Builder Methods
 
-        private string BuildJsonResult(Response response, string responseType)
+        private IActionResult BuildResponse(Request request, SubsonicOperationResult<Response> response = null, string responseType = null)
         {
-            var status = response?.status.ToString();
-            var version = response?.version ?? Roadie.Api.Services.SubsonicService.SubsonicVersion;
-            if (responseType == null)
+            var acceptHeader = this.Request.Headers["Accept"];
+            this.Logger.LogTrace($"Subsonic Request: Method [{ this.Request.Method }], Accept Header [{ acceptHeader }], Path [{ this.Request.Path }], Query String [{ this.Request.QueryString }], Response Error Code [{ response.ErrorCode }], Request [{ JsonConvert.SerializeObject(request) }] ResponseType [{ responseType }]");
+            if (response?.ErrorCode.HasValue ?? false)
             {
-                return "{ \"subsonic-response\": { \"status\":\"" + status + "\", \"version\": \"" + version + "\" }}";
+                return this.SendError(request, response, responseType);
             }
-            return "{ \"subsonic-response\": { \"status\":\"" + status + "\", \"version\": \"" + version + "\", \"" + responseType + "\":" + response != null ? JsonConvert.SerializeObject(response.Item) : string.Empty + "}}";
+            if (request.IsJSONRequest)
+            {
+                this.Response.ContentType = "application/json";
+                var status = response?.Data?.status.ToString();
+                var version = response?.Data?.version ?? Roadie.Api.Services.SubsonicService.SubsonicVersion;
+                string jsonResult = null;
+                if (responseType == null)
+                {
+                    jsonResult = "{ \"subsonic-response\": { \"status\":\"" + status + "\", \"version\": \"" + version + "\" }}";
+                }
+                else
+                {
+                    jsonResult = "{ \"subsonic-response\": { \"status\":\"" + status + "\", \"version\": \"" + version + "\", \"" + responseType + "\":" + (response?.Data != null ? JsonConvert.SerializeObject(response.Data.Item) : string.Empty) + "}}";
+                }
+                if((request?.f ?? string.Empty).Equals("jsonp", StringComparison.OrdinalIgnoreCase))
+                {
+                    jsonResult = request.callback + "(" + jsonResult + ");";
+                }
+                return Content(jsonResult);
+            }
+            this.Response.ContentType = "application/xml";
+            return Ok(response.Data);
         }
 
         private IActionResult SendError(Request request, SubsonicOperationResult<Response> response = null, string responseType = null)
@@ -363,23 +418,77 @@ namespace Roadie.Api.Controllers
             return Content($"<?xml version=\"1.0\" encoding=\"UTF-8\"?><subsonic-response xmlns=\"http://subsonic.org/restapi\" status=\"failed\" version=\"{ version }\"><error code=\"{ errorCode }\" message=\"{ errorDescription }\"/></subsonic-response>");
         }
 
-        private IActionResult BuildResponse(Request request, SubsonicOperationResult<Response> response = null, string responseType = null)
-        {
-            var acceptHeader = this.Request.Headers["Accept"];
-            this.Logger.LogTrace($"Subsonic Request: Method [{ this.Request.Method }], Accept Header [{ acceptHeader }], Path [{ this.Request.Path }], Query String [{ this.Request.QueryString }], Response Error Code [{ response.ErrorCode }], Request [{ JsonConvert.SerializeObject(request) }] ResponseType [{ responseType }]");
-            if (response.ErrorCode.HasValue)
-            {
-                return this.SendError(request, response, responseType);
-            }
-            if (request.IsJSONRequest)
-            {
-                this.Response.ContentType = "application/json";
-                return Content(this.BuildJsonResult(response.Data, responseType));
-            }
-            this.Response.ContentType = "application/xml";
-            return Ok(response);
-        }
-
         #endregion Response Builder Methods
     }
+
+    //[ModelBinder(BinderType = typeof(SubsonicRequestBinder))]
+    //public class SubsonicRequest : Request
+    //{
+    //}
+
+    //public class SubsonicRequestBinder : IModelBinder
+    //{
+
+    //    public Task BindModelAsync(ModelBindingContext bindingContext)
+    //    {
+    //        if (bindingContext == null)
+    //        {
+    //            throw new ArgumentNullException(nameof(bindingContext));
+    //        }
+    //        string valueFromBody = string.Empty;
+
+    //        var queryDictionary = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(bindingContext.HttpContext.Request.QueryString.ToString());
+
+    //        //using (var sr = new StreamReader(bindingContext.HttpContext.Request.Body))
+    //        //{
+    //        //    valueFromBody = sr.ReadToEnd();
+    //        //}
+
+    //        if (string.IsNullOrEmpty(valueFromBody) && (queryDictionary == null || !queryDictionary.Any()))
+    //        {
+    //            return Task.CompletedTask;
+    //        }
+
+    //        var model = new SubsonicRequest();
+    //        model.u = queryDictionary.ContainsKey("u") ? queryDictionary["u"].First() : "";
+    //        model.p = queryDictionary.ContainsKey("p") ? queryDictionary["p"].First() : "";
+    //        model.s = queryDictionary.ContainsKey("s") ? queryDictionary["s"].First() : "";
+    //        model.t = queryDictionary.ContainsKey("t") ? queryDictionary["t"].First() : "";
+    //        model.v = queryDictionary.ContainsKey("v") ? queryDictionary["v"].First() : "";
+    //        model.c = queryDictionary.ContainsKey("c") ? queryDictionary["c"].First() : "";
+    //        model.id = queryDictionary.ContainsKey("id") ? queryDictionary["id"].First() : "";
+    //        model.f = queryDictionary.ContainsKey("f") ? queryDictionary["f"].First() : "";
+    //        model.callback = queryDictionary.ContainsKey("callback") ? queryDictionary["callback"].First() : "";
+    //        model.MusicFolderId = queryDictionary.ContainsKey("MusicFolderId") ? SafeParser.ToNumber<int>(queryDictionary["MusicFolderId"].First()) : 0;
+    //        model.Type = 
+
+    //        var form = bindingContext.HttpContext.Request.Form.FirstOrDefault();
+    //        switch (form.Key)
+    //        {
+    //            case "id":
+    //                model.id = form.Value;
+    //                break;
+    //            default:
+    //                break;
+    //        }
+
+
+    //        bindingContext.Result = ModelBindingResult.Success(model);
+
+    //        return Task.CompletedTask;
+    //    }
+   // }
+
+    //public class SubsonicRequestBinderProvider : IModelBinderProvider
+    //{
+    //    public IModelBinder GetBinder(ModelBinderProviderContext context)
+    //    {
+    //        if (context.Metadata.ModelType == typeof(Request))
+    //        {
+    //            return new SubsonicRequestBinder();
+    //        }
+    //        return null;
+    //    }
+    //}
+
 }

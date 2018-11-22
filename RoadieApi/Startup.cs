@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OData.Edm;
 using Newtonsoft.Json;
+using Roadie.Api.Controllers;
 using Roadie.Api.Hubs;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
@@ -185,6 +186,7 @@ namespace Roadie.Api
             services.AddMvc(options =>
             {
                 options.RespectBrowserAcceptHeader = true; // false by default
+             //   options.ModelBinderProviders.Insert(0, new SubsonicRequestBinderProvider());
             })
                 .AddJsonOptions(options =>
                 {
