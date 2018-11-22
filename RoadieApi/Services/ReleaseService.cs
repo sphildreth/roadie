@@ -128,12 +128,21 @@ namespace Roadie.Api.Services
                                      select a.Id
                                      ).ToArray();
             }
+            int[] genreReleaseIds = new int[0];
+            if(!string.IsNullOrEmpty(request.FilterByGenre))
+            {
+                genreReleaseIds = (from rg in this.DbContext.ReleaseGenres
+                                   join g in this.DbContext.Genres on rg.GenreId equals g.Id
+                                   where g.Name == request.FilterByGenre
+                                   select rg.ReleaseId).ToArray();
+            }
             var result = (from r in this.DbContext.Releases.Include("Artist")
                           join a in this.DbContext.Artists on r.ArtistId equals a.Id
                           where (request.FilterMinimumRating == null || r.Rating >= request.FilterMinimumRating.Value)
                           where (request.FilterToArtistId == null || r.Artist.RoadieId == request.FilterToArtistId)
                           where (request.FilterToCollectionId == null || collectionReleaseIds.Contains(r.Id))
                           where (!request.FilterFavoriteOnly || favoriteReleaseIds.Contains(r.Id))
+                          where (request.FilterByGenre == null || genreReleaseIds.Contains(r.Id))
                           where (request.FilterFromYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear)
                           where (request.FilterToYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear)
                           where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || r.AlternateNames.Contains(request.FilterValue)))

@@ -275,8 +275,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
                         break;
 
                     case ListType.ByGenre:
-                        pagedRequest.Sort = "Genre.Text";
-                        pagedRequest.Order = "ASC";
+                        pagedRequest.FilterByGenre = this.Genre;
                         break;
 
                     case ListType.ByYear:

@@ -107,8 +107,6 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetArtist(SubsonicRequest request)
         {
-            var postedForm = Request.Form.FirstOrDefault();
-            request.id = request.id ?? (postedForm.Key == "id" ? postedForm.Value.FirstOrDefault() : string.Empty);
             var result = await this.SubsonicService.GetArtist(request, null);
             return this.BuildResponse(request, result, "artist");
         }
@@ -478,7 +476,7 @@ namespace Roadie.Api.Controllers
             modelDictionary["callback"] = queryDictionary.ContainsKey("callback") ? queryDictionary["callback"].First() : null;
             modelDictionary["f"] = queryDictionary.ContainsKey("f") ? queryDictionary["f"].First() : null;
             modelDictionary["fromYear"] = queryDictionary.ContainsKey("fromYear") ? SafeParser.ToNumber<int?>(queryDictionary["fromYear"].First()) : null;
-            modelDictionary["Genre"] = queryDictionary.ContainsKey("genre") ? queryDictionary["genre"].First() : null;
+            modelDictionary["genre"] = queryDictionary.ContainsKey("genre") ? queryDictionary["genre"].First() : null;
             modelDictionary["id"] = queryDictionary.ContainsKey("id") ? queryDictionary["id"].First() : null;
             modelDictionary["musicFolderId"] = queryDictionary.ContainsKey("musicFolderId") ? SafeParser.ToNumber<int?>(queryDictionary["musicFolderId"].First()) : null;
             modelDictionary["offset"] = queryDictionary.ContainsKey("offset") ? SafeParser.ToNumber<int?>(queryDictionary["offset"].First()) : null;
@@ -497,7 +495,7 @@ namespace Roadie.Api.Controllers
             modelDictionary["v"] = queryDictionary.ContainsKey("v") ? queryDictionary["v"].First() : null;
 
             // Setup model dictionary from Posted Body values
-            if (!bindingContext.HttpContext.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase))
+            if (!bindingContext.HttpContext.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(bindingContext.HttpContext.Request.ContentType))
             {
                 var formCollection = bindingContext.HttpContext.Request.Form;
                 if (formCollection != null && formCollection.Any())

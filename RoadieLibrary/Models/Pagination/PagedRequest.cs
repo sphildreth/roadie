@@ -109,6 +109,7 @@ namespace Roadie.Library.Models.Pagination
         public bool FilterTopPlayedOnly { get; set; }
         public int? FilterFromYear { get; internal set; }
         public int? FilterToYear { get; internal set; }
+        public string FilterByGenre { get; internal set; }
 
         public PagedRequest()
         { }
