@@ -344,7 +344,7 @@ namespace Roadie.Api.Services
             }
             else
             {
-                string sortBy = null;
+                string sortBy = "Id";
                 if (request.ActionValue == User.ActionKeyUserRated)
                 {
                     sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Rating", "DESC" }, { "Artist.Text", "ASC" } }) : request.OrderValue(null);

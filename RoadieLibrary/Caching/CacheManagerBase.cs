@@ -7,6 +7,8 @@ namespace Roadie.Library.Caching
 {
     public abstract class CacheManagerBase : ICacheManager
     {
+        public const string SystemCacheRegionUrn = "urn:system";
+
         protected readonly CachePolicy _defaultPolicy = null;
         protected ILogger Logger { get; }
         protected readonly JsonSerializerSettings _serializerSettings = null;

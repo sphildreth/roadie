@@ -83,6 +83,25 @@ namespace Roadie.Api.Services
             this._httpContext = httpContext;
         }
 
+        protected data.Artist GetArtist(string artistName)
+        {
+            if (string.IsNullOrEmpty(artistName))
+            {
+                return null;
+            }
+            var artistByName = this.CacheManager.Get(data.Artist.CacheUrnByName(artistName), () =>
+            {
+                return this.DbContext.Artists
+                                    .FirstOrDefault(x => x.Name == artistName);
+
+            }, null);
+            if(artistByName == null)
+            {
+                return null;
+            }
+            return this.GetArtist(artistByName.RoadieId);
+        }
+
         protected data.Artist GetArtist(Guid id)
         {
             return this.CacheManager.Get(data.Artist.CacheUrn(id), () =>

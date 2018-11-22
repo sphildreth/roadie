@@ -12,6 +12,11 @@ namespace Roadie.Library.Data
             return $"urn:artist:{ Id}";
         }
 
+        public static string CacheUrnByName(string name)
+        {
+            return $"urn:artist_by_name:{ name }";
+        }
+
         public static string CacheUrn(Guid Id)
         {
             return $"urn:artist_by_id:{ Id }";

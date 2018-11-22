@@ -11,6 +11,7 @@ using Roadie.Library.Identity;
 using Roadie.Library.Models.ThirdPartyApi.Subsonic;
 using Roadie.Library.Utility;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -40,7 +41,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getAlbum.view")]
         [HttpPost("getAlbum.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetAlbum([FromQuery]Request request)
+        public async Task<IActionResult> GetAlbum(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetAlbum(request, null);
             return this.BuildResponse(request, result, "album");
@@ -49,7 +50,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getSimilarSongs.view")]
         [HttpPost("getSimilarSongs.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetSimilarSongs([FromQuery]Request request, int? count = 50)
+        public async Task<IActionResult> GetSimilarSongs(SubsonicRequest request, int? count = 50)
         {
             var result = await this.SubsonicService.GetSimliarSongs(request, null, SimilarSongsVersion.One, count);
             return this.BuildResponse(request, result, "similarSongs");
@@ -58,7 +59,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getSimilarSongs2.view")]
         [HttpPost("getSimilarSongs2.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetSimilarSongs2([FromQuery]Request request, int? count = 50)
+        public async Task<IActionResult> GetSimilarSongs2(SubsonicRequest request, int? count = 50)
         {
             var result = await this.SubsonicService.GetSimliarSongs(request, null, SimilarSongsVersion.Two, count);
             return this.BuildResponse(request, result, "similarSongs2");
@@ -68,7 +69,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getAlbumInfo.view")]
         [HttpPost("getAlbumInfo.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetAlbumInfo([FromQuery]Request request)
+        public async Task<IActionResult> GetAlbumInfo(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetAlbumInfo(request, null, AlbumInfoVersion.One);
             return this.BuildResponse(request, result, "albumInfo");
@@ -77,7 +78,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getAlbumInfo2.view")]
         [HttpPost("getAlbumInfo2.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetAlbumInfo2([FromQuery]Request request)
+        public async Task<IActionResult> GetAlbumInfo2(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetAlbumInfo(request, null, AlbumInfoVersion.Two);
             return this.BuildResponse(request, result, "albumInfo");
@@ -86,7 +87,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getAlbumList.view")]
         [HttpPost("getAlbumList.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetAlbumList([FromQuery]Request request)
+        public async Task<IActionResult> GetAlbumList(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetAlbumList(request, null, AlbumListVersions.One);
             return this.BuildResponse(request, result, "albumList");
@@ -95,7 +96,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getAlbumList2.view")]
         [HttpPost("getAlbumList2.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetAlbumList2([FromQuery]Request request)
+        public async Task<IActionResult> GetAlbumList2(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetAlbumList(request, null, AlbumListVersions.Two);
             return this.BuildResponse(request, result, "albumList");
@@ -104,7 +105,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getArtist.view")]
         [HttpPost("getArtist.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetArtist([FromQuery]Request request)
+        public async Task<IActionResult> GetArtist(SubsonicRequest request)
         {
             var postedForm = Request.Form.FirstOrDefault();
             request.id = request.id ?? (postedForm.Key == "id" ? postedForm.Value.FirstOrDefault() : string.Empty);
@@ -115,7 +116,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getArtistInfo.view")]
         [HttpPost("getArtistInfo.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetArtistInfo([FromQuery]Request request, int? count, bool? includeNotPresent)
+        public async Task<IActionResult> GetArtistInfo(SubsonicRequest request, int? count, bool? includeNotPresent)
         {
             var result = await this.SubsonicService.GetArtistInfo(request, count, includeNotPresent ?? false, ArtistInfoVersion.One);
             return this.BuildResponse(request, result, "artistInfo");
@@ -124,7 +125,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getArtistInfo2.view")]
         [HttpPost("getArtistInfo2.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetArtistInfo2([FromQuery]Request request, int? count, bool? includeNotPresent)
+        public async Task<IActionResult> GetArtistInfo2(SubsonicRequest request, int? count, bool? includeNotPresent)
         {
             var result = await this.SubsonicService.GetArtistInfo(request, count, includeNotPresent ?? false, ArtistInfoVersion.Two);
             return this.BuildResponse(request, result, "artistInfo2");
@@ -133,7 +134,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getArtists.view")]
         [HttpPost("getArtists.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetArtists([FromQuery]Request request)
+        public async Task<IActionResult> GetArtists(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetArtists(request, null);
             return this.BuildResponse(request, result, "artists");
@@ -142,7 +143,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getAvatar.view")]
         [HttpPost("getAvatar.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetAvatar([FromQuery]Request request, string username)
+        public async Task<IActionResult> GetAvatar(SubsonicRequest request, string username)
         {
             var user = await this.UserManager.FindByNameAsync(username);
             return Redirect($"/images/user/{ user.RoadieId }/{this.RoadieSettings.ThumbnailImageSize.Width}/{this.RoadieSettings.ThumbnailImageSize.Height}");
@@ -151,7 +152,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getCoverArt.view")]
         [HttpPost("getCoverArt.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetCoverArt([FromQuery]Request request, int? size)
+        public async Task<IActionResult> GetCoverArt(SubsonicRequest request, int? size)
         {
             var result = await this.SubsonicService.GetCoverArt(request, size);
             if (result == null || result.IsNotFoundResult)
@@ -173,7 +174,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getGenres.view")]
         [HttpPost("getGenres.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetGenres([FromQuery]Request request)
+        public async Task<IActionResult> GetGenres(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetGenres(request);
             return this.BuildResponse(request, result, "genres");
@@ -182,7 +183,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getIndexes.view")]
         [HttpPost("getIndexes.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetIndexes([FromQuery]Request request, long? ifModifiedSince = null)
+        public async Task<IActionResult> GetIndexes(SubsonicRequest request, long? ifModifiedSince = null)
         {
             var result = await this.SubsonicService.GetIndexes(request, null, ifModifiedSince);
             return this.BuildResponse(request, result, "indexes");
@@ -191,7 +192,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getLicense.view")]
         [HttpPost("getLicense.view")]
         [ProducesResponseType(200)]
-        public IActionResult GetLicense([FromQuery]Request request)
+        public IActionResult GetLicense(SubsonicRequest request)
         {
             var result = this.SubsonicService.GetLicense(request);
             return this.BuildResponse(request, result, "license");
@@ -200,7 +201,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getLyrics.view")]
         [HttpPost("getLyrics.view")]
         [ProducesResponseType(200)]
-        public IActionResult GetLyrics([FromQuery]Request request, string artist, string title)
+        public IActionResult GetLyrics(SubsonicRequest request, string artist, string title)
         {
             var result = this.SubsonicService.GetLyrics(request, artist, title);
             return this.BuildResponse(request, result, "lyrics ");
@@ -209,7 +210,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getMusicDirectory.view")]
         [HttpPost("getMusicDirectory.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetMusicDirectory([FromQuery]Request request)
+        public async Task<IActionResult> GetMusicDirectory(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetMusicDirectory(request, null);
             return this.BuildResponse(request, result, "directory");
@@ -218,7 +219,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getMusicFolders.view")]
         [HttpPost("getMusicFolders.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetMusicFolders([FromQuery]Request request)
+        public async Task<IActionResult> GetMusicFolders(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetMusicFolders(request);
             return this.BuildResponse(request, result, "musicFolders");
@@ -227,7 +228,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getPlaylist.view")]
         [HttpPost("getPlaylist.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetPlaylist([FromQuery]Request request)
+        public async Task<IActionResult> GetPlaylist(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetPlaylist(request, null);
             return this.BuildResponse(request, result, "playlist");
@@ -236,7 +237,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getPlaylists.view")]
         [HttpPost("getPlaylists.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetPlaylists([FromQuery]Request request, string username)
+        public async Task<IActionResult> GetPlaylists(SubsonicRequest request, string username)
         {
             var result = await this.SubsonicService.GetPlaylists(request, null, username);
             return this.BuildResponse(request, result, "playlists");
@@ -245,7 +246,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getPodcasts.view")]
         [HttpPost("getPodcasts.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetPodcasts([FromQuery]Request request, bool includeEpisodes)
+        public async Task<IActionResult> GetPodcasts(SubsonicRequest request, bool includeEpisodes)
         {
             var result = await this.SubsonicService.GetPodcasts(request);
             return this.BuildResponse(request, result, "podcasts");
@@ -254,7 +255,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getRandomSongs.view")]
         [HttpPost("getRandomSongs.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetRandomSongs([FromQuery]Request request)
+        public async Task<IActionResult> GetRandomSongs(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetRandomSongs(request, null);
             return this.BuildResponse(request, result, "randomSongs");
@@ -263,7 +264,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getSong.view")]
         [HttpPost("getSong.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetSong([FromQuery]Request request)
+        public async Task<IActionResult> GetSong(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetSong(request, null);
             return this.BuildResponse(request, result, "song");
@@ -272,7 +273,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getStarred.view")]
         [HttpPost("getStarred.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetStarred([FromQuery]Request request)
+        public async Task<IActionResult> GetStarred(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetStarred(request, null, StarredVersion.One);
             return this.BuildResponse(request, result, "starred");
@@ -281,7 +282,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getStarred2.view")]
         [HttpPost("getStarred2.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetStarred2([FromQuery]Request request)
+        public async Task<IActionResult> GetStarred2(SubsonicRequest request)
         {
             var result = await this.SubsonicService.GetStarred(request, null, StarredVersion.Two);
             return this.BuildResponse(request, result, "starred");
@@ -290,16 +291,16 @@ namespace Roadie.Api.Controllers
         [HttpGet("getTopSongs.view")]
         [HttpPost("getTopSongs.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetTopSongs([FromQuery]Request request, string artistId, int? count = 50)
+        public async Task<IActionResult> GetTopSongs(SubsonicRequest request, string artist, int? count = 50)
         {
-            var result = await this.SubsonicService.GetTopSongs(request, null, artistId, count);
+            var result = await this.SubsonicService.GetTopSongs(request, null, artist, count);
             return this.BuildResponse(request, result, "topSongs");
         }
 
         [HttpGet("getUser.view")]
         [HttpPost("getUser.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetUser([FromQuery]Request request, string username)
+        public async Task<IActionResult> GetUser(SubsonicRequest request, string username)
         {
             var result = await this.SubsonicService.GetUser(request, username ?? request.u);
             return this.BuildResponse(request, result, "user");
@@ -308,7 +309,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("getVideos.view")]
         [HttpPost("getVideos.view")]
         [ProducesResponseType(200)]
-        public IActionResult GetVideos([FromQuery]Request request)
+        public IActionResult GetVideos(SubsonicRequest request)
         {
             var result = this.SubsonicService.GetVideos(request);
             return this.BuildResponse(request, result, "videos");
@@ -317,7 +318,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("ping.view")]
         [HttpPost("ping.view")]
         [ProducesResponseType(200)]
-        public IActionResult Ping([FromQuery]Request request)
+        public IActionResult Ping(SubsonicRequest request)
         {
             if (request.IsJSONRequest)
             {
@@ -333,7 +334,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("search.view")]
         [HttpPost("search.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> Search([FromQuery]Request request)
+        public async Task<IActionResult> Search(SubsonicRequest request)
         {
             var result = await this.SubsonicService.Search(request, null, SearchVersion.One);
             return this.BuildResponse(request, result, "searchResult");
@@ -342,7 +343,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("search2.view")]
         [HttpPost("search2.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> Search2([FromQuery]Request request)
+        public async Task<IActionResult> Search2(SubsonicRequest request)
         {
             var result = await this.SubsonicService.Search(request, null, SearchVersion.Two);
             return this.BuildResponse(request, result, "searchResult2");
@@ -351,7 +352,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("search3.view")]
         [HttpPost("search3.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> Search3([FromQuery]Request request)
+        public async Task<IActionResult> Search3(SubsonicRequest request)
         {
             var result = await this.SubsonicService.Search(request, null, SearchVersion.Three);
             return this.BuildResponse(request, result, "searchResult3");
@@ -360,7 +361,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("stream.view")]
         [HttpPost("stream.view")]
         [ProducesResponseType(200)]
-        public async Task<FileStreamResult> StreamTrack([FromQuery]Request request)
+        public async Task<FileStreamResult> StreamTrack(SubsonicRequest request)
         {
             var trackId = request.TrackId;
             if (trackId == null)
@@ -372,7 +373,7 @@ namespace Roadie.Api.Controllers
 
         #region Response Builder Methods
 
-        private IActionResult BuildResponse(Request request, SubsonicOperationResult<Response> response = null, string responseType = null)
+        private IActionResult BuildResponse(SubsonicRequest request, SubsonicOperationResult<Response> response = null, string responseType = null)
         {
             var acceptHeader = this.Request.Headers["Accept"];
             this.Logger.LogTrace($"Subsonic Request: Method [{ this.Request.Method }], Accept Header [{ acceptHeader }], Path [{ this.Request.Path }], Query String [{ this.Request.QueryString }], Response Error Code [{ response.ErrorCode }], Request [{ JsonConvert.SerializeObject(request) }] ResponseType [{ responseType }]");
@@ -404,7 +405,7 @@ namespace Roadie.Api.Controllers
             return Ok(response.Data);
         }
 
-        private IActionResult SendError(Request request, SubsonicOperationResult<Response> response = null, string responseType = null)
+        private IActionResult SendError(SubsonicRequest request, SubsonicOperationResult<Response> response = null, string responseType = null)
         {
             var version = response?.Data?.version ?? Roadie.Api.Services.SubsonicService.SubsonicVersion;
             string errorDescription = response?.ErrorCode?.DescriptionAttr();
@@ -421,74 +422,139 @@ namespace Roadie.Api.Controllers
         #endregion Response Builder Methods
     }
 
-    //[ModelBinder(BinderType = typeof(SubsonicRequestBinder))]
-    //public class SubsonicRequest : Request
-    //{
-    //}
+    [ModelBinder(BinderType = typeof(SubsonicRequestBinder))]
+    public class SubsonicRequest : Request
+    {
+    }
 
-    //public class SubsonicRequestBinder : IModelBinder
-    //{
+    /// <summary>
+    /// This is needed as some clienst post some get, some query string some body post.
+    /// </summary>
+    public class SubsonicRequestBinder : IModelBinder
+    {
 
-    //    public Task BindModelAsync(ModelBindingContext bindingContext)
-    //    {
-    //        if (bindingContext == null)
-    //        {
-    //            throw new ArgumentNullException(nameof(bindingContext));
-    //        }
-    //        string valueFromBody = string.Empty;
+        public Task BindModelAsync(ModelBindingContext bindingContext)
+        {
+            if (bindingContext == null)
+            {
+                throw new ArgumentNullException(nameof(bindingContext));
+            }
+            var queryDictionary = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(bindingContext.HttpContext.Request.QueryString.ToString());
 
-    //        var queryDictionary = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(bindingContext.HttpContext.Request.QueryString.ToString());
+            // Create a dictionary of all the properties to populate on the result model
+            var modelDictionary = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase)
+            {
+                { "u", null },
+                { "p", null },
+                { "s", null },
+                { "t", null },
+                { "v", null },
+                { "c", null },
+                { "id", null },
+                { "f", null },
+                { "callback", null },
+                { "musicFolderId", null },
+                { "albumCount", null },
+                { "albumOffset", null },
+                { "artistCount", null },
+                { "artistOffset", null },
+                { "fromYear", null },
+                { "genre", null },
+                { "offset", null },
+                { "query", null },
+                { "size", null },
+                { "songCount", null },
+                { "songOffset", null },
+                { "toYear", null },
+                { "type", null }
+            };
 
-    //        //using (var sr = new StreamReader(bindingContext.HttpContext.Request.Body))
-    //        //{
-    //        //    valueFromBody = sr.ReadToEnd();
-    //        //}
+            // Setup model dictionary from Query Parameters
+            modelDictionary["albumCount"] = queryDictionary.ContainsKey("albumCount") ? SafeParser.ToNumber<int?>(queryDictionary["albumCount"].First()) : null;
+            modelDictionary["albumOffset"] = queryDictionary.ContainsKey("albumOffset") ? SafeParser.ToNumber<int?>(queryDictionary["albumOffset"].First()) : null;
+            modelDictionary["artistCount"] = queryDictionary.ContainsKey("artistCount") ? SafeParser.ToNumber<int?>(queryDictionary["artistCount"].First()) : null;
+            modelDictionary["artistOffset"] = queryDictionary.ContainsKey("artistOffset") ? SafeParser.ToNumber<int?>(queryDictionary["artistOffset"].First()) : null;
+            modelDictionary["c"] = queryDictionary.ContainsKey("c") ? queryDictionary["c"].First() : null;
+            modelDictionary["callback"] = queryDictionary.ContainsKey("callback") ? queryDictionary["callback"].First() : null;
+            modelDictionary["f"] = queryDictionary.ContainsKey("f") ? queryDictionary["f"].First() : null;
+            modelDictionary["fromYear"] = queryDictionary.ContainsKey("fromYear") ? SafeParser.ToNumber<int?>(queryDictionary["fromYear"].First()) : null;
+            modelDictionary["Genre"] = queryDictionary.ContainsKey("genre") ? queryDictionary["genre"].First() : null;
+            modelDictionary["id"] = queryDictionary.ContainsKey("id") ? queryDictionary["id"].First() : null;
+            modelDictionary["musicFolderId"] = queryDictionary.ContainsKey("musicFolderId") ? SafeParser.ToNumber<int?>(queryDictionary["musicFolderId"].First()) : null;
+            modelDictionary["offset"] = queryDictionary.ContainsKey("offset") ? SafeParser.ToNumber<int?>(queryDictionary["offset"].First()) : null;
+            modelDictionary["p"] = queryDictionary.ContainsKey("p") ? queryDictionary["p"].First() : null;
+            modelDictionary["query"] = queryDictionary.ContainsKey("query") ? queryDictionary["query"].First() : null;
+            modelDictionary["s"] = queryDictionary.ContainsKey("s") ? queryDictionary["s"].First() : null;
+            var size = queryDictionary.ContainsKey("size") ? SafeParser.ToNumber<int?>(queryDictionary["size"].First()) : null;
+            var count = queryDictionary.ContainsKey("count") ? SafeParser.ToNumber<int?>(queryDictionary["count"].First()) : null;
+            modelDictionary["size"] = size ?? count ?? 100;
+            modelDictionary["songCount"] = queryDictionary.ContainsKey("songCount") ? SafeParser.ToNumber<int?>(queryDictionary["songCount"].First()) : null;
+            modelDictionary["songOffset"] = queryDictionary.ContainsKey("songOffset") ? SafeParser.ToNumber<int?>(queryDictionary["songOffset"].First()) : null;
+            modelDictionary["t"] = queryDictionary.ContainsKey("t") ? queryDictionary["t"].First() : null;
+            modelDictionary["toYear"] = queryDictionary.ContainsKey("toYear") ? SafeParser.ToNumber<int?>(queryDictionary["toYear"].First()) : null;
+            modelDictionary["type"] = queryDictionary.ContainsKey("type") ? SafeParser.ToEnum<ListType>(queryDictionary["type"].First()) : ListType.AlphabeticalByName;
+            modelDictionary["u"] = queryDictionary.ContainsKey("u") ? queryDictionary["u"].First() : null;
+            modelDictionary["v"] = queryDictionary.ContainsKey("v") ? queryDictionary["v"].First() : null;
 
-    //        if (string.IsNullOrEmpty(valueFromBody) && (queryDictionary == null || !queryDictionary.Any()))
-    //        {
-    //            return Task.CompletedTask;
-    //        }
+            // Setup model dictionary from Posted Body values
+            if (!bindingContext.HttpContext.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase))
+            {
+                var formCollection = bindingContext.HttpContext.Request.Form;
+                if (formCollection != null && formCollection.Any())
+                {
+                    foreach (var form in formCollection)
+                    {
+                        if (modelDictionary.ContainsKey(form.Key))
+                        {
+                            modelDictionary[form.Key] = form.Value.FirstOrDefault();
+                        }
+                    }
+                }
+            }
 
-    //        var model = new SubsonicRequest();
-    //        model.u = queryDictionary.ContainsKey("u") ? queryDictionary["u"].First() : "";
-    //        model.p = queryDictionary.ContainsKey("p") ? queryDictionary["p"].First() : "";
-    //        model.s = queryDictionary.ContainsKey("s") ? queryDictionary["s"].First() : "";
-    //        model.t = queryDictionary.ContainsKey("t") ? queryDictionary["t"].First() : "";
-    //        model.v = queryDictionary.ContainsKey("v") ? queryDictionary["v"].First() : "";
-    //        model.c = queryDictionary.ContainsKey("c") ? queryDictionary["c"].First() : "";
-    //        model.id = queryDictionary.ContainsKey("id") ? queryDictionary["id"].First() : "";
-    //        model.f = queryDictionary.ContainsKey("f") ? queryDictionary["f"].First() : "";
-    //        model.callback = queryDictionary.ContainsKey("callback") ? queryDictionary["callback"].First() : "";
-    //        model.MusicFolderId = queryDictionary.ContainsKey("MusicFolderId") ? SafeParser.ToNumber<int>(queryDictionary["MusicFolderId"].First()) : 0;
-    //        model.Type = 
+            var model = new SubsonicRequest
+            {
+                AlbumCount =  SafeParser.ToNumber<int?>(modelDictionary["albumCount"]),
+                AlbumOffset =  SafeParser.ToNumber<int?>(modelDictionary["albumOffset"]),
+                ArtistCount =  SafeParser.ToNumber<int?>(modelDictionary["artistCount"]),
+                ArtistOffset =  SafeParser.ToNumber<int?>(modelDictionary["artistOffset"]),
+                c = SafeParser.ToString(modelDictionary["c"]),
+                callback = SafeParser.ToString(modelDictionary["callback"]),
+                f = SafeParser.ToString(modelDictionary["f"]),
+                FromYear =  SafeParser.ToNumber<int?>(modelDictionary["fromYear"]),
+                Genre = SafeParser.ToString(modelDictionary["genre"]),
+                id = SafeParser.ToString(modelDictionary["id"]),
+                MusicFolderId = SafeParser.ToNumber<int?>(modelDictionary["musicFolderId"]),
+                Offset =  SafeParser.ToNumber<int?>(modelDictionary["offset"]),
+                p = SafeParser.ToString(modelDictionary["p"]),
+                Query = SafeParser.ToString(modelDictionary["query"]),
+                s = SafeParser.ToString(modelDictionary["s"]),
+                Size =  SafeParser.ToNumber<int?>(modelDictionary["size"]),
+                SongCount =  SafeParser.ToNumber<int?>(modelDictionary["songCount"]),
+                SongOffset =  SafeParser.ToNumber<int?>(modelDictionary["songOffset"]),
+                t = SafeParser.ToString(modelDictionary["t"]),
+                ToYear =  SafeParser.ToNumber<int?>(modelDictionary["toYear"]),
+                Type = SafeParser.ToEnum<ListType>(modelDictionary["type"]),
+                u = SafeParser.ToString(modelDictionary["u"]),
+                v = SafeParser.ToString(modelDictionary["v"])
+            };
 
-    //        var form = bindingContext.HttpContext.Request.Form.FirstOrDefault();
-    //        switch (form.Key)
-    //        {
-    //            case "id":
-    //                model.id = form.Value;
-    //                break;
-    //            default:
-    //                break;
-    //        }
+            bindingContext.Result = ModelBindingResult.Success(model);
 
+            return Task.CompletedTask;
+        }
+    }
 
-    //        bindingContext.Result = ModelBindingResult.Success(model);
-
-    //        return Task.CompletedTask;
-    //    }
-   // }
-
-    //public class SubsonicRequestBinderProvider : IModelBinderProvider
-    //{
-    //    public IModelBinder GetBinder(ModelBinderProviderContext context)
-    //    {
-    //        if (context.Metadata.ModelType == typeof(Request))
-    //        {
-    //            return new SubsonicRequestBinder();
-    //        }
-    //        return null;
-    //    }
-    //}
+    public class SubsonicRequestBinderProvider : IModelBinderProvider
+    {
+        public IModelBinder GetBinder(ModelBinderProviderContext context)
+        {
+            if (context.Metadata.ModelType == typeof(Request))
+            {
+                return new SubsonicRequestBinder();
+            }
+            return null;
+        }
+    }
 
 }

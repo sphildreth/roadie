@@ -114,8 +114,9 @@ namespace Roadie.Api.Services
             if(request.FilterToCollectionId.HasValue)
             {
                 collectionReleaseIds = (from cr in this.DbContext.CollectionReleases
+                                        join c in this.DbContext.Collections on cr.CollectionId equals c.Id
                                         join r in this.DbContext.Releases on cr.ReleaseId equals r.Id
-                                        where cr.RoadieId == request.FilterToCollectionId.Value
+                                        where c.RoadieId == request.FilterToCollectionId.Value
                                         select r.Id).ToArray();
             }
             int[] favoriteReleaseIds = new int[0];
@@ -145,23 +146,24 @@ namespace Roadie.Api.Services
                                   Value = r.Artist.RoadieId.ToString(),
                                   Text = r.Artist.Name
                               },
-                              ArtistThumbnail = this.MakeArtistThumbnailImage(r.Artist.RoadieId),
-                              Rating = r.Rating,
-                              ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ r.RoadieId}",
-                              LibraryStatus = r.LibraryStatus,
-                              ReleaseDateDateTime = r.ReleaseDate,
                               Release = new DataToken
                               {
                                   Text = r.Title,
                                   Value = r.RoadieId.ToString()
                               },
-                              Status = r.Status,
-                              TrackCount = r.TrackCount,
+                              ArtistThumbnail = this.MakeArtistThumbnailImage(r.Artist.RoadieId),
                               CreatedDate = r.CreatedDate,
-                              LastUpdated = r.LastUpdated,
+                              Duration = r.Duration,
                               LastPlayed = r.LastPlayed,
-                              TrackPlayedCount = r.PlayedCount,
-                              Thumbnail = this.MakeReleaseThumbnailImage(r.RoadieId)
+                              LastUpdated = r.LastUpdated,
+                              LibraryStatus = r.LibraryStatus,
+                              Rating = r.Rating,
+                              ReleaseDateDateTime = r.ReleaseDate,
+                              ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ r.RoadieId}",
+                              Status = r.Status,
+                              Thumbnail = this.MakeReleaseThumbnailImage(r.RoadieId),
+                              TrackCount = r.TrackCount,
+                              TrackPlayedCount = r.PlayedCount
                           }).Distinct();
 
             ReleaseList[] rows = null;

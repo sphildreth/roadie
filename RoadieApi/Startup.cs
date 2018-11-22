@@ -186,7 +186,7 @@ namespace Roadie.Api
             services.AddMvc(options =>
             {
                 options.RespectBrowserAcceptHeader = true; // false by default
-             //   options.ModelBinderProviders.Insert(0, new SubsonicRequestBinderProvider());
+                options.ModelBinderProviders.Insert(0, new SubsonicRequestBinderProvider());
             })
                 .AddJsonOptions(options =>
                 {

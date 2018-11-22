@@ -315,7 +315,7 @@ namespace Roadie.Api.Services
                             ItemElementName = subsonic.ItemChoiceType.albumList2,
                             Item = new subsonic.AlbumList2
                             {
-                                album = this.SubsonicAlbumID3ForReleases(releaseResult.Rows, null)
+                                album = this.SubsonicAlbumID3ForReleases(releaseResult.Rows)
                             }
                         }
                     };
@@ -336,6 +336,7 @@ namespace Roadie.Api.Services
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.id }]");
             }
             var pagedRequest = request.PagedRequest;
+            pagedRequest.Sort = "Id";
             pagedRequest.FilterToArtistId = artistId.Value;
             var artistResult = await this.ArtistService.List(roadieUser, pagedRequest);
             var artist = artistResult.Rows.Any() ? artistResult.Rows.First() : null;
@@ -343,6 +344,7 @@ namespace Roadie.Api.Services
             {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.id }]");
             }
+            var artistReleaseResult = await this.ReleaseService.List(roadieUser, pagedRequest);
             return new subsonic.SubsonicOperationResult<subsonic.Response>
             {
                 IsSuccess = true,
@@ -351,7 +353,7 @@ namespace Roadie.Api.Services
                     version = SubsonicService.SubsonicVersion,
                     status = subsonic.ResponseStatus.ok,
                     ItemElementName = subsonic.ItemChoiceType.artist,
-                    Item = this.SubsonicArtistForArtist(artist)
+                    Item = this.SubsonicArtistWithAlbumsID3ForArtist(artist, this.SubsonicAlbumID3ForReleases(artistReleaseResult.Rows))
                 }
             };
         }
@@ -568,6 +570,19 @@ namespace Roadie.Api.Services
         /// <param name="ifModifiedSince">If specified, only return a result if the artist collection has changed since the given time (in milliseconds since 1 Jan 1970).</param>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetIndexes(subsonic.Request request, User roadieUser, long? ifModifiedSince = null)
         {
+            if(roadieUser != null)
+            {
+                return await this.GetIndexesAction(request, roadieUser, ifModifiedSince);
+            }
+            var cacheKey = string.Format("urn:subsonic_indexes");
+            return await this.CacheManager.GetAsync<subsonic.SubsonicOperationResult<subsonic.Response>>(cacheKey, async () =>
+            {
+                return await this.GetIndexesAction(request, roadieUser, ifModifiedSince);
+            }, CacheManagerBase.SystemCacheRegionUrn);
+        }
+
+        private async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetIndexesAction(subsonic.Request request, User roadieUser, long? ifModifiedSince = null)
+        {
             var modifiedSinceFilter = ifModifiedSince.HasValue ? (DateTime?)ifModifiedSince.Value.FromUnixTime() : null;
             subsonic.MusicFolder musicFolderFilter = !request.MusicFolderId.HasValue ? new subsonic.MusicFolder() : this.MusicFolders().FirstOrDefault(x => x.id == request.MusicFolderId.Value);
             var indexes = new List<subsonic.Index>();
@@ -626,6 +641,7 @@ namespace Roadie.Api.Services
                     Item = new subsonic.Indexes
                     {
                         index = indexes.ToArray()
+                        // TODO child
                     }
                 }
             };
@@ -708,6 +724,7 @@ namespace Roadie.Api.Services
                 }
                 var pagedRequest = request.PagedRequest;
                 pagedRequest.FilterToArtistId = artist.RoadieId;
+                pagedRequest.Sort = "Release.Text";
                 var artistReleases = await this.ReleaseService.List(roadieUser, pagedRequest);
                 directory.child = this.SubsonicChildrenForReleases(artistReleases.Rows, subsonic.Request.ArtistIdIdentifier + artist.RoadieId.ToString());
             }
@@ -800,6 +817,7 @@ namespace Roadie.Api.Services
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid PlaylistId [{ request.id }]");
             }
             var pagedRequest = request.PagedRequest;
+            pagedRequest.Sort = "Id";
             pagedRequest.FilterToPlaylistId = playListId.Value;
             var playlistResult = await this.PlaylistService.List(pagedRequest, roadieUser);
             var playlist = playlistResult.Rows.Any() ? playlistResult.Rows.First() : null;
@@ -971,6 +989,7 @@ namespace Roadie.Api.Services
             }
             var pagedRequest = request.PagedRequest;
             pagedRequest.FilterToTrackId = request.TrackId.Value;
+            pagedRequest.Sort = "Id";
             var trackResult = await this.TrackService.List(roadieUser, pagedRequest);
             var track = trackResult.Rows.Any() ? trackResult.Rows.First() : null;
             if (track == null)
@@ -1006,6 +1025,7 @@ namespace Roadie.Api.Services
         {
             var pagedRequest = request.PagedRequest;
             pagedRequest.FilterFavoriteOnly = true;
+            pagedRequest.Sort = "Id";
 
             var artistList = await this.ArtistService.List(roadieUser, pagedRequest);
             var releaseList = await this.ReleaseService.List(roadieUser, pagedRequest);
@@ -1042,7 +1062,7 @@ namespace Roadie.Api.Services
                             ItemElementName = subsonic.ItemChoiceType.starred2,
                             Item = new subsonic.Starred2
                             {
-                                album = this.SubsonicAlbumID3ForReleases(releaseList.Rows, null),
+                                album = this.SubsonicAlbumID3ForReleases(releaseList.Rows),
                                 artist = this.SubsonicArtistID3sForArtists(artistList.Rows),
                                 song = this.SubsonicChildrenForTracks(songList.Rows)
                             }
@@ -1057,16 +1077,18 @@ namespace Roadie.Api.Services
         /// <summary>
         /// Returns top songs for the given artist, using data from last.fm.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetTopSongs(subsonic.Request request, User roadieUser, string artistId, int? count = 50)
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetTopSongs(subsonic.Request request, User roadieUser, string artistName, int? count = 50)
         {
-            var aId = SafeParser.ToGuid(artistId);
-            if (!aId.HasValue)
+            var artist = base.GetArtist(artistName);
+            if(artist == null)
             {
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Artist [{ artistId }]");
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Unknown Artist [{ artistName }]");
             }
             var pagedRequest = request.PagedRequest;
-            pagedRequest.FilterToArtistId = aId;
+            pagedRequest.FilterToArtistId = artist.RoadieId;
             pagedRequest.FilterTopPlayedOnly = true;
+            pagedRequest.Sort = "PlayedCount";
+            pagedRequest.Order = "DESC";
             var trackResult = await this.TrackService.List(roadieUser, pagedRequest);
             return new subsonic.SubsonicOperationResult<subsonic.Response>
             {
@@ -1211,7 +1233,7 @@ namespace Roadie.Api.Services
                             Item = new subsonic.SearchResult3
                             {
                                 artist = this.SubsonicArtistID3sForArtists(artistResult.Rows),
-                                album = this.SubsonicAlbumID3ForReleases(releaseResult.Rows, null),
+                                album = this.SubsonicAlbumID3ForReleases(releaseResult.Rows),
                                 song = songs.ToArray()
                             }
                         }
@@ -1257,7 +1279,7 @@ namespace Roadie.Api.Services
             return this.CacheManager.Get<string[]>("urn:system:active_usernames", () =>
             {
                 return this.DbContext.Users.Where(x => x.IsActive ?? false).Select(x => x.UserName).ToArray();
-            }, "urn:system");
+            }, CacheManagerBase.SystemCacheRegionUrn);
         }
 
         private subsonic.MusicFolder CollectionMusicFolder()
@@ -1274,7 +1296,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private subsonic.AlbumID3 SubsonicAlbumID3ForRelease(ReleaseList r, string parent, string path)
+        private subsonic.AlbumID3 SubsonicAlbumID3ForRelease(ReleaseList r)
         {
             return new subsonic.AlbumID3
             {
@@ -1286,23 +1308,23 @@ namespace Roadie.Api.Services
                 artist = r.Artist.Text,
                 coverArt = subsonic.Request.ReleaseIdIdentifier + r.Id.ToString(),
                 created = r.CreatedDate.Value,
-                genre = r.Genre.Text,
+                genre = r.Genre.Text,                 
                 playCount = r.TrackPlayedCount ?? 0,
                 playCountSpecified = true,
                 starred = r.UserRating?.RatedDate ?? DateTime.UtcNow,
                 starredSpecified = r.UserRating?.IsFavorite ?? false,
-                year = SafeParser.ToNumber<int>(r.ReleaseYear),
+                year = SafeParser.ToNumber<int>(r.ReleaseYear),                 
                 yearSpecified = true
             };
         }
 
-        private subsonic.AlbumID3[] SubsonicAlbumID3ForReleases(IEnumerable<ReleaseList> r, string parent)
+        private subsonic.AlbumID3[] SubsonicAlbumID3ForReleases(IEnumerable<ReleaseList> r)
         {
             if (r == null || !r.Any())
             {
                 return new subsonic.AlbumID3[0];
             }
-            return r.Select(x => this.SubsonicAlbumID3ForRelease(x, parent, $"{ x.Artist.Text}/{ x.Release.Text}/")).ToArray();
+            return r.Select(x => this.SubsonicAlbumID3ForRelease(x)).ToArray();
         }
 
         private subsonic.Artist SubsonicArtistForArtist(ArtistList artist)
@@ -1317,7 +1339,23 @@ namespace Roadie.Api.Services
                 starred = artist.UserRating?.RatedDate ?? DateTime.UtcNow,
                 starredSpecified = artist.UserRating?.IsFavorite ?? false,
                 userRating = artist.UserRating != null ? artist.UserRating.Rating ?? 0 : 0,
-                userRatingSpecified = artist.UserRating != null && artist.UserRating.Rating != null
+                userRatingSpecified = artist.UserRating != null && artist.UserRating.Rating != null                 
+            };
+        }
+
+        private subsonic.ArtistWithAlbumsID3 SubsonicArtistWithAlbumsID3ForArtist(ArtistList artist, subsonic.AlbumID3[] releases)
+        {
+            var artistImageUrl = this.MakeArtistThumbnailImage(artist.Id).Url;
+            return new subsonic.ArtistWithAlbumsID3
+            {
+                id = subsonic.Request.ArtistIdIdentifier + artist.Artist.Value.ToString(),
+                album = releases,
+                albumCount = releases.Count(),
+                artistImageUrl = artistImageUrl,                 
+                coverArt = artistImageUrl,
+                name = artist.Artist.Text,
+                starred = artist.UserRating?.RatedDate ?? DateTime.UtcNow,
+                starredSpecified = artist.UserRating?.IsFavorite ?? false                 
             };
         }
 
@@ -1395,7 +1433,7 @@ namespace Roadie.Api.Services
                 createdSpecified = true,
                 genre = r.Genre.Text,
                 isDir = true,
-                parent = parent ?? $"{ r.Artist.Text}/{ r.Release.Text}/",
+                parent = parent ?? subsonic.Request.ArtistIdIdentifier + r.Artist.Value,
                 path = path,
                 playCount = r.TrackPlayedCount ?? 0,
                 playCountSpecified = true,
@@ -1452,12 +1490,7 @@ namespace Roadie.Api.Services
                 transcodedSuffix = "mp3",
                 isVideo = false,
                 isVideoSpecified = true,
-                playCount = (from utt in this.DbContext.UserTracks
-                             join tt in this.DbContext.Tracks on utt.TrackId equals tt.Id
-                             join rmm in this.DbContext.ReleaseMedias on tt.ReleaseMediaId equals rmm.Id
-                             where tt.Id == t.DatabaseId
-                             where utt.PlayedCount != null
-                             select utt.PlayedCount ?? 0).Sum(),
+                playCount = t.PlayedCount ?? 0
             };
         }
 

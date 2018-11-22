@@ -248,7 +248,8 @@ namespace Roadie.Api.Services
                                join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
                                join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
-                               where r.RoadieId == request.FilterToArtistId
+                               join a in this.DbContext.Artists on r.ArtistId equals a.Id
+                               where a.RoadieId == request.FilterToArtistId
                                orderby ut.PlayedCount descending
                                select t.Id
                                ).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
@@ -313,6 +314,7 @@ namespace Roadie.Api.Services
                               Duration = x.t.Duration,
                               FileSize = x.t.FileSize,
                               ReleaseDate = x.r.ReleaseDate,
+                              PlayedCount = x.t.PlayedCount,
                               Rating = x.t.Rating,
                               ArtistThumbnail = this.MakeArtistThumbnailImage(x.releaseArtist.RoadieId),
                               Title = x.t.Title,

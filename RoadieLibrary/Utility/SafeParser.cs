@@ -128,7 +128,7 @@ namespace Roadie.Library.Utility
             {
                 return default(T);
             }
-            Enum.TryParse(input.ToString(), out T r);
+            Enum.TryParse(input.ToString(), true, out T r);
             return r;
         }
 
