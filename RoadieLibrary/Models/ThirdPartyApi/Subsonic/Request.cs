@@ -24,7 +24,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
                 }
                 if (this.id.StartsWith(Request.ArtistIdIdentifier))
                 {
-                    return SafeParser.ToGuid(this.id.Replace(Request.ArtistIdIdentifier, ""));
+                    return SafeParser.ToGuid(this.id);
                 }
                 return null;
             }
@@ -50,7 +50,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
                 }
                 if (this.id.StartsWith(Request.CollectionIdentifier))
                 {
-                    return SafeParser.ToGuid(this.id.Replace(Request.CollectionIdentifier, ""));
+                    return SafeParser.ToGuid(this.id);
                 }
                 return null;
             }
@@ -121,7 +121,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
                 }
                 if (this.id.StartsWith(Request.PlaylistdIdentifier))
                 {
-                    return SafeParser.ToGuid(this.id.Replace(Request.PlaylistdIdentifier, ""));
+                    return SafeParser.ToGuid(this.id);
                 }
                 return null;
             }
@@ -142,7 +142,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
                 }
                 if (this.id.StartsWith(Request.ReleaseIdIdentifier))
                 {
-                    return SafeParser.ToGuid(this.id.Replace(Request.ReleaseIdIdentifier, ""));
+                    return SafeParser.ToGuid(this.id);
                 }
                 return null;
             }
@@ -168,7 +168,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
                 }
                 if (this.id.StartsWith(Request.TrackIdIdentifier))
                 {
-                    return SafeParser.ToGuid(this.id.Replace(Request.TrackIdIdentifier, ""));
+                    return SafeParser.ToGuid(this.id);
                 }
                 return null;
             }
@@ -315,82 +315,6 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 
         #endregion Paging and List Related
 
-        //public user CheckPasswordGetUser(ICacheManager<object> cacheManager, RoadieDbContext context)
-        //{
-        //    user user = null;
-        //    if (string.IsNullOrEmpty(this.UsernameValue))
-        //    {
-        //        return null;
-        //    }
-        //    try
-        //    {
-        //        var cacheKey = string.Format("urn:user:byusername:{0}", this.UsernameValue.ToLower());
-        //        var resultInCache = cacheManager.Get<user>(cacheKey);
-        //        if (resultInCache == null)
-        //        {
-        //            user = context.users.FirstOrDefault(x => x.username.Equals(this.UsernameValue, StringComparison.OrdinalIgnoreCase));
-        //            var claims = new List<string>
-        //            {
-        //                new Claim(Library.Authentication.ClaimTypes.UserId, user.id.ToString()).ToString()
-        //            };
-        //            var sql = @"select ur.name FROM `userrole` ur LEFT JOIN usersInRoles uir on ur.id = uir.userRoleId where uir.userId = " + user.id + ";";
-        //            var userRoles = context.Database.SqlQuery<string>(sql).ToList();
-        //            if (userRoles != null && userRoles.Any())
-        //            {
-        //                foreach (var userRole in userRoles)
-        //                {
-        //                    claims.Add(new Claim(Library.Authentication.ClaimTypes.UserRole, userRole).ToString());
-        //                }
-        //            }
-        //            user.ClaimsValue = claims;
-        //            cacheManager.Add(cacheKey, user);
-        //        }
-        //        else
-        //        {
-        //            user = resultInCache;
-        //        }
-        //        if (user == null)
-        //        {
-        //            return null;
-        //        }
-        //        var password = this.Password;
-        //        var wasAuthenticatedAgainstPassword = false;
-        //        if (!string.IsNullOrEmpty(this.s))
-        //        {
-        //            var token = ModuleBase.MD5Hash((user.apiToken ?? user.email) + this.s);
-        //            if (!token.Equals(this.t, StringComparison.OrdinalIgnoreCase))
-        //            {
-        //                user = null;
-        //            }
-        //            else
-        //            {
-        //                wasAuthenticatedAgainstPassword = true;
-        //            }
-        //        }
-        //        else
-        //        {
-        //            if (user != null && !BCrypt.Net.BCrypt.Verify(password, user.password))
-        //            {
-        //                user = null;
-        //            }
-        //            else
-        //            {
-        //                wasAuthenticatedAgainstPassword = true;
-        //            }
-        //        }
-        //        if (wasAuthenticatedAgainstPassword)
-        //        {
-        //            // Since API dont update LastLogin which likely invalidates any browser logins
-        //            user.lastApiAccess = DateTime.UtcNow;
-        //            context.SaveChanges();
-        //        }
-        //        return user;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Trace.WriteLine("Error CheckPassword [" + ex.Serialize() + "]");
-        //    }
-        //    return null;
-        //}
+
     }
 }

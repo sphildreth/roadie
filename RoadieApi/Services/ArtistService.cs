@@ -312,6 +312,7 @@ namespace Roadie.Api.Services
             }
 
             var result = (from a in this.DbContext.Artists
+                          where (request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId)
                           where (request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value)
                           where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue)))
                           where (!request.FilterFavoriteOnly || favoriteArtistIds.Contains(a.Id))

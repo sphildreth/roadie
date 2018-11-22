@@ -68,5 +68,17 @@ namespace Roadie.Library.Tests
             Assert.NotNull(parsed);
         }
 
+        [Theory]
+        [InlineData("DEB4F298-5D22-4304-916E-F130B02864B7")]
+        [InlineData("12d65c61-1b7d-4c43-9aab-7d398a1a880e")]
+        [InlineData("A:8a951bc1-5ee5-4961-b72a-99d91d84c147")]
+        [InlineData("R:0327eea7-b1cb-4ae9-9eb1-b74b4416aefb")]
+        public void Parse_Guid(string input)
+        {
+            var parsed = SafeParser.ToGuid(input);
+            Assert.NotNull(parsed);
+        }
+
+
     }
 }

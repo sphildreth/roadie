@@ -250,6 +250,7 @@ namespace Roadie.Api.Services
                                from releaseArtist in aa.DefaultIfEmpty()
                                where (t.Hash != null)
                                where (releaseId == null || (releaseId != null && r.RoadieId == releaseId))
+                               where (request.FilterToTrackId == null || request.FilterToTrackId != null && t.RoadieId == request.FilterToTrackId)
                                where (request.FilterToArtistId == null || request.FilterToArtistId != null && r.Artist.RoadieId == request.FilterToArtistId)
                                where (request.FilterMinimumRating == null || t.Rating >= request.FilterMinimumRating.Value)
                                where (request.FilterValue == "" || (t.Title.Contains(request.FilterValue) || t.AlternateNames.Contains(request.FilterValue)))

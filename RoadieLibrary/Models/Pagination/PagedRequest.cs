@@ -99,6 +99,7 @@ namespace Roadie.Library.Models.Pagination
         public bool? FilterOnlyMissing { get; set; }
 
         public Guid? FilterToArtistId { get; set; }
+        public Guid? FilterToTrackId { get; set; }
         public Guid? FilterToCollectionId { get; set; }
         public Guid? FilterToPlaylistId { get; set; }
 

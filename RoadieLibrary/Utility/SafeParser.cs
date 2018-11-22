@@ -65,7 +65,12 @@ namespace Roadie.Library.Utility
             {
                 return null;
             }
-            if (!Guid.TryParse(input.ToString(), out Guid result))
+            var i = input.ToString();
+            if(i[1] == ':')
+            {
+                i = i.Substring(2, i.Length - 2);
+            }
+            if (!Guid.TryParse(i.ToString(), out Guid result))
             {
                 return null;
             }

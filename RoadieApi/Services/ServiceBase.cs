@@ -356,5 +356,10 @@ namespace Roadie.Api.Services
             return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}");
         }
 
+        protected string MakeLastFmUrl(string artistName, string releaseTitle)
+        {
+            return "http://www.last.fm/music/" + this.HttpEncoder.UrlEncode($"{ artistName }/{ releaseTitle }");
+        }
+
     }
 }
