@@ -95,16 +95,22 @@ namespace Roadie.Api.Services
                         wasAuthenticatedAgainstPassword = true;
                     }
                 }
-                else if(user != null)
+                else if(user != null && !string.IsNullOrEmpty(user.PasswordHash) && !string.IsNullOrEmpty(password))
                 {
-                    var hashCheck = this.UserManger.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
-                    if(hashCheck== PasswordVerificationResult.Failed)
+                    try
                     {
-                        user = null;
+                        var hashCheck = this.UserManger.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+                        if (hashCheck == PasswordVerificationResult.Failed)
+                        {
+                            user = null;
+                        }
+                        else
+                        {
+                            wasAuthenticatedAgainstPassword = true;
+                        }
                     }
-                    else
+                    catch
                     {
-                        wasAuthenticatedAgainstPassword = true;
                     }
                 }
                 if (wasAuthenticatedAgainstPassword)

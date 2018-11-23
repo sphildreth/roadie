@@ -1,54 +1,72 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore;
+﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Serilog;
+using System;
+using System.Diagnostics;
+using System.IO;
 
 namespace Roadie.Api
 {
     public class Program
     {
-
         public static void Main(string[] args)
         {
-            CreateWebHostBuilder(args).Build().Run();
+            Log.Logger = new LoggerConfiguration()
+                            .ReadFrom.Configuration(Configuration)
+                            .CreateLogger();
+
+            try
+            {
+                Log.Information("Starting web host");
+
+                Trace.Listeners.Add(new LoggingTraceListener());
+
+#if DEBUG
+                // Logging Output tests
+                Log.Verbose(":: Log Test: Verbose (Trace,None)");                           // Microsoft.Extensions.Logging.LogLevel.Trace and Microsoft.Extensions.Logging.LogLevel.None
+                Log.Debug(":: Log Test: Debug");                                            // Microsoft.Extensions.Logging.LogLevel.Debug 
+                Log.Information(":: Log Test: Information");                                // Microsoft.Extensions.Logging.LogLevel.Information
+                Log.Warning(":: Log Test: Warning");                                        // Microsoft.Extensions.Logging.LogLevel.Warning
+                Log.Error(new Exception("Log Test Exception"), "Log Test Error Message");   // Microsoft.Extensions.Logging.LogLevel.Error
+                Log.Fatal(":: Log Test: Fatal (Critial)");                                  // Microsoft.Extensions.Logging.LogLevel.Critical
+                Trace.WriteLine(":: Log Test: Trace WriteLine()");
+#endif
+                CreateWebHostBuilder(args).Build().Run();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Host terminated unexpectedly");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-                .ConfigureLogging((hostingContext, logging) =>
-                {
-                    logging.AddFile(hostingContext.Configuration.GetSection("Logging"));
-                })
-                .UseStartup<Startup>();
+                .UseStartup<Startup>()
+                .UseSerilog();
 
+        public static IConfiguration Configuration { get; } = new ConfigurationBuilder()
+                   .SetBasePath(Directory.GetCurrentDirectory())
+                   .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                   .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
+                   .AddEnvironmentVariables()
+                   .Build();
+    }
 
-        //public static void Main(string[] args)
-        //{
-        //    var config = new ConfigurationBuilder()
-        //            .SetBasePath(Directory.GetCurrentDirectory())
-        //            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-        //            .AddJsonFile("appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true)
-        //            .AddCommandLine(args)
-        //            .Build();
+    public class LoggingTraceListener : TraceListener
+    {
+        public override void Write(string message)
+        {
+            Log.Verbose(message);
+        }
 
-        //    var host = new WebHostBuilder()
-        //            .UseKestrel()
-        //            .UseConfiguration(config)
-        //            .UseContentRoot(Directory.GetCurrentDirectory())
-        //            .ConfigureLogging((hostingContext, logging) =>
-        //            {
-        //                logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-        //            })
-        //            .UseStartup<Startup>()
-        //            .Build();
-
-        //    host.Run();
-
-        //}
+        public override void WriteLine(string message)
+        {
+            Log.Verbose(message);
+        }
     }
 }

@@ -139,11 +139,11 @@ namespace Roadie.Library.Caching
             {
                 r = await getItem();
                 this.Add(key, r, region);
-                this.Logger.LogInformation($"-+> Cache Miss for Key [{ key }], Region [{ region }]");
+                this.Logger.LogTrace($"-+> Cache Miss for Key [{ key }], Region [{ region }]");
             }
             else
             {
-                this.Logger.LogInformation($"-!> Cache Hit for Key [{ key }], Region [{ region }]");
+                this.Logger.LogTrace($"-!> Cache Hit for Key [{ key }], Region [{ region }]");
             }
             return r;
 

@@ -26,6 +26,7 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.Utility;
+using Serilog;
 using System;
 using models = Roadie.Library.Models;
 
@@ -55,6 +56,7 @@ namespace Roadie.Api
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, ILoggerFactory loggerFactory, IHostingEnvironment env)
         {
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

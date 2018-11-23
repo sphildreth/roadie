@@ -265,6 +265,14 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetPlaylist(SubsonicRequest request)
         {
+            this.Logger.Log(LogLevel.Critical, ":: Critial");
+            this.Logger.Log(LogLevel.Debug, ":: Debug");
+            this.Logger.Log(LogLevel.Error, ":: Error");
+            this.Logger.Log(LogLevel.Information, ":: Information");
+            this.Logger.Log(LogLevel.None, ":: None");
+            this.Logger.Log(LogLevel.Trace, ":: Trace");
+            this.Logger.Log(LogLevel.Warning, ":: Warning");
+
             var authResult = await this.AuthenticateUser(request);
             if (authResult != null)
             {
@@ -519,7 +527,7 @@ namespace Roadie.Api.Controllers
         private IActionResult BuildResponse(SubsonicRequest request, SubsonicOperationResult<Response> response = null, string responseType = null)
         {
             var acceptHeader = this.Request.Headers["Accept"];
-            this.Logger.LogTrace($"Subsonic Request: Method [{ this.Request.Method }], Accept Header [{ acceptHeader }], Path [{ this.Request.Path }], Query String [{ this.Request.QueryString }], Response Error Code [{ response.ErrorCode }], Request [{ JsonConvert.SerializeObject(request) }] ResponseType [{ responseType }]");
+            this.Logger.LogTrace($"Subsonic Request: Method [{ this.Request.Method }], Accept Header [{ acceptHeader }], Path [{ this.Request.Path }], Query String [{ this.Request.QueryString }], Response Error Code [{ response?.ErrorCode }], Request [{ JsonConvert.SerializeObject(request) }] ResponseType [{ responseType }]");
             if (response?.ErrorCode.HasValue ?? false)
             {
                 return this.SendError(request, response);
