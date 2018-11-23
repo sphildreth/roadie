@@ -104,12 +104,12 @@ namespace Roadie.Library.Models.Pagination
         public Guid? FilterToPlaylistId { get; set; }
 
         public int? FilterMinimumRating { get; set; }
-        public bool FilterRatedOnly { get; internal set; }
+        public bool FilterRatedOnly { get;  set; }
         public bool FilterFavoriteOnly { get; set; }
         public bool FilterTopPlayedOnly { get; set; }
-        public int? FilterFromYear { get; internal set; }
-        public int? FilterToYear { get; internal set; }
-        public string FilterByGenre { get; internal set; }
+        public int? FilterFromYear { get;  set; }
+        public int? FilterToYear { get;  set; }
+        public string FilterByGenre { get;  set; }
 
         public PagedRequest()
         { }

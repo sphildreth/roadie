@@ -1,32 +1,33 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Mapster;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Roadie.Api.ModelBinding;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.ThirdPartyApi.Subsonic;
-using Roadie.Library.Utility;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Controllers
 {
-    //[Produces("application/json")]
     [Route("subsonic/rest")]
     [ApiController]
-    //[Authorize]
     public class SubsonicController : EntityControllerBase
     {
         private IPlayActivityService PlayActivityService { get; }
         private ISubsonicService SubsonicService { get; }
+
+        /// <summary>
+        /// This is the user authenticated via the Subsonic methods - NOT the current API Identity User.
+        /// </summary>
+        private Library.Models.Users.User SubsonicUser { get; set; }
+
         private ITrackService TrackService { get; }
 
         public SubsonicController(ISubsonicService subsonicService, ITrackService trackService, IPlayActivityService playActivityService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
@@ -43,35 +44,26 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetAlbum(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetAlbum(request, null);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetAlbum(request, this.SubsonicUser);
             return this.BuildResponse(request, result, "album");
         }
-
-        [HttpGet("getSimilarSongs.view")]
-        [HttpPost("getSimilarSongs.view")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> GetSimilarSongs(SubsonicRequest request, int? count = 50)
-        {
-            var result = await this.SubsonicService.GetSimliarSongs(request, null, SimilarSongsVersion.One, count);
-            return this.BuildResponse(request, result, "similarSongs");
-        }
-
-        [HttpGet("getSimilarSongs2.view")]
-        [HttpPost("getSimilarSongs2.view")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> GetSimilarSongs2(SubsonicRequest request, int? count = 50)
-        {
-            var result = await this.SubsonicService.GetSimliarSongs(request, null, SimilarSongsVersion.Two, count);
-            return this.BuildResponse(request, result, "similarSongs2");
-        }
-
 
         [HttpGet("getAlbumInfo.view")]
         [HttpPost("getAlbumInfo.view")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetAlbumInfo(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetAlbumInfo(request, null, AlbumInfoVersion.One);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetAlbumInfo(request, this.SubsonicUser, AlbumInfoVersion.One);
             return this.BuildResponse(request, result, "albumInfo");
         }
 
@@ -80,7 +72,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetAlbumInfo2(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetAlbumInfo(request, null, AlbumInfoVersion.Two);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetAlbumInfo(request, this.SubsonicUser, AlbumInfoVersion.Two);
             return this.BuildResponse(request, result, "albumInfo");
         }
 
@@ -89,7 +86,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetAlbumList(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetAlbumList(request, null, AlbumListVersions.One);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetAlbumList(request, this.SubsonicUser, AlbumListVersions.One);
             return this.BuildResponse(request, result, "albumList");
         }
 
@@ -98,7 +100,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetAlbumList2(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetAlbumList(request, null, AlbumListVersions.Two);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetAlbumList(request, this.SubsonicUser, AlbumListVersions.Two);
             return this.BuildResponse(request, result, "albumList");
         }
 
@@ -107,7 +114,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetArtist(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetArtist(request, null);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetArtist(request, this.SubsonicUser);
             return this.BuildResponse(request, result, "artist");
         }
 
@@ -116,6 +128,11 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetArtistInfo(SubsonicRequest request, int? count, bool? includeNotPresent)
         {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
             var result = await this.SubsonicService.GetArtistInfo(request, count, includeNotPresent ?? false, ArtistInfoVersion.One);
             return this.BuildResponse(request, result, "artistInfo");
         }
@@ -125,6 +142,11 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetArtistInfo2(SubsonicRequest request, int? count, bool? includeNotPresent)
         {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
             var result = await this.SubsonicService.GetArtistInfo(request, count, includeNotPresent ?? false, ArtistInfoVersion.Two);
             return this.BuildResponse(request, result, "artistInfo2");
         }
@@ -134,7 +156,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetArtists(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetArtists(request, null);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetArtists(request, this.SubsonicUser);
             return this.BuildResponse(request, result, "artists");
         }
 
@@ -183,7 +210,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetIndexes(SubsonicRequest request, long? ifModifiedSince = null)
         {
-            var result = await this.SubsonicService.GetIndexes(request, null, ifModifiedSince);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetIndexes(request, this.SubsonicUser, ifModifiedSince);
             return this.BuildResponse(request, result, "indexes");
         }
 
@@ -210,7 +242,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetMusicDirectory(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetMusicDirectory(request, null);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetMusicDirectory(request, this.SubsonicUser);
             return this.BuildResponse(request, result, "directory");
         }
 
@@ -228,7 +265,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetPlaylist(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetPlaylist(request, null);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetPlaylist(request, this.SubsonicUser);
             return this.BuildResponse(request, result, "playlist");
         }
 
@@ -237,7 +279,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetPlaylists(SubsonicRequest request, string username)
         {
-            var result = await this.SubsonicService.GetPlaylists(request, null, username);
+            var result = await this.SubsonicService.GetPlaylists(request, this.SubsonicUser, username);
             return this.BuildResponse(request, result, "playlists");
         }
 
@@ -255,8 +297,41 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetRandomSongs(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetRandomSongs(request, null);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetRandomSongs(request, this.SubsonicUser);
             return this.BuildResponse(request, result, "randomSongs");
+        }
+
+        [HttpGet("getSimilarSongs.view")]
+        [HttpPost("getSimilarSongs.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetSimilarSongs(SubsonicRequest request, int? count = 50)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetSimliarSongs(request, this.SubsonicUser, SimilarSongsVersion.One, count);
+            return this.BuildResponse(request, result, "similarSongs");
+        }
+
+        [HttpGet("getSimilarSongs2.view")]
+        [HttpPost("getSimilarSongs2.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetSimilarSongs2(SubsonicRequest request, int? count = 50)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetSimliarSongs(request, this.SubsonicUser, SimilarSongsVersion.Two, count);
+            return this.BuildResponse(request, result, "similarSongs2");
         }
 
         [HttpGet("getSong.view")]
@@ -264,8 +339,27 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetSong(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetSong(request, null);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetSong(request, this.SubsonicUser);
             return this.BuildResponse(request, result, "song");
+        }
+
+        [HttpGet("getSongsByGenre.view")]
+        [HttpPost("getSongsByGenre.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetSongsByGenre(SubsonicRequest request)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetSongsByGenre(request, this.SubsonicUser);
+            return this.BuildResponse(request, result, "songsByGenre");
         }
 
         [HttpGet("getStarred.view")]
@@ -273,7 +367,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetStarred(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetStarred(request, null, StarredVersion.One);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetStarred(request, this.SubsonicUser, StarredVersion.One);
             return this.BuildResponse(request, result, "starred");
         }
 
@@ -282,7 +381,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetStarred2(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.GetStarred(request, null, StarredVersion.Two);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetStarred(request, this.SubsonicUser, StarredVersion.Two);
             return this.BuildResponse(request, result, "starred");
         }
 
@@ -291,7 +395,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetTopSongs(SubsonicRequest request, string artist, int? count = 50)
         {
-            var result = await this.SubsonicService.GetTopSongs(request, null, artist, count);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetTopSongs(request, this.SubsonicUser, artist, count);
             return this.BuildResponse(request, result, "topSongs");
         }
 
@@ -300,6 +409,11 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetUser(SubsonicRequest request, string username)
         {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
             var result = await this.SubsonicService.GetUser(request, username ?? request.u);
             return this.BuildResponse(request, result, "user");
         }
@@ -334,7 +448,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> Search(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.Search(request, null, SearchVersion.One);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.Search(request, this.SubsonicUser, SearchVersion.One);
             return this.BuildResponse(request, result, "searchResult");
         }
 
@@ -343,7 +462,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> Search2(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.Search(request, null, SearchVersion.Two);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.Search(request, this.SubsonicUser, SearchVersion.Two);
             return this.BuildResponse(request, result, "searchResult2");
         }
 
@@ -352,7 +476,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> Search3(SubsonicRequest request)
         {
-            var result = await this.SubsonicService.Search(request, null, SearchVersion.Three);
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.Search(request, this.SubsonicUser, SearchVersion.Three);
             return this.BuildResponse(request, result, "searchResult3");
         }
 
@@ -361,12 +490,28 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<FileStreamResult> StreamTrack(SubsonicRequest request)
         {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            }
             var trackId = request.TrackId;
             if (trackId == null)
             {
                 Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             }
-            return await base.StreamTrack(trackId.Value, this.TrackService, this.PlayActivityService);
+            return await base.StreamTrack(trackId.Value, this.TrackService, this.PlayActivityService, this.SubsonicUser);
+        }
+
+        private async Task<IActionResult> AuthenticateUser(SubsonicRequest request)
+        {
+            var appUser = await this.SubsonicService.Authenticate(request);
+            if (!(appUser?.IsSuccess ?? false) || (appUser?.IsNotFoundResult ?? false))
+            {
+                return this.BuildResponse(request, appUser.Adapt<SubsonicOperationResult<Response>>());
+            }
+            this.SubsonicUser = this.UserModelForUser(appUser.Data.User);
+            return null;
         }
 
         #region Response Builder Methods
@@ -377,7 +522,7 @@ namespace Roadie.Api.Controllers
             this.Logger.LogTrace($"Subsonic Request: Method [{ this.Request.Method }], Accept Header [{ acceptHeader }], Path [{ this.Request.Path }], Query String [{ this.Request.QueryString }], Response Error Code [{ response.ErrorCode }], Request [{ JsonConvert.SerializeObject(request) }] ResponseType [{ responseType }]");
             if (response?.ErrorCode.HasValue ?? false)
             {
-                return this.SendError(request, response, responseType);
+                return this.SendError(request, response);
             }
             if (request.IsJSONRequest)
             {
@@ -393,7 +538,7 @@ namespace Roadie.Api.Controllers
                 {
                     jsonResult = "{ \"subsonic-response\": { \"status\":\"" + status + "\", \"version\": \"" + version + "\", \"" + responseType + "\":" + (response?.Data != null ? JsonConvert.SerializeObject(response.Data.Item) : string.Empty) + "}}";
                 }
-                if((request?.f ?? string.Empty).Equals("jsonp", StringComparison.OrdinalIgnoreCase))
+                if ((request?.f ?? string.Empty).Equals("jsonp", StringComparison.OrdinalIgnoreCase))
                 {
                     jsonResult = request.callback + "(" + jsonResult + ");";
                 }
@@ -403,7 +548,7 @@ namespace Roadie.Api.Controllers
             return Ok(response.Data);
         }
 
-        private IActionResult SendError(SubsonicRequest request, SubsonicOperationResult<Response> response = null, string responseType = null)
+        private IActionResult SendError(SubsonicRequest request, SubsonicOperationResult<Response> response = null)
         {
             var version = response?.Data?.version ?? Roadie.Api.Services.SubsonicService.SubsonicVersion;
             string errorDescription = response?.ErrorCode?.DescriptionAttr();
@@ -419,140 +564,4 @@ namespace Roadie.Api.Controllers
 
         #endregion Response Builder Methods
     }
-
-    [ModelBinder(BinderType = typeof(SubsonicRequestBinder))]
-    public class SubsonicRequest : Request
-    {
-    }
-
-    /// <summary>
-    /// This is needed as some clienst post some get, some query string some body post.
-    /// </summary>
-    public class SubsonicRequestBinder : IModelBinder
-    {
-
-        public Task BindModelAsync(ModelBindingContext bindingContext)
-        {
-            if (bindingContext == null)
-            {
-                throw new ArgumentNullException(nameof(bindingContext));
-            }
-            var queryDictionary = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(bindingContext.HttpContext.Request.QueryString.ToString());
-
-            // Create a dictionary of all the properties to populate on the result model
-            var modelDictionary = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase)
-            {
-                { "u", null },
-                { "p", null },
-                { "s", null },
-                { "t", null },
-                { "v", null },
-                { "c", null },
-                { "id", null },
-                { "f", null },
-                { "callback", null },
-                { "musicFolderId", null },
-                { "albumCount", null },
-                { "albumOffset", null },
-                { "artistCount", null },
-                { "artistOffset", null },
-                { "fromYear", null },
-                { "genre", null },
-                { "offset", null },
-                { "query", null },
-                { "size", null },
-                { "songCount", null },
-                { "songOffset", null },
-                { "toYear", null },
-                { "type", null }
-            };
-
-            // Setup model dictionary from Query Parameters
-            modelDictionary["albumCount"] = queryDictionary.ContainsKey("albumCount") ? SafeParser.ToNumber<int?>(queryDictionary["albumCount"].First()) : null;
-            modelDictionary["albumOffset"] = queryDictionary.ContainsKey("albumOffset") ? SafeParser.ToNumber<int?>(queryDictionary["albumOffset"].First()) : null;
-            modelDictionary["artistCount"] = queryDictionary.ContainsKey("artistCount") ? SafeParser.ToNumber<int?>(queryDictionary["artistCount"].First()) : null;
-            modelDictionary["artistOffset"] = queryDictionary.ContainsKey("artistOffset") ? SafeParser.ToNumber<int?>(queryDictionary["artistOffset"].First()) : null;
-            modelDictionary["c"] = queryDictionary.ContainsKey("c") ? queryDictionary["c"].First() : null;
-            modelDictionary["callback"] = queryDictionary.ContainsKey("callback") ? queryDictionary["callback"].First() : null;
-            modelDictionary["f"] = queryDictionary.ContainsKey("f") ? queryDictionary["f"].First() : null;
-            modelDictionary["fromYear"] = queryDictionary.ContainsKey("fromYear") ? SafeParser.ToNumber<int?>(queryDictionary["fromYear"].First()) : null;
-            modelDictionary["genre"] = queryDictionary.ContainsKey("genre") ? queryDictionary["genre"].First() : null;
-            modelDictionary["id"] = queryDictionary.ContainsKey("id") ? queryDictionary["id"].First() : null;
-            modelDictionary["musicFolderId"] = queryDictionary.ContainsKey("musicFolderId") ? SafeParser.ToNumber<int?>(queryDictionary["musicFolderId"].First()) : null;
-            modelDictionary["offset"] = queryDictionary.ContainsKey("offset") ? SafeParser.ToNumber<int?>(queryDictionary["offset"].First()) : null;
-            modelDictionary["p"] = queryDictionary.ContainsKey("p") ? queryDictionary["p"].First() : null;
-            modelDictionary["query"] = queryDictionary.ContainsKey("query") ? queryDictionary["query"].First() : null;
-            modelDictionary["s"] = queryDictionary.ContainsKey("s") ? queryDictionary["s"].First() : null;
-            var size = queryDictionary.ContainsKey("size") ? SafeParser.ToNumber<int?>(queryDictionary["size"].First()) : null;
-            var count = queryDictionary.ContainsKey("count") ? SafeParser.ToNumber<int?>(queryDictionary["count"].First()) : null;
-            modelDictionary["size"] = size ?? count ?? 100;
-            modelDictionary["songCount"] = queryDictionary.ContainsKey("songCount") ? SafeParser.ToNumber<int?>(queryDictionary["songCount"].First()) : null;
-            modelDictionary["songOffset"] = queryDictionary.ContainsKey("songOffset") ? SafeParser.ToNumber<int?>(queryDictionary["songOffset"].First()) : null;
-            modelDictionary["t"] = queryDictionary.ContainsKey("t") ? queryDictionary["t"].First() : null;
-            modelDictionary["toYear"] = queryDictionary.ContainsKey("toYear") ? SafeParser.ToNumber<int?>(queryDictionary["toYear"].First()) : null;
-            modelDictionary["type"] = queryDictionary.ContainsKey("type") ? SafeParser.ToEnum<ListType>(queryDictionary["type"].First()) : ListType.AlphabeticalByName;
-            modelDictionary["u"] = queryDictionary.ContainsKey("u") ? queryDictionary["u"].First() : null;
-            modelDictionary["v"] = queryDictionary.ContainsKey("v") ? queryDictionary["v"].First() : null;
-
-            // Setup model dictionary from Posted Body values
-            if (!bindingContext.HttpContext.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(bindingContext.HttpContext.Request.ContentType))
-            {
-                var formCollection = bindingContext.HttpContext.Request.Form;
-                if (formCollection != null && formCollection.Any())
-                {
-                    foreach (var form in formCollection)
-                    {
-                        if (modelDictionary.ContainsKey(form.Key))
-                        {
-                            modelDictionary[form.Key] = form.Value.FirstOrDefault();
-                        }
-                    }
-                }
-            }
-
-            var model = new SubsonicRequest
-            {
-                AlbumCount =  SafeParser.ToNumber<int?>(modelDictionary["albumCount"]),
-                AlbumOffset =  SafeParser.ToNumber<int?>(modelDictionary["albumOffset"]),
-                ArtistCount =  SafeParser.ToNumber<int?>(modelDictionary["artistCount"]),
-                ArtistOffset =  SafeParser.ToNumber<int?>(modelDictionary["artistOffset"]),
-                c = SafeParser.ToString(modelDictionary["c"]),
-                callback = SafeParser.ToString(modelDictionary["callback"]),
-                f = SafeParser.ToString(modelDictionary["f"]),
-                FromYear =  SafeParser.ToNumber<int?>(modelDictionary["fromYear"]),
-                Genre = SafeParser.ToString(modelDictionary["genre"]),
-                id = SafeParser.ToString(modelDictionary["id"]),
-                MusicFolderId = SafeParser.ToNumber<int?>(modelDictionary["musicFolderId"]),
-                Offset =  SafeParser.ToNumber<int?>(modelDictionary["offset"]),
-                p = SafeParser.ToString(modelDictionary["p"]),
-                Query = SafeParser.ToString(modelDictionary["query"]),
-                s = SafeParser.ToString(modelDictionary["s"]),
-                Size =  SafeParser.ToNumber<int?>(modelDictionary["size"]),
-                SongCount =  SafeParser.ToNumber<int?>(modelDictionary["songCount"]),
-                SongOffset =  SafeParser.ToNumber<int?>(modelDictionary["songOffset"]),
-                t = SafeParser.ToString(modelDictionary["t"]),
-                ToYear =  SafeParser.ToNumber<int?>(modelDictionary["toYear"]),
-                Type = SafeParser.ToEnum<ListType>(modelDictionary["type"]),
-                u = SafeParser.ToString(modelDictionary["u"]),
-                v = SafeParser.ToString(modelDictionary["v"])
-            };
-
-            bindingContext.Result = ModelBindingResult.Success(model);
-
-            return Task.CompletedTask;
-        }
-    }
-
-    public class SubsonicRequestBinderProvider : IModelBinderProvider
-    {
-        public IModelBinder GetBinder(ModelBinderProviderContext context)
-        {
-            if (context.Metadata.ModelType == typeof(Request))
-            {
-                return new SubsonicRequestBinder();
-            }
-            return null;
-        }
-    }
-
 }

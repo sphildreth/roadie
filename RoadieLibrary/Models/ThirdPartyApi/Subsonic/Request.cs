@@ -1,4 +1,5 @@
-﻿using Roadie.Library.Extensions;
+﻿using Newtonsoft.Json;
+using Roadie.Library.Extensions;
 using Roadie.Library.Utility;
 using System;
 
@@ -93,8 +94,10 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         /// <summary>
         /// The password, either in clear text or hex-encoded with a "enc:" prefix. Since 1.13.0 this should only be used for testing purposes.
         /// </summary>
+        [JsonIgnore]
         public string p { get; set; }
 
+        [JsonIgnore]
         public string Password
         {
             get
@@ -294,6 +297,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         /// <summary>
         /// The number of albums to return. Max 500.
         /// <see>Various *Count properties depending on objects being searched and client version.</see>
+        /// <remark>Something this value is posted as 'count' versus 'size'</remark>
         /// </summary>
         public int? Size { get; set; }
 

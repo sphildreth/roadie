@@ -20,6 +20,10 @@ namespace Roadie.Api
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .ConfigureLogging((hostingContext, logging) =>
+                {
+                    logging.AddFile(hostingContext.Configuration.GetSection("Logging"));
+                })
                 .UseStartup<Startup>();
 
 

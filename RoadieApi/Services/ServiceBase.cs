@@ -206,6 +206,10 @@ namespace Roadie.Api.Services
                                     .Include(x => x.ArtistRatings)
                                     .Include(x => x.ReleaseRatings)
                                     .Include(x => x.TrackRatings)
+                                    .Include(x => x.UserRoles)
+                                    .Include("UserRoles.Role")
+                                    .Include("UserRoles.Role.RoleClaims")
+                                    .Include(x => x.Claims)
                                     .FirstOrDefault(x => x.RoadieId == id);
 
             }, ApplicationUser.CacheRegionUrn(id.Value));

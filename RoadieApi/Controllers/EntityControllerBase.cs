@@ -56,9 +56,9 @@ namespace Roadie.Api.Controllers
             return result;
         }
 
-        protected async Task<FileStreamResult> StreamTrack(Guid id, ITrackService trackService, IPlayActivityService playActivityService)
+        protected async Task<FileStreamResult> StreamTrack(Guid id, ITrackService trackService, IPlayActivityService playActivityService, models.User currentUser = null)
         {
-            var user = await this.CurrentUserModel();
+            var user = currentUser ?? await this.CurrentUserModel();
             var track = await trackService.ById(user, id, null);
             if (track == null || track.IsNotFoundResult)
             {

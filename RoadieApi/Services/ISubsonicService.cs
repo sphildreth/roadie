@@ -1,13 +1,20 @@
-﻿using Roadie.Library.Models.ThirdPartyApi.Subsonic;
+﻿using Roadie.Library.Identity;
+using Roadie.Library.Models.ThirdPartyApi.Subsonic;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Services
 {
     public interface ISubsonicService
     {
+        Task<SubsonicOperationResult<SubsonicAuthenticateResponse>> Authenticate(Request request);
+
         Task<SubsonicOperationResult<Response>> GetAlbum(Request request, Roadie.Library.Models.Users.User roadieUser);
 
+        Task<SubsonicOperationResult<Response>> GetAlbumInfo(Request request, Roadie.Library.Models.Users.User roadieUser, AlbumInfoVersion version);
+
         Task<SubsonicOperationResult<Response>> GetAlbumList(Request request, Roadie.Library.Models.Users.User roadieUser, AlbumListVersions version);
+
+        Task<SubsonicOperationResult<Response>> GetArtist(Request request, Roadie.Library.Models.Users.User roadieUser);
 
         Task<SubsonicOperationResult<Response>> GetArtistInfo(Request request, int? count, bool includeNotPresent, ArtistInfoVersion version);
 
@@ -35,7 +42,15 @@ namespace Roadie.Api.Services
 
         Task<SubsonicOperationResult<Response>> GetRandomSongs(Request request, Roadie.Library.Models.Users.User roadieUser);
 
+        Task<SubsonicOperationResult<Response>> GetSimliarSongs(Request request, Roadie.Library.Models.Users.User roadieUser, SimilarSongsVersion version, int? count = 50);
+
+        Task<SubsonicOperationResult<Response>> GetSong(Request request, Roadie.Library.Models.Users.User roadieUser);
+
+        Task<SubsonicOperationResult<Response>> GetSongsByGenre(Request request, Roadie.Library.Models.Users.User roadieUser);
+
         Task<SubsonicOperationResult<Response>> GetStarred(Request request, Roadie.Library.Models.Users.User roadieUser, StarredVersion version);
+
+        Task<SubsonicOperationResult<Response>> GetTopSongs(Request request, Roadie.Library.Models.Users.User roadieUser, string artistName, int? count = 50);
 
         Task<SubsonicOperationResult<Response>> GetUser(Request request, string username);
 
@@ -44,12 +59,5 @@ namespace Roadie.Api.Services
         SubsonicOperationResult<Response> Ping(Request request);
 
         Task<SubsonicOperationResult<Response>> Search(Request request, Roadie.Library.Models.Users.User roadieUser, SearchVersion version);
-
-        Task<SubsonicOperationResult<Response>> GetAlbumInfo(Request request, Roadie.Library.Models.Users.User roadieUser, AlbumInfoVersion version);
-
-        Task<SubsonicOperationResult<Response>> GetArtist(Request request, Roadie.Library.Models.Users.User roadieUser);
-        Task<SubsonicOperationResult<Response>> GetSong(Request request, Roadie.Library.Models.Users.User roadieUser);
-        Task<SubsonicOperationResult<Response>> GetTopSongs(Request request, Roadie.Library.Models.Users.User roadieUser, string artistName, int? count = 50);
-        Task<SubsonicOperationResult<Response>> GetSimliarSongs(Request request, Roadie.Library.Models.Users.User roadieUser, SimilarSongsVersion version, int? count = 50);
     }
 }

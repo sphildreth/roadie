@@ -189,7 +189,7 @@ namespace Roadie.Api.Services
                                                     height: height,
                                                     action: async () =>
                                                     {
-                                                        return await this.TrackImageAction(id, etag);
+                                                        return await this.TrackImageAction(id, width, height, etag);
                                                     },
                                                     etag: etag);
         }
@@ -458,7 +458,7 @@ namespace Roadie.Api.Services
             return new FileOperationResult<Image>(OperationMessages.ErrorOccured);
         }
 
-        private async Task<FileOperationResult<Image>> TrackImageAction(Guid id, EntityTagHeaderValue etag = null)
+        private async Task<FileOperationResult<Image>> TrackImageAction(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
         {
             try
             {
@@ -476,7 +476,7 @@ namespace Roadie.Api.Services
                 if (track.Thumbnail == null || !track.Thumbnail.Any())
                 {
                     // If no track image is found then return image for release
-                    return await this.ReleaseImageAction(track.ReleaseMedia.Release.RoadieId, etag);
+                    return await this.ReleaseImage(track.ReleaseMedia.Release.RoadieId, width, height, etag);
                 }
                 return GenerateFileOperationResult(id, image, etag);
             }

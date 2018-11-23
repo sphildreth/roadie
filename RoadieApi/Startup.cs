@@ -17,6 +17,7 @@ using Microsoft.OData.Edm;
 using Newtonsoft.Json;
 using Roadie.Api.Controllers;
 using Roadie.Api.Hubs;
+using Roadie.Api.ModelBinding;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -95,6 +96,7 @@ namespace Roadie.Api
                 .AllowAnyHeader();
             }));
 
+            
             services.AddSingleton<ITokenService, TokenService>();
 
             services.AddSingleton<IHttpEncoder, HttpEncoder>();
@@ -188,13 +190,13 @@ namespace Roadie.Api
                 options.RespectBrowserAcceptHeader = true; // false by default
                 options.ModelBinderProviders.Insert(0, new SubsonicRequestBinderProvider());
             })
-                .AddJsonOptions(options =>
-                {
-                    options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
-                    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-                })
-                .AddXmlSerializerFormatters()                
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            .AddJsonOptions(options =>
+            {
+                options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
+                options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+            })
+            .AddXmlSerializerFormatters()                
+            .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             services.AddHttpContextAccessor();
             services.AddScoped<IHttpContext>(factory =>

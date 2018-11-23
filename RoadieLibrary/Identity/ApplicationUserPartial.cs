@@ -44,5 +44,10 @@ namespace Roadie.Library.Identity
                 return ApplicationUser.CacheUrn(this.RoadieId);
             }
         }
+
+        public override string ToString()
+        {
+            return $"Id [{ this.Id }], Username [{ this.UserName}]";
+        }
     }
 }

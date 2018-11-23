@@ -127,31 +127,31 @@ namespace Roadie.Api.Services
             {
                 return new OperationResult<PlayActivityList>($"CreatePlayActivity: Invalid Track. Track Id [{streamInfo.Track.Value}], FilePath [{track.FilePath}], Filename [{track.FileName}]");
             }
-            var user = this.GetUser(roadieUser?.UserId);
-            if (user == null)
-            {
-                return new OperationResult<PlayActivityList>($"CreatePlayActivity: Unable To Find User [{ roadieUser?.UserId }]");
-            }
+            data.UserTrack userTrack = null;
             var now = DateTime.UtcNow;
             track.PlayedCount = (track.PlayedCount ?? 0) + 1;
-            var userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
-            if (userTrack == null)
+            var user = this.GetUser(roadieUser?.UserId);
+            if (user != null)
             {
-                userTrack = new data.UserTrack(now)
+                userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
+                if (userTrack == null)
                 {
-                    UserId = user.Id,
-                    TrackId = track.Id
-                };
-                this.DbContext.UserTracks.Add(userTrack);
+                    userTrack = new data.UserTrack(now)
+                    {
+                        UserId = user.Id,
+                        TrackId = track.Id
+                    };
+                    this.DbContext.UserTracks.Add(userTrack);
+                }
+                userTrack.LastPlayed = now;
+                userTrack.PlayedCount++;
+                this.CacheManager.ClearRegion(user.CacheRegion);
             }
-            userTrack.LastPlayed = now;
-            userTrack.PlayedCount++;
 
             var release = this.GetRelease(track.ReleaseMedia.Release.RoadieId);
             release.LastPlayed = now;
             release.PlayedCount++;
 
-            this.CacheManager.ClearRegion(user.CacheRegion);
             this.CacheManager.ClearRegion(track.CacheRegion);
             this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
             this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
@@ -183,10 +183,10 @@ namespace Roadie.Api.Services
                     Text = roadieUser.UserName,
                     Value = roadieUser.UserId.ToString()
                 },
-                PlayedDateDateTime = userTrack.LastPlayed,
+                PlayedDateDateTime = userTrack?.LastPlayed,
                 ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ track.ReleaseMedia.Release.RoadieId}",
                 Rating = track.Rating,
-                UserRating = userTrack.Rating,
+                UserRating = userTrack?.Rating,
                 TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ track.RoadieId}.mp3",
                 ArtistThumbnail = this.MakeArtistThumbnailImage(track.TrackArtist != null ? track.TrackArtist.RoadieId : track.ReleaseMedia.Release.Artist.RoadieId),
                 ReleaseThumbnail = this.MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId),

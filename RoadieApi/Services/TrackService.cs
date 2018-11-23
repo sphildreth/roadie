@@ -1,5 +1,6 @@
 ﻿using Mapster;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Roadie.Library;
 using Roadie.Library.Caching;
@@ -230,15 +231,20 @@ namespace Roadie.Api.Services
                                      select t.Id
                                      );
             }
-            IQueryable<int> playlistTrackIds = (new int[0]).AsQueryable();
-            if(request.FilterToPlaylistId.HasValue)
+            Dictionary<int, int> playListTrackPositions = new Dictionary<int, int>();
+            int[] playlistTrackIds = new int[0];
+            if (request.FilterToPlaylistId.HasValue)
             {
-                playlistTrackIds = (from plt in this.DbContext.PlaylistTracks
-                                    join p in this.DbContext.Playlists on plt.PlayListId equals p.Id
-                                    join t in this.DbContext.Tracks on plt.TrackId equals t.Id
-                                    where p.RoadieId == request.FilterToPlaylistId.Value
-                                    select t.Id
-                                    );
+                playListTrackPositions = (from plt in this.DbContext.PlaylistTracks
+                                        join p in this.DbContext.Playlists on plt.PlayListId equals p.Id
+                                        join t in this.DbContext.Tracks on plt.TrackId equals t.Id
+                                        where p.RoadieId == request.FilterToPlaylistId.Value
+                                        select new {
+                                            plt.ListNumber, t.Id
+                                        }).Skip(request.SkipValue).Take(request.LimitValue).ToDictionary(x => x.Id, x => x.ListNumber);
+                playlistTrackIds = playListTrackPositions.Select(x => x.Key).ToArray();
+                request.Sort = "TrackNumber";
+                request.Order = "ASC";
             }
             int[] topTrackids = new int[0];
             if(request.FilterTopPlayedOnly)
@@ -253,6 +259,15 @@ namespace Roadie.Api.Services
                                orderby ut.PlayedCount descending
                                select t.Id
                                ).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            }
+            int[] randomTrackIds = null;
+            if(doRandomize ?? false)
+            {
+                var randomLimit = roadieUser?.RandomReleaseLimit ?? 50;
+                randomLimit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
+                var sql = $"SELECT t.* FROM `track` t WHERE t.Hash IS NOT NULL ORDER BY RAND() LIMIT {randomLimit}";
+                randomTrackIds = this.DbContext.Tracks.FromSql(sql).Select(x => x.Id).ToArray();
+
             }
             var resultQuery = (from t in this.DbContext.Tracks
                                join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
@@ -269,6 +284,7 @@ namespace Roadie.Api.Services
                                where (!request.FilterFavoriteOnly || favoriteTrackIds.Contains(t.Id))
                                where (request.FilterToPlaylistId == null || playlistTrackIds.Contains(t.Id))
                                where (!request.FilterTopPlayedOnly || topTrackids.Contains(t.Id))
+                               where (randomTrackIds == null || randomTrackIds.Contains(t.Id))
                                where (request.FilterToArtistId == null || request.FilterToArtistId != null && r.Artist.RoadieId == request.FilterToArtistId)
                                select new { t, rm, r, trackArtist, releaseArtist });
 
@@ -306,7 +322,7 @@ namespace Roadie.Api.Services
                                   Text = x.trackArtist.Name,
                                   Value = x.trackArtist.RoadieId.ToString()
                               } : null,
-                              TrackNumber = x.t.TrackNumber,
+                              TrackNumber = playListTrackPositions.ContainsKey(x.t.Id) ? playListTrackPositions[x.t.Id] : x.t.TrackNumber,
                               MediaNumber = x.rm.MediaNumber,
                               CreatedDate = x.t.CreatedDate,
                               LastUpdated = x.t.LastUpdated,
@@ -327,25 +343,15 @@ namespace Roadie.Api.Services
             var rowCount = result.Count();
             TrackList[] rows = null;
 
-            if (doRandomize ?? false)
+            if (request.Action == User.ActionKeyUserRated)
             {
-                var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
-                request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
-                rows = result.OrderBy(x => Guid.NewGuid()).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "UserTrack.Rating", "DESC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } }) : request.OrderValue(null);
             }
             else
             {
-                if (request.Action == User.ActionKeyUserRated)
-                {
-                    sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "UserTrack.Rating", "DESC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } }) : request.OrderValue(null);
-                }
-                else
-                {
-                    sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Release.Text", "ASC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } }) : request.OrderValue(null);
-                }
-                rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Release.Text", "ASC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } }) : request.OrderValue(null);
             }
-
+            rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             if (rows.Any() && roadieUser != null)
             {
                 foreach (var userTrack in this.GetUser(roadieUser.UserId).TrackRatings)

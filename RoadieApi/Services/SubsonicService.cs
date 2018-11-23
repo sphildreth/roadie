@@ -67,89 +67,72 @@ namespace Roadie.Api.Services
         /// <summary>
         /// Authenticate the given credentials and return the corresponding ApplicationUser
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<ApplicationUser>> Authenticate(subsonic.Request request, string username, string password)
+        public async Task<subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>> Authenticate(subsonic.Request request)
         {
-            // TODO
-
-            //public user CheckPasswordGetUser(ICacheManager<object> cacheManager, RoadieDbContext context)
-            //{
-            //    user user = null;
-            //    if (string.IsNullOrEmpty(this.UsernameValue))
-            //    {
-            //        return null;
-            //    }
-            //    try
-            //    {
-            //        var cacheKey = string.Format("urn:user:byusername:{0}", this.UsernameValue.ToLower());
-            //        var resultInCache = cacheManager.Get<user>(cacheKey);
-            //        if (resultInCache == null)
-            //        {
-            //            user = context.users.FirstOrDefault(x => x.username.Equals(this.UsernameValue, StringComparison.OrdinalIgnoreCase));
-            //            var claims = new List<string>
-            //            {
-            //                new Claim(Library.Authentication.ClaimTypes.UserId, user.id.ToString()).ToString()
-            //            };
-            //            var sql = @"select ur.name FROM `userrole` ur LEFT JOIN usersInRoles uir on ur.id = uir.userRoleId where uir.userId = " + user.id + ";";
-            //            var userRoles = context.Database.SqlQuery<string>(sql).ToList();
-            //            if (userRoles != null && userRoles.Any())
-            //            {
-            //                foreach (var userRole in userRoles)
-            //                {
-            //                    claims.Add(new Claim(Library.Authentication.ClaimTypes.UserRole, userRole).ToString());
-            //                }
-            //            }
-            //            user.ClaimsValue = claims;
-            //            cacheManager.Add(cacheKey, user);
-            //        }
-            //        else
-            //        {
-            //            user = resultInCache;
-            //        }
-            //        if (user == null)
-            //        {
-            //            return null;
-            //        }
-            //        var password = this.Password;
-            //        var wasAuthenticatedAgainstPassword = false;
-            //        if (!string.IsNullOrEmpty(this.s))
-            //        {
-            //            var token = ModuleBase.MD5Hash((user.apiToken ?? user.email) + this.s);
-            //            if (!token.Equals(this.t, StringComparison.OrdinalIgnoreCase))
-            //            {
-            //                user = null;
-            //            }
-            //            else
-            //            {
-            //                wasAuthenticatedAgainstPassword = true;
-            //            }
-            //        }
-            //        else
-            //        {
-            //            if (user != null && !BCrypt.Net.BCrypt.Verify(password, user.password))
-            //            {
-            //                user = null;
-            //            }
-            //            else
-            //            {
-            //                wasAuthenticatedAgainstPassword = true;
-            //            }
-            //        }
-            //        if (wasAuthenticatedAgainstPassword)
-            //        {
-            //            // Since API dont update LastLogin which likely invalidates any browser logins
-            //            user.lastApiAccess = DateTime.UtcNow;
-            //            context.SaveChanges();
-            //        }
-            //        return user;
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        Trace.WriteLine("Error CheckPassword [" + ex.Serialize() + "]");
-            //    }
-            //    return null;
-            //}
-
-            throw new NotImplementedException();
+            if (request == null || string.IsNullOrEmpty(request?.u))
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>(subsonic.ErrorCodes.WrongUsernameOrPassword, $"Unknown Username");
+            }
+            try
+            {
+                var user = this.GetUser(request.u);
+                if (user == null)
+                {
+                    this.Logger.LogInformation($"Unknown User [{ request.u }]");
+                    return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>(subsonic.ErrorCodes.WrongUsernameOrPassword, $"Unknown Username");
+                }
+                var password = request.Password;
+                var wasAuthenticatedAgainstPassword = false;
+                if (!string.IsNullOrEmpty(request.s))
+                {
+                    var token = HashHelper.MD5Hash((user.ApiToken ?? user.Email) + request.s);
+                    if (!token.Equals(request.t, StringComparison.OrdinalIgnoreCase))
+                    {
+                        user = null;
+                    }
+                    else
+                    {
+                        wasAuthenticatedAgainstPassword = true;
+                    }
+                }
+                else if(user != null)
+                {
+                    var hashCheck = this.UserManger.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+                    if(hashCheck== PasswordVerificationResult.Failed)
+                    {
+                        user = null;
+                    }
+                    else
+                    {
+                        wasAuthenticatedAgainstPassword = true;
+                    }
+                }
+                if (wasAuthenticatedAgainstPassword)
+                {
+                    // Since API dont update LastLogin which likely invalidates any browser logins
+                    user.LastApiAccess = DateTime.UtcNow;
+                    await this.DbContext.SaveChangesAsync();
+                }
+                if (user == null)
+                {
+                    this.Logger.LogInformation($"Unknown User [{ request.u }]");
+                    return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>(subsonic.ErrorCodes.WrongUsernameOrPassword, $"Unknown Username");
+                }
+                this.Logger.LogInformation($"Successfully Authenticated User [{ user.ToString() }]");
+                return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>
+                {
+                    IsSuccess = true,
+                    Data = new subsonic.SubsonicAuthenticateResponse
+                    {
+                        User = user
+                    }
+                };
+        }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex, "Subsonic.Authenticate, Error CheckPassword [" + JsonConvert.SerializeObject(request) + "]");
+            }
+            return null;
         }
 
         /// <summary>
@@ -1012,10 +995,27 @@ namespace Roadie.Api.Services
         /// <summary>
         /// Returns songs in a given genre.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetSongsByGenre(subsonic.Request request, User roadieUser, string genre, int? count = 10, int? offset = 0)
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetSongsByGenre(subsonic.Request request, User roadieUser)
         {
-            // TODO
-            throw new NotImplementedException();
+            var pagedRequest = request.PagedRequest;
+            pagedRequest.FilterByGenre = request.Genre;
+            pagedRequest.Sort = "Id";
+            var trackResult = await this.TrackService.List(roadieUser, pagedRequest);
+
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok,
+                    ItemElementName = subsonic.ItemChoiceType.songsByGenre,
+                    Item = new subsonic.Songs
+                    {
+                         song = this.SubsonicChildrenForTracks(trackResult.Rows)
+                    }
+                }
+            };
         }
 
         /// <summary>
