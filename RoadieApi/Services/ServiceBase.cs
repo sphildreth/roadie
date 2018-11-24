@@ -93,9 +93,8 @@ namespace Roadie.Api.Services
             {
                 return this.DbContext.Artists
                                     .FirstOrDefault(x => x.Name == artistName);
-
             }, null);
-            if(artistByName == null)
+            if (artistByName == null)
             {
                 return null;
             }
@@ -156,10 +155,13 @@ namespace Roadie.Api.Services
             }, data.Release.CacheRegionUrn(id));
         }
 
+        /// <summary>
+        /// Get Track by Subsonic Id ("T:guid")
+        /// </summary>
         protected data.Track GetTrack(string id)
         {
             Guid trackId = Guid.Empty;
-            if(Guid.TryParse(id, out trackId))
+            if (Guid.TryParse(id, out trackId))
             {
                 return this.GetTrack(trackId);
             }
@@ -188,15 +190,14 @@ namespace Roadie.Api.Services
             var userByUsername = this.CacheManager.Get(ApplicationUser.CacheUrnByUsername(username), () =>
             {
                 return this.DbContext.Users
-                                    .FirstOrDefault(x => x.UserName == username);                                    
-
+                                    .FirstOrDefault(x => x.UserName == username);
             }, null);
             return this.GetUser(userByUsername?.RoadieId);
         }
 
         protected ApplicationUser GetUser(Guid? id)
         {
-            if(!id.HasValue)
+            if (!id.HasValue)
             {
                 return null;
             }
@@ -211,111 +212,7 @@ namespace Roadie.Api.Services
                                     .Include("UserRoles.Role.RoleClaims")
                                     .Include(x => x.Claims)
                                     .FirstOrDefault(x => x.RoadieId == id);
-
             }, ApplicationUser.CacheRegionUrn(id.Value));
-        }
-
-        protected List<BookmarkList> GetUserBookmarks(User roadieUser)
-        {
-            if(roadieUser == null)
-            {
-                return null;
-            }
-            return this.CacheManager.Get($"urn:user_bookmarks:{ roadieUser.Id }", () =>
-            {
-                var bookmarks = from b in this.DbContext.Bookmarks
-                                join a in this.DbContext.Artists on b.BookmarkTargetId equals a.Id into aa
-                                from a in aa.DefaultIfEmpty()
-                                join r in this.DbContext.Releases on b.BookmarkTargetId equals r.Id into rr
-                                from r in rr.DefaultIfEmpty()
-                                join t in this.DbContext.Tracks on b.BookmarkTargetId equals t.Id into tt
-                                from t in tt.DefaultIfEmpty()
-                                join p in this.DbContext.Playlists on b.BookmarkTargetId equals p.Id into pp
-                                from p in pp.DefaultIfEmpty()
-                                join c in this.DbContext.Collections on b.BookmarkTargetId equals c.Id into cc
-                                from c in cc.DefaultIfEmpty()
-                                join l in this.DbContext.Labels on b.BookmarkTargetId equals l.Id into ll
-                                from l in ll.DefaultIfEmpty()
-                                where b.UserId == roadieUser.Id
-                                select new
-                                {
-                                    b,
-                                    a,
-                                    r,
-                                    t,
-                                    p,
-                                    c,
-                                    l
-                                };
-
-                var result = new List<BookmarkList>();
-                foreach (var bookmark in bookmarks)
-                {
-                    var b = bookmark.b.Adapt<BookmarkList>();
-                    if (bookmark.a != null)
-                    {
-                        b.Bookmark = new DataToken
-                        {
-                            Text = bookmark.a.Name,
-                            Value = bookmark.a.RoadieId.ToString()
-                        };
-                        b.Thumbnail = this.MakeArtistThumbnailImage(bookmark.a.RoadieId);
-                        continue;
-                    }
-                    if (bookmark.r != null)
-                    {
-                        b.Bookmark = new DataToken
-                        {
-                            Text = bookmark.r.Title,
-                            Value = bookmark.r.RoadieId.ToString()
-                        };
-                        b.Thumbnail = this.MakeReleaseThumbnailImage(bookmark.r.RoadieId);
-                        continue;
-                    }
-                    if (bookmark.t != null)
-                    {
-                        b.Bookmark = new DataToken
-                        {
-                            Text = bookmark.t.Title,
-                            Value = bookmark.t.RoadieId.ToString()
-                        };
-                        b.Thumbnail = this.MakeTrackThumbnailImage(bookmark.t.RoadieId);
-                        continue;
-                    }
-                    if (bookmark.p != null)
-                    {
-                        b.Bookmark = new DataToken
-                        {
-                            Text = bookmark.p.Name,
-                            Value = bookmark.p.RoadieId.ToString()
-                        };
-                        b.Thumbnail = this.MakePlaylistThumbnailImage(bookmark.p.RoadieId);
-                        continue;
-                    }
-                    if (bookmark.c != null)
-                    {
-                        b.Bookmark = new DataToken
-                        {
-                            Text = bookmark.c.Name,
-                            Value = bookmark.c.RoadieId.ToString()
-                        };
-                        b.Thumbnail = this.MakeCollectionThumbnailImage(bookmark.c.RoadieId);
-                        continue;
-                    }
-                    if (bookmark.l != null)
-                    {
-                        b.Bookmark = new DataToken
-                        {
-                            Text = bookmark.l.Name,
-                            Value = bookmark.l.RoadieId.ToString()
-                        };
-                        b.Thumbnail = this.MakeLabelThumbnailImage(bookmark.l.RoadieId);
-                        continue;
-                    }
-                    result.Add(b);
-                }
-                return result;
-            }, ApplicationUser.CacheRegionUrn(roadieUser.UserId));
         }
 
         protected Image MakeArtistThumbnailImage(Guid id)
@@ -328,15 +225,24 @@ namespace Roadie.Api.Services
             return MakeThumbnailImage(id, "collection");
         }
 
-
         protected Image MakeImage(Guid id, int width = 200, int height = 200)
         {
             return new Image($"{this.HttpContext.ImageBaseUrl }/{id}/{ width }/{ height }");
         }
 
+        protected Image MakeImage(Guid id, string type, ImageSize imageSize)
+        {
+            return this.MakeImage(id, type, imageSize.Width, imageSize.Height);
+        }
+
         protected Image MakeLabelThumbnailImage(Guid id)
         {
             return MakeThumbnailImage(id, "label");
+        }
+
+        protected string MakeLastFmUrl(string artistName, string releaseTitle)
+        {
+            return "http://www.last.fm/music/" + this.HttpEncoder.UrlEncode($"{ artistName }/{ releaseTitle }");
         }
 
         protected Image MakePlaylistThumbnailImage(Guid id)
@@ -359,17 +265,6 @@ namespace Roadie.Api.Services
             return MakeThumbnailImage(id, "user");
         }
 
-        private Image MakeThumbnailImage(Guid id, string type)
-        {
-            return this.MakeImage(id, type, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
-        }
-
-        protected Image MakeImage(Guid id, string type, ImageSize imageSize)
-        {
-            return this.MakeImage(id, type, imageSize.Width, imageSize.Height);
-        }
-
-
         private Image MakeImage(Guid id, string type, int? width, int? height)
         {
             if (width.HasValue && height.HasValue)
@@ -379,10 +274,9 @@ namespace Roadie.Api.Services
             return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}");
         }
 
-        protected string MakeLastFmUrl(string artistName, string releaseTitle)
+        private Image MakeThumbnailImage(Guid id, string type)
         {
-            return "http://www.last.fm/music/" + this.HttpEncoder.UrlEncode($"{ artistName }/{ releaseTitle }");
+            return this.MakeImage(id, type, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
         }
-
     }
 }

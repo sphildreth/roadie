@@ -29,6 +29,7 @@ namespace Roadie.Api.Services
     {
         private ICollectionService CollectionService { get; } = null;
         private IPlaylistService PlaylistService { get; } = null;
+        private IBookmarkService BookmarkService { get; } = null;
 
         public ArtistService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
@@ -37,11 +38,14 @@ namespace Roadie.Api.Services
                              ICacheManager cacheManager,
                              ILogger<ArtistService> logger,
                              ICollectionService collectionService,
-                             IPlaylistService playlistService)
+                             IPlaylistService playlistService,
+                             IBookmarkService bookmarkService
+            )
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
             this.CollectionService = collectionService;
             this.PlaylistService = playlistService;
+            this.BookmarkService = bookmarkService;
         }
 
         public async Task<OperationResult<Artist>> ById(User roadieUser, Guid id, IEnumerable<string> includes)
@@ -56,7 +60,11 @@ namespace Roadie.Api.Services
             if (result?.Data != null && roadieUser != null)
             {
                 var artist = this.GetArtist(id);
-                result.Data.UserBookmark = this.GetUserBookmarks(roadieUser).FirstOrDefault(x => x.Type == BookmarkType.Artist && x.Bookmark.Value == artist.RoadieId.ToString());
+                var userBookmarkResult = await this.BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Artist);
+                if(userBookmarkResult.IsSuccess)
+                {
+                    result.Data.UserBookmark = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == artist.RoadieId.ToString());
+                }
                 var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == roadieUser.Id);
                 if (userArtist != null)
                 {

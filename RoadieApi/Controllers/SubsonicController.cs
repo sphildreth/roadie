@@ -58,6 +58,49 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result, "album");
         }
 
+        [HttpGet("createBookmark.view")]
+        [HttpPost("createBookmark.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> CreateBookmark(SubsonicRequest request, int position, string comment)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.CreateBookmark(request, this.SubsonicUser, position, comment);
+            return this.BuildResponse(request, result);
+        }
+
+
+        [HttpGet("deleteBookmark.view")]
+        [HttpPost("deleteBookmark.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> DeleteBookmark(SubsonicRequest request)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.DeleteBookmark(request, this.SubsonicUser);
+            return this.BuildResponse(request, result);
+        }
+
+        [HttpGet("getBookmarks.view")]
+        [HttpPost("getBookmarks.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetBookmarks(SubsonicRequest request)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetBookmarks(request, this.SubsonicUser);
+            return this.BuildResponse(request, result, "bookmarks");
+        }
+
         [HttpGet("star.view")]
         [HttpPost("star.view")]
         [ProducesResponseType(200)]

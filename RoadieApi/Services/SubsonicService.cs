@@ -7,7 +7,6 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
-using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Users;
@@ -35,6 +34,7 @@ namespace Roadie.Api.Services
         public const string SubsonicVersion = "1.16.1";
 
         private IArtistService ArtistService { get; }
+        private IBookmarkService BookmarkService { get; }
         private ICollectionService CollectionService { get; }
         private IImageService ImageService { get; }
         private IPlaylistService PlaylistService { get; }
@@ -54,11 +54,13 @@ namespace Roadie.Api.Services
                              IPlaylistService playlistService,
                              IReleaseService releaseService,
                              IImageService imageService,
+                             IBookmarkService bookmarkService,
                              UserManager<ApplicationUser> userManager
                              )
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
             this.ArtistService = artistService;
+            this.BookmarkService = bookmarkService;
             this.CollectionService = collectionService;
             this.ImageService = imageService;
             this.PlaylistService = playlistService;
@@ -98,7 +100,7 @@ namespace Roadie.Api.Services
                         wasAuthenticatedAgainstPassword = true;
                     }
                 }
-                else if(user != null && !string.IsNullOrEmpty(user.PasswordHash) && !string.IsNullOrEmpty(password))
+                else if (user != null && !string.IsNullOrEmpty(user.PasswordHash) && !string.IsNullOrEmpty(password))
                 {
                     try
                     {
@@ -136,7 +138,7 @@ namespace Roadie.Api.Services
                         User = user
                     }
                 };
-        }
+            }
             catch (Exception ex)
             {
                 this.Logger.LogError(ex, "Subsonic.Authenticate, Error CheckPassword [" + JsonConvert.SerializeObject(request) + "]");
@@ -144,6 +146,9 @@ namespace Roadie.Api.Services
             return null;
         }
 
+        /// <summary>
+        /// Returns details for an album, including a list of songs. This method organizes music according to ID3 tags.
+        /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetAlbum(subsonic.Request request, User roadieUser)
         {
             var releaseId = SafeParser.ToGuid(request.id);
@@ -390,6 +395,9 @@ namespace Roadie.Api.Services
             }
         }
 
+        /// <summary>
+        /// Similar to getIndexes, but organizes music according to ID3 tags.
+        /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetArtists(subsonic.Request request, User roadieUser)
         {
             var indexes = new List<subsonic.IndexID3>();
@@ -469,7 +477,6 @@ namespace Roadie.Api.Services
                     return collectionImage.Adapt<subsonic.SubsonicFileOperationResult<Image>>();
                 }
                 result.Data.Bytes = collectionImage.Data.Bytes;
-
             }
             else if (request.ReleaseId != null)
             {
@@ -562,7 +569,7 @@ namespace Roadie.Api.Services
         /// <param name="ifModifiedSince">If specified, only return a result if the artist collection has changed since the given time (in milliseconds since 1 Jan 1970).</param>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetIndexes(subsonic.Request request, User roadieUser, long? ifModifiedSince = null)
         {
-            if(roadieUser != null)
+            if (roadieUser != null)
             {
                 return await this.GetIndexesAction(request, roadieUser, ifModifiedSince);
             }
@@ -571,72 +578,6 @@ namespace Roadie.Api.Services
             {
                 return await this.GetIndexesAction(request, roadieUser, ifModifiedSince);
             }, CacheManagerBase.SystemCacheRegionUrn);
-        }
-
-        private async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetIndexesAction(subsonic.Request request, User roadieUser, long? ifModifiedSince = null)
-        {
-            var modifiedSinceFilter = ifModifiedSince.HasValue ? (DateTime?)ifModifiedSince.Value.FromUnixTime() : null;
-            subsonic.MusicFolder musicFolderFilter = !request.MusicFolderId.HasValue ? new subsonic.MusicFolder() : this.MusicFolders().FirstOrDefault(x => x.id == request.MusicFolderId.Value);
-            var indexes = new List<subsonic.Index>();
-
-            if (musicFolderFilter.id == this.CollectionMusicFolder().id)
-            {
-                // Collections for Music Folders by Alpha First
-                foreach (var collectionFirstLetter in (from c in this.DbContext.Collections
-                                                       let first = c.Name.Substring(0, 1)
-                                                       orderby first
-                                                       select first).Distinct().ToArray())
-                {
-                    indexes.Add(new subsonic.Index
-                    {
-                        name = collectionFirstLetter,
-                        artist = (from c in this.DbContext.Collections
-                                  where c.Name.Substring(0, 1) == collectionFirstLetter
-                                  where modifiedSinceFilter == null || c.LastUpdated >= modifiedSinceFilter
-                                  orderby c.SortName, c.Name
-                                  select new subsonic.Artist
-                                  {
-                                      id = subsonic.Request.CollectionIdentifier + c.RoadieId.ToString(),
-                                      name = c.Name,
-                                      artistImageUrl = this.MakeCollectionThumbnailImage(c.RoadieId).Url,
-                                      averageRating = 0,
-                                      userRating = 0
-                                  }).ToArray()
-                    });
-                }
-            }
-            else
-            {
-                // Indexes for Artists alphabetically
-                var pagedRequest = request.PagedRequest;
-                pagedRequest.SkipValue = 0;
-                pagedRequest.Limit = int.MaxValue;
-                pagedRequest.Sort = "Artist.Text";
-                var artistList = await this.ArtistService.List(roadieUser, pagedRequest);
-                foreach (var artistGroup in artistList.Rows.GroupBy(x => x.Artist.Text.Substring(0, 1)))
-                {
-                    indexes.Add(new subsonic.Index
-                    {
-                        name = artistGroup.Key,
-                        artist = this.SubsonicArtistsForArtists(artistGroup)
-                    });
-                };
-            }
-            return new subsonic.SubsonicOperationResult<subsonic.Response>
-            {
-                IsSuccess = true,
-                Data = new subsonic.Response
-                {
-                    version = SubsonicService.SubsonicVersion,
-                    status = subsonic.ResponseStatus.ok,
-                    ItemElementName = subsonic.ItemChoiceType.indexes,
-                    Item = new subsonic.Indexes
-                    {
-                        index = indexes.ToArray()
-                        // TODO child
-                    }
-                }
-            };
         }
 
         /// <summary>
@@ -929,6 +870,7 @@ namespace Roadie.Api.Services
                             }
                         }
                     };
+
                 case subsonic.SimilarSongsVersion.Two:
                     return new subsonic.SubsonicOperationResult<subsonic.Response>
                     {
@@ -947,7 +889,6 @@ namespace Roadie.Api.Services
 
                 default:
                     return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.IncompatibleServerRestProtocolVersion, $"Unknown SimilarSongsVersion [{ version }]");
-
             }
         }
 
@@ -1002,7 +943,7 @@ namespace Roadie.Api.Services
                     ItemElementName = subsonic.ItemChoiceType.songsByGenre,
                     Item = new subsonic.Songs
                     {
-                         song = this.SubsonicChildrenForTracks(trackResult.Rows)
+                        song = this.SubsonicChildrenForTracks(trackResult.Rows)
                     }
                 }
             };
@@ -1070,7 +1011,7 @@ namespace Roadie.Api.Services
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetTopSongs(subsonic.Request request, User roadieUser, string artistName, int? count = 50)
         {
             var artist = base.GetArtist(artistName);
-            if(artist == null)
+            if (artist == null)
             {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Unknown Artist [{ artistName }]");
             }
@@ -1235,303 +1176,6 @@ namespace Roadie.Api.Services
         }
 
         /// <summary>
-        /// Attaches a star to a song, album or artist.
-        /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> ToggleStar(subsonic.Request request, User roadieUser, bool star, string[] albumIds = null, string[] artistIds = null)
-        {
-            var user = this.GetUser(roadieUser.UserId);
-            if (user == null)
-            {
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.UserIsNotAuthorizedForGivenOperation, $"Invalid User [{ roadieUser }]");
-            }
-
-            // Id can be a song, album or artist
-            if (request.TrackId.HasValue)
-            {
-                var starResult = await this.ToggleTrackStar(request.TrackId.Value, user, star);
-                if(starResult.IsSuccess)
-                {
-                    return new subsonic.SubsonicOperationResult<subsonic.Response>
-                    {
-                        IsSuccess = true,
-                        Data = new subsonic.Response()
-                    };
-                }
-            }
-            else if( request.ReleaseId.HasValue)
-            {
-                var starResult = await this.ToggleReleaseStar(request.ReleaseId.Value, user, star);
-                if (starResult.IsSuccess)
-                {
-                    return new subsonic.SubsonicOperationResult<subsonic.Response>
-                    {
-                        IsSuccess = true,
-                        Data = new subsonic.Response()
-                    };
-                }
-            }
-            else if(request.ArtistId.HasValue)
-            {
-                var starResult = await this.ToggleArtistStar(request.ArtistId.Value, user, star);
-                if (starResult.IsSuccess)
-                {
-                    return new subsonic.SubsonicOperationResult<subsonic.Response>
-                    {
-                        IsSuccess = true,
-                        Data = new subsonic.Response()
-                    };
-                }
-            }
-            else if(albumIds != null && albumIds.Any())
-            {
-                foreach(var rId in albumIds)
-                {
-                    var releaseId = SafeParser.ToGuid(rId);
-                    if(releaseId.HasValue)
-                    {
-                        var starResult = await this.ToggleReleaseStar(releaseId.Value, user, star);
-                        if (!starResult.IsSuccess)
-                        {
-                            return new subsonic.SubsonicOperationResult<subsonic.Response>(starResult.ErrorCode.Value, starResult.Messages.FirstOrDefault());
-                        }
-                    }
-                }
-            }
-            else if(artistIds != null && artistIds.Any())
-            {
-                foreach (var aId in artistIds)
-                {
-                    var artistId = SafeParser.ToGuid(aId);
-                    if (artistId.HasValue)
-                    {
-                        var starResult = await this.ToggleReleaseStar(artistId.Value, user, star);
-                        if (!starResult.IsNotFoundResult)
-                        {
-                            return new subsonic.SubsonicOperationResult<subsonic.Response>(starResult.ErrorCode.Value, starResult.Messages.FirstOrDefault());
-                        }
-                    }
-                }
-            }
-            return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Unknown Star Id [{ JsonConvert.SerializeObject(request) }]");
-        }
-
-        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleTrackStar(Guid trackId, ApplicationUser user, bool starred)
-        {
-            var track = this.GetTrack(trackId);
-            if (track == null)
-            {
-                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{ trackId }]");
-            }
-            var userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
-            if (userTrack == null)
-            {
-                userTrack = new data.UserTrack
-                {
-                    IsFavorite = true,
-                    UserId = user.Id,
-                    TrackId = track.Id
-                };
-                this.DbContext.UserTracks.Add(userTrack);
-            }
-            else
-            {
-                userTrack.IsFavorite = starred;
-                userTrack.LastUpdated = DateTime.UtcNow;
-            }
-            await this.DbContext.SaveChangesAsync();
-
-            this.CacheManager.ClearRegion(user.CacheRegion);
-            this.CacheManager.ClearRegion(track.CacheRegion);
-            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
-            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
-
-            return new subsonic.SubsonicOperationResult<bool>
-            {
-                IsSuccess = true,
-                Data = true
-            };
-        }
-        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleReleaseStar(Guid releaseId, ApplicationUser user, bool starred)
-        {
-            var release = this.GetRelease(releaseId);
-            if (release == null)
-            {
-                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release Id [{ releaseId }]");
-            }
-            var userRelease = user.ReleaseRatings.FirstOrDefault(x => x.ReleaseId == release.Id);
-            if (userRelease == null)
-            {
-                userRelease = new data.UserRelease
-                {
-                    IsFavorite = true,
-                    UserId = user.Id,
-                    ReleaseId = release.Id
-                };
-                this.DbContext.UserReleases.Add(userRelease);
-            }
-            else
-            {
-                userRelease.IsFavorite = starred;
-                userRelease.LastUpdated = DateTime.UtcNow;
-            }
-            await this.DbContext.SaveChangesAsync();
-
-            this.CacheManager.ClearRegion(user.CacheRegion);
-            this.CacheManager.ClearRegion(release.CacheRegion);
-            this.CacheManager.ClearRegion(release.Artist.CacheRegion);
-
-            return new subsonic.SubsonicOperationResult<bool>
-            {
-                IsSuccess = true,
-                Data = true
-            };
-        }
-        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleArtistStar(Guid artistId, ApplicationUser user, bool starred)
-        {
-            var artist = this.GetArtist(artistId);
-            if (artist == null)
-            {
-                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Artist Id [{ artistId }]");
-            }
-            var userArtist = user.ArtistRatings.FirstOrDefault(x => x.ArtistId == artist.Id);
-            if (userArtist == null)
-            {
-                userArtist = new data.UserArtist
-                {
-                    IsFavorite = true,
-                    UserId = user.Id,
-                    ArtistId = artist.Id
-                };
-                this.DbContext.UserArtists.Add(userArtist);
-            }
-            else
-            {
-                userArtist.IsFavorite = starred;
-                userArtist.LastUpdated = DateTime.UtcNow;
-            }
-            await this.DbContext.SaveChangesAsync();
-
-            this.CacheManager.ClearRegion(user.CacheRegion);
-            this.CacheManager.ClearRegion(artist.CacheRegion);
-
-            return new subsonic.SubsonicOperationResult<bool>
-            {
-                IsSuccess = true,
-                Data = true
-            };
-        }
-        
-        private async Task<subsonic.SubsonicOperationResult<bool>> SetTrackRating(Guid trackId, ApplicationUser user, short rating)
-        {
-            var track = this.GetTrack(trackId);
-            if (track == null)
-            {
-                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{ trackId }]");
-            }
-            var userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
-            if (userTrack == null)
-            {
-                userTrack = new data.UserTrack
-                {
-                    Rating = rating,
-                    UserId = user.Id,
-                    TrackId = track.Id
-                };
-                this.DbContext.UserTracks.Add(userTrack);
-            }
-            else
-            {
-                userTrack.Rating = rating;
-                userTrack.LastUpdated = DateTime.UtcNow;
-            }
-            await this.DbContext.SaveChangesAsync();
-
-            this.CacheManager.ClearRegion(user.CacheRegion);
-            this.CacheManager.ClearRegion(track.CacheRegion);
-            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
-            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
-
-            return new subsonic.SubsonicOperationResult<bool>
-            {
-                IsSuccess = true,
-                Data = true
-            };
-        }
-        private async Task<subsonic.SubsonicOperationResult<bool>> SetReleaseRating(Guid releaseId, ApplicationUser user, short rating)
-        {
-            var release = this.GetRelease(releaseId);
-            if (release == null)
-            {
-                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release Id [{ releaseId }]");
-            }
-            var userRelease = user.ReleaseRatings.FirstOrDefault(x => x.ReleaseId == release.Id);
-            if (userRelease == null)
-            {
-                userRelease = new data.UserRelease
-                {
-                    Rating = rating,
-                    UserId = user.Id,
-                    ReleaseId = release.Id
-                };
-                this.DbContext.UserReleases.Add(userRelease);
-            }
-            else
-            {
-                userRelease.Rating = rating;
-                userRelease.LastUpdated = DateTime.UtcNow;
-            }
-            await this.DbContext.SaveChangesAsync();
-
-            this.CacheManager.ClearRegion(user.CacheRegion);
-            this.CacheManager.ClearRegion(release.CacheRegion);
-            this.CacheManager.ClearRegion(release.Artist.CacheRegion);
-
-            return new subsonic.SubsonicOperationResult<bool>
-            {
-                IsSuccess = true,
-                Data = true
-            };
-        }
-        private async Task<subsonic.SubsonicOperationResult<bool>> SetArtistRating(Guid artistId, ApplicationUser user, short rating)
-        {
-            var artist = this.GetArtist(artistId);
-            if (artist == null)
-            {
-                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Artist Id [{ artistId }]");
-            }
-            var userArtist = user.ArtistRatings.FirstOrDefault(x => x.ArtistId == artist.Id);
-            if (userArtist == null)
-            {
-                userArtist = new data.UserArtist
-                {
-                    Rating = rating,
-                    UserId = user.Id,
-                    ArtistId = artist.Id
-                };
-                this.DbContext.UserArtists.Add(userArtist);
-            }
-            else
-            {
-                userArtist.Rating = rating;
-                userArtist.LastUpdated = DateTime.UtcNow;
-            }
-            await this.DbContext.SaveChangesAsync();
-
-            this.CacheManager.ClearRegion(user.CacheRegion);
-            this.CacheManager.ClearRegion(artist.CacheRegion);
-
-            return new subsonic.SubsonicOperationResult<bool>
-            {
-                IsSuccess = true,
-                Data = true
-            };
-        }
-
-        /// <summary>
-        /// Removes the star from a song, album or artist.
-        /// </summary>
-
-        /// <summary>
         /// Sets the rating for a music file. If rating is zero then remove rating.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> SetRating(subsonic.Request request, User roadieUser, short rating)
@@ -1580,11 +1224,489 @@ namespace Roadie.Api.Services
                 }
             }
             return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Unknown Star Id [{ JsonConvert.SerializeObject(request) }]");
+        }
 
+        /// <summary>
+        /// Attaches a star to a song, album or artist.
+        /// </summary>
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> ToggleStar(subsonic.Request request, User roadieUser, bool star, string[] albumIds = null, string[] artistIds = null)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.UserIsNotAuthorizedForGivenOperation, $"Invalid User [{ roadieUser }]");
+            }
+
+            // Id can be a song, album or artist
+            if (request.TrackId.HasValue)
+            {
+                var starResult = await this.ToggleTrackStar(request.TrackId.Value, user, star);
+                if (starResult.IsSuccess)
+                {
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    {
+                        IsSuccess = true,
+                        Data = new subsonic.Response()
+                    };
+                }
+            }
+            else if (request.ReleaseId.HasValue)
+            {
+                var starResult = await this.ToggleReleaseStar(request.ReleaseId.Value, user, star);
+                if (starResult.IsSuccess)
+                {
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    {
+                        IsSuccess = true,
+                        Data = new subsonic.Response()
+                    };
+                }
+            }
+            else if (request.ArtistId.HasValue)
+            {
+                var starResult = await this.ToggleArtistStar(request.ArtistId.Value, user, star);
+                if (starResult.IsSuccess)
+                {
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    {
+                        IsSuccess = true,
+                        Data = new subsonic.Response()
+                    };
+                }
+            }
+            else if (albumIds != null && albumIds.Any())
+            {
+                foreach (var rId in albumIds)
+                {
+                    var releaseId = SafeParser.ToGuid(rId);
+                    if (releaseId.HasValue)
+                    {
+                        var starResult = await this.ToggleReleaseStar(releaseId.Value, user, star);
+                        if (!starResult.IsSuccess)
+                        {
+                            return new subsonic.SubsonicOperationResult<subsonic.Response>(starResult.ErrorCode.Value, starResult.Messages.FirstOrDefault());
+                        }
+                    }
+                }
+            }
+            else if (artistIds != null && artistIds.Any())
+            {
+                foreach (var aId in artistIds)
+                {
+                    var artistId = SafeParser.ToGuid(aId);
+                    if (artistId.HasValue)
+                    {
+                        var starResult = await this.ToggleReleaseStar(artistId.Value, user, star);
+                        if (!starResult.IsNotFoundResult)
+                        {
+                            return new subsonic.SubsonicOperationResult<subsonic.Response>(starResult.ErrorCode.Value, starResult.Messages.FirstOrDefault());
+                        }
+                    }
+                }
+            }
+            return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Unknown Star Id [{ JsonConvert.SerializeObject(request) }]");
+        }
+
+        /// <summary>
+        /// Returns all bookmarks for this user. A bookmark is a position within a certain media file.
+        /// </summary>
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetBookmarks(subsonic.Request request, User roadieUser)
+        {
+            var pagedRequest = request.PagedRequest;
+            pagedRequest.Sort = "LastUpdated";
+            pagedRequest.Order = "DESC";
+            var userBookmarkResult = await this.BookmarkService.List(roadieUser, pagedRequest, false, Library.Enums.BookmarkType.Track);
+            pagedRequest.FilterToTrackIds = userBookmarkResult.Rows.Select(x => SafeParser.ToGuid(x.Bookmark.Value)).ToArray();
+            var trackListResult = await this.TrackService.List(roadieUser, pagedRequest);
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok,
+                    ItemElementName = subsonic.ItemChoiceType.bookmarks,
+                    Item = new subsonic.Bookmarks
+                    {
+                         bookmark = this.SubsonicBookmarksForBookmarks(userBookmarkResult.Rows, trackListResult.Rows)
+                    }
+                }
+            };
+        }
+
+        /// <summary>
+        /// Creates or updates a bookmark (a position within a media file). Bookmarks are personal and not visible to other users.
+        /// </summary>
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> CreateBookmark(subsonic.Request request, User roadieUser, int position, string comment)
+        {
+            if(!request.TrackId.HasValue)
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{ request.id }]");
+            }
+            var track = this.GetTrack(request.TrackId.Value);
+            if(track == null)
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{ request.TrackId.Value }]");
+            }
+            var userBookmark = this.DbContext.Bookmarks.FirstOrDefault(x => x.UserId == roadieUser.Id && x.BookmarkTargetId == track.Id && x.BookmarkType == Library.Enums.BookmarkType.Track);
+            var createdBookmark = false;
+            if(userBookmark == null)
+            {
+                userBookmark = new data.Bookmark
+                {
+                    BookmarkTargetId = track.Id,
+                    BookmarkType = Library.Enums.BookmarkType.Track,
+                    UserId = roadieUser.Id,
+                    Comment = comment,
+                    Position = position                     
+                };
+                this.DbContext.Bookmarks.Add(userBookmark);
+                createdBookmark = true;
+            }
+            else
+            {
+                userBookmark.LastUpdated = DateTime.UtcNow;
+                userBookmark.Position = position;
+                userBookmark.Comment = comment;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            var user = this.GetUser(roadieUser.UserId);
+            this.CacheManager.ClearRegion(user.CacheRegion);
+
+            this.Logger.LogInformation($"{ (createdBookmark ? "Created" : "Updated") } Bookmark `{ userBookmark}` for User `{ roadieUser }`");
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok
+                }
+            };
+        }
+
+        /// <summary>
+        /// Deletes the bookmark for a given file.
+        /// </summary>
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> DeleteBookmark(subsonic.Request request, User roadieUser)
+        {
+            if (!request.TrackId.HasValue)
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{ request.id }]");
+            }
+            var track = this.GetTrack(request.TrackId.Value);
+            if (track == null)
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{ request.TrackId.Value }]");
+            }
+            var userBookmark = this.DbContext.Bookmarks.FirstOrDefault(x => x.UserId == roadieUser.Id && x.BookmarkTargetId == track.Id && x.BookmarkType == Library.Enums.BookmarkType.Track);
+            if (userBookmark != null)
+            {
+                this.DbContext.Bookmarks.Remove(userBookmark);
+                await this.DbContext.SaveChangesAsync();
+
+                var user = this.GetUser(roadieUser.UserId);
+                this.CacheManager.ClearRegion(user.CacheRegion);
+
+                this.Logger.LogInformation($"Deleted Bookmark `{ userBookmark}` for User `{ roadieUser }`");
+
+            }
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok
+                }
+            };
         }
 
 
         #region Privates
+
+        private async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetIndexesAction(subsonic.Request request, User roadieUser, long? ifModifiedSince = null)
+        {
+            var modifiedSinceFilter = ifModifiedSince.HasValue ? (DateTime?)ifModifiedSince.Value.FromUnixTime() : null;
+            subsonic.MusicFolder musicFolderFilter = !request.MusicFolderId.HasValue ? new subsonic.MusicFolder() : this.MusicFolders().FirstOrDefault(x => x.id == request.MusicFolderId.Value);
+            var indexes = new List<subsonic.Index>();
+
+            if (musicFolderFilter.id == this.CollectionMusicFolder().id)
+            {
+                // Collections for Music Folders by Alpha First
+                foreach (var collectionFirstLetter in (from c in this.DbContext.Collections
+                                                       let first = c.Name.Substring(0, 1)
+                                                       orderby first
+                                                       select first).Distinct().ToArray())
+                {
+                    indexes.Add(new subsonic.Index
+                    {
+                        name = collectionFirstLetter,
+                        artist = (from c in this.DbContext.Collections
+                                  where c.Name.Substring(0, 1) == collectionFirstLetter
+                                  where modifiedSinceFilter == null || c.LastUpdated >= modifiedSinceFilter
+                                  orderby c.SortName, c.Name
+                                  select new subsonic.Artist
+                                  {
+                                      id = subsonic.Request.CollectionIdentifier + c.RoadieId.ToString(),
+                                      name = c.Name,
+                                      artistImageUrl = this.MakeCollectionThumbnailImage(c.RoadieId).Url,
+                                      averageRating = 0,
+                                      userRating = 0
+                                  }).ToArray()
+                    });
+                }
+            }
+            else
+            {
+                // Indexes for Artists alphabetically
+                var pagedRequest = request.PagedRequest;
+                pagedRequest.SkipValue = 0;
+                pagedRequest.Limit = int.MaxValue;
+                pagedRequest.Sort = "Artist.Text";
+                var artistList = await this.ArtistService.List(roadieUser, pagedRequest);
+                foreach (var artistGroup in artistList.Rows.GroupBy(x => x.Artist.Text.Substring(0, 1)))
+                {
+                    indexes.Add(new subsonic.Index
+                    {
+                        name = artistGroup.Key,
+                        artist = this.SubsonicArtistsForArtists(artistGroup)
+                    });
+                };
+            }
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok,
+                    ItemElementName = subsonic.ItemChoiceType.indexes,
+                    Item = new subsonic.Indexes
+                    {
+                        index = indexes.ToArray()
+                        // TODO child
+                    }
+                }
+            };
+        }
+
+        private async Task<subsonic.SubsonicOperationResult<bool>> SetArtistRating(Guid artistId, ApplicationUser user, short rating)
+        {
+            var artist = this.GetArtist(artistId);
+            if (artist == null)
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Artist Id [{ artistId }]");
+            }
+            var userArtist = user.ArtistRatings.FirstOrDefault(x => x.ArtistId == artist.Id);
+            if (userArtist == null)
+            {
+                userArtist = new data.UserArtist
+                {
+                    Rating = rating,
+                    UserId = user.Id,
+                    ArtistId = artist.Id
+                };
+                this.DbContext.UserArtists.Add(userArtist);
+            }
+            else
+            {
+                userArtist.Rating = rating;
+                userArtist.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(artist.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        private async Task<subsonic.SubsonicOperationResult<bool>> SetReleaseRating(Guid releaseId, ApplicationUser user, short rating)
+        {
+            var release = this.GetRelease(releaseId);
+            if (release == null)
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release Id [{ releaseId }]");
+            }
+            var userRelease = user.ReleaseRatings.FirstOrDefault(x => x.ReleaseId == release.Id);
+            if (userRelease == null)
+            {
+                userRelease = new data.UserRelease
+                {
+                    Rating = rating,
+                    UserId = user.Id,
+                    ReleaseId = release.Id
+                };
+                this.DbContext.UserReleases.Add(userRelease);
+            }
+            else
+            {
+                userRelease.Rating = rating;
+                userRelease.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(release.CacheRegion);
+            this.CacheManager.ClearRegion(release.Artist.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        private async Task<subsonic.SubsonicOperationResult<bool>> SetTrackRating(Guid trackId, ApplicationUser user, short rating)
+        {
+            var track = this.GetTrack(trackId);
+            if (track == null)
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{ trackId }]");
+            }
+            var userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
+            if (userTrack == null)
+            {
+                userTrack = new data.UserTrack
+                {
+                    Rating = rating,
+                    UserId = user.Id,
+                    TrackId = track.Id
+                };
+                this.DbContext.UserTracks.Add(userTrack);
+            }
+            else
+            {
+                userTrack.Rating = rating;
+                userTrack.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(track.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleArtistStar(Guid artistId, ApplicationUser user, bool starred)
+        {
+            var artist = this.GetArtist(artistId);
+            if (artist == null)
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Artist Id [{ artistId }]");
+            }
+            var userArtist = user.ArtistRatings.FirstOrDefault(x => x.ArtistId == artist.Id);
+            if (userArtist == null)
+            {
+                userArtist = new data.UserArtist
+                {
+                    IsFavorite = true,
+                    UserId = user.Id,
+                    ArtistId = artist.Id
+                };
+                this.DbContext.UserArtists.Add(userArtist);
+            }
+            else
+            {
+                userArtist.IsFavorite = starred;
+                userArtist.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(artist.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleReleaseStar(Guid releaseId, ApplicationUser user, bool starred)
+        {
+            var release = this.GetRelease(releaseId);
+            if (release == null)
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release Id [{ releaseId }]");
+            }
+            var userRelease = user.ReleaseRatings.FirstOrDefault(x => x.ReleaseId == release.Id);
+            if (userRelease == null)
+            {
+                userRelease = new data.UserRelease
+                {
+                    IsFavorite = true,
+                    UserId = user.Id,
+                    ReleaseId = release.Id
+                };
+                this.DbContext.UserReleases.Add(userRelease);
+            }
+            else
+            {
+                userRelease.IsFavorite = starred;
+                userRelease.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(release.CacheRegion);
+            this.CacheManager.ClearRegion(release.Artist.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleTrackStar(Guid trackId, ApplicationUser user, bool starred)
+        {
+            var track = this.GetTrack(trackId);
+            if (track == null)
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{ trackId }]");
+            }
+            var userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
+            if (userTrack == null)
+            {
+                userTrack = new data.UserTrack
+                {
+                    IsFavorite = true,
+                    UserId = user.Id,
+                    TrackId = track.Id
+                };
+                this.DbContext.UserTracks.Add(userTrack);
+            }
+            else
+            {
+                userTrack.IsFavorite = starred;
+                userTrack.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(track.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
 
         private string[] AllowedUsers()
         {
@@ -1599,17 +1721,53 @@ namespace Roadie.Api.Services
             return this.MusicFolders().First(x => x.id == 1);
         }
 
-        private subsonic.MusicFolder MusicMusicFolder()
-        {
-            return this.MusicFolders().First(x => x.id == 2);
-        }
-
         private List<subsonic.MusicFolder> MusicFolders()
         {
             return new List<subsonic.MusicFolder>
             {
                 new subsonic.MusicFolder { id = 1, name = "Collections"},
                 new subsonic.MusicFolder { id = 2, name = "Music"}
+            };
+        }
+
+        private subsonic.MusicFolder MusicMusicFolder()
+        {
+            return this.MusicFolders().First(x => x.id == 2);
+        }
+
+        private subsonic.Bookmark[] SubsonicBookmarksForBookmarks(IEnumerable<BookmarkList> bb, IEnumerable<TrackList> childTracks)
+        {
+            if (bb == null || !bb.Any())
+            {
+                return new subsonic.Bookmark[0];
+            }
+            var result = new List<subsonic.Bookmark>();
+            foreach(var bookmark in bb)
+            {
+                subsonic.Child child = null;
+                switch (bookmark.Type.Value)
+                {
+                    case Library.Enums.BookmarkType.Track:
+                        child = this.SubsonicChildForTrack(childTracks.FirstOrDefault(x => x.Id == SafeParser.ToGuid(bookmark.Bookmark.Value)));
+                        break;
+                    default:
+                        throw new NotImplementedException("Wrong Bookmark type to convert to Subsonic media Bookmark");
+                }
+                result.Add(this.SubsonicBookmarkForBookmark(bookmark, child));
+            }
+            return result.ToArray();
+        }
+
+        private subsonic.Bookmark SubsonicBookmarkForBookmark(BookmarkList b, subsonic.Child entry)
+        {
+            return new subsonic.Bookmark
+            {
+                changed = b.LastUpdated ?? b.CreatedDate.Value,
+                comment = b.Comment,
+                created = b.CreatedDate.Value,
+                position = b.Position ?? 0,
+                username = b.User.Text,     
+                entry = entry                 
             };
         }
 
@@ -1625,12 +1783,12 @@ namespace Roadie.Api.Services
                 artist = r.Artist.Text,
                 coverArt = subsonic.Request.ReleaseIdIdentifier + r.Id.ToString(),
                 created = r.CreatedDate.Value,
-                genre = r.Genre.Text,                 
+                genre = r.Genre.Text,
                 playCount = r.TrackPlayedCount ?? 0,
                 playCountSpecified = true,
                 starred = r.UserRating?.RatedDate ?? DateTime.UtcNow,
                 starredSpecified = r.UserRating?.IsFavorite ?? false,
-                year = SafeParser.ToNumber<int>(r.ReleaseYear),                 
+                year = SafeParser.ToNumber<int>(r.ReleaseYear),
                 yearSpecified = true
             };
         }
@@ -1656,23 +1814,7 @@ namespace Roadie.Api.Services
                 starred = artist.UserRating?.RatedDate ?? DateTime.UtcNow,
                 starredSpecified = artist.UserRating?.IsFavorite ?? false,
                 userRating = artist.UserRating != null ? artist.UserRating.Rating ?? 0 : 0,
-                userRatingSpecified = artist.UserRating != null && artist.UserRating.Rating != null                 
-            };
-        }
-
-        private subsonic.ArtistWithAlbumsID3 SubsonicArtistWithAlbumsID3ForArtist(ArtistList artist, subsonic.AlbumID3[] releases)
-        {
-            var artistImageUrl = this.MakeArtistThumbnailImage(artist.Id).Url;
-            return new subsonic.ArtistWithAlbumsID3
-            {
-                id = subsonic.Request.ArtistIdIdentifier + artist.Artist.Value.ToString(),
-                album = releases,
-                albumCount = releases.Count(),
-                artistImageUrl = artistImageUrl,                 
-                coverArt = artistImageUrl,
-                name = artist.Artist.Text,
-                starred = artist.UserRating?.RatedDate ?? DateTime.UtcNow,
-                starredSpecified = artist.UserRating?.IsFavorite ?? false                 
+                userRatingSpecified = artist.UserRating != null && artist.UserRating.Rating != null
             };
         }
 
@@ -1733,6 +1875,22 @@ namespace Roadie.Api.Services
                 return new subsonic.Artist[0];
             }
             return artists.Select(x => this.SubsonicArtistForArtist(x)).ToArray();
+        }
+
+        private subsonic.ArtistWithAlbumsID3 SubsonicArtistWithAlbumsID3ForArtist(ArtistList artist, subsonic.AlbumID3[] releases)
+        {
+            var artistImageUrl = this.MakeArtistThumbnailImage(artist.Id).Url;
+            return new subsonic.ArtistWithAlbumsID3
+            {
+                id = subsonic.Request.ArtistIdIdentifier + artist.Artist.Value.ToString(),
+                album = releases,
+                albumCount = releases.Count(),
+                artistImageUrl = artistImageUrl,
+                coverArt = artistImageUrl,
+                name = artist.Artist.Text,
+                starred = artist.UserRating?.RatedDate ?? DateTime.UtcNow,
+                starredSpecified = artist.UserRating?.IsFavorite ?? false
+            };
         }
 
         private subsonic.Child SubsonicChildForRelease(ReleaseList r, string parent, string path)
@@ -1829,15 +1987,6 @@ namespace Roadie.Api.Services
             return tracks.Select(x => this.SubsonicChildForTrack(x)).ToArray();
         }
 
-        private subsonic.Playlist[] SubsonicPlaylistsForPlaylists(IEnumerable<Library.Models.Playlists.PlaylistList> playlists)
-        {
-            if (playlists == null || !playlists.Any())
-            {
-                return new subsonic.Playlist[0];
-            }
-            return playlists.Select(x => this.SubsonicPlaylistForPlaylist(x)).ToArray();
-        }
-
         private subsonic.Playlist SubsonicPlaylistForPlaylist(Library.Models.Playlists.PlaylistList playlist, IEnumerable<TrackList> playlistTracks = null)
         {
             return new subsonic.PlaylistWithSongs
@@ -1857,6 +2006,15 @@ namespace Roadie.Api.Services
             };
         }
 
+        private subsonic.Playlist[] SubsonicPlaylistsForPlaylists(IEnumerable<Library.Models.Playlists.PlaylistList> playlists)
+        {
+            if (playlists == null || !playlists.Any())
+            {
+                return new subsonic.Playlist[0];
+            }
+            return playlists.Select(x => this.SubsonicPlaylistForPlaylist(x)).ToArray();
+        }
+
         private async Task<subsonic.User> SubsonicUserForUser(Library.Identity.ApplicationUser user)
         {
             var isAdmin = await this.UserManger.IsInRoleAsync(user, "Admin");
@@ -1866,7 +2024,7 @@ namespace Roadie.Api.Services
                 adminRole = isAdmin,
                 avatarLastChanged = user.LastUpdated ?? user.CreatedDate ?? DateTime.UtcNow,
                 avatarLastChangedSpecified = user.LastUpdated.HasValue,
-                commentRole = true, 
+                commentRole = true,
                 coverArtRole = isEditor || isAdmin,
                 downloadRole = isEditor || isAdmin, // Disable downloads
                 email = user.Email,

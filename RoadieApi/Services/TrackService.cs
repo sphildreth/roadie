@@ -270,6 +270,26 @@ namespace Roadie.Api.Services
                 randomTrackIds = this.DbContext.Tracks.FromSql(sql).Select(x => x.Id).ToArray();
 
             }
+            Guid?[] filterToTrackIds = null;
+            if(request.FilterToTrackId.HasValue || request.FilterToTrackIds != null)
+            {
+                var f = new List<Guid?>();
+                if(request.FilterToTrackId.HasValue)
+                {
+                    f.Add(request.FilterToTrackId);
+                }
+                if (request.FilterToTrackIds != null)
+                {
+                    foreach (var ft in request.FilterToTrackIds)
+                    {
+                        if (!f.Contains(ft))
+                        {
+                            f.Add(ft);
+                        }
+                    }
+                }
+                filterToTrackIds = f.ToArray();
+            }
             var resultQuery = (from t in this.DbContext.Tracks
                                join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
@@ -279,7 +299,7 @@ namespace Roadie.Api.Services
                                from releaseArtist in aa.DefaultIfEmpty()
                                where (t.Hash != null)
                                where (releaseId == null || (releaseId != null && r.RoadieId == releaseId))
-                               where (request.FilterToTrackId == null || request.FilterToTrackId != null && t.RoadieId == request.FilterToTrackId)
+                               where (filterToTrackIds == null || filterToTrackIds.Contains(t.RoadieId))
                                where (request.FilterMinimumRating == null || t.Rating >= request.FilterMinimumRating.Value)
                                where (request.FilterValue == "" || (t.Title.Contains(request.FilterValue) || t.AlternateNames.Contains(request.FilterValue)))
                                where (!request.FilterFavoriteOnly || favoriteTrackIds.Contains(t.Id))

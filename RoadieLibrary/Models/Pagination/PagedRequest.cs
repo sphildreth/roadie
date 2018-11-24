@@ -110,6 +110,7 @@ namespace Roadie.Library.Models.Pagination
         public int? FilterFromYear { get;  set; }
         public int? FilterToYear { get;  set; }
         public string FilterByGenre { get;  set; }
+        public Guid?[] FilterToTrackIds { get; set; }
 
         public PagedRequest()
         { }

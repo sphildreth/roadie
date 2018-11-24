@@ -8,6 +8,10 @@ namespace Roadie.Api.Services
     {
         Task<SubsonicOperationResult<SubsonicAuthenticateResponse>> Authenticate(Request request);
 
+        Task<SubsonicOperationResult<Response>> CreateBookmark(Request request, Roadie.Library.Models.Users.User roadieUser, int position, string comment);
+
+        Task<SubsonicOperationResult<Response>> DeleteBookmark(Request request, Roadie.Library.Models.Users.User roadieUser);
+
         Task<SubsonicOperationResult<Response>> GetAlbum(Request request, Roadie.Library.Models.Users.User roadieUser);
 
         Task<SubsonicOperationResult<Response>> GetAlbumInfo(Request request, Roadie.Library.Models.Users.User roadieUser, AlbumInfoVersion version);
@@ -19,6 +23,8 @@ namespace Roadie.Api.Services
         Task<SubsonicOperationResult<Response>> GetArtistInfo(Request request, int? count, bool includeNotPresent, ArtistInfoVersion version);
 
         Task<SubsonicOperationResult<Response>> GetArtists(Request request, Roadie.Library.Models.Users.User roadieUser);
+
+        Task<SubsonicOperationResult<Response>> GetBookmarks(Request request, Roadie.Library.Models.Users.User roadieUser);
 
         Task<SubsonicFileOperationResult<Roadie.Library.Models.Image>> GetCoverArt(Request request, int? size);
 

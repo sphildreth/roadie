@@ -27,14 +27,18 @@ namespace Roadie.Api.Services
 {
     public class ReleaseService : ServiceBase, IReleaseService
     {
+        private IBookmarkService BookmarkService { get; } = null;
+
         public ReleaseService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
                              IHttpContext httpContext,
                              data.IRoadieDbContext dbContext,
                              ICacheManager cacheManager,
-                             ILogger<ReleaseService> logger)
+                             ILogger<ReleaseService> logger,
+                             IBookmarkService bookmarkService)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
+            this.BookmarkService = bookmarkService;
         }
 
         public async Task<OperationResult<Release>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
@@ -49,8 +53,11 @@ namespace Roadie.Api.Services
             if (result?.Data != null && roadieUser != null)
             {
                 var release = this.GetRelease(id);
-                result.Data.UserBookmark = this.GetUserBookmarks(roadieUser).FirstOrDefault(x => x.Type == BookmarkType.Release && x.Bookmark.Value == release.RoadieId.ToString());
-
+                var userBookmarkResult = await this.BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Release);
+                if (userBookmarkResult.IsSuccess)
+                {
+                    result.Data.UserBookmark = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == release.RoadieId.ToString());
+                }
                 if (result.Data.Medias != null)
                 {
                     var releaseTrackIds = result.Data.Medias.SelectMany(x => x.Tracks).Select(x => x.Id);

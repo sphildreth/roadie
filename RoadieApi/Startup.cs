@@ -141,13 +141,13 @@ namespace Roadie.Api
             services.AddScoped<IStatisticsService, StatisticsService>();
             services.AddScoped<ICollectionService, CollectionService>();
             services.AddScoped<IPlaylistService, PlaylistService>();
+            services.AddScoped<IBookmarkService, BookmarkService>();
             services.AddScoped<IArtistService, ArtistService>();
             services.AddScoped<IImageService, ImageService>();
             services.AddScoped<IReleaseService, ReleaseService>();
             services.AddScoped<ITrackService, TrackService>();
             services.AddScoped<ILabelService, LabelService>();
             services.AddScoped<IPlaylistService, PlaylistService>();
-            services.AddScoped<IBookmarkService, BookmarkService>();
             services.AddScoped<IPlayActivityService, PlayActivityService>();
             services.AddScoped<IGenreService, GenreService>();
             services.AddScoped<ISubsonicService, SubsonicService>();
