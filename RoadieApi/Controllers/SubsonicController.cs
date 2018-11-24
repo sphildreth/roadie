@@ -11,6 +11,9 @@ using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.ThirdPartyApi.Subsonic;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -265,14 +268,6 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetPlaylist(SubsonicRequest request)
         {
-            this.Logger.Log(LogLevel.Critical, ":: Critial");
-            this.Logger.Log(LogLevel.Debug, ":: Debug");
-            this.Logger.Log(LogLevel.Error, ":: Error");
-            this.Logger.Log(LogLevel.Information, ":: Information");
-            this.Logger.Log(LogLevel.None, ":: None");
-            this.Logger.Log(LogLevel.Trace, ":: Trace");
-            this.Logger.Log(LogLevel.Warning, ":: Warning");
-
             var authResult = await this.AuthenticateUser(request);
             if (authResult != null)
             {
@@ -438,8 +433,13 @@ namespace Roadie.Api.Controllers
         [HttpGet("ping.view")]
         [HttpPost("ping.view")]
         [ProducesResponseType(200)]
-        public IActionResult Ping(SubsonicRequest request)
+        public async Task<IActionResult> Ping(SubsonicRequest request)
         {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
             if (request.IsJSONRequest)
             {
                 var result = this.SubsonicService.Ping(request);
@@ -496,17 +496,18 @@ namespace Roadie.Api.Controllers
         [HttpGet("stream.view")]
         [HttpPost("stream.view")]
         [ProducesResponseType(200)]
-        public async Task<FileStreamResult> StreamTrack(SubsonicRequest request)
+        public async Task<IActionResult> StreamTrack(SubsonicRequest request)
         {
             var authResult = await this.AuthenticateUser(request);
             if (authResult != null)
             {
-                Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                return Unauthorized();
             }
             var trackId = request.TrackId;
             if (trackId == null)
             {
-                Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                return NotFound("Invalid TrackId");
+                
             }
             return await base.StreamTrack(trackId.Value, this.TrackService, this.PlayActivityService, this.SubsonicUser);
         }
@@ -527,7 +528,28 @@ namespace Roadie.Api.Controllers
         private IActionResult BuildResponse(SubsonicRequest request, SubsonicOperationResult<Response> response = null, string responseType = null)
         {
             var acceptHeader = this.Request.Headers["Accept"];
-            this.Logger.LogTrace($"Subsonic Request: Method [{ this.Request.Method }], Accept Header [{ acceptHeader }], Path [{ this.Request.Path }], Query String [{ this.Request.QueryString }], Response Error Code [{ response?.ErrorCode }], Request [{ JsonConvert.SerializeObject(request) }] ResponseType [{ responseType }]");
+            string postBody = null;
+            string queryString = this.Request.QueryString.ToString();
+            string queryPath = this.Request.Path;
+            string method = this.Request.Method;
+
+            if (!this.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(this.Request.ContentType))
+            {
+                var formCollection = this.Request.Form;
+                var formDictionary = new Dictionary<string, object>();
+                if (formCollection != null && formCollection.Any())
+                {
+                    foreach (var form in formCollection)
+                    {
+                        if (!formDictionary.ContainsKey(form.Key))
+                        {
+                            formDictionary[form.Key] = form.Value.FirstOrDefault();
+                        }
+                    }
+                }
+                postBody = JsonConvert.SerializeObject(formDictionary);
+            }
+            this.Logger.LogTrace($"Subsonic Request: Method [{ method }], Accept Header [{ acceptHeader }], Path [{ queryPath }], Query String [{ queryString }], Posted Body [{ postBody }], Response Error Code [{ response?.ErrorCode }], Request [{ JsonConvert.SerializeObject(request) }] ResponseType [{ responseType }]");
             if (response?.ErrorCode.HasValue ?? false)
             {
                 return this.SendError(request, response);

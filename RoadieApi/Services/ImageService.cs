@@ -222,10 +222,18 @@ namespace Roadie.Api.Services
                 try
                 {
                     // See if artist images exists in artist folder
-                    var artistImages = Directory.GetFiles(artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder), "artist*.*");
-                    if (artistImages.Any())
+                    artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                    if (!Directory.Exists(artistFolder))
                     {
-                        imageBytes = File.ReadAllBytes(artistImages.First());
+                        this.Logger.LogWarning($"Artist Folder [{ artistFolder }], Not Found For Artist [{ artist.ToString() }]");
+                    }
+                    else
+                    {
+                        var artistImages = Directory.GetFiles(artistFolder, "artist*.*");
+                        if (artistImages.Any())
+                        {
+                            imageBytes = File.ReadAllBytes(artistImages.First());
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -424,19 +432,35 @@ namespace Roadie.Api.Services
                 }
                 byte[] imageBytes = null;
                 string artistFolder = null;
+                string releaseFolder = null;
                 try
                 {
                     // See if cover art file exists in release folder
                     artistFolder = release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
-                    var coverArtFiles = Directory.GetFiles(release.ReleaseFileFolder(artistFolder), "cover*.*");
-                    if (coverArtFiles.Any())
+                    if (!Directory.Exists(artistFolder))
                     {
-                        imageBytes = File.ReadAllBytes(coverArtFiles.First());
+                        this.Logger.LogWarning($"Artist Folder [{ artistFolder }], Not Found For Artist [{ release.Artist.ToString() }]");
+                    }
+                    else
+                    {
+                        releaseFolder = release.ReleaseFileFolder(artistFolder);
+                        if (!Directory.Exists(releaseFolder))
+                        {
+                            this.Logger.LogWarning($"Release Folder [{ releaseFolder }], Not Found For Release [{ release.ToString() }]");
+                        }
+                        else
+                        {
+                            var coverArtFiles = Directory.GetFiles(releaseFolder, "cover*.*");
+                            if (coverArtFiles.Any())
+                            {
+                                imageBytes = File.ReadAllBytes(coverArtFiles.First());
+                            }
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.LogError(ex, $"Error Reading Folder [{ artistFolder }] For Artist [{ release.Artist.Id }]");
+                    this.Logger.LogError(ex, $"Error Reading Release Folder [{ releaseFolder }] Artist Folder [{ artistFolder }] For Artist [{ release.Artist.Id }]");
                 }
                 imageBytes = imageBytes ?? release.Thumbnail;
                 var image = new data.Image

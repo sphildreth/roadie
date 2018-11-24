@@ -89,6 +89,10 @@ namespace Roadie.Api.ModelBinding
                         {
                             modelDictionary[form.Key] = form.Value.FirstOrDefault();
                         }
+                        else
+                        {
+                            modelDictionary.Add(form.Key, form.Value.FirstOrDefault());
+                        }
                     }
                 }
             }

@@ -8,6 +8,6 @@ namespace Roadie.Api.Services
 {
     public interface IPlaylistService
     {
-        Task<PagedResult<PlaylistList>> List(PagedRequest request, User roadieUser = null, Guid? artistId = null);
+        Task<PagedResult<PlaylistList>> List(PagedRequest request, User roadieUser = null);
     }
 }

@@ -29,25 +29,33 @@ namespace Roadie.Api.Services
         {
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<PlaylistList>> List(PagedRequest request, User roadieUser = null, Guid? artistId = null)
+        public async Task<Library.Models.Pagination.PagedResult<PlaylistList>> List(PagedRequest request, User roadieUser = null)
         {
             var sw = new Stopwatch();
             sw.Start();
 
+            int[] playlistWithArtistTrackIds = new int[0];
+            if(request.FilterToArtistId.HasValue)
+            {
+                playlistWithArtistTrackIds = (from pl in this.DbContext.Playlists
+                                          join pltr in this.DbContext.PlaylistTracks on pl.Id equals pltr.PlayListId
+                                          join t in this.DbContext.Tracks on pltr.TrackId equals t.Id
+                                          join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                          join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
+                                          join a in this.DbContext.Artists on r.ArtistId equals a.Id
+                                          where a.RoadieId == request.FilterToArtistId
+                                          select pl.Id
+                                         ).ToArray();
+            }
+
             var result = (from pl in this.DbContext.Playlists
-                          join pltr in this.DbContext.PlaylistTracks on pl.Id equals pltr.PlayListId
-                          join t in this.DbContext.Tracks on pltr.TrackId equals t.Id
-                          join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                          join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
-                          join a in this.DbContext.Artists on r.ArtistId equals a.Id
                           join u in this.DbContext.Users on pl.UserId equals u.Id
                           let duration = (from plt in this.DbContext.PlaylistTracks 
                                           join t in this.DbContext.Tracks on plt.TrackId equals t.Id
                                           select t.Duration).Sum()
                           where (request.FilterToPlaylistId == null || pl.RoadieId == request.FilterToPlaylistId)
-                          where (request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId)
+                          where (request.FilterToArtistId == null || playlistWithArtistTrackIds.Contains(pl.Id))
                           where ((roadieUser == null && pl.IsPublic) || (roadieUser != null && u.RoadieId == roadieUser.UserId || pl.IsPublic))
-                          where (artistId == null || (artistId != null && a.RoadieId == artistId))
                           where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
                                     pl.Name != null && pl.Name.Contains(request.FilterValue))
                           ))
@@ -57,6 +65,7 @@ namespace Roadie.Api.Services
                               {
                                   Text = pl.Name,
                                   Value = pl.RoadieId.ToString()
+                                  
                               },
                               User = new DataToken
                               {
@@ -71,7 +80,7 @@ namespace Roadie.Api.Services
                               UserThumbnail = MakeUserThumbnailImage(u.RoadieId),
                               Id = pl.RoadieId,
                               Thumbnail = MakePlaylistThumbnailImage(pl.RoadieId)
-                          }).Distinct();
+                          });
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Playlist.Text", "ASC" } }) : request.OrderValue(null);
             var rowCount = result.Count();
             var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();

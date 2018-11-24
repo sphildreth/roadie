@@ -239,6 +239,7 @@ namespace Roadie.Api.Services
                                         join p in this.DbContext.Playlists on plt.PlayListId equals p.Id
                                         join t in this.DbContext.Tracks on plt.TrackId equals t.Id
                                         where p.RoadieId == request.FilterToPlaylistId.Value
+                                        orderby plt.ListNumber
                                         select new {
                                             plt.ListNumber, t.Id
                                         }).Skip(request.SkipValue).Take(request.LimitValue).ToDictionary(x => x.Id, x => x.ListNumber);
@@ -467,6 +468,7 @@ namespace Roadie.Api.Services
             info.Bytes = trackBytes;
             return new OperationResult<TrackStreamInfo>
             {
+                IsSuccess = true,
                 Data = info
             };
         }

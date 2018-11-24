@@ -814,6 +814,8 @@ namespace Roadie.Api.Services
             {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid PlaylistId [{ request.id }]");
             }
+            // For a playlist to show all the tracks in the playlist set the limit to the playlist size
+            pagedRequest.Limit = playlist.PlaylistCount ?? pagedRequest.Limit;
             var tracksForPlaylist = await this.TrackService.List(roadieUser, pagedRequest);
             return new subsonic.SubsonicOperationResult<subsonic.Response>
             {
@@ -833,31 +835,37 @@ namespace Roadie.Api.Services
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPlaylists(subsonic.Request request, User roadieUser, string filterToUserName)
         {
-            var playlists = (from playlist in this.DbContext.Playlists
-                             join u in this.DbContext.Users on playlist.UserId equals u.Id
-                             let trackCount = (from pl in this.DbContext.PlaylistTracks
-                                               where pl.PlayListId == playlist.Id
-                                               select pl.Id).Count()
-                             let playListDuration = (from pl in this.DbContext.PlaylistTracks
-                                                     join t in this.DbContext.Tracks on pl.TrackId equals t.Id
-                                                     where pl.PlayListId == playlist.Id
-                                                     select t.Duration).Sum()
-                             where (playlist.IsPublic) || (roadieUser != null && playlist.UserId == roadieUser.Id)
-                             select new subsonic.Playlist
-                             {
-                                 id = playlist.RoadieId.ToString(),
-                                 name = playlist.Name,
-                                 comment = playlist.Description,
-                                 owner = u.UserName,
-                                 songCount = trackCount,
-                                 duration = playListDuration.ToSecondsFromMilliseconds(),
-                                 created = playlist.CreatedDate,
-                                 changed = playlist.LastUpdated ?? playlist.CreatedDate,
-                                 coverArt = this.MakePlaylistThumbnailImage(playlist.RoadieId).Url,
-                                 @public = playlist.IsPublic,
-                                 publicSpecified = playlist.IsPublic
-                             }
-                     );
+            //var playlists = (from playlist in this.DbContext.Playlists
+            //                 join u in this.DbContext.Users on playlist.UserId equals u.Id
+            //                 let trackCount = (from pl in this.DbContext.PlaylistTracks
+            //                                   where pl.PlayListId == playlist.Id
+            //                                   select pl.Id).Count()
+            //                 let playListDuration = (from pl in this.DbContext.PlaylistTracks
+            //                                         join t in this.DbContext.Tracks on pl.TrackId equals t.Id
+            //                                         where pl.PlayListId == playlist.Id
+            //                                         select t.Duration).Sum()
+            //                 where (playlist.IsPublic) || (roadieUser != null && playlist.UserId == roadieUser.Id)
+            //                 select new subsonic.Playlist
+            //                 {
+            //                     id = playlist.RoadieId.ToString(),
+            //                     name = playlist.Name,
+            //                     comment = playlist.Description,
+            //                     owner = u.UserName,
+            //                     songCount = trackCount,
+            //                     duration = playListDuration.ToSecondsFromMilliseconds(),
+            //                     created = playlist.CreatedDate,
+            //                     changed = playlist.LastUpdated ?? playlist.CreatedDate,
+            //                     coverArt = this.MakePlaylistThumbnailImage(playlist.RoadieId).Url,
+            //                     @public = playlist.IsPublic,
+            //                     publicSpecified = playlist.IsPublic
+            //                 }
+            //         );
+
+            var pagedRequest = request.PagedRequest;
+            pagedRequest.Sort = "Playlist.Text";
+            pagedRequest.Order = "ASC";
+            var playlistResult = await this.PlaylistService.List(pagedRequest, roadieUser);
+
 
             return new subsonic.SubsonicOperationResult<subsonic.Response>
             {
@@ -869,7 +877,7 @@ namespace Roadie.Api.Services
                     ItemElementName = subsonic.ItemChoiceType.playlists,
                     Item = new subsonic.Playlists
                     {
-                        playlist = playlists.ToArray()
+                        playlist = this.SubsonicPlaylistsForPlaylists(playlistResult.Rows)
                     }
                 }
             };
@@ -1518,12 +1526,21 @@ namespace Roadie.Api.Services
             return tracks.Select(x => this.SubsonicChildForTrack(x)).ToArray();
         }
 
-        private subsonic.Playlist SubsonicPlaylistForPlaylist(Library.Models.Playlists.PlaylistList playlist, IEnumerable<TrackList> playlistTracks)
+        private subsonic.Playlist[] SubsonicPlaylistsForPlaylists(IEnumerable<Library.Models.Playlists.PlaylistList> playlists)
+        {
+            if (playlists == null || !playlists.Any())
+            {
+                return new subsonic.Playlist[0];
+            }
+            return playlists.Select(x => this.SubsonicPlaylistForPlaylist(x)).ToArray();
+        }
+
+        private subsonic.Playlist SubsonicPlaylistForPlaylist(Library.Models.Playlists.PlaylistList playlist, IEnumerable<TrackList> playlistTracks = null)
         {
             return new subsonic.PlaylistWithSongs
             {
                 coverArt = this.MakePlaylistThumbnailImage(playlist.Id).Url,
-                allowedUser = this.AllowedUsers(),
+                allowedUser = playlist.IsPublic ? this.AllowedUsers() : null,
                 changed = playlist.LastUpdated ?? playlist.CreatedDate ?? DateTime.UtcNow,
                 created = playlist.CreatedDate ?? DateTime.UtcNow,
                 duration = playlist.Duration ?? 0,

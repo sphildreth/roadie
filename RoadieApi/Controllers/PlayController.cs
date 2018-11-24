@@ -66,7 +66,7 @@ namespace Roadie.Api.Controllers
         }
 
         [HttpGet("track/{id}.{mp3?}")]
-        public async Task<FileStreamResult> StreamTrack(Guid id)
+        public async Task<IActionResult> StreamTrack(Guid id)
         {
             return await base.StreamTrack(id, this.TrackService, this.PlayActivityService);
         }

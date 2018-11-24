@@ -136,6 +136,21 @@ namespace Roadie.Api.Services
                                    where g.Name == request.FilterByGenre
                                    select rg.ReleaseId).ToArray();
             }
+            if(request.FilterFromYear.HasValue || request.FilterToYear.HasValue)
+            {
+                // If from is larger than to then reverse values and set sort order to desc
+                if(request.FilterToYear > request.FilterFromYear)
+                {
+                    var t = request.FilterToYear;
+                    request.FilterToYear = request.FilterFromYear;
+                    request.FilterFromYear = t;
+                    request.Order = "DESC";
+                }
+                else
+                {
+                    request.Order = "ASC";
+                }
+            }
             var result = (from r in this.DbContext.Releases.Include("Artist")
                           join a in this.DbContext.Artists on r.ArtistId equals a.Id
                           where (request.FilterMinimumRating == null || r.Rating >= request.FilterMinimumRating.Value)
