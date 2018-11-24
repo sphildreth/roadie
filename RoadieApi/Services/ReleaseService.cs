@@ -16,6 +16,8 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
@@ -321,6 +323,63 @@ namespace Roadie.Api.Services
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
+            };
+        }
+
+        public async Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id)
+        {
+            var release = this.GetRelease(id);
+            if (release == null)
+            {
+                return new FileOperationResult<byte[]>(true, string.Format("Release Not Found [{0}]", id));
+            }
+
+            byte[] zipBytes = null;
+            string zipFileName = null;
+            try
+            {
+                var artistFolder = release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                var releaseFolder = release.ReleaseFileFolder(artistFolder);
+                if(!Directory.Exists(releaseFolder))
+                {
+                    this.Logger.LogCritical($"Release Folder [{ releaseFolder }] not found for Release `{ release }`");
+                    return new FileOperationResult<byte[]>(true, string.Format("Release Folder Not Found [{0}]", id));
+                }
+                var releaseFiles = Directory.GetFiles(releaseFolder);
+                using (MemoryStream zipStream = new MemoryStream())
+                {
+                    using (ZipArchive zip = new ZipArchive(zipStream, ZipArchiveMode.Create))
+                    {
+                        foreach (var releaseFile in releaseFiles)
+                        {
+                            var fileInfo = new FileInfo(releaseFile);
+                            if (fileInfo.Extension.ToLower() == ".mp3" || fileInfo.Extension.ToLower() == ".jpg")
+                            {
+                                ZipArchiveEntry entry = zip.CreateEntry(fileInfo.Name);
+                                using (Stream entryStream = entry.Open())
+                                {
+                                    using (FileStream s = fileInfo.OpenRead())
+                                    {
+                                        s.CopyTo(entryStream);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    zipBytes = zipStream.ToArray();
+                }
+                zipFileName = $"{ release.Artist.Name }_{release.Title}.zip".ToFileNameFriendly();
+                this.Logger.LogInformation($"User `{ roadieUser }` downloaded Release `{ release }` ZipFileName [{ zipFileName }], Zip Size [{ zipBytes?.Length }]");
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex, "Error creating zip for Release `{0}`", release.ToString());
+            }
+            return new FileOperationResult<byte[]>
+            {
+                IsSuccess = zipBytes != null,
+                Data = zipBytes,
+                AdditionalData = new Dictionary<string, object> {{ "ZipFileName", zipFileName }}
             };
         }
 

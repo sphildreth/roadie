@@ -137,6 +137,18 @@ namespace Roadie.Library.Data
             return false;
         }
 
+        public int? ReleaseYear
+        {
+            get
+            {
+                if(this.ReleaseDate.HasValue)
+                {
+                    return this.ReleaseDate.Value.Year;
+                }
+                return null;
+            }
+        }
+
         /// <summary>
         /// Return this releases file folder for the given artist folder
         /// </summary>
@@ -149,7 +161,7 @@ namespace Roadie.Library.Data
 
         public override string ToString()
         {
-            return string.Format("Id [{0}], Title [{1}], Release Date [{2}]", this.Id, this.Title, this.ReleaseDate);
+            return $"Id [{ this.Id }], Title [{ this.Title }], Release Date [{this.ReleaseYear}]";
         }
     }
 }

@@ -225,7 +225,7 @@ namespace Roadie.Api.Services
                     artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
                     if (!Directory.Exists(artistFolder))
                     {
-                        this.Logger.LogWarning($"Artist Folder [{ artistFolder }], Not Found For Artist [{ artist.ToString() }]");
+                        this.Logger.LogWarning($"Artist Folder [{ artistFolder }], Not Found For Artist `{ artist.ToString() }`");
                     }
                     else
                     {
@@ -439,14 +439,14 @@ namespace Roadie.Api.Services
                     artistFolder = release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
                     if (!Directory.Exists(artistFolder))
                     {
-                        this.Logger.LogWarning($"Artist Folder [{ artistFolder }], Not Found For Artist [{ release.Artist.ToString() }]");
+                        this.Logger.LogWarning($"Artist Folder [{ artistFolder }], Not Found For Artist `{ release.Artist.ToString() }`");
                     }
                     else
                     {
                         releaseFolder = release.ReleaseFileFolder(artistFolder);
                         if (!Directory.Exists(releaseFolder))
                         {
-                            this.Logger.LogWarning($"Release Folder [{ releaseFolder }], Not Found For Release [{ release.ToString() }]");
+                            this.Logger.LogWarning($"Release Folder [{ releaseFolder }], Not Found For Release `{ release.ToString() }`");
                         }
                         else
                         {
@@ -460,7 +460,7 @@ namespace Roadie.Api.Services
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.LogError(ex, $"Error Reading Release Folder [{ releaseFolder }] Artist Folder [{ artistFolder }] For Artist [{ release.Artist.Id }]");
+                    this.Logger.LogError(ex, $"Error Reading Release Folder [{ releaseFolder }] Artist Folder [{ artistFolder }] For Artist `{ release.Artist.Id }`");
                 }
                 imageBytes = imageBytes ?? release.Thumbnail;
                 var image = new data.Image

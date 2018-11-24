@@ -32,13 +32,15 @@ namespace Roadie.Api.Controllers
         private Library.Models.Users.User SubsonicUser { get; set; }
 
         private ITrackService TrackService { get; }
+        private IReleaseService ReleaseService { get; }
 
-        public SubsonicController(ISubsonicService subsonicService, ITrackService trackService, IPlayActivityService playActivityService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+        public SubsonicController(ISubsonicService subsonicService, ITrackService trackService, IReleaseService releaseService, IPlayActivityService playActivityService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
             this.Logger = logger.CreateLogger("RoadieApi.Controllers.SubsonicController");
             this.SubsonicService = subsonicService;
             this.TrackService = trackService;
+            this.ReleaseService = releaseService;
             this.PlayActivityService = playActivityService;
         }
 
@@ -553,6 +555,37 @@ namespace Roadie.Api.Controllers
             }
             return await base.StreamTrack(trackId.Value, this.TrackService, this.PlayActivityService, this.SubsonicUser);
         }
+
+
+        [HttpGet("download.view")]
+        [HttpPost("download.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> Download(SubsonicRequest request)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return Unauthorized();
+            }
+            var trackId = request.TrackId;
+            if (trackId != null)
+            {
+                return await base.StreamTrack(trackId.Value, this.TrackService, this.PlayActivityService, this.SubsonicUser);
+            }
+            var releaseId = request.ReleaseId;
+            if(releaseId != null)
+            {
+                var releaseZip = await this.ReleaseService.ReleaseZipped(this.SubsonicUser, releaseId.Value);
+                if(!releaseZip.IsSuccess)
+                {
+                    return NotFound("Unknown Release id");
+                }
+                return File(releaseZip.Data, "application/zip",(string)releaseZip.AdditionalData["ZipFileName"]);
+                
+            }
+            return NotFound($"Unknown download id `{ request.id }`"); 
+        }
+
 
         private async Task<IActionResult> AuthenticateUser(SubsonicRequest request)
         {

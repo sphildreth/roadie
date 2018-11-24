@@ -35,6 +35,7 @@ namespace Roadie.Api.Services
         public const string SubsonicVersion = "1.16.1";
 
         private IArtistService ArtistService { get; }
+        private ICollectionService CollectionService { get; }
         private IImageService ImageService { get; }
         private IPlaylistService PlaylistService { get; }
         private IReleaseService ReleaseService { get; }
@@ -58,11 +59,12 @@ namespace Roadie.Api.Services
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
             this.ArtistService = artistService;
+            this.CollectionService = collectionService;
+            this.ImageService = imageService;
+            this.PlaylistService = playlistService;
             this.ReleaseService = releaseService;
             this.TrackService = trackService;
-            this.ImageService = imageService;
             this.UserManger = userManager;
-            this.PlaylistService = playlistService;
         }
 
         /// <summary>
@@ -140,15 +142,6 @@ namespace Roadie.Api.Services
                 this.Logger.LogError(ex, "Subsonic.Authenticate, Error CheckPassword [" + JsonConvert.SerializeObject(request) + "]");
             }
             return null;
-        }
-
-        /// <summary>
-        /// Downloads a given media file. Similar to stream, but this method returns the original media data without transcoding or downsampling.
-        /// </summary>
-        public async Task<subsonic.SubsonicFileOperationResult<subsonic.Response>> Download(subsonic.Request request, User roadieUser)
-        {
-            // TODO
-            throw new NotImplementedException();
         }
 
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetAlbum(subsonic.Request request, User roadieUser)
@@ -400,20 +393,29 @@ namespace Roadie.Api.Services
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetArtists(subsonic.Request request, User roadieUser)
         {
             var indexes = new List<subsonic.IndexID3>();
-            // Indexes for Artists alphabetically
+            var musicFolder = this.MusicFolders().FirstOrDefault(x => x.id == (request.MusicFolderId ?? 2));
             var pagedRequest = request.PagedRequest;
-            pagedRequest.SkipValue = 0;
-            pagedRequest.Limit = int.MaxValue;
-            pagedRequest.Sort = "Artist.Text";
-            var artistList = await this.ArtistService.List(roadieUser, pagedRequest);
-            foreach (var artistGroup in artistList.Rows.GroupBy(x => x.Artist.Text.Substring(0, 1)))
+            if (musicFolder == this.CollectionMusicFolder())
             {
-                indexes.Add(new subsonic.IndexID3
+                // Indexes for "Collection" Artists alphabetically
+                // not sure what to do here since this is albums not artists in a "Collection".
+            }
+            else
+            {
+                // Indexes for "Music" Artists alphabetically
+                pagedRequest.SkipValue = 0;
+                pagedRequest.Limit = int.MaxValue;
+                pagedRequest.Sort = "Artist.Text";
+                var artistList = await this.ArtistService.List(roadieUser, pagedRequest);
+                foreach (var artistGroup in artistList.Rows.GroupBy(x => x.Artist.Text.Substring(0, 1)))
                 {
-                    name = artistGroup.Key,
-                    artist = this.SubsonicArtistID3sForArtists(artistGroup)
-                });
-            };
+                    indexes.Add(new subsonic.IndexID3
+                    {
+                        name = artistGroup.Key,
+                        artist = this.SubsonicArtistID3sForArtists(artistGroup)
+                    });
+                };
+            }
             return new subsonic.SubsonicOperationResult<subsonic.Response>
             {
                 IsSuccess = true,
@@ -836,37 +838,10 @@ namespace Roadie.Api.Services
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPlaylists(subsonic.Request request, User roadieUser, string filterToUserName)
         {
-            //var playlists = (from playlist in this.DbContext.Playlists
-            //                 join u in this.DbContext.Users on playlist.UserId equals u.Id
-            //                 let trackCount = (from pl in this.DbContext.PlaylistTracks
-            //                                   where pl.PlayListId == playlist.Id
-            //                                   select pl.Id).Count()
-            //                 let playListDuration = (from pl in this.DbContext.PlaylistTracks
-            //                                         join t in this.DbContext.Tracks on pl.TrackId equals t.Id
-            //                                         where pl.PlayListId == playlist.Id
-            //                                         select t.Duration).Sum()
-            //                 where (playlist.IsPublic) || (roadieUser != null && playlist.UserId == roadieUser.Id)
-            //                 select new subsonic.Playlist
-            //                 {
-            //                     id = playlist.RoadieId.ToString(),
-            //                     name = playlist.Name,
-            //                     comment = playlist.Description,
-            //                     owner = u.UserName,
-            //                     songCount = trackCount,
-            //                     duration = playListDuration.ToSecondsFromMilliseconds(),
-            //                     created = playlist.CreatedDate,
-            //                     changed = playlist.LastUpdated ?? playlist.CreatedDate,
-            //                     coverArt = this.MakePlaylistThumbnailImage(playlist.RoadieId).Url,
-            //                     @public = playlist.IsPublic,
-            //                     publicSpecified = playlist.IsPublic
-            //                 }
-            //         );
-
             var pagedRequest = request.PagedRequest;
             pagedRequest.Sort = "Playlist.Text";
             pagedRequest.Order = "ASC";
             var playlistResult = await this.PlaylistService.List(pagedRequest, roadieUser);
-
 
             return new subsonic.SubsonicOperationResult<subsonic.Response>
             {
@@ -1624,6 +1599,11 @@ namespace Roadie.Api.Services
             return this.MusicFolders().First(x => x.id == 1);
         }
 
+        private subsonic.MusicFolder MusicMusicFolder()
+        {
+            return this.MusicFolders().First(x => x.id == 2);
+        }
+
         private List<subsonic.MusicFolder> MusicFolders()
         {
             return new List<subsonic.MusicFolder>
@@ -1886,9 +1866,9 @@ namespace Roadie.Api.Services
                 adminRole = isAdmin,
                 avatarLastChanged = user.LastUpdated ?? user.CreatedDate ?? DateTime.UtcNow,
                 avatarLastChangedSpecified = user.LastUpdated.HasValue,
-                commentRole = false, // TODO set to yes when commenting is enabled
+                commentRole = true, 
                 coverArtRole = isEditor || isAdmin,
-                downloadRole = false, // Disable downloads
+                downloadRole = isEditor || isAdmin, // Disable downloads
                 email = user.Email,
                 jukeboxRole = true,
                 maxBitRate = 320,
@@ -1897,7 +1877,7 @@ namespace Roadie.Api.Services
                 podcastRole = false, // Disable podcast nonsense
                 scrobblingEnabled = false, // Disable scrobbling
                 settingsRole = isAdmin,
-                shareRole = false, // Disable sharing
+                shareRole = false, // TODO enabled when sharing is implmeneted
                 streamRole = true,
                 uploadRole = true,
                 username = user.UserName,

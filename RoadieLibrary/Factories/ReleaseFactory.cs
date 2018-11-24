@@ -280,7 +280,7 @@ namespace Roadie.Library.Factories
                         }
                     }
 
-                    this.Logger.LogInformation("Added New Release: [{0}]", release.ToString());
+                    this.Logger.LogInformation("Added New Release: `{0}`", release.ToString());
                 }
             }
             catch (Exception ex)
@@ -521,7 +521,7 @@ namespace Roadie.Library.Factories
                 sw.Stop();
                 if (release == null || !release.IsValid)
                 {
-                    this._logger.LogInformation("ReleaseFactory: Release Not Found For Artist [{0}] MetaData [{1}]", artist.ToString(), metaData.ToString());
+                    this._logger.LogInformation("ReleaseFactory: Release Not Found For Artist `{0}` MetaData [{1}]", artist.ToString(), metaData.ToString());
                     if (doFindIfNotInDatabase)
                     {
                         OperationResult<Data.Release> releaseSearch = new OperationResult<Data.Release>();
@@ -1367,7 +1367,7 @@ namespace Roadie.Library.Factories
                 var releaseDirectory = new DirectoryInfo(releasePath);
                 if (!Directory.Exists(releasePath))
                 {
-                    this.Logger.LogWarning("Unable To Find Release Folder [{0}] For Release [{1}]", releasePath, release.ToString());
+                    this.Logger.LogWarning("Unable To Find Release Folder [{0}] For Release `{1}`", releasePath, release.ToString());
                 }
                 var now = DateTime.UtcNow;
 
@@ -1382,7 +1382,7 @@ namespace Roadie.Library.Factories
 
                         if (!File.Exists(trackPath))
                         {
-                            this.Logger.LogWarning("Track [{0}], File [{1}] Not Found.", existingTrack.ToString(), trackPath);
+                            this.Logger.LogWarning("Track `{0}`, File [{1}] Not Found.", existingTrack.ToString(), trackPath);
                             if (!doJustInfo)
                             {
                                 existingTrack.UpdateTrackMissingFile(now);
@@ -1561,13 +1561,13 @@ namespace Roadie.Library.Factories
                         }
                         else
                         {
-                            this.Logger.LogWarning("Release Track File Has Invalid MetaData [{0}]", audioMetaData.ToString());
+                            this.Logger.LogWarning("Release Track File Has Invalid MetaData `{0}`", audioMetaData.ToString());
                         }
                     }
                 }
                 else
                 {
-                    this.Logger.LogWarning("Unable To Find Releaes Path [{0}] For Release [{1}]", releasePath, release.ToString());
+                    this.Logger.LogWarning("Unable To Find Releaes Path [{0}] For Release `{1}`", releasePath, release.ToString());
                 }
                 var releaseMediaNumbersFound = new List<short?>();
                 foreach (var kp in releaseMediaTracksFound)
@@ -1633,7 +1633,7 @@ namespace Roadie.Library.Factories
                 }
 
                 sw.Stop();
-                this.Logger.LogInformation("Scanned Release [{0}] Folder [{1}], Modified Release [{2}], OperationTime [{3}]", release.ToString(), releasePath, modifiedRelease, sw.ElapsedMilliseconds);
+                this.Logger.LogInformation("Scanned Release `{0}` Folder [{1}], Modified Release [{2}], OperationTime [{3}]", release.ToString(), releasePath, modifiedRelease, sw.ElapsedMilliseconds);
                 result = true;
             }
             catch (Exception ex)
