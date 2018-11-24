@@ -19,5 +19,12 @@ namespace Roadie.Library.Data
         [Column("userId")]
         [Required]
         public int UserId { get; set; }
+
+        [Column("position")]
+        public int? Position { get; set; }
+
+        [Column("Comment")]
+        [MaxLength(4000)]
+        public string Comment { get; set; }
     }
 }

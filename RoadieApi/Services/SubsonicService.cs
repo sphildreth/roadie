@@ -27,6 +27,7 @@ namespace Roadie.Api.Services
     /// Subsonic API emulator for Roadie. Enables Subsonic clients to work with Roadie.
     /// <seealso cref="http://www.subsonic.org/pages/inc/api/schema/subsonic-rest-api-1.16.1.xsd">
     /// <seealso cref="http://www.subsonic.org/pages/api.jsp#getIndexes"/>
+    /// <seealso cref="https://www.reddit.com/r/subsonic/comments/7c2n6j/database_table_schema/"/>
     /// <!-- Generated the classes from the schema above using 'xsd subsonic-rest-api-1.16.1.xsd /c /f /n:Roadie.Library.Models.Subsonic' from Visual Studio Command Prompt -->
     /// </summary>
     public class SubsonicService : ServiceBase, ISubsonicService
@@ -1261,28 +1262,350 @@ namespace Roadie.Api.Services
         /// <summary>
         /// Attaches a star to a song, album or artist.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> Star(subsonic.Request request, User roadieUser, string albumId, string artistId)
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> ToggleStar(subsonic.Request request, User roadieUser, bool star, string[] albumIds = null, string[] artistIds = null)
         {
-            // TODO
-            throw new NotImplementedException();
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.UserIsNotAuthorizedForGivenOperation, $"Invalid User [{ roadieUser }]");
+            }
+
+            // Id can be a song, album or artist
+            if (request.TrackId.HasValue)
+            {
+                var starResult = await this.ToggleTrackStar(request.TrackId.Value, user, star);
+                if(starResult.IsSuccess)
+                {
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    {
+                        IsSuccess = true,
+                        Data = new subsonic.Response()
+                    };
+                }
+            }
+            else if( request.ReleaseId.HasValue)
+            {
+                var starResult = await this.ToggleReleaseStar(request.ReleaseId.Value, user, star);
+                if (starResult.IsSuccess)
+                {
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    {
+                        IsSuccess = true,
+                        Data = new subsonic.Response()
+                    };
+                }
+            }
+            else if(request.ArtistId.HasValue)
+            {
+                var starResult = await this.ToggleArtistStar(request.ArtistId.Value, user, star);
+                if (starResult.IsSuccess)
+                {
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    {
+                        IsSuccess = true,
+                        Data = new subsonic.Response()
+                    };
+                }
+            }
+            else if(albumIds != null && albumIds.Any())
+            {
+                foreach(var rId in albumIds)
+                {
+                    var releaseId = SafeParser.ToGuid(rId);
+                    if(releaseId.HasValue)
+                    {
+                        var starResult = await this.ToggleReleaseStar(releaseId.Value, user, star);
+                        if (!starResult.IsSuccess)
+                        {
+                            return new subsonic.SubsonicOperationResult<subsonic.Response>(starResult.ErrorCode.Value, starResult.Messages.FirstOrDefault());
+                        }
+                    }
+                }
+            }
+            else if(artistIds != null && artistIds.Any())
+            {
+                foreach (var aId in artistIds)
+                {
+                    var artistId = SafeParser.ToGuid(aId);
+                    if (artistId.HasValue)
+                    {
+                        var starResult = await this.ToggleReleaseStar(artistId.Value, user, star);
+                        if (!starResult.IsNotFoundResult)
+                        {
+                            return new subsonic.SubsonicOperationResult<subsonic.Response>(starResult.ErrorCode.Value, starResult.Messages.FirstOrDefault());
+                        }
+                    }
+                }
+            }
+            return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Unknown Star Id [{ JsonConvert.SerializeObject(request) }]");
+        }
+
+        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleTrackStar(Guid trackId, ApplicationUser user, bool starred)
+        {
+            var track = this.GetTrack(trackId);
+            if (track == null)
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{ trackId }]");
+            }
+            var userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
+            if (userTrack == null)
+            {
+                userTrack = new data.UserTrack
+                {
+                    IsFavorite = true,
+                    UserId = user.Id,
+                    TrackId = track.Id
+                };
+                this.DbContext.UserTracks.Add(userTrack);
+            }
+            else
+            {
+                userTrack.IsFavorite = starred;
+                userTrack.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(track.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleReleaseStar(Guid releaseId, ApplicationUser user, bool starred)
+        {
+            var release = this.GetRelease(releaseId);
+            if (release == null)
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release Id [{ releaseId }]");
+            }
+            var userRelease = user.ReleaseRatings.FirstOrDefault(x => x.ReleaseId == release.Id);
+            if (userRelease == null)
+            {
+                userRelease = new data.UserRelease
+                {
+                    IsFavorite = true,
+                    UserId = user.Id,
+                    ReleaseId = release.Id
+                };
+                this.DbContext.UserReleases.Add(userRelease);
+            }
+            else
+            {
+                userRelease.IsFavorite = starred;
+                userRelease.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(release.CacheRegion);
+            this.CacheManager.ClearRegion(release.Artist.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleArtistStar(Guid artistId, ApplicationUser user, bool starred)
+        {
+            var artist = this.GetArtist(artistId);
+            if (artist == null)
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Artist Id [{ artistId }]");
+            }
+            var userArtist = user.ArtistRatings.FirstOrDefault(x => x.ArtistId == artist.Id);
+            if (userArtist == null)
+            {
+                userArtist = new data.UserArtist
+                {
+                    IsFavorite = true,
+                    UserId = user.Id,
+                    ArtistId = artist.Id
+                };
+                this.DbContext.UserArtists.Add(userArtist);
+            }
+            else
+            {
+                userArtist.IsFavorite = starred;
+                userArtist.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(artist.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+        
+        private async Task<subsonic.SubsonicOperationResult<bool>> SetTrackRating(Guid trackId, ApplicationUser user, short rating)
+        {
+            var track = this.GetTrack(trackId);
+            if (track == null)
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{ trackId }]");
+            }
+            var userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
+            if (userTrack == null)
+            {
+                userTrack = new data.UserTrack
+                {
+                    Rating = rating,
+                    UserId = user.Id,
+                    TrackId = track.Id
+                };
+                this.DbContext.UserTracks.Add(userTrack);
+            }
+            else
+            {
+                userTrack.Rating = rating;
+                userTrack.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(track.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+        private async Task<subsonic.SubsonicOperationResult<bool>> SetReleaseRating(Guid releaseId, ApplicationUser user, short rating)
+        {
+            var release = this.GetRelease(releaseId);
+            if (release == null)
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release Id [{ releaseId }]");
+            }
+            var userRelease = user.ReleaseRatings.FirstOrDefault(x => x.ReleaseId == release.Id);
+            if (userRelease == null)
+            {
+                userRelease = new data.UserRelease
+                {
+                    Rating = rating,
+                    UserId = user.Id,
+                    ReleaseId = release.Id
+                };
+                this.DbContext.UserReleases.Add(userRelease);
+            }
+            else
+            {
+                userRelease.Rating = rating;
+                userRelease.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(release.CacheRegion);
+            this.CacheManager.ClearRegion(release.Artist.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+        private async Task<subsonic.SubsonicOperationResult<bool>> SetArtistRating(Guid artistId, ApplicationUser user, short rating)
+        {
+            var artist = this.GetArtist(artistId);
+            if (artist == null)
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Artist Id [{ artistId }]");
+            }
+            var userArtist = user.ArtistRatings.FirstOrDefault(x => x.ArtistId == artist.Id);
+            if (userArtist == null)
+            {
+                userArtist = new data.UserArtist
+                {
+                    Rating = rating,
+                    UserId = user.Id,
+                    ArtistId = artist.Id
+                };
+                this.DbContext.UserArtists.Add(userArtist);
+            }
+            else
+            {
+                userArtist.Rating = rating;
+                userArtist.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(artist.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
         }
 
         /// <summary>
         /// Removes the star from a song, album or artist.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> UnStar(subsonic.Request request, User roadieUser, string albumId, string artistId)
-        {
-            // TODO
-            throw new NotImplementedException();
-        }
 
         /// <summary>
         /// Sets the rating for a music file. If rating is zero then remove rating.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> SetRating(subsonic.Request request, User roadieUser, short rating)
         {
-            // TODO
-            throw new NotImplementedException();
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.UserIsNotAuthorizedForGivenOperation, $"Invalid User [{ roadieUser }]");
+            }
+
+            // Id can be a song, album or artist
+            if (request.TrackId.HasValue)
+            {
+                var starResult = await this.SetTrackRating(request.TrackId.Value, user, rating);
+                if (starResult.IsSuccess)
+                {
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    {
+                        IsSuccess = true,
+                        Data = new subsonic.Response()
+                    };
+                }
+            }
+            else if (request.ReleaseId.HasValue)
+            {
+                var starResult = await this.SetReleaseRating(request.ReleaseId.Value, user, rating);
+                if (starResult.IsSuccess)
+                {
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    {
+                        IsSuccess = true,
+                        Data = new subsonic.Response()
+                    };
+                }
+            }
+            else if (request.ArtistId.HasValue)
+            {
+                var starResult = await this.SetArtistRating(request.ArtistId.Value, user, rating);
+                if (starResult.IsSuccess)
+                {
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    {
+                        IsSuccess = true,
+                        Data = new subsonic.Response()
+                    };
+                }
+            }
+            return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Unknown Star Id [{ JsonConvert.SerializeObject(request) }]");
+
         }
 
 
@@ -1290,7 +1613,7 @@ namespace Roadie.Api.Services
 
         private string[] AllowedUsers()
         {
-            return this.CacheManager.Get<string[]>("urn:system:active_usernames", () =>
+            return this.CacheManager.Get<string[]>(CacheManagerBase.SystemCacheRegionUrn + ":active_usernames", () =>
             {
                 return this.DbContext.Users.Where(x => x.IsActive ?? false).Select(x => x.UserName).ToArray();
             }, CacheManagerBase.SystemCacheRegionUrn);

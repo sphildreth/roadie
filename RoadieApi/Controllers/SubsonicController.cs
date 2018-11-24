@@ -56,6 +56,48 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result, "album");
         }
 
+        [HttpGet("star.view")]
+        [HttpPost("star.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> Star(SubsonicRequest request, string[] albumId, string[] artistId)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.ToggleStar(request, this.SubsonicUser, true, albumId, artistId);
+            return this.BuildResponse(request, result);
+        }
+
+        [HttpGet("unstar.view")]
+        [HttpPost("unstar.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> UnStar(SubsonicRequest request, string[] albumId, string[] artistId)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.ToggleStar(request, this.SubsonicUser, false, albumId, artistId);
+            return this.BuildResponse(request, result);
+        }
+
+        [HttpGet("setRating.view")]
+        [HttpPost("setRating.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetRating(SubsonicRequest request, short rating)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.SetRating(request, this.SubsonicUser, rating);
+            return this.BuildResponse(request, result);
+        }
+
         [HttpGet("getAlbumInfo.view")]
         [HttpPost("getAlbumInfo.view")]
         [ProducesResponseType(200)]
