@@ -217,7 +217,7 @@ namespace Roadie.Api.Services
             return result;
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<TrackList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null)
+        public async Task<Library.Models.Pagination.PagedResult<TrackList>> List(PagedRequest request, User roadieUser, bool? doRandomize = false, Guid? releaseId = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -268,7 +268,6 @@ namespace Roadie.Api.Services
                 randomLimit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
                 var sql = $"SELECT t.* FROM `track` t WHERE t.Hash IS NOT NULL ORDER BY RAND() LIMIT {randomLimit}";
                 randomTrackIds = this.DbContext.Tracks.FromSql(sql).Select(x => x.Id).ToArray();
-
             }
             Guid?[] filterToTrackIds = null;
             if(request.FilterToTrackId.HasValue || request.FilterToTrackIds != null)

@@ -12,7 +12,7 @@ namespace Roadie.Api.Services
     {
         Task<OperationResult<Track>> ById(User roadieUser, Guid id, IEnumerable<string> includes);
 
-        Task<Library.Models.Pagination.PagedResult<TrackList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null);
+        Task<Library.Models.Pagination.PagedResult<TrackList>> List(PagedRequest request, User roadieUser, bool? doRandomize = false, Guid? releaseId = null);
 
         Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes);
     }

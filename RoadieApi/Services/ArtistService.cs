@@ -370,23 +370,23 @@ namespace Roadie.Api.Services
             }
             if(rows.Any() && (doArtistCounts ?? true))
             {
-                var rowArtistIds = rows.Select(x => x.DatabaseId);
+                var rowArtistIds = rows.Select(x => x.DatabaseId).ToArray();
                 var artistReleases = (from a in this.DbContext.Artists
                                       join r in this.DbContext.Releases on a.Id equals r.ArtistId
-                                      where a.ReleaseCount > 0
-                                      where r.TrackCount > 0
                                       where rowArtistIds.Contains(a.Id)
                                       select new
                                       {
-                                          r.Id,
+                                          artistId = a.Id,
+                                          releaseId = r.Id,
                                           r.TrackCount,
                                           r.PlayedCount
-                                      }).ToList();
+                                      }).ToArray();
                 foreach(var row in rows)
                 {
-                    row.ArtistReleaseCount = artistReleases.Where(r => r.Id == row.DatabaseId).Select(r => r.Id).Count();
-                    row.ArtistTrackCount = artistReleases.Where(r => r.Id == row.DatabaseId).Sum(r => r.TrackCount);
-                    row.ArtistPlayedCount = artistReleases.Where(r => r.Id == row.DatabaseId).Sum(r => r.PlayedCount);
+                    var rowArtistReleases = artistReleases.Where(r => r.artistId == row.DatabaseId);
+                    row.ArtistReleaseCount = rowArtistReleases.Select(r => r.releaseId).Count();
+                    row.ArtistTrackCount = rowArtistReleases.Sum(r => r.TrackCount);
+                    row.ArtistPlayedCount = rowArtistReleases.Sum(r => r.PlayedCount);
                 }
             }
             if (rows.Any() && roadieUser != null)
@@ -400,7 +400,8 @@ namespace Roadie.Api.Services
                         {
                             IsDisliked = userArtistRating.IsDisliked ?? false,
                             IsFavorite = userArtistRating.IsFavorite ?? false,
-                            Rating = userArtistRating.Rating
+                            Rating = userArtistRating.Rating,
+                            RatedDate = userArtistRating.LastUpdated ?? userArtistRating.CreatedDate
                         };
                     }
                 }

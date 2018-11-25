@@ -37,7 +37,7 @@ namespace Roadie.Api.Services
             this.PlayActivityHub = playHubContext;
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<PlayActivityList>> List(PagedRequest request, User roadieUser = null)
+        public async Task<Library.Models.Pagination.PagedResult<PlayActivityList>> List(PagedRequest request, User roadieUser = null, DateTime? newerThan = null)
         {
             try
             {
@@ -52,6 +52,7 @@ namespace Roadie.Api.Services
                               join usertrack in this.DbContext.UserTracks on t.Id equals usertrack.TrackId
                               join u in this.DbContext.Users on usertrack.UserId equals u.Id
                               join releaseArtist in this.DbContext.Artists on r.ArtistId equals releaseArtist.Id
+                              where(newerThan == null || usertrack.LastPlayed >= newerThan)
                               where ((roadieUser == null && !(u.IsPrivate ?? false)) || (roadieUser != null && (usertrack != null && usertrack.User.Id == roadieUser.Id)))
                               where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
                                         t.Title != null && t.Title.ToLower().Contains(request.Filter.ToLower()) ||

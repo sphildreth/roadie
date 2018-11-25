@@ -328,7 +328,7 @@ namespace Roadie.Api.Services
                 result.LastModified = DateTime.UtcNow;
                 if (width.Value != this.Configuration.ThumbnailImageSize.Width || height.Value != this.Configuration.ThumbnailImageSize.Height)
                 {
-                    this.Logger.LogInformation($"{ type }: Resized [{ id }], Width [{ width.Value }], Height [{ height.Value }]");
+                    this.Logger.LogTrace($"{ type }: Resized [{ id }], Width [{ width.Value }], Height [{ height.Value }]");
                 }
             }
             sw.Stop();

@@ -57,8 +57,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc)
         {
-            var result = await this.TrackService.List(roadieUser: await this.CurrentUserModel(),
-                                                      request: request);
+            var result = await this.TrackService.List(request: request,
+                roadieUser: await this.CurrentUserModel());
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
