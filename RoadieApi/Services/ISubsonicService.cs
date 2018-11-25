@@ -9,8 +9,10 @@ namespace Roadie.Api.Services
         Task<SubsonicOperationResult<SubsonicAuthenticateResponse>> Authenticate(Request request);
 
         Task<SubsonicOperationResult<Response>> CreateBookmark(Request request, Roadie.Library.Models.Users.User roadieUser, int position, string comment);
+        Task<SubsonicOperationResult<Response>> CreatePlaylist(Request request, Roadie.Library.Models.Users.User roadieUser, string name, string[] songIds, string playlistId = null);
 
         Task<SubsonicOperationResult<Response>> DeleteBookmark(Request request, Roadie.Library.Models.Users.User roadieUser);
+        Task<SubsonicOperationResult<Response>> DeletePlaylist(Request request, Roadie.Library.Models.Users.User roadieUser);
 
         Task<SubsonicOperationResult<Response>> GetAlbum(Request request, Roadie.Library.Models.Users.User roadieUser);
 
@@ -56,7 +58,7 @@ namespace Roadie.Api.Services
 
         Task<SubsonicOperationResult<Response>> GetStarred(Request request, Roadie.Library.Models.Users.User roadieUser, StarredVersion version);
 
-        Task<SubsonicOperationResult<Response>> GetTopSongs(Request request, Roadie.Library.Models.Users.User roadieUser, string artistName, int? count = 50);
+        Task<SubsonicOperationResult<Response>> GetTopSongs(Request request, Roadie.Library.Models.Users.User roadieUser, int? count = 50);
 
         Task<SubsonicOperationResult<Response>> GetUser(Request request, string username);
 
@@ -68,5 +70,7 @@ namespace Roadie.Api.Services
 
         Task<SubsonicOperationResult<Response>> ToggleStar(Request request, Roadie.Library.Models.Users.User roadieUser, bool star, string[] albumIds = null, string[] artistIds = null);
         Task<SubsonicOperationResult<Response>> SetRating(Request request, Roadie.Library.Models.Users.User roadieUser, short rating);
+
+        Task<SubsonicOperationResult<Response>> UpdatePlaylist(Request request, Roadie.Library.Models.Users.User roadieUser, string playlistId, string name = null, string comment = null, bool? isPublic = null, string[] songIdsToAdd = null, int[] songIndexesToRemove = null);
     }
 }

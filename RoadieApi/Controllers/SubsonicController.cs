@@ -87,6 +87,35 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result);
         }
 
+        [HttpGet("deletePlaylist.view")]
+        [HttpPost("deletePlaylist.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> DeletePlaylist(SubsonicRequest request)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.DeletePlaylist(request, this.SubsonicUser);
+            return this.BuildResponse(request, result);
+        }
+
+        [HttpGet("updatePlaylist.view")]
+        [HttpPost("updatePlaylist.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> UpdatePlaylist(SubsonicRequest request, string playlistId, string name, string comment, bool? @public, string[] songIdToAdd, int[] songIndexToRemove)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.UpdatePlaylist(request, this.SubsonicUser, playlistId, name, comment, @public, songIdToAdd, songIndexToRemove);
+            return this.BuildResponse(request, result);
+        }
+
+
         [HttpGet("getBookmarks.view")]
         [HttpPost("getBookmarks.view")]
         [ProducesResponseType(200)]
@@ -364,11 +393,31 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result, "playlist");
         }
 
+        [HttpGet("createPlaylist.view")]
+        [HttpPost("createPlaylist.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> CreatePlaylist(SubsonicRequest request, string playlistId, string name, string[] songId)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.CreatePlaylist(request, this.SubsonicUser, name, songId, playlistId);
+            return this.BuildResponse(request, result, "playlist");
+        }
+
+
         [HttpGet("getPlaylists.view")]
         [HttpPost("getPlaylists.view")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetPlaylists(SubsonicRequest request, string username)
         {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
             var result = await this.SubsonicService.GetPlaylists(request, this.SubsonicUser, username);
             return this.BuildResponse(request, result, "playlists");
         }
@@ -378,6 +427,11 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetPodcasts(SubsonicRequest request, bool includeEpisodes)
         {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
             var result = await this.SubsonicService.GetPodcasts(request);
             return this.BuildResponse(request, result, "podcasts");
         }
@@ -483,14 +537,14 @@ namespace Roadie.Api.Controllers
         [HttpGet("getTopSongs.view")]
         [HttpPost("getTopSongs.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> GetTopSongs(SubsonicRequest request, string artist, int? count = 50)
+        public async Task<IActionResult> GetTopSongs(SubsonicRequest request, int? count = 50)
         {
             var authResult = await this.AuthenticateUser(request);
             if (authResult != null)
             {
                 return authResult;
             }
-            var result = await this.SubsonicService.GetTopSongs(request, this.SubsonicUser, artist, count);
+            var result = await this.SubsonicService.GetTopSongs(request, this.SubsonicUser, count);
             return this.BuildResponse(request, result, "topSongs");
         }
 
@@ -667,7 +721,7 @@ namespace Roadie.Api.Controllers
                 }
                 postBody = JsonConvert.SerializeObject(formDictionary);
             }
-            this.Logger.LogTrace($"Subsonic Request: Method [{ method }], Accept Header [{ acceptHeader }], Path [{ queryPath }], Query String [{ queryString }], Posted Body [{ postBody }], Response Error Code [{ response?.ErrorCode }], Request [{ JsonConvert.SerializeObject(request) }] ResponseType [{ responseType }]");
+            this.Logger.LogTrace($"Subsonic Request: Method [{ method }], Accept Header [{ acceptHeader }], Path [{ queryPath }], Query String [{ queryString }], Posted Body [{ postBody }], Response Error Code [{ response?.ErrorCode }], Request [{ JsonConvert.SerializeObject(request, Formatting.Indented) }] ResponseType [{ responseType }]");
             if (response?.ErrorCode.HasValue ?? false)
             {
                 return this.SendError(request, response);

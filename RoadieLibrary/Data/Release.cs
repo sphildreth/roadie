@@ -26,7 +26,7 @@ namespace Roadie.Library.Data
         public ICollection<CollectionRelease> Collections { get; set; }
 
         [Column("duration")]
-        public int? Duration { get; set; }
+        public int? Duration { get; set; } // TODO update this on release scan
 
         [Column("discogsId")]
         [MaxLength(50)]
@@ -69,7 +69,7 @@ namespace Roadie.Library.Data
         public string MusicBrainzId { get; set; }
 
         [Column("playedCount")]
-        public int? PlayedCount { get; set; }
+        public int? PlayedCount { get; set; } 
 
         [Column("profile", TypeName = "text")]
         [MaxLength(65535)]
@@ -104,7 +104,7 @@ namespace Roadie.Library.Data
         public string Title { get; set; }
 
         [Column("trackCount")]
-        public short TrackCount { get; set; }
+        public short TrackCount { get; set; } 
 
         [Column("urls", TypeName = "text")]
         [MaxLength(65535)]

@@ -145,10 +145,11 @@ namespace Roadie.Library.Processors
                         var extension = file.Extension.ToLower();
                         if (extension.Equals(".mp3") || extension.Equals(".flac"))
                         {
-                            var tagFile = TagLib.File.Create(file.FullName);
-                            tagFile.Tag.Performers = null;
-                            tagFile.Tag.Performers = new[] { artist };
-                            tagFile.Save();
+                            // TODO 
+                            //var tagFile = TagLib.File.Create(file.FullName);
+                            //tagFile.Tag.Performers = null;
+                            //tagFile.Tag.Performers = new[] { artist };
+                            //tagFile.Save();
                         }
                     }
                 }

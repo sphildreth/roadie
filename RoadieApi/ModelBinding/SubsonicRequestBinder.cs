@@ -25,34 +25,36 @@ namespace Roadie.Api.ModelBinding
             // Create a dictionary of all the properties to populate on the result model
             var modelDictionary = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase)
             {
-                { "u", null },
-                { "p", null },
-                { "s", null },
-                { "t", null },
-                { "v", null },
-                { "c", null },
-                { "id", null },
-                { "f", null },
-                { "callback", null },
-                { "musicFolderId", null },
                 { "albumCount", null },
                 { "albumOffset", null },
+                { "artist", null },
                 { "artistCount", null },
                 { "artistOffset", null },
+                { "c", null },
+                { "callback", null },
+                { "f", null },
                 { "fromYear", null },
                 { "genre", null },
+                { "id", null },
+                { "musicFolderId", null },
                 { "offset", null },
+                { "p", null },
                 { "query", null },
+                { "s", null },
                 { "size", null },
                 { "songCount", null },
                 { "songOffset", null },
+                { "t", null },
                 { "toYear", null },
-                { "type", null }
+                { "type", null },
+                { "u", null },
+                { "v", null }
             };
 
             // Setup model dictionary from Query Parameters
             modelDictionary["albumCount"] = queryDictionary.ContainsKey("albumCount") ? SafeParser.ToNumber<int?>(queryDictionary["albumCount"].First()) : null;
             modelDictionary["albumOffset"] = queryDictionary.ContainsKey("albumOffset") ? SafeParser.ToNumber<int?>(queryDictionary["albumOffset"].First()) : null;
+            modelDictionary["artist"] = queryDictionary.ContainsKey("artist") ? queryDictionary["artist"].First() : null;
             modelDictionary["artistCount"] = queryDictionary.ContainsKey("artistCount") ? SafeParser.ToNumber<int?>(queryDictionary["artistCount"].First()) : null;
             modelDictionary["artistOffset"] = queryDictionary.ContainsKey("artistOffset") ? SafeParser.ToNumber<int?>(queryDictionary["artistOffset"].First()) : null;
             modelDictionary["c"] = queryDictionary.ContainsKey("c") ? queryDictionary["c"].First() : null;
@@ -102,6 +104,7 @@ namespace Roadie.Api.ModelBinding
                 AlbumCount = SafeParser.ToNumber<int?>(modelDictionary["albumCount"]) ?? 20,
                 AlbumOffset = SafeParser.ToNumber<int?>(modelDictionary["albumOffset"]),
                 ArtistCount = SafeParser.ToNumber<int?>(modelDictionary["artistCount"]) ?? 20,
+                ArtistName = SafeParser.ToString(modelDictionary["artist"]),
                 ArtistOffset = SafeParser.ToNumber<int?>(modelDictionary["artistOffset"]),
                 c = SafeParser.ToString(modelDictionary["c"]),
                 callback = SafeParser.ToString(modelDictionary["callback"]),

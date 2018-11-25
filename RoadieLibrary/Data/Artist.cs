@@ -66,6 +66,8 @@ namespace Roadie.Library.Data
         [MaxLength(100)]
         public string SpotifyId { get; set; }
 
+        [Column("releaseCount")]
+        public int? ReleaseCount { get; set; } // TODO update this on artist folder scan
 
     }
 }

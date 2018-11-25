@@ -23,5 +23,10 @@ namespace Roadie.Library.Data
                 return Playlist.CacheUrn(this.RoadieId);
             }
         }
+
+        public override string ToString()
+        {
+            return $"Id [{this.Id}], Name [{this.Name}], RoadieId [{ this.RoadieId}]";
+        }
     }
 }

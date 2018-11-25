@@ -212,6 +212,12 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         public int? ArtistOffset { get; set; }
 
         /// <summary>
+        /// The artist name.
+        /// <see cref="getTopSongs"/>
+        /// </summary>
+        public string ArtistName { get; set; }
+
+        /// <summary>
         /// The first year in the range. If fromYear > toYear a reverse chronological list is returned.
         /// </summary>
         public int? FromYear { get; set; }

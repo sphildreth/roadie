@@ -308,7 +308,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
+        public async Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true, bool? doArtistCounts = true)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -322,8 +322,9 @@ namespace Roadie.Api.Services
                                      select a.Id
                                      ).ToArray();
             }
-
+            var onlyWithReleases = onlyIncludeWithReleases ?? true;
             var result = (from a in this.DbContext.Artists
+                          where (!onlyWithReleases || a.ReleaseCount > 0)
                           where (request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId)
                           where (request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value)
                           where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue)))
@@ -366,6 +367,27 @@ namespace Roadie.Api.Services
                     sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Artist.Text", "ASC" } }) : request.OrderValue(null);
                 }
                 rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            }
+            if(rows.Any() && (doArtistCounts ?? true))
+            {
+                var rowArtistIds = rows.Select(x => x.DatabaseId);
+                var artistReleases = (from a in this.DbContext.Artists
+                                      join r in this.DbContext.Releases on a.Id equals r.ArtistId
+                                      where a.ReleaseCount > 0
+                                      where r.TrackCount > 0
+                                      where rowArtistIds.Contains(a.Id)
+                                      select new
+                                      {
+                                          r.Id,
+                                          r.TrackCount,
+                                          r.PlayedCount
+                                      }).ToList();
+                foreach(var row in rows)
+                {
+                    row.ArtistReleaseCount = artistReleases.Where(r => r.Id == row.DatabaseId).Select(r => r.Id).Count();
+                    row.ArtistTrackCount = artistReleases.Where(r => r.Id == row.DatabaseId).Sum(r => r.TrackCount);
+                    row.ArtistPlayedCount = artistReleases.Where(r => r.Id == row.DatabaseId).Sum(r => r.PlayedCount);
+                }
             }
             if (rows.Any() && roadieUser != null)
             {
