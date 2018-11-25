@@ -232,6 +232,9 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         /// </summary>
         public int? MusicFolderId { get; set; }
 
+        // When adding a chat message this is the message to add
+        public string Message { get; set; }
+
         /// <summary>
         /// The list offset. Useful if you for example want to page through the list of newest albums.
         /// </summary>

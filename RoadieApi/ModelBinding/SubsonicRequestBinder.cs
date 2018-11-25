@@ -39,6 +39,7 @@ namespace Roadie.Api.ModelBinding
                 { "musicFolderId", null },
                 { "offset", null },
                 { "p", null },
+                { "message", null },
                 { "query", null },
                 { "s", null },
                 { "size", null },
@@ -78,6 +79,7 @@ namespace Roadie.Api.ModelBinding
             modelDictionary["type"] = queryDictionary.ContainsKey("type") ? SafeParser.ToEnum<ListType>(queryDictionary["type"].First()) : ListType.AlphabeticalByName;
             modelDictionary["u"] = queryDictionary.ContainsKey("u") ? queryDictionary["u"].First() : null;
             modelDictionary["v"] = queryDictionary.ContainsKey("v") ? queryDictionary["v"].First() : null;
+            modelDictionary["message"] = queryDictionary.ContainsKey("message") ? queryDictionary["message"].First() : null;
 
             // Setup model dictionary from Posted Body values
             if (!bindingContext.HttpContext.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(bindingContext.HttpContext.Request.ContentType))
@@ -113,6 +115,7 @@ namespace Roadie.Api.ModelBinding
                 Genre = SafeParser.ToString(modelDictionary["genre"]),
                 id = SafeParser.ToString(modelDictionary["id"]),
                 MusicFolderId = SafeParser.ToNumber<int?>(modelDictionary["musicFolderId"]),
+                Message = SafeParser.ToString(modelDictionary["message"]),
                 Offset = SafeParser.ToNumber<int?>(modelDictionary["offset"]),
                 p = SafeParser.ToString(modelDictionary["p"]),
                 Query = SafeParser.ToString(modelDictionary["query"]),

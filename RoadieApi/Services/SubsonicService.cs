@@ -1643,6 +1643,68 @@ namespace Roadie.Api.Services
             };
         }
 
+        /// <summary>
+        /// Returns the current visible (non-expired) chat messages.
+        /// </summary>
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetChatMessages(subsonic.Request request, User roadieUser, long? since)
+        {            
+            DateTime? messagesSince = since.HasValue ? (DateTime?)since.Value.FromUnixTime() : null;
+            var chatMessages = (from cm in this.DbContext.ChatMessages
+                                join u in this.DbContext.Users on cm.UserId equals u.Id
+                                where messagesSince == null || cm.CreatedDate >= messagesSince
+                                where cm.Status != Library.Enums.Statuses.Deleted
+                                orderby cm.CreatedDate descending
+                                select new subsonic.ChatMessage
+                                {
+                                     message = cm.Message,
+                                     username = u.UserName,
+                                     time = cm.CreatedDate.ToUnixTime()
+                                }).ToArray();
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok,
+                    ItemElementName = subsonic.ItemChoiceType.chatMessages,
+                    Item = new subsonic.ChatMessages
+                    {
+                        chatMessage = chatMessages.ToArray()
+                    }
+                }
+            };
+        }
+        
+        /// <summary>
+        /// Adds a message to the chat log.
+        /// </summary>
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> AddChatMessage(subsonic.Request request, User roadieUser)
+        {
+            if(string.IsNullOrEmpty(request.Message))
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.RequiredParameterMissing, $"Message is required");
+            }
+            var chatMessage = new data.ChatMessage
+            {
+                UserId = roadieUser.Id,
+                Message = request.Message
+            };
+            this.DbContext.ChatMessages.Add(chatMessage);
+            await this.DbContext.SaveChangesAsync();
+
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok
+                }
+            };
+        }
+
+
         #region Privates
 
         private async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetArtistsAction(subsonic.Request request, User roadieUser)

@@ -530,6 +530,34 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result, "topSongs");
         }
 
+        [HttpGet("getChatMessages.view")]
+        [HttpPost("getChatMessages.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetChatMessages(SubsonicRequest request, long? since)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetChatMessages(request, this.SubsonicUser, since);
+            return this.BuildResponse(request, result, "chatMessages");
+        }
+
+        [HttpGet("addChatMessage.view")]
+        [HttpPost("addChatMessage.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> AddChatMessage(SubsonicRequest request)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.AddChatMessage(request, this.SubsonicUser);
+            return this.BuildResponse(request, result);
+        }
+
         [HttpGet("getUser.view")]
         [HttpPost("getUser.view")]
         [ProducesResponseType(200)]

@@ -17,6 +17,7 @@ namespace Roadie.Library.Data
         DbSet<Artist> Artists { get; set; }
         DbSet<Bookmark> Bookmarks { get; set; }
         ChangeTracker ChangeTracker { get; }
+        DbSet<ChatMessage> ChatMessages { get; set; }
         DbSet<CollectionRelease> CollectionReleases { get; set; }
         DbSet<Collection> Collections { get; set; }
         DatabaseFacade Database { get; }
