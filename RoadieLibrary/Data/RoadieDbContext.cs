@@ -31,6 +31,7 @@ namespace Roadie.Library.Data
         public DbSet<UserRelease> UserReleases { get; set; }
         public DbSet<ApplicationUser> Users { get; set; }
         public DbSet<UserTrack> UserTracks { get; set; }
+        public DbSet<UserQue> UserQues { get; set; }
 
         public RoadieDbContext(DbContextOptions<RoadieDbContext> options)
             : base(options)

@@ -81,7 +81,9 @@ namespace Roadie.Api.ModelBinding
             modelDictionary["v"] = queryDictionary.ContainsKey("v") ? queryDictionary["v"].First() : null;
             modelDictionary["message"] = queryDictionary.ContainsKey("message") ? queryDictionary["message"].First() : null;
 
+
             // Setup model dictionary from Posted Body values
+            var postedIds = new List<string>();
             if (!bindingContext.HttpContext.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(bindingContext.HttpContext.Request.ContentType))
             {
                 var formCollection = bindingContext.HttpContext.Request.Form;
@@ -96,6 +98,10 @@ namespace Roadie.Api.ModelBinding
                         else
                         {
                             modelDictionary.Add(form.Key, form.Value.FirstOrDefault());
+                        }
+                        if(form.Key == "id")
+                        {
+                            postedIds.AddRange(form.Value.ToArray());
                         }
                     }
                 }
@@ -114,6 +120,7 @@ namespace Roadie.Api.ModelBinding
                 FromYear = SafeParser.ToNumber<int?>(modelDictionary["fromYear"]),
                 Genre = SafeParser.ToString(modelDictionary["genre"]),
                 id = SafeParser.ToString(modelDictionary["id"]),
+                ids = postedIds?.ToArray(),
                 MusicFolderId = SafeParser.ToNumber<int?>(modelDictionary["musicFolderId"]),
                 Message = SafeParser.ToString(modelDictionary["message"]),
                 Offset = SafeParser.ToNumber<int?>(modelDictionary["offset"]),

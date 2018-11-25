@@ -53,6 +53,8 @@ namespace Roadie.Api.Services
 
         Task<SubsonicOperationResult<Response>> GetPlaylists(Request request, Roadie.Library.Models.Users.User roadieUser, string filterToUserName);
 
+        Task<SubsonicOperationResult<Response>> GetPlayQueue(Request request, Roadie.Library.Models.Users.User roadieUser);
+
         Task<SubsonicOperationResult<Response>> GetPodcasts(Request request);
 
         Task<SubsonicOperationResult<Response>> GetRandomSongs(Request request, Roadie.Library.Models.Users.User roadieUser);
@@ -74,6 +76,8 @@ namespace Roadie.Api.Services
         SubsonicOperationResult<Response> Ping(Request request);
 
         Task<SubsonicOperationResult<Response>> Search(Request request, Roadie.Library.Models.Users.User roadieUser, SearchVersion version);
+
+        Task<SubsonicOperationResult<Response>> SavePlayQueue(Request request, Roadie.Library.Models.Users.User roadieUser, string current, long? position);
 
         Task<SubsonicOperationResult<Response>> SetRating(Request request, Roadie.Library.Models.Users.User roadieUser, short rating);
 

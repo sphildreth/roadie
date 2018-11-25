@@ -67,6 +67,11 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         /// </summary>
         public string id { get; set; }
 
+        /// <summary>
+        /// Some operations have an array of ids, see savePlayQue
+        /// </summary>
+        public string[] ids { get; set; }
+
         public bool IsCallbackSet
         {
             get

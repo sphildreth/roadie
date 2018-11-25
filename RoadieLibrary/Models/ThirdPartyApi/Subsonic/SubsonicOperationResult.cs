@@ -6,6 +6,8 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
     [Serializable]
     public class SubsonicOperationResult<T> : OperationResult<T>
     {
+        public bool IsEmptyResponse { get; set; }
+
         public ErrorCodes? ErrorCode { get; set; }
 
         public SubsonicOperationResult(bool isNotFoundResult, IEnumerable<string> messages = null)

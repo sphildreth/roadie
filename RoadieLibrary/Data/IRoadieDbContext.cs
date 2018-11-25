@@ -34,6 +34,7 @@ namespace Roadie.Library.Data
         DbSet<Submission> Submissions { get; set; }
         DbSet<Track> Tracks { get; set; }
         DbSet<UserArtist> UserArtists { get; set; }
+        DbSet<UserQue> UserQues { get; set; }
         DbSet<UserRelease> UserReleases { get; set; }
         DbSet<ApplicationUser> Users { get; set; }
         DbSet<UserTrack> UserTracks { get; set; }

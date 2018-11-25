@@ -404,6 +404,38 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result, "playlists");
         }
 
+        [HttpGet("savePlayQueue.view")]
+        [HttpPost("savePlayQueue.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SavePlayQueue(SubsonicRequest request, string username, string current, long? position)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.SavePlayQueue(request, this.SubsonicUser, current, position);
+            return this.BuildResponse(request, result);
+        }
+
+        [HttpGet("getPlayQueue.view")]
+        [HttpPost("getPlayQueue.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetPlayQueue(SubsonicRequest request)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetPlayQueue(request, this.SubsonicUser);
+            if (result.IsEmptyResponse)
+            {
+                return this.BuildResponse(request, result);
+            }
+            return this.BuildResponse(request, result, "playQueue");
+        }
+
         [HttpGet("getPodcasts.view")]
         [HttpPost("getPodcasts.view")]
         [ProducesResponseType(200)]

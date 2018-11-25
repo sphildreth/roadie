@@ -211,6 +211,8 @@ namespace Roadie.Api.Services
                                     .Include("UserRoles.Role")
                                     .Include("UserRoles.Role.RoleClaims")
                                     .Include(x => x.Claims)
+                                    .Include(x => x.UserQues)
+                                    .Include("UserQues.Track")
                                     .FirstOrDefault(x => x.RoadieId == id);
             }, ApplicationUser.CacheRegionUrn(id.Value));
         }

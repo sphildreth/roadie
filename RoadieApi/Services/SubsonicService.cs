@@ -1704,6 +1704,99 @@ namespace Roadie.Api.Services
             };
         }
 
+        /// <summary>
+        /// Saves the state of the play queue for this user. This includes the tracks in the play queue, the currently playing track, and the position within this track. Typically used to allow a user to move between different clients/apps while retaining the same play queue (for instance when listening to an audio book).
+        /// </summary>
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> SavePlayQueue(subsonic.Request request, User roadieUser, string current, long? position)
+        {
+            // Remove any existing Que for User
+            var user = this.GetUser(roadieUser.UserId);
+            if(user.UserQues != null && user.UserQues.Any())
+            {
+                this.DbContext.UserQues.RemoveRange(user.UserQues);
+            }
+
+            // Create a new UserQue for each posted TrackId in ids
+            if (request.ids != null && request.ids.Any())
+            {
+                short queSortOrder = 0;
+                var pagedRequest = request.PagedRequest;
+                pagedRequest.FilterToTrackIds = request.ids.Select(x => SafeParser.ToGuid(x)).Where(x => x.HasValue).ToArray();
+                var trackListResult = await this.TrackService.List(pagedRequest, roadieUser);
+                var currentTrackId = SafeParser.ToGuid(current);
+                foreach (var row in trackListResult.Rows)
+                {
+                    queSortOrder++;
+                    this.DbContext.UserQues.Add(new data.UserQue
+                    {
+                        IsCurrent = row.Track.Value == currentTrackId?.ToString(),
+                        Position = row.Track.Value == currentTrackId?.ToString() ? position : null,
+                        QueSortOrder = queSortOrder,
+                        TrackId = row.DatabaseId,
+                        UserId = user.Id                       
+                    });
+                }
+            }
+
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok
+                }
+            };
+        }
+
+        /// <summary>
+        /// Returns the state of the play queue for this user (as set by savePlayQueue). This includes the tracks in the play queue, the currently playing track, and the position within this track. Typically used to allow a user to move between different clients/apps while retaining the same play queue (for instance when listening to an audio book).
+        /// </summary>
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPlayQueue(subsonic.Request request, User roadieUser)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+
+            subsonic.PlayQueue playQue = null;
+            
+            if(user.UserQues != null && user.UserQues.Any())
+            {
+                var current = user.UserQues.FirstOrDefault(x => x.IsCurrent ?? false) ?? user.UserQues.First();
+                var pagedRequest = request.PagedRequest;
+                pagedRequest.FilterToTrackIds = user.UserQues.Select(x => x.Track?.RoadieId).ToArray();
+                var queTracksResult = await this.TrackService.List(pagedRequest, roadieUser);
+                var queTrackRows = (from tt in queTracksResult.Rows
+                                    join qt in user.UserQues on tt.DatabaseId equals qt.TrackId
+                                    orderby qt.QueSortOrder
+                                    select tt).ToArray();
+                playQue = new subsonic.PlayQueue
+                {
+                    // I didnt specify current as it appears to be a Int and it blows up several client applications changing it to a string. 
+                    // current = subsonic.Request.TrackIdIdentifier + current.Track.RoadieId.ToString(),
+                    changedBy = user.UserName,
+                    changed = user.UserQues.OrderByDescending(x => x.CreatedDate).First().CreatedDate,
+                    position = current.Position ?? 0,
+                    positionSpecified = current.Position.HasValue,
+                    username = user.UserName,
+                    entry = this.SubsonicChildrenForTracks(queTrackRows)
+                };
+            }
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                IsEmptyResponse = playQue == null,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok,
+                    ItemElementName = subsonic.ItemChoiceType.playQueue,
+                    Item = playQue
+                }
+            };
+        }
 
         #region Privates
 
@@ -2218,7 +2311,7 @@ namespace Roadie.Api.Services
                 allowedUser = playlist.IsPublic ? this.AllowedUsers() : null,
                 changed = playlist.LastUpdated ?? playlist.CreatedDate ?? DateTime.UtcNow,
                 created = playlist.CreatedDate ?? DateTime.UtcNow,
-                duration = playlist.Duration ?? 0,
+                duration = playlist.Duration.ToSecondsFromMilliseconds(),
                 id = subsonic.Request.PlaylistdIdentifier + playlist.Id.ToString(),
                 name = playlist.Playlist.Text,
                 owner = playlist.User.Text,

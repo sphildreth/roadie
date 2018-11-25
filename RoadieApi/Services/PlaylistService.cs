@@ -52,6 +52,7 @@ namespace Roadie.Api.Services
                           join u in this.DbContext.Users on pl.UserId equals u.Id
                           let duration = (from plt in this.DbContext.PlaylistTracks 
                                           join t in this.DbContext.Tracks on plt.TrackId equals t.Id
+                                          where plt.PlayListId == pl.Id
                                           select t.Duration).Sum()
                           where (request.FilterToPlaylistId == null || pl.RoadieId == request.FilterToPlaylistId)
                           where (request.FilterToArtistId == null || playlistWithArtistTrackIds.Contains(pl.Id))

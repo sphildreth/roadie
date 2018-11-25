@@ -127,6 +127,8 @@ namespace Roadie.Library.Identity
 
         public virtual ICollection<ApplicationUserRole> UserRoles { get; set; }
 
+        public virtual ICollection<UserQue> UserQues { get; set; }
+
 
     }
 }
