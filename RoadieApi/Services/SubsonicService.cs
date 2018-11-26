@@ -2337,21 +2337,21 @@ namespace Roadie.Api.Services
             var isEditor = await this.UserManger.IsInRoleAsync(user, "Editor");
             return new subsonic.User
             {
-                adminRole = isAdmin,
+                adminRole = false, // disabling this as we dont want Roadie user management done via Subsonic API
                 avatarLastChanged = user.LastUpdated ?? user.CreatedDate ?? DateTime.UtcNow,
                 avatarLastChangedSpecified = user.LastUpdated.HasValue,
                 commentRole = true,
                 coverArtRole = isEditor || isAdmin,
-                downloadRole = isEditor || isAdmin, // Disable downloads
+                downloadRole = isEditor || isAdmin, 
                 email = user.Email,
-                jukeboxRole = true,
+                jukeboxRole = false, // Jukebox disabled (what is jukebox?)
                 maxBitRate = 320,
                 maxBitRateSpecified = true,
                 playlistRole = isEditor || isAdmin,
                 podcastRole = false, // Disable podcast nonsense
                 scrobblingEnabled = false, // Disable scrobbling
                 settingsRole = isAdmin,
-                shareRole = false, // TODO enabled when sharing is implemented
+                shareRole = false, 
                 streamRole = true,
                 uploadRole = true,
                 username = user.UserName,

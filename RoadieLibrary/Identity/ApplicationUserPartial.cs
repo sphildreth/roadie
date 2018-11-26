@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Roadie.Library.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -48,6 +49,22 @@ namespace Roadie.Library.Identity
         public override string ToString()
         {
             return $"Id [{ this.Id }], Username [{ this.UserName}]";
+        }
+
+        public ApplicationUser()
+        {
+            this.RoadieId = Guid.NewGuid();
+            this.Status = Statuses.Ok;
+            this.CreatedDate = DateTime.UtcNow;
+            this.IsLocked = false;
+            this.IsActive = true;
+            this.DoUseHtmlPlayer = true;
+            this.PlayerTrackLimit = 50;
+            this.Timeformat = "YYYY-MM-DD HH:mm:ss";
+            this.IsPrivate = false;
+            this.RecentlyPlayedLimit = 20;
+            this.RandomReleaseLimit = 20;
+            
         }
     }
 }

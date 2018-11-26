@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Roadie.Library.Data;
+using Roadie.Library.Enums;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -103,10 +104,8 @@ namespace Roadie.Library.Identity
         [StringLength(36)]
         public Guid RoadieId { get; set; }
 
-        //    public virtual ICollection<UsersInRoles> Roles { get; set; }
-
         [Column("status")]
-        public short? Status { get; set; }
+        public Statuses? Status { get; set; }
 
         public ICollection<Submission> Submissions { get; set; }
 
@@ -120,15 +119,8 @@ namespace Roadie.Library.Identity
 
         public ICollection<UserTrack> TrackRatings { get; set; }
 
-        //[Column("username")]
-        //[Required]
-        //[StringLength(20)]
-        //public string UserName { get; set; }
-
-        public virtual ICollection<ApplicationUserRole> UserRoles { get; set; }
-
         public virtual ICollection<UserQue> UserQues { get; set; }
 
-
+        public virtual ICollection<ApplicationUserRole> UserRoles { get; set; }
     }
 }
