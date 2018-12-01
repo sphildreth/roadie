@@ -10,8 +10,8 @@ namespace Roadie.Api.Services
     public interface IUserService
     {
         Task<PagedResult<UserList>> List(PagedRequest request);
-        Task<OperationResult<bool>> SetReleaseRating(Guid releaseId, User roadieUser, short rating);
-        Task<OperationResult<bool>> SetArtistRating(Guid artistId, User roadieUser, short rating);
-        Task<OperationResult<bool>> SetTrackRating(Guid trackId, User roadieUser, short rating);
+        Task<OperationResult<short>> SetReleaseRating(Guid releaseId, User roadieUser, short rating);
+        Task<OperationResult<short>> SetArtistRating(Guid artistId, User roadieUser, short rating);
+        Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating);
     }
 }

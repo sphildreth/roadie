@@ -220,12 +220,12 @@ namespace Roadie.Api.Services
         }
 
 
-        protected async Task<OperationResult<bool>> SetArtistRating(Guid artistId, ApplicationUser user, short rating)
+        protected async Task<OperationResult<short>> SetArtistRating(Guid artistId, ApplicationUser user, short rating)
         {
             var artist = this.GetArtist(artistId);
             if (artist == null)
             {
-                return new OperationResult<bool>(true, $"Invalid Artist Id [{ artistId }]");
+                return new OperationResult<short>(true, $"Invalid Artist Id [{ artistId }]");
             }
             var userArtist = user.ArtistRatings.FirstOrDefault(x => x.ArtistId == artist.Id);
             if (userArtist == null)
@@ -254,19 +254,21 @@ namespace Roadie.Api.Services
             this.CacheManager.ClearRegion(user.CacheRegion);
             this.CacheManager.ClearRegion(artist.CacheRegion);
 
-            return new OperationResult<bool>
+            artist = this.GetArtist(artistId);
+
+            return new OperationResult<short>
             {
                 IsSuccess = true,
-                Data = true
+                Data = artist.Rating ?? 0
             };
         }
 
-        protected async Task<OperationResult<bool>> SetReleaseRating(Guid releaseId, ApplicationUser user, short rating)
+        protected async Task<OperationResult<short>> SetReleaseRating(Guid releaseId, ApplicationUser user, short rating)
         {
             var release = this.GetRelease(releaseId);
             if (release == null)
             {
-                return new OperationResult<bool>(true, $"Invalid Release Id [{ releaseId }]");
+                return new OperationResult<short>(true, $"Invalid Release Id [{ releaseId }]");
             }
             var userRelease = user.ReleaseRatings.FirstOrDefault(x => x.ReleaseId == release.Id);
             var now = DateTime.UtcNow;
@@ -297,19 +299,21 @@ namespace Roadie.Api.Services
             this.CacheManager.ClearRegion(release.CacheRegion);
             this.CacheManager.ClearRegion(release.Artist.CacheRegion);
 
-            return new OperationResult<bool>
+            release = this.GetRelease(releaseId);
+
+            return new OperationResult<short>
             {
                 IsSuccess = true,
-                Data = true
+                Data = release.Rating ?? 0
             };
         }
 
-        protected async Task<OperationResult<bool>> SetTrackRating(Guid trackId, ApplicationUser user, short rating)
+        protected async Task<OperationResult<short>> SetTrackRating(Guid trackId, ApplicationUser user, short rating)
         {
             var track = this.GetTrack(trackId);
             if (track == null)
             {
-                return new OperationResult<bool>(true, $"Invalid Track Id [{ trackId }]");
+                return new OperationResult<short>(true, $"Invalid Track Id [{ trackId }]");
             }
             var userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
             if (userTrack == null)
@@ -340,10 +344,12 @@ namespace Roadie.Api.Services
             this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
             this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
 
-            return new OperationResult<bool>
+            track = this.GetTrack(trackId);
+
+            return new OperationResult<short>
             {
                 IsSuccess = true,
-                Data = true
+                Data = track.Rating
             };
         }
 

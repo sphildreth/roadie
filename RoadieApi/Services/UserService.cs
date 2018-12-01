@@ -153,32 +153,32 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> SetArtistRating(Guid artistId, User roadieUser, short rating)
+        public async Task<OperationResult<short>> SetArtistRating(Guid artistId, User roadieUser, short rating)
         {
             var user = this.GetUser(roadieUser.UserId);
             if (user == null)
             {
-                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+                return new OperationResult<short>(true, $"Invalid User [{ roadieUser }]");
             }
             return await base.SetArtistRating(artistId, user, rating);
         }
 
-        public async Task<OperationResult<bool>> SetReleaseRating(Guid releaseId, User roadieUser, short rating)
+        public async Task<OperationResult<short>> SetReleaseRating(Guid releaseId, User roadieUser, short rating)
         {
             var user = this.GetUser(roadieUser.UserId);
             if (user == null)
             {
-                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+                return new OperationResult<short>(true, $"Invalid User [{ roadieUser }]");
             }
             return await base.SetReleaseRating(releaseId, user, rating);
         }
 
-        public async Task<OperationResult<bool>> SetTrackRating(Guid trackId, User roadieUser, short rating)
+        public async Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating)
         {
             var user = this.GetUser(roadieUser.UserId);
             if (user == null)
             {
-                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+                return new OperationResult<short>(true, $"Invalid User [{ roadieUser }]");
             }
             return await base.SetTrackRating(trackId, user, rating);
         }
