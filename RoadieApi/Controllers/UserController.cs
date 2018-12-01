@@ -94,6 +94,29 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("setArtistFavorite/{artistId}/{isFavorite}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetArtistFavorite(Guid artistId, bool isFavorite)
+        {
+            var result = await this.UserService.SetArtistFavorite(artistId, await this.CurrentUserModel(), isFavorite);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("setReleaseFavorite/{releaseId}/{isFavorite}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetReleaseFavorite(Guid releaseId, bool isFavorite)
+        {
+            var result = await this.UserService.SetReleaseFavorite(releaseId, await this.CurrentUserModel(), isFavorite);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
 
 
         [HttpGet]

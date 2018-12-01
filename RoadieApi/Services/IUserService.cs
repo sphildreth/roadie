@@ -13,5 +13,7 @@ namespace Roadie.Api.Services
         Task<OperationResult<short>> SetReleaseRating(Guid releaseId, User roadieUser, short rating);
         Task<OperationResult<short>> SetArtistRating(Guid artistId, User roadieUser, short rating);
         Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating);
+        Task<OperationResult<bool>> SetArtistFavorite(Guid artistId, User roadieUser, bool isFavorite);
+        Task<OperationResult<bool>> SetReleaseFavorite(Guid releaseId, User roadieUser, bool isFavorite);
     }
 }

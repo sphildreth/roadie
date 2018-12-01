@@ -12,6 +12,6 @@ namespace Roadie.Api.Services
     {
         Task<OperationResult<Artist>> ById(User roadieUser, Guid id, IEnumerable<string> includes);
 
-        Task<PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true, bool? doArtistCounts = true);
+        Task<PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true);
     }
 }

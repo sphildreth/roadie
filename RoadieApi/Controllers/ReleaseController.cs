@@ -67,18 +67,5 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-        [HttpPost("random")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> RandomList(PagedRequest request)
-        {
-            var result = await this.ReleaseService.List(user: await this.CurrentUserModel(),
-                                                               request: request,
-                                                               doRandomize: true);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
     }
 }

@@ -308,7 +308,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true, bool? doArtistCounts = true)
+        public async Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -319,6 +319,7 @@ namespace Roadie.Api.Services
                 favoriteArtistIds = (from a in this.DbContext.Artists
                                      join ua in this.DbContext.UserArtists on a.Id equals ua.ArtistId
                                      where ua.IsFavorite ?? false
+                                     where (roadieUser == null || ua.UserId == roadieUser.Id)
                                      select a.Id
                                      ).ToArray();
             }
@@ -342,9 +343,10 @@ namespace Roadie.Api.Services
                               Rating = a.Rating,
                               CreatedDate = a.CreatedDate,
                               LastUpdated = a.LastUpdated,
-                              ArtistPlayedCount = 0,
-                              ArtistReleaseCount = 0,
-                              ArtistTrackCount = 0,
+                              LastPlayed = a.LastPlayed,
+                              PlayedCount = a.PlayedCount,
+                              ReleaseCount = a.ReleaseCount,
+                              TrackCount = a.TrackCount,
                               SortName = a.SortName
                           }).Distinct();
 
@@ -352,7 +354,9 @@ namespace Roadie.Api.Services
             var rowCount = result.Count();
             if (doRandomize ?? false)
             {
-                request.Limit = request.LimitValue > roadieUser.RandomReleaseLimit ? roadieUser.RandomReleaseLimit : request.LimitValue;
+
+                var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
+                request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
                 rows = result.OrderBy(x => Guid.NewGuid()).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }
             else
@@ -367,27 +371,6 @@ namespace Roadie.Api.Services
                     sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Artist.Text", "ASC" } }) : request.OrderValue(null);
                 }
                 rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
-            }
-            if(rows.Any() && (doArtistCounts ?? true))
-            {
-                var rowArtistIds = rows.Select(x => x.DatabaseId).ToArray();
-                var artistReleases = (from a in this.DbContext.Artists
-                                      join r in this.DbContext.Releases on a.Id equals r.ArtistId
-                                      where rowArtistIds.Contains(a.Id)
-                                      select new
-                                      {
-                                          artistId = a.Id,
-                                          releaseId = r.Id,
-                                          r.TrackCount,
-                                          r.PlayedCount
-                                      }).ToArray();
-                foreach(var row in rows)
-                {
-                    var rowArtistReleases = artistReleases.Where(r => r.artistId == row.DatabaseId);
-                    row.ArtistReleaseCount = rowArtistReleases.Select(r => r.releaseId).Count();
-                    row.ArtistTrackCount = rowArtistReleases.Sum(r => r.TrackCount);
-                    row.ArtistPlayedCount = rowArtistReleases.Sum(r => r.PlayedCount);
-                }
             }
             if (rows.Any() && roadieUser != null)
             {

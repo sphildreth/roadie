@@ -182,5 +182,27 @@ namespace Roadie.Api.Services
             }
             return await base.SetTrackRating(trackId, user, rating);
         }
+
+        public async Task<OperationResult<bool>> SetArtistFavorite(Guid artistId, User roadieUser, bool isFavorite)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.ToggleArtistFavorite(artistId, user, isFavorite);
+
+        }
+
+        public async Task<OperationResult<bool>> SetReleaseFavorite(Guid releaseId, User roadieUser, bool isFavorite)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.ToggleReleaseFavorite(releaseId, user, isFavorite);
+        }
+
     }
 }

@@ -11,10 +11,10 @@ namespace Roadie.Library.Models
         public DataToken Artist { get; set; }
         public short? Rating { get; set; }
         public UserArtist UserRating { get; set; }
-        public int? ArtistReleaseCount { get; set; }
-        public int? ArtistTrackCount { get; set; }
-        public int? ArtistPlayedCount { get; set; }
+        public int? ReleaseCount { get; set; }
+        public int? TrackCount { get; set; }
+        public int? PlayedCount { get; set; }
         public Image Thumbnail { get; set; }
-
+        public DateTime? LastPlayed { get; set; }
     }
 }

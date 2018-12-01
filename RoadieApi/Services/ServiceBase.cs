@@ -227,7 +227,7 @@ namespace Roadie.Api.Services
             {
                 return new OperationResult<short>(true, $"Invalid Artist Id [{ artistId }]");
             }
-            var userArtist = user.ArtistRatings.FirstOrDefault(x => x.ArtistId == artist.Id);
+            var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == user.Id);
             if (userArtist == null)
             {
                 userArtist = new data.UserArtist
@@ -270,7 +270,7 @@ namespace Roadie.Api.Services
             {
                 return new OperationResult<short>(true, $"Invalid Release Id [{ releaseId }]");
             }
-            var userRelease = user.ReleaseRatings.FirstOrDefault(x => x.ReleaseId == release.Id);
+            var userRelease = this.DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == user.Id);
             var now = DateTime.UtcNow;
             if (userRelease == null)
             {
@@ -315,7 +315,7 @@ namespace Roadie.Api.Services
             {
                 return new OperationResult<short>(true, $"Invalid Track Id [{ trackId }]");
             }
-            var userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
+            var userTrack = this.DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == user.Id);
             if (userTrack == null)
             {
                 userTrack = new data.UserTrack
@@ -352,6 +352,115 @@ namespace Roadie.Api.Services
                 Data = track.Rating
             };
         }
+
+        protected async Task<OperationResult<bool>> ToggleArtistFavorite(Guid artistId, ApplicationUser user, bool isFavorite)
+        {
+            var artist = this.GetArtist(artistId);
+            if (artist == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Artist Id [{ artistId }]");
+            }
+            var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == user.Id);
+            if (userArtist == null)
+            {
+                userArtist = new data.UserArtist
+                {
+                    IsFavorite = true,
+                    UserId = user.Id,
+                    ArtistId = artist.Id
+                };
+                this.DbContext.UserArtists.Add(userArtist);
+            }
+            else
+            {
+                userArtist.IsFavorite = isFavorite;
+                userArtist.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        protected async Task<OperationResult<bool>> ToggleReleaseFavorite(Guid releaseId, ApplicationUser user, bool isFavorite)
+        {
+            var release = this.GetRelease(releaseId);
+            if (release == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Release Id [{ releaseId }]");
+            }
+            var userRelease = this.DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == user.Id);
+            if (userRelease == null)
+            {
+                userRelease = new data.UserRelease
+                {
+                    IsFavorite = true,
+                    UserId = user.Id,
+                    ReleaseId = release.Id
+                };
+                this.DbContext.UserReleases.Add(userRelease);
+            }
+            else
+            {
+                userRelease.IsFavorite = isFavorite;
+                userRelease.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(release.CacheRegion);
+            this.CacheManager.ClearRegion(release.Artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        protected async Task<OperationResult<bool>> ToggleTrackFavorite(Guid trackId, ApplicationUser user, bool isFavorite)
+        {
+            var track = this.GetTrack(trackId);
+            if (track == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Track Id [{ trackId }]");
+            }
+            var userTrack = this.DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == user.Id);
+            if (userTrack == null)
+            {
+                userTrack = new data.UserTrack
+                {
+                    IsFavorite = true,
+                    UserId = user.Id,
+                    TrackId = track.Id
+                };
+                this.DbContext.UserTracks.Add(userTrack);
+            }
+            else
+            {
+                userTrack.IsFavorite = isFavorite;
+                userTrack.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(track.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
 
 
 

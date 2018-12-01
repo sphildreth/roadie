@@ -153,6 +153,10 @@ namespace Roadie.Api.Services
             release.LastPlayed = now;
             release.PlayedCount++;
 
+            var artist = this.GetArtist(release.Artist.RoadieId);
+            artist.LastPlayed = now;
+            artist.PlayedCount++;
+
             this.CacheManager.ClearRegion(track.CacheRegion);
             this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
             this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);

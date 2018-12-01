@@ -45,6 +45,9 @@ namespace Roadie.Library.Data
         [MaxLength(100)]
         public string ITunesId { get; set; }
 
+        [Column("lastPlayed")]
+        public DateTime? LastPlayed { get; set; }
+
         [Column("musicBrainzId")]
         [MaxLength(100)]
         public string MusicBrainzId { get; set; }
@@ -52,6 +55,9 @@ namespace Roadie.Library.Data
         [Column("profile", TypeName = "text")]
         [MaxLength(65535)]
         public string Profile { get; set; }
+
+        [Column("playedCount")]
+        public int? PlayedCount { get; set; }
 
         [Column("rating")]
         public short? Rating { get; set; }
@@ -68,6 +74,9 @@ namespace Roadie.Library.Data
 
         [Column("releaseCount")]
         public int? ReleaseCount { get; set; } // TODO update this on artist folder scan
+
+        [Column("trackCount")]
+        public int? TrackCount { get; set; } // TODO update this on artist folder scane
 
     }
 }
