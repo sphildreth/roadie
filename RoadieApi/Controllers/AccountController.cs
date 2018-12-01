@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Models;
 using Roadie.Api.Services;
+using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using System;
 using System.Linq;
@@ -25,6 +26,7 @@ namespace Roadie.Api.Controllers
         private readonly SignInManager<ApplicationUser> signInManager;
         private readonly ITokenService tokenService;
         private readonly UserManager<ApplicationUser> userManager;
+        private IRoadieSettings RoadieSettings { get; }
 
         public AccountController(
            UserManager<ApplicationUser> userManager,
@@ -38,6 +40,10 @@ namespace Roadie.Api.Controllers
             this.configuration = configuration;
             this.logger = logger;
             this.tokenService = tokenService;
+
+            this.RoadieSettings = new RoadieSettings();
+            configuration.GetSection("RoadieSettings").Bind(this.RoadieSettings);
+
         }
 
         [HttpPost]
@@ -57,15 +63,18 @@ namespace Roadie.Api.Controllers
                     var user = await userManager.FindByNameAsync(model.Username);
                     var now = DateTime.UtcNow;
                     user.LastLogin = now;
+                    user.LastApiAccess = now;
                     user.LastUpdated = now;
                     await userManager.UpdateAsync(user);
                     var t = await this.tokenService.GenerateToken(user, this.userManager);
+                    this.logger.LogInformation($"Successfully authenticated User [{ model.Username}]");
+                    var avatarUrl = $"{this.Request.Scheme}://{this.Request.Host}/images/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
                     return Ok(new 
                     {
-                        Id = user.RoadieId,
                         Username = user.UserName,
                         user.Email,
                         user.LastLogin,
+                        avatarUrl = avatarUrl,
                         Token = t
                     });
                 }

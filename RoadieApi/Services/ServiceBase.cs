@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
@@ -11,6 +12,7 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 
 namespace Roadie.Api.Services
@@ -216,6 +218,136 @@ namespace Roadie.Api.Services
                                     .FirstOrDefault(x => x.RoadieId == id);
             }, ApplicationUser.CacheRegionUrn(id.Value));
         }
+
+
+        protected async Task<OperationResult<bool>> SetArtistRating(Guid artistId, ApplicationUser user, short rating)
+        {
+            var artist = this.GetArtist(artistId);
+            if (artist == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Artist Id [{ artistId }]");
+            }
+            var userArtist = user.ArtistRatings.FirstOrDefault(x => x.ArtistId == artist.Id);
+            if (userArtist == null)
+            {
+                userArtist = new data.UserArtist
+                {
+                    Rating = rating,
+                    UserId = user.Id,
+                    ArtistId = artist.Id
+                };
+                this.DbContext.UserArtists.Add(userArtist);
+            }
+            else
+            {
+                userArtist.Rating = rating;
+                userArtist.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            var sql = "UPDATE `artist` set lastUpdated = UTC_DATE(), rating = (SELECT cast(avg(ur.rating) as signed) " +
+                      "FROM `userartist` ur " +
+                      "where artistId = {0}) " +
+                      "WHERE id = {0};";
+            await this.DbContext.Database.ExecuteSqlCommandAsync(sql, artist.Id);
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        protected async Task<OperationResult<bool>> SetReleaseRating(Guid releaseId, ApplicationUser user, short rating)
+        {
+            var release = this.GetRelease(releaseId);
+            if (release == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Release Id [{ releaseId }]");
+            }
+            var userRelease = user.ReleaseRatings.FirstOrDefault(x => x.ReleaseId == release.Id);
+            var now = DateTime.UtcNow;
+            if (userRelease == null)
+            {
+                userRelease = new data.UserRelease
+                {
+                    Rating = rating,
+                    UserId = user.Id,
+                    ReleaseId = release.Id
+                };
+                this.DbContext.UserReleases.Add(userRelease);
+            }
+            else
+            {
+                userRelease.Rating = rating;
+                userRelease.LastUpdated = now;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            var sql = "UPDATE `release` set lastUpdated = UTC_DATE(), rating = (SELECT cast(avg(ur.rating) as signed) " +
+                      "FROM `userrelease` ur " +
+                      "where releaseId = {0}) " +
+                      "WHERE id = {0};";
+            await this.DbContext.Database.ExecuteSqlCommandAsync(sql, release.Id);
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(release.CacheRegion);
+            this.CacheManager.ClearRegion(release.Artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        protected async Task<OperationResult<bool>> SetTrackRating(Guid trackId, ApplicationUser user, short rating)
+        {
+            var track = this.GetTrack(trackId);
+            if (track == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Track Id [{ trackId }]");
+            }
+            var userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
+            if (userTrack == null)
+            {
+                userTrack = new data.UserTrack
+                {
+                    Rating = rating,
+                    UserId = user.Id,
+                    TrackId = track.Id
+                };
+                this.DbContext.UserTracks.Add(userTrack);
+            }
+            else
+            {
+                userTrack.Rating = rating;
+                userTrack.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            var sql = "UPDATE `track` set lastUpdated = UTC_DATE(), rating = (SELECT cast(avg(ur.rating) as signed) " +
+                      "FROM `usertrack` ur " +
+                      "where trackId = {0}) " +
+                      "WHERE id = {0};";
+            await this.DbContext.Database.ExecuteSqlCommandAsync(sql, track.Id);
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(track.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+
 
         protected Image MakeArtistThumbnailImage(Guid id)
         {

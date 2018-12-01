@@ -165,6 +165,7 @@ namespace Roadie.Api
                 config.TokenValidationParameters = new TokenValidationParameters()
                 {
                     IssuerSigningKey = securityKey,
+
                     ValidateAudience = true,
                     ValidAudience = this._configuration["Tokens:Audience"],
                     ValidateIssuer = true,

@@ -1942,111 +1942,45 @@ namespace Roadie.Api.Services
             return this.MusicFolders().First(x => x.id == 2);
         }
 
-        private async Task<subsonic.SubsonicOperationResult<bool>> SetArtistRating(Guid artistId, ApplicationUser user, short rating)
+        private new async Task<subsonic.SubsonicOperationResult<bool>> SetArtistRating(Guid artistId, ApplicationUser user, short rating)
         {
-            var artist = this.GetArtist(artistId);
-            if (artist == null)
+            var r = await base.SetArtistRating(artistId, user, rating);
+            if(r.IsNotFoundResult)
             {
                 return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Artist Id [{ artistId }]");
             }
-            var userArtist = user.ArtistRatings.FirstOrDefault(x => x.ArtistId == artist.Id);
-            if (userArtist == null)
-            {
-                userArtist = new data.UserArtist
-                {
-                    Rating = rating,
-                    UserId = user.Id,
-                    ArtistId = artist.Id
-                };
-                this.DbContext.UserArtists.Add(userArtist);
-            }
-            else
-            {
-                userArtist.Rating = rating;
-                userArtist.LastUpdated = DateTime.UtcNow;
-            }
-            await this.DbContext.SaveChangesAsync();
-
-            this.CacheManager.ClearRegion(user.CacheRegion);
-            this.CacheManager.ClearRegion(artist.CacheRegion);
-
             return new subsonic.SubsonicOperationResult<bool>
             {
-                IsSuccess = true,
-                Data = true
+                IsSuccess = r.IsSuccess,
+                Data = r.IsSuccess
             };
         }
 
-        private async Task<subsonic.SubsonicOperationResult<bool>> SetReleaseRating(Guid releaseId, ApplicationUser user, short rating)
+        private new async Task<subsonic.SubsonicOperationResult<bool>> SetReleaseRating(Guid releaseId, ApplicationUser user, short rating)
         {
-            var release = this.GetRelease(releaseId);
-            if (release == null)
+            var r = await base.SetReleaseRating(releaseId, user, rating);
+            if (r.IsNotFoundResult)
             {
                 return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release Id [{ releaseId }]");
             }
-            var userRelease = user.ReleaseRatings.FirstOrDefault(x => x.ReleaseId == release.Id);
-            if (userRelease == null)
-            {
-                userRelease = new data.UserRelease
-                {
-                    Rating = rating,
-                    UserId = user.Id,
-                    ReleaseId = release.Id
-                };
-                this.DbContext.UserReleases.Add(userRelease);
-            }
-            else
-            {
-                userRelease.Rating = rating;
-                userRelease.LastUpdated = DateTime.UtcNow;
-            }
-            await this.DbContext.SaveChangesAsync();
-
-            this.CacheManager.ClearRegion(user.CacheRegion);
-            this.CacheManager.ClearRegion(release.CacheRegion);
-            this.CacheManager.ClearRegion(release.Artist.CacheRegion);
-
             return new subsonic.SubsonicOperationResult<bool>
             {
-                IsSuccess = true,
-                Data = true
+                IsSuccess = r.IsSuccess,
+                Data = r.IsSuccess
             };
         }
 
-        private async Task<subsonic.SubsonicOperationResult<bool>> SetTrackRating(Guid trackId, ApplicationUser user, short rating)
+        private new async Task<subsonic.SubsonicOperationResult<bool>> SetTrackRating(Guid trackId, ApplicationUser user, short rating)
         {
-            var track = this.GetTrack(trackId);
-            if (track == null)
+            var r = await base.SetTrackRating(trackId, user, rating);
+            if (r.IsNotFoundResult)
             {
                 return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{ trackId }]");
             }
-            var userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
-            if (userTrack == null)
-            {
-                userTrack = new data.UserTrack
-                {
-                    Rating = rating,
-                    UserId = user.Id,
-                    TrackId = track.Id
-                };
-                this.DbContext.UserTracks.Add(userTrack);
-            }
-            else
-            {
-                userTrack.Rating = rating;
-                userTrack.LastUpdated = DateTime.UtcNow;
-            }
-            await this.DbContext.SaveChangesAsync();
-
-            this.CacheManager.ClearRegion(user.CacheRegion);
-            this.CacheManager.ClearRegion(track.CacheRegion);
-            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
-            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
-
             return new subsonic.SubsonicOperationResult<bool>
             {
-                IsSuccess = true,
-                Data = true
+                IsSuccess = r.IsSuccess,
+                Data = r.IsSuccess
             };
         }
 

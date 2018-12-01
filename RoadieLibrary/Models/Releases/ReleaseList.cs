@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using Newtonsoft.Json;
 using Roadie.Library.Enums;
+using Roadie.Library.Extensions;
 using Roadie.Library.Models.Users;
 using System;
 using System.Collections.Generic;
@@ -47,5 +48,17 @@ namespace Roadie.Library.Models.Releases
         public DataToken Genre { get; set; }
         public DateTime? LastPlayed { get; set; }
         public int? Duration { get; set; }
+        public string DurationTime
+        {
+            get
+            {
+                if(!this.Duration.HasValue)
+                {
+                    return "--:--";
+                }
+                return TimeSpan.FromSeconds(this.Duration.Value / 1000).ToString(@"hh\:mm\:ss");
+            }
+
+        }
     }
 }

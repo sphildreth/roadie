@@ -1,8 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Identity;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Statistics;
@@ -149,6 +151,36 @@ namespace Roadie.Api.Services
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
             };
+        }
+
+        public async Task<OperationResult<bool>> SetArtistRating(Guid artistId, User roadieUser, short rating)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.SetArtistRating(artistId, user, rating);
+        }
+
+        public async Task<OperationResult<bool>> SetReleaseRating(Guid releaseId, User roadieUser, short rating)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.SetReleaseRating(releaseId, user, rating);
+        }
+
+        public async Task<OperationResult<bool>> SetTrackRating(Guid trackId, User roadieUser, short rating)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.SetTrackRating(trackId, user, rating);
         }
     }
 }

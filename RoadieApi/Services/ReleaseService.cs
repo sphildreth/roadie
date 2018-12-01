@@ -134,7 +134,8 @@ namespace Roadie.Api.Services
                 favoriteReleaseIds = (from a in this.DbContext.Releases
                                      join ur in this.DbContext.UserReleases on a.Id equals ur.ReleaseId
                                      where ur.IsFavorite ?? false
-                                     select a.Id
+                                     where (roadieUser == null || ur.UserId == roadieUser.Id)
+                                      select a.Id
                                      ).ToArray();
             }
             int[] genreReleaseIds = new int[0];
@@ -160,6 +161,9 @@ namespace Roadie.Api.Services
                     request.Order = "ASC";
                 }
             }
+            //
+            // TODO list should honor disliked artist and albums
+            //
             var result = (from r in this.DbContext.Releases.Include("Artist")
                           join a in this.DbContext.Artists on r.ArtistId equals a.Id
                           where (request.FilterMinimumRating == null || r.Rating >= request.FilterMinimumRating.Value)
@@ -322,6 +326,10 @@ namespace Roadie.Api.Services
             //        }
             //    }
             //}
+            if(request.FilterFavoriteOnly)
+            {
+                rows = rows.OrderBy(x => x.UserRating.Rating).ToArray();
+            }
             sw.Stop();
             return new Library.Models.Pagination.PagedResult<ReleaseList>
             {

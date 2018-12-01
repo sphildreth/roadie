@@ -7,6 +7,7 @@ using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -16,7 +17,7 @@ namespace Roadie.Api.Controllers
     [Produces("application/json")]
     [Route("users")]
     [ApiController]
-  //  [Authorize]
+    [Authorize]
     public class UserController : EntityControllerBase
     {
         private IUserService UserService { get; }
@@ -55,6 +56,44 @@ namespace Roadie.Api.Controllers
         //    }
         //    return Ok(result);
         //}
+
+
+        [HttpPost("setArtistRating/{releaseId}/{rating}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetArtistRating(Guid releaseId, short rating)
+        {
+            var result = await this.UserService.SetArtistRating(releaseId, await this.CurrentUserModel(), rating);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("setReleaseRating/{releaseId}/{rating}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetReleaseRating(Guid releaseId, short rating)
+        {
+            var result = await this.UserService.SetReleaseRating(releaseId, await this.CurrentUserModel(), rating);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("setTrackRating/{releaseId}/{rating}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetTrackRating(Guid releaseId, short rating)
+        {
+            var result = await this.UserService.SetTrackRating(releaseId, await this.CurrentUserModel(), rating);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
 
 
         [HttpGet]
