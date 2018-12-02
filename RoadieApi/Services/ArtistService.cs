@@ -191,7 +191,7 @@ namespace Roadie.Api.Services
                                                     {
                                                         Text = a.Name,
                                                         Value = a.RoadieId.ToString()
-                                                    });
+                                                    }).ToArray();
 
                     result.AssociatedArtists = (from aa in this.DbContext.ArtistAssociations
                                                 join a in this.DbContext.Artists on aa.ArtistId equals a.Id
@@ -201,7 +201,7 @@ namespace Roadie.Api.Services
                                                 {
                                                     Text = a.Name,
                                                     Value = a.RoadieId.ToString()
-                                                });
+                                                }).ToArray();
                 }
                 if (includes.Contains("collections"))
                 {

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Models;
 using Roadie.Api.Services;
+using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using System;
@@ -25,21 +26,24 @@ namespace Roadie.Api.Controllers
         private readonly ILogger<AccountController> logger;
         private readonly SignInManager<ApplicationUser> signInManager;
         private readonly ITokenService tokenService;
-        private readonly UserManager<ApplicationUser> userManager;
+        private readonly UserManager<ApplicationUser> userManager;        
         private IRoadieSettings RoadieSettings { get; }
+        private ICacheManager CacheManager { get; }
 
         public AccountController(
            UserManager<ApplicationUser> userManager,
            SignInManager<ApplicationUser> signInManager,
            IConfiguration configuration,
            ILogger<AccountController> logger,
-           ITokenService tokenService)
+           ITokenService tokenService,
+           ICacheManager cacheManager)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.configuration = configuration;
             this.logger = logger;
             this.tokenService = tokenService;
+            this.CacheManager = cacheManager;
 
             this.RoadieSettings = new RoadieSettings();
             configuration.GetSection("RoadieSettings").Bind(this.RoadieSettings);
@@ -68,6 +72,7 @@ namespace Roadie.Api.Controllers
                     await userManager.UpdateAsync(user);
                     var t = await this.tokenService.GenerateToken(user, this.userManager);
                     this.logger.LogInformation($"Successfully authenticated User [{ model.Username}]");
+                    this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
                     var avatarUrl = $"{this.Request.Scheme}://{this.Request.Host}/images/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
                     return Ok(new 
                     {
@@ -150,6 +155,7 @@ namespace Roadie.Api.Controllers
                 var identityResult = await this.userManager.ResetPasswordAsync(user, resetPasswordModel.Token, resetPasswordModel.Password);
                 if (identityResult.Succeeded)
                 {
+                    this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
                     await signInManager.SignInAsync(user, isPersistent: false);
                     return Ok(this.tokenService.GenerateToken(user, this.userManager));
                 }

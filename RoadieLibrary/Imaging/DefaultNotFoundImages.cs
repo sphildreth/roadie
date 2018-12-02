@@ -75,16 +75,18 @@ namespace Roadie.Library.Imaging
         }
 
         private IRoadieSettings Configuration { get; }
-        private ILogger Logger { get; }
 
-        public DefaultNotFoundImages(IRoadieSettings configuration, ILoggerFactory logger)
+        public DefaultNotFoundImages(IRoadieSettings configuration)
         {
             this.Configuration = configuration;
-            this.Logger = logger.CreateLogger("DefaultNotFoundImages");
         }
 
         private static Image MakeImageFromFile(string filename)
         {
+            if(!File.Exists(filename))
+            {
+                return new Image();
+            }
             var bytes = File.ReadAllBytes(filename);
             return new Image
             {
@@ -96,6 +98,10 @@ namespace Roadie.Library.Imaging
 
         private string MakeImagePath(string filename)
         {
+            if(string.IsNullOrEmpty(filename))
+            {
+                return null;
+            }
             return Path.Combine(this.Configuration.ContentPath, filename);
         }
     }

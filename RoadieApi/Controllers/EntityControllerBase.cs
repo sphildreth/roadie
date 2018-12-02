@@ -19,6 +19,8 @@ namespace Roadie.Api.Controllers
 {
     public abstract class EntityControllerBase : ODataController
     {
+        public const string ControllerCacheRegionUrn = "urn:controller_cache";
+
         private models.User _currentUser = null;
         protected ILogger Logger { get; set; }
         protected ICacheManager CacheManager { get; }
@@ -42,8 +44,10 @@ namespace Roadie.Api.Controllers
             {
                 if (this.User.Identity.IsAuthenticated)
                 {
-                    var user = await this.UserManager.GetUserAsync(User);
-                    this._currentUser = this.UserModelForUser(user);
+                    this._currentUser = await this.CacheManager.GetAsync($"urn:controller_user:{ this.User.Identity.Name }", async () =>
+                    {
+                        return this.UserModelForUser(await this.UserManager.GetUserAsync(User));
+                    }, ControllerCacheRegionUrn);                   
                 }
             }
             return this._currentUser;
@@ -51,6 +55,7 @@ namespace Roadie.Api.Controllers
 
         protected models.User UserModelForUser(ApplicationUser user)
         {
+
             var result = user.Adapt<models.User>();
             result.IsAdmin = User.IsInRole("Admin");
             result.IsEditor = User.IsInRole("Editor");

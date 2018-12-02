@@ -67,6 +67,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
             return Ok(result);
         }
 
@@ -79,6 +80,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
             return Ok(result);
         }
 
@@ -91,6 +93,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
             return Ok(result);
         }
 
@@ -103,6 +106,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
             return Ok(result);
         }
 
@@ -115,6 +119,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
             return Ok(result);
         }
 

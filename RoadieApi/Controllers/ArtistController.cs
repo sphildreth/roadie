@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
-using Roadie.Library.Data;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using System;
@@ -30,18 +29,17 @@ namespace Roadie.Api.Controllers
             this.ArtistService = artistService;
         }
 
-        //[EnableQuery]
-        //public IActionResult Get()
-        //{
-        //    return Ok(this._RoadieDbContext.Artists.ProjectToType<models.Artist>());
-        //}
-
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
+        [ProducesResponseType(204)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await this.ArtistService.ById(await this.CurrentUserModel(), id, (inc ?? models.Artist.DefaultIncludes).ToLower().Split(","));
+            var user = await this.CurrentUserModel();
+            var result = await this.CacheManager.GetAsync($"urn:artist_by_id_for_user:{ id }: { user?.Id }", async () =>
+             {
+                 return await this.ArtistService.ById(user, id, (inc ?? models.Artist.DefaultIncludes).ToLower().Split(","));
+             }, ControllerCacheRegionUrn);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();

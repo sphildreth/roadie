@@ -102,11 +102,19 @@ namespace Roadie.Api
             services.AddSingleton<ICacheManager>(cacheManager);
 
             services.AddDbContextPool<ApplicationUserDbContext>(
-                options => options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection")
+                options => options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection"),
+                mySqlOptions =>
+                {
+                    mySqlOptions.ServerVersion(new Version(5, 5), Pomelo.EntityFrameworkCore.MySql.Infrastructure.ServerType.MariaDb);
+                }
             ));
 
             services.AddDbContextPool<IRoadieDbContext, RoadieDbContext>(
-                options => options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection")                
+                options => options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection"),
+                mySqlOptions =>
+                {
+                    mySqlOptions.ServerVersion(new Version(5, 5), Pomelo.EntityFrameworkCore.MySql.Infrastructure.ServerType.MariaDb);
+                }
             ));
 
             services.AddIdentity<ApplicationUser, ApplicationRole>()
@@ -149,6 +157,7 @@ namespace Roadie.Api
             services.AddScoped<IUserService, UserService>();
 
             var securityKey = new SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration["Tokens:PrivateKey"]));
+
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

@@ -8,6 +8,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Roadie.Library.Identity
 {
+    /// <summary>
+    /// Application User for Identity
+    /// <remarks>As this is used by UserManager to get for each request in API *do not* lazy load properties as the object is too heavy and requires multiple DB hits to poplate - which is data not needed to authenticate a user.</remarks>
+    /// </summary>
     [Table("user")]
     public partial class ApplicationUser : IdentityUser<int>
     {
@@ -15,14 +19,14 @@ namespace Roadie.Library.Identity
         [StringLength(100)]
         public string ApiToken { get; set; }
 
-        public virtual ICollection<UserArtist> ArtistRatings { get; set; }
+        public ICollection<UserArtist> ArtistRatings { get; set; }
 
         [Column("avatar", TypeName = "blob")]
         public byte[] Avatar { get; set; }
 
         public ICollection<Bookmark> Bookmarks { get; set; }
 
-        public virtual ICollection<ApplicationUserClaim> Claims { get; set; }
+        public ICollection<ApplicationUserClaim> Claims { get; set; }
 
         [Column("createdDate")]
         public DateTime? CreatedDate { get; set; }
@@ -119,9 +123,9 @@ namespace Roadie.Library.Identity
 
         public ICollection<UserTrack> TrackRatings { get; set; }
 
-        public virtual ICollection<UserQue> UserQues { get; set; }
+        public ICollection<UserQue> UserQues { get; set; }
 
-        public virtual ICollection<ApplicationUserRole> UserRoles { get; set; }
+        public ICollection<ApplicationUserRole> UserRoles { get; set; }
 
         //public ICollection<ChatMessage> ChatMessages { get; set; }
         //public ICollection<Collection> Collections { get; set; }
