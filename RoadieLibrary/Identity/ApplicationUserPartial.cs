@@ -1,4 +1,5 @@
-﻿using Roadie.Library.Enums;
+﻿using Roadie.Library.Data;
+using Roadie.Library.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -64,7 +65,16 @@ namespace Roadie.Library.Identity
             this.IsPrivate = false;
             this.RecentlyPlayedLimit = 20;
             this.RandomReleaseLimit = 20;
-            
+
+          //  Collections = new HashSet<Collection>();
+            Playlists = new HashSet<Playlist>();
+            Requests = new HashSet<Request>();
+            Submissions = new HashSet<Submission>();
+            UserQues = new HashSet<UserQue>();
+            ArtistRatings = new HashSet<UserArtist>();
+            ReleaseRatings = new HashSet<UserRelease>();
+            TrackRatings = new HashSet<UserTrack>();
+
         }
     }
 }

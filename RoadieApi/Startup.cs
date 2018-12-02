@@ -62,13 +62,8 @@ namespace Roadie.Api
                 app.UseDeveloperExceptionPage();
             }
 
-            // global cors policy
-            app.UseCors(x => x
-                .AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials());
-            
+            app.UseCors("CORSPolicy");
+
             app.UseAuthentication();
             //app.UseSwagger();
             //app.UseSwaggerUI(c =>
@@ -90,14 +85,14 @@ namespace Roadie.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddCors(options => options.AddPolicy("Cors", builder =>
+            services.AddCors(options => options.AddPolicy("CORSPolicy", builder =>
             {
                 builder
                 .AllowAnyOrigin()
+                .AllowAnyHeader()
                 .AllowAnyMethod()
-                .AllowAnyHeader();
+                .AllowCredentials();
             }));
-
             
             services.AddSingleton<ITokenService, TokenService>();
 
@@ -111,7 +106,7 @@ namespace Roadie.Api
             ));
 
             services.AddDbContextPool<IRoadieDbContext, RoadieDbContext>(
-                options => options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection")
+                options => options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection")                
             ));
 
             services.AddIdentity<ApplicationUser, ApplicationRole>()

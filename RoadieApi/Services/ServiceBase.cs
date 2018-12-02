@@ -80,6 +80,7 @@ namespace Roadie.Api.Services
             this._configuration = configuration;
             this._httpEncoder = httpEncoder;
             this._dbContext = context;
+        //    this._dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             this._cacheManager = cacheManager;
             this._logger = logger;
             this._httpContext = httpContext;

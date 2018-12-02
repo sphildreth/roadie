@@ -122,5 +122,11 @@ namespace Roadie.Library.Identity
         public virtual ICollection<UserQue> UserQues { get; set; }
 
         public virtual ICollection<ApplicationUserRole> UserRoles { get; set; }
+
+        //public ICollection<ChatMessage> ChatMessages { get; set; }
+        //public ICollection<Collection> Collections { get; set; }
+        //public ICollection<Submission> Submission { get; set; }
+
+
     }
 }
