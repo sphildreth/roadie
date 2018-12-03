@@ -523,9 +523,9 @@ namespace Roadie.Api.Services
             return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}");
         }
 
-        private Image MakeThumbnailImage(Guid id, string type)
+        public Image MakeThumbnailImage(Guid id, string type, int? width = null, int? height = null)
         {
-            return this.MakeImage(id, type, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
+            return this.MakeImage(id, type, width ?? this.Configuration.ThumbnailImageSize.Width, height ?? this.Configuration.ThumbnailImageSize.Height);
         }
     }
 }

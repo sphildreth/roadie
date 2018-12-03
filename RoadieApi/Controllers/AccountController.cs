@@ -79,8 +79,10 @@ namespace Roadie.Api.Controllers
                         Username = user.UserName,
                         user.Email,
                         user.LastLogin,
-                        avatarUrl = avatarUrl,
-                        Token = t
+                        avatarUrl,
+                        Token = t,
+                        user.Timeformat,
+                        user.Timezone
                     });
                 }
                 catch (Exception ex)

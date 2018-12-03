@@ -25,7 +25,7 @@ namespace Roadie.Library.Models
         public string ArtistType { get; set; }
 
         public IEnumerable<DataToken> AssociatedArtists { get; set; }
-        public IEnumerable<DataToken> AssociatedWithArtists { get; set; }
+
         public string BandStatus { get; set; }
 
         [MaxLength(65535)]
@@ -82,6 +82,8 @@ namespace Roadie.Library.Models
 
         public CollectionStatistics Statistics { get; set; }
         public Image Thumbnail { get; set; }
+
+        public Image MediumThumbnail { get; set; }
 
         public string Tooltip
         {

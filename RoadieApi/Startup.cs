@@ -75,11 +75,7 @@ namespace Roadie.Api
             {
                 routes.MapHub<PlayActivityHub>("/playActivityHub");
             });
-            app.UseMvc(b =>
-            {
-                b.Select().Expand().Filter().OrderBy().MaxTop(100).Count();
-                b.MapODataServiceRoute("odata", "odata", GetEdmModel());
-            });
+            app.UseMvc();
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -139,7 +135,7 @@ namespace Roadie.Api
                 settings.ConnectionString = this._configuration.GetConnectionString("RoadieDatabaseConnection");
                 return settings;
             });
-
+            services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
             services.AddSingleton<IDefaultNotFoundImages, DefaultNotFoundImages>();
             services.AddScoped<IStatisticsService, StatisticsService>();
             services.AddScoped<ICollectionService, CollectionService>();
@@ -188,8 +184,6 @@ namespace Roadie.Api
             //    });
             //});
 
-            services.AddOData();
-
             services.AddSignalR();
 
             services.AddMvc(options =>
@@ -214,13 +208,5 @@ namespace Roadie.Api
             });
         }
 
-        private static IEdmModel GetEdmModel()
-        {
-            ODataConventionModelBuilder builder = new ODataConventionModelBuilder();
-            builder.EntitySet<models.Artist>("Artist");
-            builder.EntitySet<models.Label>("Label");
-            builder.EntitySet<models.Releases.Release>("Release");
-            return builder.GetEdmModel();
-        }
     }
 }

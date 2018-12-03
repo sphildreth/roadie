@@ -63,7 +63,7 @@ namespace Roadie.Library.Data
                 .Property(e => e.LibraryStatus)
                 .HasConversion(
                     v => v.ToString(),
-                    v => (LibraryStatus)Enum.Parse(typeof(LibraryStatus), v))
+                    v => string.IsNullOrEmpty(v) ? LibraryStatus.Incomplete : (LibraryStatus)Enum.Parse(typeof(LibraryStatus), v))
                 .HasDefaultValue(LibraryStatus.Incomplete);
 
             builder
@@ -71,15 +71,15 @@ namespace Roadie.Library.Data
                 .Property(e => e.CollectionType)
                 .HasConversion(
                     v => v.ToString(),
-                    v => (CollectionType)Enum.Parse(typeof(CollectionType), v))
+                    v => string.IsNullOrEmpty(v) ? CollectionType.Unknown : (CollectionType)Enum.Parse(typeof(CollectionType), v))
                 .HasDefaultValue(CollectionType.Unknown);
 
             builder
                 .Entity<Bookmark>()
                 .Property(e => e.BookmarkType)
                 .HasConversion(
-                    v => v,
-                    v => (BookmarkType)Enum.Parse(typeof(BookmarkType), v.ToString()))
+                    v => v.ToString(),
+                    v => string.IsNullOrEmpty(v) ? BookmarkType.Unknown : (BookmarkType)Enum.Parse(typeof(BookmarkType), v))
                 .HasDefaultValue(BookmarkType.Unknown);
 
             builder.Entity<ReleaseLabel>()
