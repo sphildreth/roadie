@@ -74,13 +74,13 @@ namespace Roadie.Library.Data
                     v => string.IsNullOrEmpty(v) ? CollectionType.Unknown : (CollectionType)Enum.Parse(typeof(CollectionType), v))
                 .HasDefaultValue(CollectionType.Unknown);
 
-            builder
-                .Entity<Bookmark>()
-                .Property(e => e.BookmarkType)
-                .HasConversion(
-                    v => v.ToString(),
-                    v => string.IsNullOrEmpty(v) ? BookmarkType.Unknown : (BookmarkType)Enum.Parse(typeof(BookmarkType), v))
-                .HasDefaultValue(BookmarkType.Unknown);
+            //builder
+            //    .Entity<Bookmark>()
+            //    .Property(e => e.BookmarkType)
+            //    .HasConversion(
+            //        v => v.ToString(),
+            //        v => string.IsNullOrEmpty(v) ? BookmarkType.Unknown : (BookmarkType)Enum.Parse(typeof(BookmarkType), v))
+            //    .HasDefaultValue(BookmarkType.Unknown);
 
             builder.Entity<ReleaseLabel>()
                 .HasOne(rl => rl.Release)

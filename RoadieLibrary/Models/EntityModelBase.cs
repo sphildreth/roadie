@@ -80,7 +80,7 @@ namespace Roadie.Library.Models
             }
         }
 
-        public BookmarkList UserBookmark { get; set; }
+        public bool UserBookmarked { get; set; }
 
         public EntityModelBase()
         {

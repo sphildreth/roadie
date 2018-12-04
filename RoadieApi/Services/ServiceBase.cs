@@ -1,5 +1,4 @@
-﻿using Mapster;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Roadie.Library;
 using Roadie.Library.Caching;
@@ -7,10 +6,8 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
 using Roadie.Library.Models;
-using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
@@ -83,6 +80,11 @@ namespace Roadie.Api.Services
             this._cacheManager = cacheManager;
             this._logger = logger;
             this._httpContext = httpContext;
+        }
+
+        public Image MakeThumbnailImage(Guid id, string type, int? width = null, int? height = null)
+        {
+            return this.MakeImage(id, type, width ?? this.Configuration.ThumbnailImageSize.Width, height ?? this.Configuration.ThumbnailImageSize.Height);
         }
 
         protected data.Artist GetArtist(string artistName)
@@ -219,6 +221,60 @@ namespace Roadie.Api.Services
             }, ApplicationUser.CacheRegionUrn(id.Value));
         }
 
+        protected Image MakeArtistThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "artist");
+        }
+
+        protected Image MakeCollectionThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "collection");
+        }
+
+        protected Image MakeImage(Guid id, int width = 200, int height = 200, string caption = null)
+        {
+            return new Image($"{this.HttpContext.ImageBaseUrl }/{id}/{ width }/{ height }", caption, $"{this.HttpContext.ImageBaseUrl }/{id}/{ this.Configuration.SmallImageSize.Width }/{ this.Configuration.SmallImageSize.Height }");
+        }
+
+        protected Image MakeFullsizeImage(Guid id, string caption = null)
+        {
+            return new Image($"{this.HttpContext.ImageBaseUrl }/{id}", caption,  $"{this.HttpContext.ImageBaseUrl }/{id}/{ this.Configuration.SmallImageSize.Width }/{ this.Configuration.SmallImageSize.Height }");
+        }
+
+        protected Image MakeImage(Guid id, string type, ImageSize imageSize)
+        {
+            return this.MakeImage(id, type, imageSize.Width, imageSize.Height);
+        }
+
+        protected Image MakeLabelThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "label");
+        }
+
+        protected string MakeLastFmUrl(string artistName, string releaseTitle)
+        {
+            return "http://www.last.fm/music/" + this.HttpEncoder.UrlEncode($"{ artistName }/{ releaseTitle }");
+        }
+
+        protected Image MakePlaylistThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "playlist");
+        }
+
+        protected Image MakeReleaseThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "release");
+        }
+
+        protected Image MakeTrackThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "track");
+        }
+
+        protected Image MakeUserThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "user");
+        }
 
         protected async Task<OperationResult<short>> SetArtistRating(Guid artistId, ApplicationUser user, short rating)
         {
@@ -461,71 +517,13 @@ namespace Roadie.Api.Services
             };
         }
 
-
-
-
-        protected Image MakeArtistThumbnailImage(Guid id)
+        private Image MakeImage(Guid id, string type, int? width, int? height, string caption = null)
         {
-            return MakeThumbnailImage(id, "artist");
-        }
-
-        protected Image MakeCollectionThumbnailImage(Guid id)
-        {
-            return MakeThumbnailImage(id, "collection");
-        }
-
-        protected Image MakeImage(Guid id, int width = 200, int height = 200)
-        {
-            return new Image($"{this.HttpContext.ImageBaseUrl }/{id}/{ width }/{ height }");
-        }
-
-        protected Image MakeImage(Guid id, string type, ImageSize imageSize)
-        {
-            return this.MakeImage(id, type, imageSize.Width, imageSize.Height);
-        }
-
-        protected Image MakeLabelThumbnailImage(Guid id)
-        {
-            return MakeThumbnailImage(id, "label");
-        }
-
-        protected string MakeLastFmUrl(string artistName, string releaseTitle)
-        {
-            return "http://www.last.fm/music/" + this.HttpEncoder.UrlEncode($"{ artistName }/{ releaseTitle }");
-        }
-
-        protected Image MakePlaylistThumbnailImage(Guid id)
-        {
-            return MakeThumbnailImage(id, "playlist");
-        }
-
-        protected Image MakeReleaseThumbnailImage(Guid id)
-        {
-            return MakeThumbnailImage(id, "release");
-        }
-
-        protected Image MakeTrackThumbnailImage(Guid id)
-        {
-            return MakeThumbnailImage(id, "track");
-        }
-
-        protected Image MakeUserThumbnailImage(Guid id)
-        {
-            return MakeThumbnailImage(id, "user");
-        }
-
-        private Image MakeImage(Guid id, string type, int? width, int? height)
-        {
-            if (width.HasValue && height.HasValue)
+            if (width.HasValue && height.HasValue && (width.Value != this.Configuration.ThumbnailImageSize.Width || height.Value != this.Configuration.ThumbnailImageSize.Height))
             {
-                return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}/{width}/{height}");
+                return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}/{width}/{height}", caption, $"{this.HttpContext.ImageBaseUrl }/{type}/{id}/{ this.Configuration.ThumbnailImageSize.Width }/{ this.Configuration.ThumbnailImageSize.Height }");
             }
-            return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}");
-        }
-
-        public Image MakeThumbnailImage(Guid id, string type, int? width = null, int? height = null)
-        {
-            return this.MakeImage(id, type, width ?? this.Configuration.ThumbnailImageSize.Width, height ?? this.Configuration.ThumbnailImageSize.Height);
+            return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}", caption, null);
         }
     }
 }

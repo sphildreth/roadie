@@ -197,7 +197,7 @@ namespace Roadie.Api
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
             })
             .AddXmlSerializerFormatters()                
-            .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            .SetCompatibilityVersion(CompatibilityVersion.Latest);
 
             services.AddHttpContextAccessor();
             services.AddScoped<IHttpContext>(factory =>

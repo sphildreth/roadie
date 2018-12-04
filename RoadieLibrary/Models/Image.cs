@@ -22,6 +22,9 @@ namespace Roadie.Library.Models
         [MaxLength(500)]
         public string Url { get; set; }
 
+        [MaxLength(500)]
+        public string ThumbnailUrl { get; set; }
+
         public Image()
         {
         }
@@ -29,12 +32,18 @@ namespace Roadie.Library.Models
         /// <summary>
         /// Set image Url to given value and nullify other entity values, intended to be used in List collection (like images for an artist)
         /// </summary>
-        public Image(string url)
+        public Image(string url) : this(url, null, null)
+        {           
+        }
+
+        public Image(string url, string caption, string thumbnailUrl)
         {
             this.Url = url;
+            this.ThumbnailUrl = thumbnailUrl;
             this.CreatedDate = null;
             this.Id = null;
             this.Status = null;
+            this.Caption = caption;
         }
 
         public Image(byte[] bytes)

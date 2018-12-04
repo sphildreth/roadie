@@ -24,7 +24,7 @@ namespace Roadie.Library.Models
 
         public string ArtistType { get; set; }
 
-        public IEnumerable<DataToken> AssociatedArtists { get; set; }
+        public IEnumerable<ArtistList> AssociatedArtists { get; set; }
 
         public string BandStatus { get; set; }
 

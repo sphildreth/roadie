@@ -12,6 +12,9 @@ namespace Roadie.Library.Data
         public int BookmarkTargetId { get; set; }
 
         [Column("bookmarkType")]
+        public short? Type { get; set; }
+
+       // [Column("bookmarkType")]
         public BookmarkType? BookmarkType { get; set; }
 
         public ApplicationUser User { get; set; }

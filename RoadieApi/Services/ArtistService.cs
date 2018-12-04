@@ -63,7 +63,8 @@ namespace Roadie.Api.Services
                 var userBookmarkResult = await this.BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Artist);
                 if(userBookmarkResult.IsSuccess)
                 {
-                    result.Data.UserBookmark = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == artist.RoadieId.ToString());
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == artist.RoadieId.ToString()) != null;
+
                 }
                 var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == roadieUser.Id);
                 if (userArtist != null)
@@ -180,31 +181,57 @@ namespace Roadie.Api.Services
                 }
                 if (includes.Contains("images"))
                 {
-                    result.Images = this.DbContext.Images.Where(x => x.ArtistId == artist.Id).Select(x => MakeImage(x.RoadieId, this.Configuration.LargeImageSize.Width, this.Configuration.LargeImageSize.Height)).ToArray();
+                    result.Images = this.DbContext.Images.Where(x => x.ArtistId == artist.Id).Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
                 }
                 if (includes.Contains("associatedartists"))
                 {
                     var associatedWithArtists = (from aa in this.DbContext.ArtistAssociations
                                                     join a in this.DbContext.Artists on aa.AssociatedArtistId equals a.Id
                                                     where aa.ArtistId == artist.Id
-                                                    select new DataToken
-                                                    {
-                                                        Text = a.Name,
-                                                        Value = a.RoadieId.ToString(),
-                                                        Data = this.MakeArtistThumbnailImage(a.RoadieId).Url
-                                                    }).ToArray();
+                                                     select new ArtistList
+                                                     {
+                                                         DatabaseId = a.Id,
+                                                         Id = a.RoadieId,
+                                                         Artist = new DataToken
+                                                         {
+                                                             Text = a.Name,
+                                                             Value = a.RoadieId.ToString()
+                                                         },
+                                                         Thumbnail = this.MakeArtistThumbnailImage(a.RoadieId),
+                                                         Rating = a.Rating,
+                                                         CreatedDate = a.CreatedDate,
+                                                         LastUpdated = a.LastUpdated,
+                                                         LastPlayed = a.LastPlayed,
+                                                         PlayedCount = a.PlayedCount,
+                                                         ReleaseCount = a.ReleaseCount,
+                                                         TrackCount = a.TrackCount,
+                                                         SortName = a.SortName
+                                                     }).ToArray();
 
                     var associatedArtists = (from aa in this.DbContext.ArtistAssociations
                                              join a in this.DbContext.Artists on aa.ArtistId equals a.Id
                                              where aa.AssociatedArtistId == artist.Id
-                                             select new DataToken
+                                             select new ArtistList
                                              {
-                                                 Text = a.Name,
-                                                 Value = a.RoadieId.ToString(),
-                                                 Data = this.MakeArtistThumbnailImage(a.RoadieId).Url
+                                                 DatabaseId = a.Id,
+                                                 Id = a.RoadieId,
+                                                 Artist = new DataToken
+                                                 {
+                                                     Text = a.Name,
+                                                     Value = a.RoadieId.ToString()
+                                                 },
+                                                 Thumbnail = this.MakeArtistThumbnailImage(a.RoadieId),
+                                                 Rating = a.Rating,
+                                                 CreatedDate = a.CreatedDate,
+                                                 LastUpdated = a.LastUpdated,
+                                                 LastPlayed = a.LastPlayed,
+                                                 PlayedCount = a.PlayedCount,
+                                                 ReleaseCount = a.ReleaseCount,
+                                                 TrackCount = a.TrackCount,
+                                                 SortName = a.SortName
                                              }).ToArray();
 
-                    result.AssociatedArtists = associatedArtists.Union(associatedWithArtists).OrderBy(x => x.Text);
+                    result.AssociatedArtists = associatedArtists.Union(associatedWithArtists).OrderBy(x => x.SortName);
 
                 }
                 if (includes.Contains("collections"))
@@ -268,20 +295,6 @@ namespace Roadie.Api.Services
                 if (includes.Contains("labels"))
                 {
                     result.ArtistLabels = (from l in this.DbContext.Labels
-                                           let releaseCount = (from lbb in this.DbContext.Labels
-                                                               join rlll in this.DbContext.ReleaseLabels on lbb.Id equals rlll.LabelId into rlddd
-                                                               from rlll in rlddd.DefaultIfEmpty()
-                                                               join rrr in this.DbContext.Releases on rlll.ReleaseId equals rrr.Id
-                                                               where lbb.Id == l.Id
-                                                               select rrr.Id).Count()
-                                           let trackCount = (from lbtc in this.DbContext.Labels
-                                                             join rlltc in this.DbContext.ReleaseLabels on lbtc.Id equals rlltc.LabelId into rlddtc
-                                                             from rlltc in rlddtc.DefaultIfEmpty()
-                                                             join rrtc in this.DbContext.Releases on rlltc.ReleaseId equals rrtc.Id
-                                                             join rmtc in this.DbContext.ReleaseMedias on rrtc.Id equals rmtc.ReleaseId
-                                                             join tttc in this.DbContext.Tracks on rmtc.Id equals tttc.ReleaseMediaId
-                                                             where lbtc.Id == l.Id
-                                                             select tttc.Id).Count()
                                            join rl in this.DbContext.ReleaseLabels on l.Id equals rl.LabelId
                                            join r in this.DbContext.Releases on rl.ReleaseId equals r.Id
                                            where r.ArtistId == artist.Id
@@ -297,8 +310,9 @@ namespace Roadie.Api.Services
                                                SortName = l.SortName,
                                                CreatedDate = l.CreatedDate,
                                                LastUpdated = l.LastUpdated,
-                                               ReleaseCount = releaseCount,
-                                               TrackCount = trackCount,
+                                               ArtistCount = l.ArtistCount,
+                                               ReleaseCount = l.ReleaseCount,
+                                               TrackCount = l.TrackCount,
                                                Thumbnail = MakeLabelThumbnailImage(l.RoadieId)
                                            }).ToArray().GroupBy(x => x.Label.Value).Select(x => x.First()).OrderBy(x => x.SortName).ThenBy(x => x.Label.Text).ToArray();
                     result.ArtistLabels = result.ArtistLabels.Any() ? result.ArtistLabels : null;

@@ -56,7 +56,7 @@ namespace Roadie.Api.Services
                 var userBookmarkResult = await this.BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Release);
                 if (userBookmarkResult.IsSuccess)
                 {
-                    result.Data.UserBookmark = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == release.RoadieId.ToString());
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == release.RoadieId.ToString()) != null;
                 }
                 if (result.Data.Medias != null)
                 {
@@ -494,7 +494,7 @@ namespace Roadie.Api.Services
                 }
                 if (includes.Contains("images"))
                 {
-                    var releaseImages = this.DbContext.Images.Where(x => x.ReleaseId == release.Id).Select(x => MakeImage(x.RoadieId, this.Configuration.LargeImageSize.Width, this.Configuration.LargeImageSize.Height)).ToArray();
+                    var releaseImages = this.DbContext.Images.Where(x => x.ReleaseId == release.Id).Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
                     if (releaseImages != null && releaseImages.Any())
                     {
                         result.Images = releaseImages;
