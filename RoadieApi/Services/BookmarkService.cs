@@ -61,90 +61,77 @@ namespace Roadie.Api.Services
             var rowCount = result.Count();
             BookmarkList[] rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
 
-            var datas = (from b in rows
-                         join a in this.DbContext.Artists on b.BookmarkTargetId equals a.Id into aa
-                         from a in aa.DefaultIfEmpty()
-                         join r in this.DbContext.Releases on b.BookmarkTargetId equals r.Id into rr
-                         from r in rr.DefaultIfEmpty()
-                         join t in this.DbContext.Tracks on b.BookmarkTargetId equals t.Id into tt
-                         from t in tt.DefaultIfEmpty()
-                         join p in this.DbContext.Playlists on b.BookmarkTargetId equals p.Id into pp
-                         from p in pp.DefaultIfEmpty()
-                         join c in this.DbContext.Collections on b.BookmarkTargetId equals c.Id into cc
-                         from c in cc.DefaultIfEmpty()
-                         join l in this.DbContext.Labels on b.BookmarkTargetId equals l.Id into ll
-                         from l in ll.DefaultIfEmpty()
-                         select new
-                         { b, a, r, t, p, c, l });
-
             foreach (var row in rows)
             {
-                var d = datas.FirstOrDefault(x => x.b.DatabaseId == row.DatabaseId);
                 switch (row.Type)
                 {
                     case BookmarkType.Artist:
+                        var artist = this.DbContext.Artists.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
                         row.Bookmark = new DataToken
                         {
-                            Text = d.a.Name,
-                            Value = d.a.RoadieId.ToString()
+                            Text = artist.Name,
+                            Value = artist.RoadieId.ToString()
                         };
-                        row.Thumbnail = this.MakeArtistThumbnailImage(d.a.RoadieId);
-                        row.SortName = d.a.SortName ?? d.a.Name;
+                        row.Thumbnail = this.MakeArtistThumbnailImage(artist.RoadieId);
+                        row.SortName = artist.SortName ?? artist.Name;
                         break;
 
                     case BookmarkType.Release:
+                        var release = this.DbContext.Releases.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
                         row.Bookmark = new DataToken
                         {
-                            Text = d.r.Title,
-                            Value = d.r.RoadieId.ToString()
+                            Text = release.Title,
+                            Value = release.RoadieId.ToString()
                         };
-                        row.Thumbnail = this.MakeReleaseThumbnailImage(d.r.RoadieId);
-                        row.SortName = d.r.Title;
+                        row.Thumbnail = this.MakeReleaseThumbnailImage(release.RoadieId);
+                        row.SortName = release.Title;
                         break;
 
                     case BookmarkType.Track:
+                        var track = this.DbContext.Tracks.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
                         row.Bookmark = new DataToken
                         {
-                            Text = d.t.Title,
-                            Value = d.t.RoadieId.ToString()
+                            Text = track.Title,
+                            Value = track.RoadieId.ToString()
                         };
-                        row.Thumbnail = this.MakeTrackThumbnailImage(d.t.RoadieId);
-                        row.SortName = d.t.Title;
+                        row.Thumbnail = this.MakeTrackThumbnailImage(track.RoadieId);
+                        row.SortName = track.Title;
                         break;
 
                     case BookmarkType.Playlist:
+                        var playlist = this.DbContext.Playlists.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
                         row.Bookmark = new DataToken
                         {
-                            Text = d.p.Name,
-                            Value = d.p.RoadieId.ToString()
+                            Text = playlist.Name,
+                            Value = playlist.RoadieId.ToString()
                         };
-                        row.Thumbnail = this.MakePlaylistThumbnailImage(d.p.RoadieId);
-                        row.SortName = d.p.Name;
+                        row.Thumbnail = this.MakePlaylistThumbnailImage(playlist.RoadieId);
+                        row.SortName = playlist.Name;
                         break;
 
                     case BookmarkType.Collection:
+                        var collection = this.DbContext.Collections.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
                         row.Bookmark = new DataToken
                         {
-                            Text = d.c.Name,
-                            Value = d.c.RoadieId.ToString()
+                            Text = collection.Name,
+                            Value = collection.RoadieId.ToString()
                         };
-                        row.Thumbnail = this.MakeCollectionThumbnailImage(d.c.RoadieId);
-                        row.SortName = d.c.SortName ?? d.c.Name;
+                        row.Thumbnail = this.MakeCollectionThumbnailImage(collection.RoadieId);
+                        row.SortName = collection.SortName ?? collection.Name;
                         break;
 
                     case BookmarkType.Label:
+                        var label = this.DbContext.Labels.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
                         row.Bookmark = new DataToken
                         {
-                            Text = d.l.Name,
-                            Value = d.l.RoadieId.ToString()
+                            Text = label.Name,
+                            Value = label.RoadieId.ToString()
                         };
-                        row.Thumbnail = this.MakeLabelThumbnailImage(d.l.RoadieId);
-                        row.SortName = d.l.SortName ?? d.l.Name;
+                        row.Thumbnail = this.MakeLabelThumbnailImage(label.RoadieId);
+                        row.SortName = label.SortName ?? label.Name;
                         break;
                 }
             };
-            sw.Stop();
-
             sw.Stop();
             return new Library.Models.Pagination.PagedResult<BookmarkList>
             {                

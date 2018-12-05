@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
@@ -34,13 +35,33 @@ namespace Roadie.Api.Services
         {
             var sw = new Stopwatch();
             sw.Start();
-
-            if (!string.IsNullOrEmpty(request.Sort))
+            IQueryable<data.Collection> collections = null;
+            if(artistId.HasValue)
             {
-                request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
-                request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
+                var sql = @"select DISTINCT c.*
+                            from `collectionrelease` cr
+                            join `collection` c on c.id = cr.collectionId
+                            join `release` r on r.id = cr.releaseId
+                            join `artist` a on r.artistId = a.id
+                            where a.roadieId = {0}";
+
+                collections = this.DbContext.Collections.FromSql(sql, artistId);
             }
-            var result = (from c in this.DbContext.Collections
+            else if(releaseId.HasValue)
+            {
+                var sql = @"select DISTINCT c.*
+                            from `collectionrelease` cr
+                            join `collection` c on c.id = cr.collectionId
+                            join `release` r on r.id = cr.releaseId
+                            where r.roadieId = {0}";
+
+                collections = this.DbContext.Collections.FromSql(sql, releaseId);
+            }
+            else
+            {
+                collections = this.DbContext.Collections;
+            }
+            var result = (from c in collections
                           where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && c.Name.Contains(request.Filter)))
                           select new CollectionList
                           {
@@ -60,19 +81,6 @@ namespace Roadie.Api.Services
                               LastUpdated = c.LastUpdated,
                               Thumbnail = MakeCollectionThumbnailImage(c.RoadieId)
                           });
-            if (artistId.HasValue || releaseId.HasValue)
-            {
-                result = (from re in result
-                          join cr in this.DbContext.CollectionReleases on re.DatabaseId equals cr.CollectionId into crs
-                          from cr in crs.DefaultIfEmpty()
-                          join r in this.DbContext.Releases on cr.ReleaseId equals r.Id into rs
-                          from r in rs.DefaultIfEmpty()
-                          join a in this.DbContext.Artists on r.ArtistId equals a.Id into aas
-                          from a in aas.DefaultIfEmpty()
-                          where (releaseId == null || r.RoadieId == releaseId)
-                          where (artistId == null || a.RoadieId == artistId)
-                          select re).GroupBy(x => x.DatabaseId).Select(x => x.First());
-            }
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } }) : request.OrderValue(null);
             var rowCount = result.Count();
             var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();

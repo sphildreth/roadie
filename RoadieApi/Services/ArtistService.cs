@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -50,22 +51,36 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<Artist>> ById(User roadieUser, Guid id, IEnumerable<string> includes)
         {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
             var sw = Stopwatch.StartNew();
             sw.Start();
             var cacheKey = string.Format("urn:artist_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
             var result = await this.CacheManager.GetAsync<OperationResult<Artist>>(cacheKey, async () =>
             {
-                return await this.ArtistByIdAction(id, includes);
+                tsw.Restart();
+                var rr = await this.ArtistByIdAction(id, includes);
+                tsw.Stop();
+                timings.Add("ArtistByIdAction", tsw.ElapsedMilliseconds);
+                return rr;
+
             }, data.Artist.CacheRegionUrn(id));
             if (result?.Data != null && roadieUser != null)
             {
+                tsw.Restart();
                 var artist = this.GetArtist(id);
+                tsw.Stop();
+                timings.Add("GetArtist", tsw.ElapsedMilliseconds);
+                tsw.Restart();
                 var userBookmarkResult = await this.BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Artist);
-                if(userBookmarkResult.IsSuccess)
+                if (userBookmarkResult.IsSuccess)
                 {
                     result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == artist.RoadieId.ToString()) != null;
-
                 }
+                tsw.Stop();
+                timings.Add("userBookmarkResult", tsw.ElapsedMilliseconds);
+                tsw.Restart();
                 var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == roadieUser.Id);
                 if (userArtist != null)
                 {
@@ -76,8 +91,12 @@ namespace Roadie.Api.Services
                         Rating = userArtist.Rating
                     };
                 }
+                tsw.Stop();
+                timings.Add("userArtist", tsw.ElapsedMilliseconds);
             }
             sw.Stop();
+            timings.Add("operation", sw.ElapsedMilliseconds);
+            this.Logger.LogDebug("ById Timings: id [{0}], includes [{1}], timings [{3}]", id, includes, JsonConvert.SerializeObject(timings));
             return new OperationResult<Artist>(result.Messages)
             {
                 Data = result?.Data,
@@ -90,19 +109,32 @@ namespace Roadie.Api.Services
 
         private async Task<OperationResult<Artist>> ArtistByIdAction(Guid id, IEnumerable<string> includes)
         {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
             var sw = Stopwatch.StartNew();
             sw.Start();
 
+            tsw.Restart();
             var artist = this.GetArtist(id);
+            tsw.Stop();
+            timings.Add("getArtist", tsw.ElapsedMilliseconds);
 
             if (artist == null)
             {
                 return new OperationResult<Artist>(true, string.Format("Artist Not Found [{0}]", id));
             }
+            tsw.Restart();
             var result = artist.Adapt<Artist>();
+            tsw.Stop();
+            timings.Add("adaptArtist", tsw.ElapsedMilliseconds);
             result.Thumbnail = base.MakeArtistThumbnailImage(id);
             result.MediumThumbnail = base.MakeThumbnailImage(id, "artist", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+            tsw.Restart();
             result.Genres = artist.Genres.Select(x => new DataToken { Text = x.Genre.Name, Value = x.Genre.RoadieId.ToString() });
+            tsw.Stop();
+            timings.Add("genres", tsw.ElapsedMilliseconds);
+
             if (includes != null && includes.Any())
             {
                 if (includes.Contains("releases"))
@@ -147,9 +179,10 @@ namespace Roadie.Api.Services
                     }
                     result.Releases = dtoReleases;
                 }
-
                 if (includes.Contains("stats"))
                 {
+                    tsw.Restart();
+
                     var artistTracks = (from r in this.DbContext.Releases
                                         join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                         join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
@@ -178,13 +211,19 @@ namespace Roadie.Api.Services
                                             join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
                                             select ut.PlayedCount).Sum() ?? 0
                     };
+                    tsw.Stop();
+                    timings.Add("stats", tsw.ElapsedMilliseconds);
                 }
                 if (includes.Contains("images"))
                 {
+                    tsw.Restart();
                     result.Images = this.DbContext.Images.Where(x => x.ArtistId == artist.Id).Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
+                    tsw.Stop();
+                    timings.Add("images", tsw.ElapsedMilliseconds);
                 }
                 if (includes.Contains("associatedartists"))
                 {
+                    tsw.Restart();
                     var associatedWithArtists = (from aa in this.DbContext.ArtistAssociations
                                                     join a in this.DbContext.Artists on aa.AssociatedArtistId equals a.Id
                                                     where aa.ArtistId == artist.Id
@@ -232,10 +271,13 @@ namespace Roadie.Api.Services
                                              }).ToArray();
 
                     result.AssociatedArtists = associatedArtists.Union(associatedWithArtists).OrderBy(x => x.SortName);
+                    tsw.Stop();
+                    timings.Add("associatedartists", tsw.ElapsedMilliseconds);
 
                 }
                 if (includes.Contains("collections"))
                 {
+                    tsw.Restart();
                     var collectionPagedRequest = new PagedRequest
                     {
                         Limit = 100                        
@@ -246,9 +288,12 @@ namespace Roadie.Api.Services
                     {
                         result.CollectionsWithArtistReleases = r.Rows.ToArray();
                     }
+                    tsw.Stop();
+                    timings.Add("collections", tsw.ElapsedMilliseconds);
                 }
                 if (includes.Contains("playlists"))
                 {
+                    tsw.Restart();
                     var pg = new PagedRequest
                     {
                         FilterToArtistId = artist.RoadieId
@@ -258,9 +303,12 @@ namespace Roadie.Api.Services
                     {
                         result.PlaylistsWithArtistReleases = r.Rows.ToArray();
                     }
+                    tsw.Stop();
+                    timings.Add("playlists", tsw.ElapsedMilliseconds);
                 }
                 if (includes.Contains("contributions"))
                 {
+                    tsw.Restart();
                     result.ArtistContributionReleases = (from t in this.DbContext.Tracks
                                                          join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                                          join r in this.DbContext.Releases.Include(x => x.Artist) on rm.ReleaseId equals r.Id
@@ -271,6 +319,7 @@ namespace Roadie.Api.Services
                                                          .Select(rr => rr.First())
                                                          .Select(r => new ReleaseList
                                                          {
+                                                             Id = r.RoadieId,
                                                              Release = new DataToken
                                                              {
                                                                  Text = r.Title,
@@ -295,9 +344,12 @@ namespace Roadie.Api.Services
                                                              Thumbnail = MakeReleaseThumbnailImage(r.RoadieId)
                                                          }).ToArray().OrderBy(x => x.Release.Text).ToArray();
                     result.ArtistContributionReleases = result.ArtistContributionReleases.Any() ? result.ArtistContributionReleases : null;
+                    tsw.Stop();
+                    timings.Add("contributions", tsw.ElapsedMilliseconds);
                 }
                 if (includes.Contains("labels"))
                 {
+                    tsw.Restart();                   
                     result.ArtistLabels = (from l in this.DbContext.Labels
                                            join rl in this.DbContext.ReleaseLabels on l.Id equals rl.LabelId
                                            join r in this.DbContext.Releases on rl.ReleaseId equals r.Id
@@ -320,9 +372,14 @@ namespace Roadie.Api.Services
                                                Thumbnail = MakeLabelThumbnailImage(l.RoadieId)
                                            }).ToArray().GroupBy(x => x.Label.Value).Select(x => x.First()).OrderBy(x => x.SortName).ThenBy(x => x.Label.Text).ToArray();
                     result.ArtistLabels = result.ArtistLabels.Any() ? result.ArtistLabels : null;
+                    tsw.Stop();
+                    timings.Add("labels", tsw.ElapsedMilliseconds);
                 }
             }
             sw.Stop();
+            timings.Add("operation", sw.ElapsedMilliseconds);
+            this.Logger.LogDebug("ArtistByIdAction Timings: id [{0}], includes [{1}], timings [{3}]", id, includes, JsonConvert.SerializeObject(timings));
+
             return new OperationResult<Artist>
             {
                 Data = result,

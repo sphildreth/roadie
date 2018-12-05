@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Roadie.Library.Enums;
 using Roadie.Library.Identity;
+using Roadie.Library.Models.Releases;
 using System;
 
 namespace Roadie.Library.Data
