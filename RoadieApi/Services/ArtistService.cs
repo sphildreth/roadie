@@ -236,8 +236,12 @@ namespace Roadie.Api.Services
                 }
                 if (includes.Contains("collections"))
                 {
+                    var collectionPagedRequest = new PagedRequest
+                    {
+                        Limit = 100                        
+                    };
                     var r = await this.CollectionService.List(roadieUser: null,
-                                                              request: new PagedRequest(), artistId: artist.RoadieId);
+                                                              request: collectionPagedRequest, artistId: artist.RoadieId);
                     if (r.IsSuccess)
                     {
                         result.CollectionsWithArtistReleases = r.Rows.ToArray();

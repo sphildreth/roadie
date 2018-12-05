@@ -71,7 +71,7 @@ namespace Roadie.Api.Services
                           from a in aas.DefaultIfEmpty()
                           where (releaseId == null || r.RoadieId == releaseId)
                           where (artistId == null || a.RoadieId == artistId)
-                          select re);
+                          select re).GroupBy(x => x.DatabaseId).Select(x => x.First());
             }
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } }) : request.OrderValue(null);
             var rowCount = result.Count();

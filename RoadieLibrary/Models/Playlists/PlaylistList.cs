@@ -14,5 +14,17 @@ namespace Roadie.Library.Models.Playlists
         public Image UserThumbnail { get; set; }
         public bool IsPublic { get; set; }
         public int? Duration { get; set; }
+        public string DurationTime
+        {
+            get
+            {
+                if (!this.Duration.HasValue)
+                {
+                    return "--:--";
+                }
+                return TimeSpan.FromSeconds(this.Duration.Value / 1000).ToString(@"hh\:mm\:ss");
+            }
+
+        }
     }
 }
