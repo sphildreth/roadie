@@ -114,7 +114,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
+        public async Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -220,6 +220,10 @@ namespace Roadie.Api.Services
                 {
                     sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Rating", "DESC" } }) : request.OrderValue(null);
                 }
+                else if (request.FilterToArtistId.HasValue)
+                {
+                    sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "ReleaseDate", "ASC" }, { "Release.Text", "ASC" } }) : request.OrderValue(null);
+                }
                 else
                 {
                     sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Release.Text", "ASC" } }) : request.OrderValue(null);
@@ -277,56 +281,60 @@ namespace Roadie.Api.Services
                     }
                 }
             }
-            //if (includes != null && includes.Any())
-            //{
-            //    if (includes.Contains("tracks"))
-            //    {
-            //        var releaseIds = rows.Select(x => x.Id).ToArray();
-            //        var artistTracks = (from r in this.DbContext.Releases
-            //                            join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-            //                            join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-            //                            join a in this.DbContext.Artists on r.ArtistId equals a.Id
-            //                            where (releaseIds.Contains(r.RoadieId))
-            //                            orderby r.Id, rm.MediaNumber, t.TrackNumber
-            //                            select new
-            //                            {
-            //                                t,
-            //                                releaseMedia = rm
-            //                            });
-            //        var releaseTrackIds = artistTracks.Select(x => x.t.Id).ToList();
-            //        var artistUserTracks = (from ut in this.DbContext.UserTracks
-            //                                where ut.UserId == roadieUser.Id
-            //                                where (from x in releaseTrackIds select x).Contains(ut.TrackId)
-            //                                select ut).ToArray();
-            //        foreach (var release in rows)
-            //        {
-            //            var releaseMedias = new List<ReleaseMediaList>();
-            //            foreach (var releaseMedia in artistTracks.Where(x => x.releaseMedia.RoadieId == release.Id).Select(x => x.releaseMedia).Distinct().ToArray())
-            //            {
-            //                var rm = releaseMedia.Adapt<ReleaseMediaList>();
-            //                var rmTracks = new List<TrackList>();
-            //                foreach (var track in artistTracks.Where(x => x.t.ReleaseMediaId == releaseMedia.Id).OrderBy(x => x.t.TrackNumber).ToArray())
-            //                {
-            //                    var userRating = artistUserTracks.FirstOrDefault(x => x.TrackId == track.t.Id);
-            //                    var t = track.t.Adapt<TrackList>();
-            //                    t.CssClass = string.IsNullOrEmpty(track.t.Hash) ? "Missing" : "Ok";
-            //                    t.TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ track.t.RoadieId}.mp3";
-            //                    t.UserTrack = new UserTrack
-            //                    {
-            //                        Rating = userRating.Rating,
-            //                        IsFavorite = userRating.IsFavorite ?? false,
-            //                        IsDisliked = userRating.IsDisliked ?? false
-            //                    };
-            //                    rmTracks.Add(t);
-            //                }
-            //                rm.Tracks = rmTracks;
-            //                releaseMedias.Add(rm);
-            //            }
-            //            release.Media = releaseMedias.OrderBy(x => x.MediaNumber).ToArray();
-            //        }
-            //    }
-            //}
-            if(request.FilterFavoriteOnly)
+            if (includes != null && includes.Any())
+            {
+                if (includes.Contains("tracks"))
+                {
+                    var releaseIds = rows.Select(x => x.Id).ToArray();
+                    var artistTracks = (from r in this.DbContext.Releases
+                                        join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                        join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                        join a in this.DbContext.Artists on r.ArtistId equals a.Id
+                                        where (releaseIds.Contains(r.RoadieId))
+                                        orderby r.Id, rm.MediaNumber, t.TrackNumber
+                                        select new
+                                        {
+                                            t,
+                                            releaseMedia = rm,
+                                            release = r
+                                        });
+                    var releaseTrackIds = artistTracks.Select(x => x.t.Id).ToList();
+                    var artistUserTracks = (from ut in this.DbContext.UserTracks
+                                            where ut.UserId == roadieUser.Id
+                                            where (from x in releaseTrackIds select x).Contains(ut.TrackId)
+                                            select ut).ToArray();
+                    foreach (var release in rows)
+                    {
+                        var releaseMedias = new List<ReleaseMediaList>();
+                        foreach (var releaseMedia in artistTracks.Where(x => x.release.RoadieId == release.Id).Select(x => x.releaseMedia).Distinct().ToArray())
+                        {
+                            var rm = releaseMedia.Adapt<ReleaseMediaList>();
+                            var rmTracks = new List<TrackList>();
+                            foreach (var track in artistTracks.Where(x => x.t.ReleaseMediaId == releaseMedia.Id).OrderBy(x => x.t.TrackNumber).ToArray())
+                            {
+                                var t = track.t.Adapt<TrackList>();
+                                t.CssClass = string.IsNullOrEmpty(track.t.Hash) ? "Missing" : "Ok";
+                                t.TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ track.t.RoadieId}.mp3";
+                                var userRating = artistUserTracks.FirstOrDefault(x => x.TrackId == track.t.Id);
+                                if (userRating != null)
+                                {
+                                    t.UserRating = new UserTrack
+                                    {
+                                        Rating = userRating.Rating,
+                                        IsFavorite = userRating.IsFavorite ?? false,
+                                        IsDisliked = userRating.IsDisliked ?? false
+                                    };
+                                }
+                                rmTracks.Add(t);
+                            }
+                            rm.Tracks = rmTracks;
+                            releaseMedias.Add(rm);
+                        }
+                        release.Media = releaseMedias.OrderBy(x => x.MediaNumber).ToArray();
+                    }
+                }
+            }
+            if (request.FilterFavoriteOnly)
             {
                 rows = rows.OrderBy(x => x.UserRating.Rating).ToArray();
             }

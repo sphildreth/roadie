@@ -12,7 +12,7 @@ namespace Roadie.Api.Services
     {
         Task<OperationResult<Release>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null);
 
-        Task<PagedResult<ReleaseList>> List(User user, PagedRequest request, bool? doRandomize = false);
+        Task<PagedResult<ReleaseList>> List(User user, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null);
         Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id);
     }
 }

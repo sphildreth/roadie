@@ -9,6 +9,7 @@ using Roadie.Library.Data;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using models = Roadie.Library.Models;
@@ -57,14 +58,23 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc, bool? doRandomize = false)
         {
-            var result = await this.ReleaseService.List(user: await this.CurrentUserModel(),
-                                                               request: request, 
-                                                               doRandomize: doRandomize ?? false);
-            if (!result.IsSuccess)
+            try
             {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
+                var result = await this.ReleaseService.List(user: await this.CurrentUserModel(),
+                                                           request: request,
+                                                           doRandomize: doRandomize ?? false,
+                                                           includes: (inc ?? models.Releases.Release.DefaultListIncludes).ToLower().Split(","));
+                if (!result.IsSuccess)
+                {
+                    return StatusCode((int)HttpStatusCode.InternalServerError);
+                }
+                return Ok(result);
             }
-            return Ok(result);
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);                
+            }
+            return StatusCode((int)HttpStatusCode.InternalServerError);
         }
 
     }

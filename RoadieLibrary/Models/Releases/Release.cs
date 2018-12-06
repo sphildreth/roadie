@@ -11,6 +11,7 @@ namespace Roadie.Library.Models.Releases
     public class Release : EntityModelBase
     {
         public const string DefaultIncludes = "tracks,stats,images,collections,labels";
+        public const string DefaultListIncludes = "";
 
         [MaxLength(50)]
         public string AmgId { get; set; }
