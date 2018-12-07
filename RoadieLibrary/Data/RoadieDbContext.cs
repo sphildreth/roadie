@@ -83,6 +83,13 @@ namespace Roadie.Library.Data
             //        v => string.IsNullOrEmpty(v) ? BookmarkType.Unknown : (BookmarkType)Enum.Parse(typeof(BookmarkType), v))
             //    .HasDefaultValue(BookmarkType.Unknown);
 
+            builder.Entity<Release>()
+                .HasOne(d => d.Artist)
+                .WithMany(p => p.Releases)
+                .HasForeignKey(d => d.ArtistId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("release_ibfk_1");
+
             builder.Entity<ReleaseLabel>()
                 .HasOne(rl => rl.Release)
                 .WithMany(r => r.Labels)

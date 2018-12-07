@@ -60,5 +60,37 @@ namespace Roadie.Library.Models.Releases
             }
 
         }
+
+        public static ReleaseList FromDataRelease(Data.Release release, Data.Artist artist, string baseUrl, Image artistThumbnail, Image thumbnail)
+        {
+            return new ReleaseList
+            {
+                DatabaseId = release.Id,
+                Id = release.RoadieId,
+                Artist = new DataToken
+                {
+                    Value = artist.RoadieId.ToString(),
+                    Text = artist.Name
+                },
+                Release = new DataToken
+                {
+                    Text = release.Title,
+                    Value = release.RoadieId.ToString()
+                },
+                ArtistThumbnail = artistThumbnail,
+                CreatedDate = release.CreatedDate,
+                Duration = release.Duration,
+                LastPlayed = release.LastPlayed,
+                LastUpdated = release.LastUpdated,
+                LibraryStatus = release.LibraryStatus,
+                Rating = release.Rating,
+                ReleaseDateDateTime = release.ReleaseDate,
+                ReleasePlayUrl = $"{ baseUrl }/play/release/{ release.RoadieId}",
+                Status = release.Status,
+                Thumbnail = thumbnail,
+                TrackCount = release.TrackCount,
+                TrackPlayedCount = release.PlayedCount
+            };
+        }
     }
 }

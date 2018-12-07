@@ -22,7 +22,7 @@ namespace Roadie.Library.Utility
             };
             foreach (var track in tracks)
             {
-                result.Add($"#EXTINF:{ track.Duration },{ track.Artist.Text} - { track.Track.Text }");
+                result.Add($"#EXTINF:{ track.Duration },{ track.Artist.Artist.Text} - { track.Track.Text }");
                 result.Add($"{ track.TrackPlayUrl }");
                 result.Add(string.Empty);
             }

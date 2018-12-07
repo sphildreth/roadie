@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Users;
 using System;
 using System.Collections.Generic;
@@ -14,10 +15,8 @@ namespace Roadie.Library.Models
         public int? MediaNumber { get; set; }
         public int? TrackNumber { get; set; }
         public DataToken Track { get; set; }
-        public DataToken Release { get; set; }
-        public Image ReleaseThumbnail { get; set; }
-        public DataToken Artist { get; set; }
-        public Image ArtistThumbnail { get; set; }
+        public ReleaseList Release { get; set; }
+        public ArtistList Artist { get; set; }
         public ArtistList TrackArtist { get; set; }
         public string Title { get; set; }
         public int? Duration { get; set; }

@@ -28,7 +28,7 @@ namespace Roadie.Library.Models
                     Text = artist.Name,
                     Value = artist.RoadieId.ToString()
                 },
-                Thumbnail = thumbnail, // this.MakeArtistThumbnailImage(a.RoadieId),
+                Thumbnail = thumbnail, 
                 Rating = artist.Rating,
                 CreatedDate = artist.CreatedDate,
                 LastUpdated = artist.LastUpdated,

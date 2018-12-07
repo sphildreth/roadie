@@ -9,6 +9,7 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
+using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
@@ -327,28 +328,18 @@ namespace Roadie.Api.Services
                                   Text = x.t.Title,
                                   Value = x.t.RoadieId.ToString()
                               },
-                              Release = new DataToken
-                              {
-                                  Text = x.r.Title,
-                                  Value = x.r.RoadieId.ToString()
-                              },
-                              Artist = new DataToken
-                              {
-                                  Text = x.releaseArtist.Name,
-                                  Value = x.releaseArtist.RoadieId.ToString()
-                              },
+                              Release = ReleaseList.FromDataRelease(x.r, x.releaseArtist, this.HttpContext.BaseUrl, this.MakeArtistThumbnailImage(x.releaseArtist.RoadieId), this.MakeReleaseThumbnailImage(x.r.RoadieId)),
+                              Artist = ArtistList.FromDataArtist(x.releaseArtist, this.MakeArtistThumbnailImage(x.releaseArtist.RoadieId)),
                               TrackArtist = x.trackArtist != null ? ArtistList.FromDataArtist(x.trackArtist, this.MakeArtistThumbnailImage(x.trackArtist.RoadieId)) : null,
                               TrackNumber = playListTrackPositions.ContainsKey(x.t.Id) ? playListTrackPositions[x.t.Id] : x.t.TrackNumber,
                               MediaNumber = x.rm.MediaNumber,
                               CreatedDate = x.t.CreatedDate,
                               LastUpdated = x.t.LastUpdated,
-                              ReleaseThumbnail = this.MakeReleaseThumbnailImage(x.r.RoadieId),
                               Duration = x.t.Duration,
                               FileSize = x.t.FileSize,
                               ReleaseDate = x.r.ReleaseDate,
                               PlayedCount = x.t.PlayedCount,
                               Rating = x.t.Rating,
-                              ArtistThumbnail = this.MakeArtistThumbnailImage(x.releaseArtist.RoadieId),
                               Title = x.t.Title,
                               TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ x.t.RoadieId }.mp3",
                               Thumbnail = this.MakeTrackThumbnailImage(x.t.RoadieId)

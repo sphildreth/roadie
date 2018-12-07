@@ -129,7 +129,7 @@ namespace Roadie.Api.Services
             sw.Start();
 
             IEnumerable<int> collectionReleaseIds = null;
-            if(request.FilterToCollectionId.HasValue)
+            if (request.FilterToCollectionId.HasValue)
             {
                 collectionReleaseIds = (from cr in this.DbContext.CollectionReleases
                                         join c in this.DbContext.Collections on cr.CollectionId equals c.Id
@@ -141,24 +141,24 @@ namespace Roadie.Api.Services
             if (request.FilterFavoriteOnly)
             {
                 favoriteReleaseIds = (from a in this.DbContext.Releases
-                                     join ur in this.DbContext.UserReleases on a.Id equals ur.ReleaseId
-                                     where ur.IsFavorite ?? false
-                                     where (roadieUser == null || ur.UserId == roadieUser.Id)
+                                      join ur in this.DbContext.UserReleases on a.Id equals ur.ReleaseId
+                                      where ur.IsFavorite ?? false
+                                      where (roadieUser == null || ur.UserId == roadieUser.Id)
                                       select a.Id
                                      ).ToArray();
             }
             int[] genreReleaseIds = new int[0];
-            if(!string.IsNullOrEmpty(request.FilterByGenre))
+            if (!string.IsNullOrEmpty(request.FilterByGenre))
             {
                 genreReleaseIds = (from rg in this.DbContext.ReleaseGenres
                                    join g in this.DbContext.Genres on rg.GenreId equals g.Id
                                    where g.Name == request.FilterByGenre
                                    select rg.ReleaseId).ToArray();
             }
-            if(request.FilterFromYear.HasValue || request.FilterToYear.HasValue)
+            if (request.FilterFromYear.HasValue || request.FilterToYear.HasValue)
             {
                 // If from is larger than to then reverse values and set sort order to desc
-                if(request.FilterToYear > request.FilterFromYear)
+                if (request.FilterToYear > request.FilterFromYear)
                 {
                     var t = request.FilterToYear;
                     request.FilterToYear = request.FilterFromYear;
@@ -173,7 +173,7 @@ namespace Roadie.Api.Services
             //
             // TODO list should honor disliked artist and albums for random
             //
-            var result = (from r in this.DbContext.Releases.Include("Artist")
+            var result = (from r in this.DbContext.Releases
                           join a in this.DbContext.Artists on r.ArtistId equals a.Id
                           where (request.FilterMinimumRating == null || r.Rating >= request.FilterMinimumRating.Value)
                           where (request.FilterToArtistId == null || r.Artist.RoadieId == request.FilterToArtistId)
@@ -183,35 +183,8 @@ namespace Roadie.Api.Services
                           where (request.FilterFromYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear)
                           where (request.FilterToYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear)
                           where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || r.AlternateNames.Contains(request.FilterValue)))
-                          select new ReleaseList
-                          {
-                              DatabaseId = r.Id,
-                              Id = r.RoadieId,
-                              Artist = new DataToken
-                              {
-                                  Value = r.Artist.RoadieId.ToString(),
-                                  Text = r.Artist.Name
-                              },
-                              Release = new DataToken
-                              {
-                                  Text = r.Title,
-                                  Value = r.RoadieId.ToString()
-                              },
-                              ArtistThumbnail = this.MakeArtistThumbnailImage(r.Artist.RoadieId),
-                              CreatedDate = r.CreatedDate,
-                              Duration = r.Duration,
-                              LastPlayed = r.LastPlayed,
-                              LastUpdated = r.LastUpdated,
-                              LibraryStatus = r.LibraryStatus,
-                              Rating = r.Rating,
-                              ReleaseDateDateTime = r.ReleaseDate,
-                              ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ r.RoadieId}",
-                              Status = r.Status,
-                              Thumbnail = this.MakeReleaseThumbnailImage(r.RoadieId),
-                              TrackCount = r.TrackCount,
-                              TrackPlayedCount = r.PlayedCount
-                          }).Distinct();
-
+                          select ReleaseList.FromDataRelease(r, a, this.HttpContext.BaseUrl, this.MakeArtistThumbnailImage(a.RoadieId), this.MakeReleaseThumbnailImage(r.RoadieId))
+                          ).Distinct();
             ReleaseList[] rows = null;
 
             var rowCount = result.Count();
@@ -614,16 +587,6 @@ namespace Roadie.Api.Services
                         foreach (var track in releaseMedia.Tracks.OrderBy(x => x.TrackNumber))
                         {
                             var t = track.Adapt<TrackList>();
-                            t.Artist = new DataToken
-                            {
-                                Text = release.Artist.Name,
-                                Value = release.Artist.RoadieId.ToString()
-                            };
-                            t.Release = new DataToken
-                            {
-                                Text = release.Title,
-                                Value = release.RoadieId.ToString()
-                            };
                             t.Track = new DataToken
                             {
                                 Text = track.Title,

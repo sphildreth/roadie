@@ -313,32 +313,8 @@ namespace Roadie.Api.Services
                                                          select rr)
                                                          .ToArray()
                                                          .Select(rr => rr.First())
-                                                         .Select(r => new ReleaseList
-                                                         {
-                                                             Id = r.RoadieId,
-                                                             Release = new DataToken
-                                                             {
-                                                                 Text = r.Title,
-                                                                 Value = r.RoadieId.ToString()
-                                                             },
-                                                             Artist = new DataToken
-                                                             {
-                                                                 Value = r.Artist.RoadieId.ToString(),
-                                                                 Text = r.Artist.Name
-                                                             },
-                                                             ArtistThumbnail = MakeArtistThumbnailImage(r.Artist.RoadieId),
-                                                             Rating = r.Rating,
-                                                             Duration = r.Duration,
-                                                             ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ r.RoadieId}",
-                                                             LibraryStatus = r.LibraryStatus ?? LibraryStatus.Incomplete,
-                                                             ReleaseDateDateTime = r.ReleaseDate,
-                                                             TrackCount = r.TrackCount,
-                                                             CreatedDate = r.CreatedDate,
-                                                             LastUpdated = r.LastUpdated,
-                                                             TrackPlayedCount = r.PlayedCount,
-                                                             LastPlayed = r.LastPlayed,
-                                                             Thumbnail = MakeReleaseThumbnailImage(r.RoadieId)
-                                                         }).ToArray().OrderBy(x => x.Release.Text).ToArray();
+                                                         .Select(r => ReleaseList.FromDataRelease(r, r.Artist, this.HttpContext.BaseUrl, MakeArtistThumbnailImage(r.Artist.RoadieId), MakeReleaseThumbnailImage(r.RoadieId)))
+                                                         .ToArray().OrderBy(x => x.Release.Text).ToArray();
                     result.ArtistContributionReleases = result.ArtistContributionReleases.Any() ? result.ArtistContributionReleases : null;
                     tsw.Stop();
                     timings.Add("contributions", tsw.ElapsedMilliseconds);

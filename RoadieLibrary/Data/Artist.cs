@@ -66,7 +66,8 @@ namespace Roadie.Library.Data
         [MaxLength(500)]
         public string RealName { get; set; }
 
-        public List<Release> Releases { get; set; }
+        //public List<Release> Releases { get; set; }
+        public ICollection<Release> Releases { get; set; }
 
         [Column("spotifyId")]
         [MaxLength(100)]
@@ -77,6 +78,11 @@ namespace Roadie.Library.Data
 
         [Column("trackCount")]
         public int? TrackCount { get; set; } // TODO update this on artist folder scane
+
+        public Artist()
+        {
+            this.Releases = new HashSet<Release>();
+        }
 
     }
 }
