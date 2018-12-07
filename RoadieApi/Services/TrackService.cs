@@ -337,11 +337,7 @@ namespace Roadie.Api.Services
                                   Text = x.releaseArtist.Name,
                                   Value = x.releaseArtist.RoadieId.ToString()
                               },
-                              TrackArtist = x.trackArtist != null ? new DataToken
-                              {
-                                  Text = x.trackArtist.Name,
-                                  Value = x.trackArtist.RoadieId.ToString()
-                              } : null,
+                              TrackArtist = x.trackArtist != null ? ArtistList.FromDataArtist(x.trackArtist, this.MakeArtistThumbnailImage(x.trackArtist.RoadieId)) : null,
                               TrackNumber = playListTrackPositions.ContainsKey(x.t.Id) ? playListTrackPositions[x.t.Id] : x.t.TrackNumber,
                               MediaNumber = x.rm.MediaNumber,
                               CreatedDate = x.t.CreatedDate,
@@ -354,7 +350,6 @@ namespace Roadie.Api.Services
                               Rating = x.t.Rating,
                               ArtistThumbnail = this.MakeArtistThumbnailImage(x.releaseArtist.RoadieId),
                               Title = x.t.Title,
-                              TrackArtistThumbnail = x.trackArtist != null ? this.MakeArtistThumbnailImage(x.trackArtist.RoadieId) : null,
                               TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ x.t.RoadieId }.mp3",
                               Thumbnail = this.MakeTrackThumbnailImage(x.t.RoadieId)
                           });

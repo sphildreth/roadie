@@ -1,0 +1,423 @@
+{
+    "data": {
+        "amgId": "mw0000190990",
+        "artist": {
+            "text": "Men At Work",
+            "value": "e9415243-515e-4595-b574-e4357712b715",
+            "tooltip": "Men At Work"
+        },
+        "collections": [
+            {
+                "collection": {
+                    "text": "Greatest of All Time Billboard 200 Albums",
+                    "value": "3516bb27-a43c-47dc-81bc-57ff0759d90e",
+                    "tooltip": "Greatest of All Time Billboard 200 Albums"
+                },
+                "collectionImage": {
+                    "url": "http://192.168.1.177:5123/images/collection/3516bb27-a43c-47dc-81bc-57ff0759d90e",
+                    "userBookmarked": false
+                },
+                "collectionType": 3,
+                "listNumber": 102
+            }
+        ],
+        "discogsId": "3208075",
+        "genres": [
+            {
+                "text": "Adult Alternative",
+                "value": "3b3b4412-f3a2-451c-ac69-9431542a563f",
+                "tooltip": "Adult Alternative"
+            },
+            {
+                "text": "top40",
+                "value": "70a3910c-e88d-11e8-bdc1-24be052801e5",
+                "tooltip": "top40"
+            }
+        ],
+        "iTunesId": "282960957",
+        "labels": [
+            {
+                "catalogNumber": "CBS 450449 1",
+                "label": {
+                    "text": "CBS",
+                    "value": "4ba9d29d-a380-4edb-9ed9-9dde59c4035b",
+                    "tooltip": "CBS"
+                },
+                "userBookmarked": false
+            },
+            {
+                "catalogNumber": "FC 37978",
+                "label": {
+                    "text": "Columbia",
+                    "value": "9b6c2299-6096-4cb0-a3ff-88aa8f4a798c",
+                    "tooltip": "Columbia"
+                },
+                "userBookmarked": false
+            },
+            {
+                "catalogNumber": "EPC 450887 2",
+                "label": {
+                    "text": "Epic",
+                    "value": "f55246e3-ee89-4a5e-a3c0-f9b824dce725",
+                    "tooltip": "Epic"
+                },
+                "userBookmarked": false
+            },
+            {
+                "catalogNumber": "461023 2",
+                "label": {
+                    "text": "Sony BMG Music Entertainment",
+                    "value": "f02ac3c9-1891-4e96-a332-98bd5a70cf3c",
+                    "tooltip": "Sony BMG Music Entertainment"
+                },
+                "userBookmarked": false
+            }
+        ],
+        "lastFMId": "Men+at+Work/Business+As+Usual",
+        "lastFMSummary": "<p>\n                        \n                        \n                    \n                    Business as Usual is the debut album of Australian new wave band Men at Work, which was released in November 1981 in Australia, and April 1982 in the United States.<span style=\"color: rgb(34, 34, 34); font-family: &quot;Open Sans&quot;, &quot;Lucida Grande&quot;, &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;\"><br></span></p>",
+        "libraryStatus": "Complete",
+        "mediaCount": 1,
+        "medias": [
+            {
+                "mediaNumber": 1,
+                "trackCount": 10,
+                "tracks": [
+                    {
+                        "trackNumber": 1,
+                        "track": {
+                            "text": "Who Can It Be Now?",
+                            "value": "77d14e1e-98c6-4932-9825-b94e5c14260f",
+                            "tooltip": "Who Can It Be Now?"
+                        },
+                        "release": {
+                            "text": "Business As Usual",
+                            "value": "1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+                            "tooltip": "Business As Usual"
+                        },
+                        "artist": {
+                            "text": "Men At Work",
+                            "value": "e9415243-515e-4595-b574-e4357712b715",
+                            "tooltip": "Men At Work"
+                        },
+                        "title": "Who Can It Be Now?",
+                        "duration": 205000,
+                        "durationTime": "00:03:25",
+                        "durationTimeShort": "03:25",
+                        "rating": 0,
+                        "playedCount": 4,
+                        "trackPlayUrl": "http://192.168.1.177:5123/play/track/77d14e1e-98c6-4932-9825-b94e5c14260f.mp3",
+                        "fileSize": 8193438,
+                        "id": "77d14e1e-98c6-4932-9825-b94e5c14260f",
+                        "createdDate": "2015-11-07T16:08:54",
+                        "lastUpdated": "2016-01-31T16:44:54"
+                    },
+                    {
+                        "trackNumber": 2,
+                        "track": {
+                            "text": "I Can See It In Your Eyes",
+                            "value": "22622449-7766-4900-b143-d76e801d1a83",
+                            "tooltip": "I Can See It In Your Eyes"
+                        },
+                        "release": {
+                            "text": "Business As Usual",
+                            "value": "1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+                            "tooltip": "Business As Usual"
+                        },
+                        "artist": {
+                            "text": "Men At Work",
+                            "value": "e9415243-515e-4595-b574-e4357712b715",
+                            "tooltip": "Men At Work"
+                        },
+                        "title": "I Can See It In Your Eyes",
+                        "duration": 212000,
+                        "durationTime": "00:03:32",
+                        "durationTimeShort": "03:32",
+                        "rating": 0,
+                        "playedCount": 1,
+                        "trackPlayUrl": "http://192.168.1.177:5123/play/track/22622449-7766-4900-b143-d76e801d1a83.mp3",
+                        "fileSize": 8515274,
+                        "id": "22622449-7766-4900-b143-d76e801d1a83",
+                        "createdDate": "2015-11-07T16:08:54",
+                        "lastUpdated": "2016-01-31T16:44:54"
+                    },
+                    {
+                        "trackNumber": 3,
+                        "track": {
+                            "text": "Down Under",
+                            "value": "78e0c876-58ea-4504-8b34-9edbafe7975b",
+                            "tooltip": "Down Under"
+                        },
+                        "release": {
+                            "text": "Business As Usual",
+                            "value": "1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+                            "tooltip": "Business As Usual"
+                        },
+                        "artist": {
+                            "text": "Men At Work",
+                            "value": "e9415243-515e-4595-b574-e4357712b715",
+                            "tooltip": "Men At Work"
+                        },
+                        "title": "Down Under",
+                        "duration": 225000,
+                        "durationTime": "00:03:45",
+                        "durationTimeShort": "03:45",
+                        "rating": 0,
+                        "playedCount": 2,
+                        "trackPlayUrl": "http://192.168.1.177:5123/play/track/78e0c876-58ea-4504-8b34-9edbafe7975b.mp3",
+                        "fileSize": 9040842,
+                        "id": "78e0c876-58ea-4504-8b34-9edbafe7975b",
+                        "createdDate": "2015-11-07T16:08:54",
+                        "lastUpdated": "2016-01-31T16:44:54"
+                    },
+                    {
+                        "trackNumber": 4,
+                        "track": {
+                            "text": "Underground",
+                            "value": "6504eeb1-3a64-446d-b245-9f6c99d7c404",
+                            "tooltip": "Underground"
+                        },
+                        "release": {
+                            "text": "Business As Usual",
+                            "value": "1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+                            "tooltip": "Business As Usual"
+                        },
+                        "artist": {
+                            "text": "Men At Work",
+                            "value": "e9415243-515e-4595-b574-e4357712b715",
+                            "tooltip": "Men At Work"
+                        },
+                        "title": "Underground",
+                        "duration": 187000,
+                        "durationTime": "00:03:07",
+                        "durationTimeShort": "03:07",
+                        "rating": 0,
+                        "playedCount": 1,
+                        "trackPlayUrl": "http://192.168.1.177:5123/play/track/6504eeb1-3a64-446d-b245-9f6c99d7c404.mp3",
+                        "fileSize": 7509023,
+                        "id": "6504eeb1-3a64-446d-b245-9f6c99d7c404",
+                        "createdDate": "2015-11-07T16:08:54",
+                        "lastUpdated": "2016-01-31T16:44:54"
+                    },
+                    {
+                        "trackNumber": 5,
+                        "track": {
+                            "text": "Helpless Automaton",
+                            "value": "0d0eeedb-2e7a-4c41-b4ba-6708e2d26972",
+                            "tooltip": "Helpless Automaton"
+                        },
+                        "release": {
+                            "text": "Business As Usual",
+                            "value": "1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+                            "tooltip": "Business As Usual"
+                        },
+                        "artist": {
+                            "text": "Men At Work",
+                            "value": "e9415243-515e-4595-b574-e4357712b715",
+                            "tooltip": "Men At Work"
+                        },
+                        "title": "Helpless Automaton",
+                        "duration": 203000,
+                        "durationTime": "00:03:23",
+                        "durationTimeShort": "03:23",
+                        "rating": 0,
+                        "playedCount": 1,
+                        "trackPlayUrl": "http://192.168.1.177:5123/play/track/0d0eeedb-2e7a-4c41-b4ba-6708e2d26972.mp3",
+                        "fileSize": 8165226,
+                        "id": "0d0eeedb-2e7a-4c41-b4ba-6708e2d26972",
+                        "createdDate": "2015-11-07T16:08:54",
+                        "lastUpdated": "2016-01-31T16:44:54"
+                    },
+                    {
+                        "trackNumber": 6,
+                        "track": {
+                            "text": "People Just Love To Play With Words",
+                            "value": "96b99fc8-3fde-44db-a26e-2aff6a9aa8f6",
+                            "tooltip": "People Just Love To Play With Words"
+                        },
+                        "release": {
+                            "text": "Business As Usual",
+                            "value": "1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+                            "tooltip": "Business As Usual"
+                        },
+                        "artist": {
+                            "text": "Men At Work",
+                            "value": "e9415243-515e-4595-b574-e4357712b715",
+                            "tooltip": "Men At Work"
+                        },
+                        "title": "People Just Love To Play With Words",
+                        "duration": 213000,
+                        "durationTime": "00:03:33",
+                        "durationTimeShort": "03:33",
+                        "rating": 2,
+                        "playedCount": 4,
+                        "trackPlayUrl": "http://192.168.1.177:5123/play/track/96b99fc8-3fde-44db-a26e-2aff6a9aa8f6.mp3",
+                        "fileSize": 8537226,
+                        "id": "96b99fc8-3fde-44db-a26e-2aff6a9aa8f6",
+                        "createdDate": "2015-11-07T16:08:54",
+                        "lastUpdated": "2017-07-18T20:28:00"
+                    },
+                    {
+                        "trackNumber": 7,
+                        "track": {
+                            "text": "Be Good Johnny",
+                            "value": "e20d7fdb-e5f1-49de-80b6-86e9dc8690d8",
+                            "tooltip": "Be Good Johnny"
+                        },
+                        "release": {
+                            "text": "Business As Usual",
+                            "value": "1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+                            "tooltip": "Business As Usual"
+                        },
+                        "artist": {
+                            "text": "Men At Work",
+                            "value": "e9415243-515e-4595-b574-e4357712b715",
+                            "tooltip": "Men At Work"
+                        },
+                        "title": "Be Good Johnny",
+                        "duration": 219000,
+                        "durationTime": "00:03:39",
+                        "durationTimeShort": "03:39",
+                        "rating": 0,
+                        "playedCount": 1,
+                        "trackPlayUrl": "http://192.168.1.177:5123/play/track/e20d7fdb-e5f1-49de-80b6-86e9dc8690d8.mp3",
+                        "fileSize": 8784846,
+                        "id": "e20d7fdb-e5f1-49de-80b6-86e9dc8690d8",
+                        "createdDate": "2015-11-07T16:08:54",
+                        "lastUpdated": "2016-01-31T16:44:54"
+                    },
+                    {
+                        "trackNumber": 8,
+                        "track": {
+                            "text": "Touching The Untouchables",
+                            "value": "8b5e8859-2bda-4e5e-8d76-0b2f6626e915",
+                            "tooltip": "Touching The Untouchables"
+                        },
+                        "release": {
+                            "text": "Business As Usual",
+                            "value": "1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+                            "tooltip": "Business As Usual"
+                        },
+                        "artist": {
+                            "text": "Men At Work",
+                            "value": "e9415243-515e-4595-b574-e4357712b715",
+                            "tooltip": "Men At Work"
+                        },
+                        "title": "Touching The Untouchables",
+                        "duration": 221000,
+                        "durationTime": "00:03:41",
+                        "durationTimeShort": "03:41",
+                        "rating": 1,
+                        "playedCount": 8,
+                        "trackPlayUrl": "http://192.168.1.177:5123/play/track/8b5e8859-2bda-4e5e-8d76-0b2f6626e915.mp3",
+                        "fileSize": 8879943,
+                        "id": "8b5e8859-2bda-4e5e-8d76-0b2f6626e915",
+                        "createdDate": "2015-11-07T16:08:54",
+                        "lastUpdated": "2016-02-05T14:19:12"
+                    },
+                    {
+                        "trackNumber": 9,
+                        "track": {
+                            "text": "Catch A Star",
+                            "value": "0b0a651b-2c3d-40de-adb5-82f360b9aab2",
+                            "tooltip": "Catch A Star"
+                        },
+                        "release": {
+                            "text": "Business As Usual",
+                            "value": "1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+                            "tooltip": "Business As Usual"
+                        },
+                        "artist": {
+                            "text": "Men At Work",
+                            "value": "e9415243-515e-4595-b574-e4357712b715",
+                            "tooltip": "Men At Work"
+                        },
+                        "title": "Catch A Star",
+                        "duration": 211000,
+                        "durationTime": "00:03:31",
+                        "durationTimeShort": "03:31",
+                        "rating": 0,
+                        "playedCount": 1,
+                        "trackPlayUrl": "http://192.168.1.177:5123/play/track/0b0a651b-2c3d-40de-adb5-82f360b9aab2.mp3",
+                        "fileSize": 8476599,
+                        "id": "0b0a651b-2c3d-40de-adb5-82f360b9aab2",
+                        "createdDate": "2015-11-07T16:08:54",
+                        "lastUpdated": "2016-01-31T16:44:55"
+                    },
+                    {
+                        "trackNumber": 10,
+                        "track": {
+                            "text": "Down By The Sea",
+                            "value": "41197dc3-b0d0-4402-b4e2-460f025f34d4",
+                            "tooltip": "Down By The Sea"
+                        },
+                        "release": {
+                            "text": "Business As Usual",
+                            "value": "1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+                            "tooltip": "Business As Usual"
+                        },
+                        "artist": {
+                            "text": "Men At Work",
+                            "value": "e9415243-515e-4595-b574-e4357712b715",
+                            "tooltip": "Men At Work"
+                        },
+                        "title": "Down By The Sea",
+                        "duration": 413000,
+                        "durationTime": "00:06:53",
+                        "durationTimeShort": "06:53",
+                        "rating": 2,
+                        "playedCount": 4,
+                        "trackPlayUrl": "http://192.168.1.177:5123/play/track/41197dc3-b0d0-4402-b4e2-460f025f34d4.mp3",
+                        "fileSize": 16542166,
+                        "id": "41197dc3-b0d0-4402-b4e2-460f025f34d4",
+                        "createdDate": "2016-01-31T16:44:55",
+                        "lastUpdated": "2017-07-18T20:28:07"
+                    }
+                ],
+                "id": "8a1e98b0-7fb5-4558-9f58-da4c5a9ecf7f",
+                "createdDate": "2015-11-01T14:32:32"
+            }
+        ],
+        "musicBrainzId": "0c77657d-6f77-4e6a-a220-b3bfeb5bfaf9",
+        "profile": "<p>Business as Usual is the debut studio album by Australian new wave band Men at Work, which was released in November 1981 in Australia, and April 1982 in the United States. It spent nine weeks at the top of the Australian Kent Music Report Albums Chart from December 1981 through to March 1982. The Australian version had a black and white cover design; overseas releases had a similar design, but in a black and yellow colour scheme. Business as Usual was one of the most successful albums internationally by an Australian group. It spent an unprecedented 15 weeks at No. 1 on the US Billboard 200 from late 1982 to early 1983; and five weeks at No. 1 in the United Kingdom Albums Chart in early 1983. Business as Usual was also one of the highest selling Australian albums in the early 1980s, with 6 million copies sold in the US,[2] and 15 million sold worldwide.[citation needed] Surprisingly, the disc also made it to #31 on Billboard's Black Albums chart.<br><br>The first single from the album, \"Who Can It Be Now?\", was released in Australia in June 1981, prior to the recording of the rest of the album. It reached No. 2 on the Australian Kent Music Report Singles Chart in August that year. The second single, \"Down Under\", which was issued in October peaked at No. 1 for six weeks. A third single, \"Be Good Johnny\", appeared in April the following year and reached No. 8.<br><br>In February 2010 a Federal Court judge in Sydney found that the flute riff from \"Down Under\" had been plagiarised from the Australian song \"Kookaburra Sits in the Old Gum Tree\", written in 1934 by Marion Sinclair. The Federal Court determined that the copyright was still current (Sinclair died in 1988) and had been assigned to Larrikin Music. The judge found that \"a substantial amount of the original song\" had been reproduced in \"Down Under\". Larrikin Music had suggested 60% of the royalties would be appropriate compensation, but the court decreed they shall receive only 5%, and only on mechanical rights for the song since 2002, and on future profits.<br><br>In October 2010, Business as Usual was listed in the book, 100 Best Australian Albums.[3]<br></p>",
+        "releaseDate": "1981-01-01T00:00:00",
+        "releaseType": "Unknown",
+        "spotifyId": "4HDJMKkwAMVFewqfZcmf84",
+        "thumbnail": {
+            "url": "http://192.168.1.177:5123/images/release/1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+            "userBookmarked": false
+        },
+        "artistThumbnail": {
+            "url": "http://192.168.1.177:5123/images/artist/e9415243-515e-4595-b574-e4357712b715",
+            "userBookmarked": false
+        },
+        "title": "Business As Usual",
+        "trackCount": 10,
+        "releasePlayUrl": "http://192.168.1.177:5123/play/release/1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+        "maxMediaNumber": 1,
+        "statistics": {
+            "mediaCount": 1,
+            "missingTrackCount": 0,
+            "trackCount": 10,
+            "trackPlayedCount": 25,
+            "trackSize": "88.35MB",
+            "trackTime": "00:38:29"
+        },
+        "alternateNamesList": [
+            "businessasusual"
+        ],
+        "createdDate": "2015-11-01T14:32:32",
+        "id": "1fbf92fe-b3e3-45ba-9b6a-aacc68aaad62",
+        "isLocked": true,
+        "lastUpdated": "2018-12-06T21:29:59",
+        "status": 0,
+        "tagsList": [
+            "6x Platinum"
+        ],
+        "urLsList": [
+            "https://en.wikipedia.org/wiki/Business_as_Usual_(Men_at_Work_album)"
+        ],
+        "userBookmarked": false
+    },
+    "isSuccess": true,
+    "operationTime": 1046
+}

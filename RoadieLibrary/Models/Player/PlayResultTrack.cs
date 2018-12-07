@@ -40,7 +40,7 @@ namespace Roadie.Library.Models.Player
         {
             get
             {
-                return this.Track.TrackArtist?.Text ?? this.Artist.Artist.Text;
+                return this.Track.TrackArtist?.Artist.Text ?? this.Artist.Artist.Text;
             }
         }
 
@@ -50,7 +50,7 @@ namespace Roadie.Library.Models.Player
             {
                 if (this.Track.TrackArtist != null)
                 {
-                    return this.Track.TrackArtist.Text;
+                    return this.Track.TrackArtist.Artist.Text;
                 }
                 return this.Artist.Artist.Text;
             }

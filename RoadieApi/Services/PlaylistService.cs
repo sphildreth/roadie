@@ -47,6 +47,18 @@ namespace Roadie.Api.Services
                                           select pl.Id
                                          ).ToArray();
             }
+            int[] playlistReleaseTrackIds = new int[0];
+            if(request.FilterToReleaseId.HasValue)
+            {
+                playlistReleaseTrackIds = (from pl in this.DbContext.Playlists
+                                              join pltr in this.DbContext.PlaylistTracks on pl.Id equals pltr.PlayListId
+                                              join t in this.DbContext.Tracks on pltr.TrackId equals t.Id
+                                              join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                              join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
+                                              where r.RoadieId == request.FilterToReleaseId
+                                              select pl.Id
+                                         ).ToArray();
+            }
 
             var result = (from pl in this.DbContext.Playlists
                           join u in this.DbContext.Users on pl.UserId equals u.Id
@@ -56,6 +68,7 @@ namespace Roadie.Api.Services
                                           select t.Duration).Sum()
                           where (request.FilterToPlaylistId == null || pl.RoadieId == request.FilterToPlaylistId)
                           where (request.FilterToArtistId == null || playlistWithArtistTrackIds.Contains(pl.Id))
+                          where (request.FilterToReleaseId == null || playlistReleaseTrackIds.Contains(pl.Id))
                           where ((roadieUser == null && pl.IsPublic) || (roadieUser != null && u.RoadieId == roadieUser.UserId || pl.IsPublic))
                           where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
                                     pl.Name != null && pl.Name.Contains(request.FilterValue))

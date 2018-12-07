@@ -18,8 +18,7 @@ namespace Roadie.Library.Models
         public Image ReleaseThumbnail { get; set; }
         public DataToken Artist { get; set; }
         public Image ArtistThumbnail { get; set; }
-        public DataToken TrackArtist { get; set; }
-        public Image TrackArtistThumbnail { get; set; }
+        public ArtistList TrackArtist { get; set; }
         public string Title { get; set; }
         public int? Duration { get; set; }
         public string DurationTime

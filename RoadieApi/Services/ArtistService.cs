@@ -154,17 +154,13 @@ namespace Roadie.Api.Services
                                 foreach (var t in this.DbContext.Tracks.Where(x => x.ReleaseMediaId == releasemedia.Id).OrderBy(x => x.TrackNumber).ToArray())
                                 {
                                     var track = t.Adapt<TrackList>();
-                                    DataToken trackArtist = null;
+                                    ArtistList trackArtist = null;
                                     if (t.ArtistId.HasValue)
                                     {
                                         var ta = this.DbContext.Artists.FirstOrDefault(x => x.Id == t.ArtistId.Value);
                                         if (ta != null)
                                         {
-                                            trackArtist = new DataToken
-                                            {
-                                                Text = ta.Name,
-                                                Value = ta.RoadieId.ToString()
-                                            };
+                                            trackArtist = ArtistList.FromDataArtist(ta, this.MakeArtistThumbnailImage(ta.RoadieId));
                                         }
                                     }
                                     track.TrackArtist = trackArtist;
@@ -183,6 +179,8 @@ namespace Roadie.Api.Services
                 {
                     tsw.Restart();
 
+                    // TODO this should be on artist properties to speed up fetch times
+
                     var artistTracks = (from r in this.DbContext.Releases
                                         join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                         join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
@@ -200,16 +198,14 @@ namespace Roadie.Api.Services
                     {
                         FileSize = artistTracks.Sum(x => (long?)x.size).ToFileSize(),
                         MissingTrackCount = artistTracks.Where(x => x.isMissing).Count(),
-                        ReleaseCount = this.DbContext.Releases.Count(x => x.ArtistId == artist.Id),
+                        ReleaseCount = artist.ReleaseCount,
                         ReleaseMediaCount = (from r in this.DbContext.Releases
                                              join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                              where r.ArtistId == artist.Id
                                              select rm.Id).Count(),
                         TrackTime = validCartistTracks.Any() ? TimeSpan.FromSeconds(Math.Floor((double)trackTime / 1000)).ToString(@"dd\:hh\:mm\:ss") : "--:--",
                         TrackCount = validCartistTracks.Count(),
-                        TrackPlayedCount = (from t in artistTracks
-                                            join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
-                                            select ut.PlayedCount).Sum() ?? 0
+                        TrackPlayedCount = artist.PlayedCount
                     };
                     tsw.Stop();
                     timings.Add("stats", tsw.ElapsedMilliseconds);
@@ -448,7 +444,7 @@ namespace Roadie.Api.Services
                 }
                 else
                 {
-                    sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Artist.Text", "ASC" } }) : request.OrderValue(null);
+                    sortBy = request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Artist.Text", "ASC" } });
                 }
                 rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }

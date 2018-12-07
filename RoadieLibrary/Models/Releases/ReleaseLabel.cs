@@ -7,7 +7,7 @@ namespace Roadie.Library.Models.Releases
     {
         public string CatalogNumber { get; set; }
 
-        public DataToken Label { get; set; }
+        public LabelList Label { get; set; }
 
         public ReleaseLabel()
         {

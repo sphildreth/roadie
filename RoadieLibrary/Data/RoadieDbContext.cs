@@ -57,7 +57,7 @@ namespace Roadie.Library.Data
                 .HasConversion(
                     v => v.ToString(),
                     v => string.IsNullOrEmpty(v) ? ReleaseType.Unknown : (ReleaseType)Enum.Parse(typeof(ReleaseType), v))
-                .HasDefaultValue(ReleaseType.Unknown);
+                .HasDefaultValue(ReleaseType.Release);
 
             builder
                 .Entity<Release>()

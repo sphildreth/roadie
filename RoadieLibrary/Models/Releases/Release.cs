@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Roadie.Library.Models.Playlists;
 using Roadie.Library.Models.Statistics;
 using Roadie.Library.Models.Users;
 using System;
@@ -10,13 +11,13 @@ namespace Roadie.Library.Models.Releases
     [Serializable]
     public class Release : EntityModelBase
     {
-        public const string DefaultIncludes = "tracks,stats,images,collections,labels";
+        public const string DefaultIncludes = "tracks,stats,images,collections,labels,playlists,genres";
         public const string DefaultListIncludes = "";
 
         [MaxLength(50)]
         public string AmgId { get; set; }
 
-        public DataToken Artist { get; set; }
+        public ArtistList Artist { get; set; }
 
         public List<ReleaseInCollection> Collections { get; set; }
 
@@ -46,8 +47,12 @@ namespace Roadie.Library.Models.Releases
         [MaxLength(100)]
         public string MusicBrainzId { get; set; }
 
+        public IEnumerable<PlaylistList> Playlists { get; set; }
+
         [MaxLength(65535)]
         public string Profile { get; set; }
+
+        public short? Rating { get; set; }
 
         [Required]
         public DateTime ReleaseDate { get; set; }
@@ -61,7 +66,6 @@ namespace Roadie.Library.Models.Releases
 
         public Image Thumbnail { get; set; }
 
-        public Image ArtistThumbnail { get; set; }
 
         [MaxLength(250)]
         [Required]
@@ -73,6 +77,6 @@ namespace Roadie.Library.Models.Releases
         public ReleaseStatistics Statistics { get; set; }
         public IEnumerable<Image> Images { get; set; }
         public UserRelease UserRating { get; set; }
-
+        public Image MediumThumbnail { get; set; }
     }
 }
