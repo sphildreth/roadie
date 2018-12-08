@@ -6,6 +6,11 @@ using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Identity;
+using Roadie.Library.Models.Pagination;
+using System;
+using System.Net;
+using System.Threading.Tasks;
+using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
 {
@@ -51,5 +56,19 @@ namespace Roadie.Api.Controllers
         //    }
         //    return Ok(result);
         //}
+
+        [HttpGet]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc)
+        {
+            var result = await this.PlaylistService.List(roadieUser: await this.CurrentUserModel(),
+                                                        request: request);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
     }
 }

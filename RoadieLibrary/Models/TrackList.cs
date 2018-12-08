@@ -55,7 +55,7 @@ namespace Roadie.Library.Models
                 {
                     return null;
                 }
-                return this.PartTitles.Split('|');
+                return this.PartTitles.Split('\n');
             }
         }
 
