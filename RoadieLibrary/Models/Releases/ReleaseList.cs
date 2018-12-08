@@ -60,6 +60,7 @@ namespace Roadie.Library.Models.Releases
             }
 
         }
+        public int? MediaCount { get; set; }
 
         public static ReleaseList FromDataRelease(Data.Release release, Data.Artist artist, string baseUrl, Image artistThumbnail, Image thumbnail)
         {
@@ -83,6 +84,7 @@ namespace Roadie.Library.Models.Releases
                 LastPlayed = release.LastPlayed,
                 LastUpdated = release.LastUpdated,
                 LibraryStatus = release.LibraryStatus,
+                MediaCount = release.MediaCount,
                 Rating = release.Rating,
                 ReleaseDateDateTime = release.ReleaseDate,
                 ReleasePlayUrl = $"{ baseUrl }/play/release/{ release.RoadieId}",

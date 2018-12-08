@@ -5,10 +5,10 @@ namespace Roadie.Library.Data
 {
     public abstract class BeginAndEndNamedEntityBase : NamedEntityBase
     {
-        [Column("beginDate", TypeName = "date")]
+        [Column("beginDate")]
         public DateTime? BeginDate { get; set; }
 
-        [Column("endDate", TypeName = "date")]
+        [Column("endDate")]
         public DateTime? EndDate { get; set; }
     }
 }

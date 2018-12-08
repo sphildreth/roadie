@@ -28,11 +28,10 @@ namespace Roadie.Api.Services
 {
     public class ReleaseService : ServiceBase, IReleaseService
     {
+        private IBookmarkService BookmarkService { get; } = null;
         private ICollectionService CollectionService { get; } = null;
 
         private IPlaylistService PlaylistService { get; } = null;
-
-        private IBookmarkService BookmarkService { get; } = null;
 
         public ReleaseService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
@@ -183,7 +182,35 @@ namespace Roadie.Api.Services
                           where (request.FilterFromYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear)
                           where (request.FilterToYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear)
                           where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || r.AlternateNames.Contains(request.FilterValue)))
-                          select ReleaseList.FromDataRelease(r, a, this.HttpContext.BaseUrl, this.MakeArtistThumbnailImage(a.RoadieId), this.MakeReleaseThumbnailImage(r.RoadieId))
+                          select new ReleaseList
+                          {
+                              DatabaseId = r.Id,
+                              Id = r.RoadieId,
+                              Artist = new DataToken
+                              {
+                                  Value = a.RoadieId.ToString(),
+                                  Text = a.Name
+                              },
+                              Release = new DataToken
+                              {
+                                  Text = r.Title,
+                                  Value = r.RoadieId.ToString()
+                              },
+                              ArtistThumbnail = this.MakeArtistThumbnailImage(a.RoadieId),
+                              CreatedDate = r.CreatedDate,
+                              Duration = r.Duration,
+                              LastPlayed = r.LastPlayed,
+                              LastUpdated = r.LastUpdated,
+                              LibraryStatus = r.LibraryStatus,
+                              MediaCount = r.MediaCount,
+                              Rating = r.Rating,
+                              ReleaseDateDateTime = r.ReleaseDate,
+                              ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ r.RoadieId}",
+                              Status = r.Status,
+                              Thumbnail = this.MakeReleaseThumbnailImage(r.RoadieId),
+                              TrackCount = r.TrackCount,
+                              TrackPlayedCount = r.PlayedCount
+                          }
                           ).Distinct();
             ReleaseList[] rows = null;
 
@@ -210,11 +237,11 @@ namespace Roadie.Api.Services
                 {
                     sortBy = request.OrderValue(new Dictionary<string, string> { { "Release.Text", "ASC" } });
                 }
-                if(request.FilterRatedOnly)
+                if (request.FilterRatedOnly)
                 {
                     result = result.Where(x => x.Rating.HasValue);
                 }
-                if(request.FilterMinimumRating.HasValue)
+                if (request.FilterMinimumRating.HasValue)
                 {
                     result = result.Where(x => x.Rating.HasValue && x.Rating.Value >= request.FilterMinimumRating.Value);
                 }
@@ -236,7 +263,7 @@ namespace Roadie.Api.Services
                                          Value = g.RoadieId.ToString()
                                      }
                                  }).ToArray();
-                
+
                 foreach (var release in rows)
                 {
                     var genre = genreData.FirstOrDefault(x => x.ReleaseId == release.DatabaseId);
@@ -245,19 +272,24 @@ namespace Roadie.Api.Services
 
                 if (roadieUser != null)
                 {
-                    foreach (var userReleaseRatings in this.GetUser(roadieUser.UserId).ReleaseRatings.Where(x => rows.Select(r => r.DatabaseId).Contains(x.ReleaseId)))
+                    var userReleaseRatings = (from ur in this.DbContext.UserReleases
+                                              where ur.UserId == roadieUser.Id
+                                              where rowIds.Contains(ur.ReleaseId)
+                                              select ur).ToArray();
+
+                    foreach (var userReleaseRating in userReleaseRatings.Where(x => rows.Select(r => r.DatabaseId).Contains(x.ReleaseId)))
                     {
-                        var row = rows.FirstOrDefault(x => x.DatabaseId == userReleaseRatings.ReleaseId);
+                        var row = rows.FirstOrDefault(x => x.DatabaseId == userReleaseRating.ReleaseId);
                         if (row != null)
                         {
-                            var isDisliked = userReleaseRatings.IsDisliked ?? false;
-                            var isFavorite = userReleaseRatings.IsFavorite ?? false;
+                            var isDisliked = userReleaseRating.IsDisliked ?? false;
+                            var isFavorite = userReleaseRating.IsFavorite ?? false;
                             row.UserRating = new UserRelease
                             {
                                 IsDisliked = isDisliked,
                                 IsFavorite = isFavorite,
-                                Rating = userReleaseRatings.Rating,
-                                RatedDate = isDisliked || isFavorite ? (DateTime?)(userReleaseRatings.LastUpdated ?? userReleaseRatings.CreatedDate) : null
+                                Rating = userReleaseRating.Rating,
+                                RatedDate = isDisliked || isFavorite ? (DateTime?)(userReleaseRating.LastUpdated ?? userReleaseRating.CreatedDate) : null
                             };
                         }
                     }
@@ -345,7 +377,7 @@ namespace Roadie.Api.Services
             {
                 var artistFolder = release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
                 var releaseFolder = release.ReleaseFileFolder(artistFolder);
-                if(!Directory.Exists(releaseFolder))
+                if (!Directory.Exists(releaseFolder))
                 {
                     this.Logger.LogCritical($"Release Folder [{ releaseFolder }] not found for Release `{ release }`");
                     return new FileOperationResult<byte[]>(true, string.Format("Release Folder Not Found [{0}]", id));
@@ -384,7 +416,7 @@ namespace Roadie.Api.Services
             {
                 IsSuccess = zipBytes != null,
                 Data = zipBytes,
-                AdditionalData = new Dictionary<string, object> {{ "ZipFileName", zipFileName }}
+                AdditionalData = new Dictionary<string, object> { { "ZipFileName", zipFileName } }
             };
         }
 
@@ -436,7 +468,7 @@ namespace Roadie.Api.Services
             }
             if (includes != null && includes.Any())
             {
-                if(includes.Contains("genres"))
+                if (includes.Contains("genres"))
                 {
                     result.Genres = release.Genres.Select(x => new DataToken
                     {
@@ -488,7 +520,7 @@ namespace Roadie.Api.Services
                         result.Images = releaseImages;
                     }
                 }
-                if(includes.Contains("playlists"))
+                if (includes.Contains("playlists"))
                 {
                     var pg = new PagedRequest
                     {
@@ -521,7 +553,7 @@ namespace Roadie.Api.Services
                                 BeginDate = releaseLabel.rl.BeginDate,
                                 EndDate = releaseLabel.rl.EndDate,
                                 CatalogNumber = releaseLabel.rl.CatalogNumber,
-                                Label =  new LabelList
+                                Label = new LabelList
                                 {
                                     Id = releaseLabel.rl.RoadieId,
                                     Label = new DataToken

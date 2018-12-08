@@ -55,10 +55,11 @@ namespace Roadie.Api.Controllers
 
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc)
+        public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc, bool? doRandomize = false)
         {
-            var result = await this.TrackService.List(request: request,
-                roadieUser: await this.CurrentUserModel());
+            var result = await this.TrackService.List(request: request, 
+                                                      doRandomize: doRandomize,
+                                                      roadieUser: await this.CurrentUserModel());
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

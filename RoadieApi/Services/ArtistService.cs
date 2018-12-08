@@ -126,6 +126,9 @@ namespace Roadie.Api.Services
             }
             tsw.Restart();
             var result = artist.Adapt<Artist>();
+            result.BeginDate = result.BeginDate == null || result.BeginDate == DateTime.MinValue ? null : result.BeginDate;
+            result.EndDate = result.EndDate == null || result.EndDate == DateTime.MinValue ? null : result.EndDate;
+            result.BirthDate = result.BirthDate == null || result.BirthDate == DateTime.MinValue ? null : result.BirthDate;
             tsw.Stop();
             timings.Add("adaptArtist", tsw.ElapsedMilliseconds);
             result.Thumbnail = base.MakeArtistThumbnailImage(id);
@@ -426,7 +429,13 @@ namespace Roadie.Api.Services
             }
             if (rows.Any() && roadieUser != null)
             {
-                foreach (var userArtistRating in this.GetUser(roadieUser.UserId).ArtistRatings.Where(x => rows.Select(r => r.DatabaseId).Contains(x.ArtistId)))
+                var rowIds = rows.Select(x => x.DatabaseId).ToArray();
+                var userArtistRatings = (from ua in this.DbContext.UserArtists
+                                          where ua.UserId == roadieUser.Id
+                                          where rowIds.Contains(ua.ArtistId)
+                                          select ua).ToArray();
+
+                foreach (var userArtistRating in userArtistRatings.Where(x => rows.Select(r => r.DatabaseId).Contains(x.ArtistId)))
                 {
                     var row = rows.FirstOrDefault(x => x.DatabaseId == userArtistRating.ArtistId);
                     if (row != null)

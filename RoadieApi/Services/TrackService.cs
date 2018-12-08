@@ -267,8 +267,8 @@ namespace Roadie.Api.Services
             {
                 var randomLimit = roadieUser?.RandomReleaseLimit ?? 50;
                 randomLimit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
-                var sql = $"SELECT t.* FROM `track` t WHERE t.Hash IS NOT NULL ORDER BY RAND() LIMIT {randomLimit}";
-                randomTrackIds = this.DbContext.Tracks.FromSql(sql).Select(x => x.Id).ToArray();
+                var sql = "SELECT t.* FROM `track` t WHERE t.Hash IS NOT NULL ORDER BY RAND() LIMIT {0}";
+                randomTrackIds = this.DbContext.Tracks.FromSql(sql, randomLimit).Select(x => x.Id).ToArray();
             }
             Guid?[] filterToTrackIds = null;
             if(request.FilterToTrackId.HasValue || request.FilterToTrackIds != null)
@@ -290,13 +290,13 @@ namespace Roadie.Api.Services
                 }
                 filterToTrackIds = f.ToArray();
             }
+            // Did this for performance against the Track table, with just * selcts the table scans are too much of a performance hit.
             var resultQuery = (from t in this.DbContext.Tracks
                                join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
+                               join releaseArtist in this.DbContext.Artists on r.ArtistId equals releaseArtist.Id
                                join trackArtist in this.DbContext.Artists on t.ArtistId equals trackArtist.Id into tas
                                from trackArtist in tas.DefaultIfEmpty()
-                               join releaseArtist in this.DbContext.Artists on r.ArtistId equals releaseArtist.Id into aa
-                               from releaseArtist in aa.DefaultIfEmpty()
                                where (t.Hash != null)
                                where (releaseId == null || (releaseId != null && r.RoadieId == releaseId))
                                where (filterToTrackIds == null || filterToTrackIds.Contains(t.RoadieId))
@@ -307,7 +307,87 @@ namespace Roadie.Api.Services
                                where (!request.FilterTopPlayedOnly || topTrackids.Contains(t.Id))
                                where (randomTrackIds == null || randomTrackIds.Contains(t.Id))
                                where (request.FilterToArtistId == null || request.FilterToArtistId != null && r.Artist.RoadieId == request.FilterToArtistId)
-                               select new { t, rm, r, trackArtist, releaseArtist });
+                               select new
+                               {
+                                   ti = new
+                                   {
+                                       t.Id,
+                                       t.RoadieId,
+                                       t.CreatedDate,
+                                       t.LastUpdated,
+                                       t.LastPlayed,
+                                       t.Duration,
+                                       t.FileSize,
+                                       t.PlayedCount,
+                                       t.Rating,
+                                       t.Tags,
+                                       t.TrackNumber,
+                                       t.Title
+                                   },
+                                   rmi = new
+                                   {
+                                       rm.MediaNumber
+                                   },
+                                   rl = new ReleaseList
+                                   {
+                                       DatabaseId = r.Id,
+                                       Id = r.RoadieId,
+                                       Artist = new DataToken
+                                       {
+                                           Value = releaseArtist.RoadieId.ToString(),
+                                           Text = releaseArtist.Name
+                                       },
+                                       Release = new DataToken
+                                       {
+                                           Text = r.Title,
+                                           Value = r.RoadieId.ToString()
+                                       },
+                                       ArtistThumbnail = this.MakeArtistThumbnailImage(releaseArtist.RoadieId),
+                                       CreatedDate = r.CreatedDate,
+                                       Duration = r.Duration,
+                                       LastPlayed = r.LastPlayed,
+                                       LastUpdated = r.LastUpdated,
+                                       LibraryStatus = r.LibraryStatus,
+                                       MediaCount = r.MediaCount,
+                                       Rating = r.Rating,
+                                       ReleaseDateDateTime = r.ReleaseDate,
+                                       ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ r.RoadieId}",
+                                       Status = r.Status,
+                                       Thumbnail = this.MakeReleaseThumbnailImage(r.RoadieId),
+                                       TrackCount = r.TrackCount,
+                                       TrackPlayedCount = r.PlayedCount
+                                   },
+                                   ta = trackArtist == null ? null : new ArtistList
+                                   {
+                                       DatabaseId = trackArtist.Id,
+                                       Id = trackArtist.RoadieId,
+                                       Artist = new DataToken { Text = trackArtist.Name, Value = trackArtist.RoadieId.ToString() },
+                                       Rating = trackArtist.Rating,
+                                       CreatedDate = trackArtist.CreatedDate,
+                                       LastUpdated = trackArtist.LastUpdated,
+                                       LastPlayed = trackArtist.LastPlayed,
+                                       PlayedCount = trackArtist.PlayedCount,
+                                       ReleaseCount = trackArtist.ReleaseCount,
+                                       TrackCount = trackArtist.TrackCount,
+                                       SortName = trackArtist.SortName,
+                                       Thumbnail = this.MakeArtistThumbnailImage(trackArtist.RoadieId)
+                                   },
+                                   ra = new ArtistList
+                                   {
+                                       DatabaseId = releaseArtist.Id,
+                                       Id = releaseArtist.RoadieId,
+                                       Artist = new DataToken { Text = releaseArtist.Name, Value = releaseArtist.RoadieId.ToString() },
+                                       Rating = releaseArtist.Rating,
+                                       CreatedDate = releaseArtist.CreatedDate,
+                                       LastUpdated = releaseArtist.LastUpdated,
+                                       LastPlayed = releaseArtist.LastPlayed,
+                                       PlayedCount = releaseArtist.PlayedCount,
+                                       ReleaseCount = releaseArtist.ReleaseCount,
+                                       TrackCount = releaseArtist.TrackCount,
+                                       SortName = releaseArtist.SortName,
+                                       Thumbnail = this.MakeArtistThumbnailImage(releaseArtist.RoadieId)
+                                   }
+                               });
 
             if (!string.IsNullOrEmpty(request.FilterValue))
             {
@@ -315,34 +395,35 @@ namespace Roadie.Api.Services
                 {
                     // Find any releases by tags
                     var tagValue = request.FilterValue.Replace("#", "");
-                    resultQuery = resultQuery.Where(x => x.t.Tags != null && x.t.Tags.Contains(tagValue));
+                    resultQuery = resultQuery.Where(x => x.ti.Tags != null && x.ti.Tags.Contains(tagValue));
                 }
             }
             var result = resultQuery.Select(x =>
                           new TrackList
                           {
-                              DatabaseId = x.t.Id,
-                              Id = x.t.RoadieId,
+                              DatabaseId = x.ti.Id,
+                              Id = x.ti.RoadieId,
                               Track = new DataToken
                               {
-                                  Text = x.t.Title,
-                                  Value = x.t.RoadieId.ToString()
+                                  Text = x.ti.Title,
+                                  Value = x.ti.RoadieId.ToString()
                               },
-                              Release = ReleaseList.FromDataRelease(x.r, x.releaseArtist, this.HttpContext.BaseUrl, this.MakeArtistThumbnailImage(x.releaseArtist.RoadieId), this.MakeReleaseThumbnailImage(x.r.RoadieId)),
-                              Artist = ArtistList.FromDataArtist(x.releaseArtist, this.MakeArtistThumbnailImage(x.releaseArtist.RoadieId)),
-                              TrackArtist = x.trackArtist != null ? ArtistList.FromDataArtist(x.trackArtist, this.MakeArtistThumbnailImage(x.trackArtist.RoadieId)) : null,
-                              TrackNumber = playListTrackPositions.ContainsKey(x.t.Id) ? playListTrackPositions[x.t.Id] : x.t.TrackNumber,
-                              MediaNumber = x.rm.MediaNumber,
-                              CreatedDate = x.t.CreatedDate,
-                              LastUpdated = x.t.LastUpdated,
-                              Duration = x.t.Duration,
-                              FileSize = x.t.FileSize,
-                              ReleaseDate = x.r.ReleaseDate,
-                              PlayedCount = x.t.PlayedCount,
-                              Rating = x.t.Rating,
-                              Title = x.t.Title,
-                              TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ x.t.RoadieId }.mp3",
-                              Thumbnail = this.MakeTrackThumbnailImage(x.t.RoadieId)
+                              Release = x.rl, 
+                              LastPlayed = x.ti.LastPlayed,
+                              Artist = x.ra, 
+                              TrackArtist = x.ta,
+                              TrackNumber = playListTrackPositions.ContainsKey(x.ti.Id) ? playListTrackPositions[x.ti.Id] : x.ti.TrackNumber,
+                              MediaNumber = x.rmi.MediaNumber,
+                              CreatedDate = x.ti.CreatedDate,
+                              LastUpdated = x.ti.LastUpdated,
+                              Duration = x.ti.Duration,
+                              FileSize = x.ti.FileSize,
+                              ReleaseDate = x.rl.ReleaseDateDateTime,
+                              PlayedCount = x.ti.PlayedCount,
+                              Rating = x.ti.Rating,
+                              Title = x.ti.Title,
+                              TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ x.ti.RoadieId }.mp3",
+                              Thumbnail = this.MakeTrackThumbnailImage(x.ti.RoadieId)
                           });
             string sortBy = null;
 
@@ -355,23 +436,29 @@ namespace Roadie.Api.Services
             }
             else
             {
-                sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Release.Text", "ASC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } }) : request.OrderValue(null);
+                sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Release.Release.Text", "ASC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } }) : request.OrderValue(null);
             }
             rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             if (rows.Any() && roadieUser != null)
             {
-                foreach (var userTrack in this.GetUser(roadieUser.UserId).TrackRatings)
+                var rowIds = rows.Select(x => x.DatabaseId).ToArray();
+                var userTrackRatings = (from ut in this.DbContext.UserTracks
+                                         where ut.UserId == roadieUser.Id
+                                         where rowIds.Contains(ut.TrackId)
+                                         select ut).ToArray();
+
+                foreach (var userTrackRating in userTrackRatings)
                 {
-                    var row = rows.FirstOrDefault(x => x.DatabaseId == userTrack.TrackId);
+                    var row = rows.FirstOrDefault(x => x.DatabaseId == userTrackRating.TrackId);
                     if (row != null)
                     {
                         row.UserRating = new UserTrack
                         {
-                            IsDisliked = userTrack.IsDisliked ?? false,
-                            IsFavorite = userTrack.IsFavorite ?? false,
-                            Rating = userTrack.Rating,
-                            LastPlayed = userTrack.LastPlayed,
-                            PlayedCount = userTrack.PlayedCount
+                            IsDisliked = userTrackRating.IsDisliked ?? false,
+                            IsFavorite = userTrackRating.IsFavorite ?? false,
+                            Rating = userTrackRating.Rating,
+                            LastPlayed = userTrackRating.LastPlayed,
+                            PlayedCount = userTrackRating.PlayedCount
                         };
                     }
                 }

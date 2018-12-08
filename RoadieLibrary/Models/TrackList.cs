@@ -34,6 +34,7 @@ namespace Roadie.Library.Models
                 return this.Duration.HasValue ? TimeSpan.FromSeconds(this.Duration.Value / 1000).ToString(@"mm\:ss") : "--:--";
             }
         }
+        public DateTime? LastPlayed { get; set; }
         public short? ReleaseRating { get; set; }
         public short? Rating { get; set; }
         public UserTrack UserRating { get; set; }
@@ -73,5 +74,6 @@ namespace Roadie.Library.Models
             }
         }
         public int? FileSize { get; set; }
+
     }
 }
