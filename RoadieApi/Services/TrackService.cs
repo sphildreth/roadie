@@ -259,6 +259,8 @@ namespace Roadie.Api.Services
                     playlistTrackIds = playListTrackPositions.Select(x => x.Key).ToArray();
                     request.Sort = "TrackNumber";
                     request.Order = "ASC";
+                    request.Page = 1; // Set back to first or it skips already paged tracks for playlist
+                    request.SkipValue = 0;
                 }
                 int[] topTrackids = new int[0];
                 if (request.FilterTopPlayedOnly)
