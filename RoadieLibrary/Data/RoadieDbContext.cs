@@ -26,6 +26,7 @@ namespace Roadie.Library.Data
         public DbSet<ReleaseMedia> ReleaseMedias { get; set; }
         public DbSet<Release> Releases { get; set; }
         public DbSet<Request> Requests { get; set; }
+        public DbSet<ScanHistory> ScanHistories { get; set; }
         public DbSet<Submission> Submissions { get; set; }
         public DbSet<Track> Tracks { get; set; }
         public DbSet<UserArtist> UserArtists { get; set; }

@@ -153,5 +153,7 @@ namespace Roadie.Library.Models.Statistics
         public long? TotalTrackSize { get; set; }
         public int? TrackCount { get; set; }
         public int? UserCount { get; set; }
+
+        public DateTime? LastScan { get; set; }
     }
 }

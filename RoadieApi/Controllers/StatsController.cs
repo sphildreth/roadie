@@ -31,5 +31,12 @@ namespace Roadie.Api.Controllers
         {
             return Ok(await this.StatisticsService.LibraryStatistics());
         }
+
+        [HttpGet("releasesByDate")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ReleasesByDate()
+        {
+            return Ok(await this.StatisticsService.ReleasesByDate());
+        }
     }
 }

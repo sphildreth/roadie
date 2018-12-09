@@ -7,7 +7,9 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Models.Statistics;
 using Roadie.Library.Utility;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 
@@ -23,6 +25,58 @@ namespace Roadie.Api.Services
                              ILogger<StatisticsService> logger)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
+        }
+
+        public async Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDate()
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var result = new List<DateAndCount>();
+
+            using (var conn = new MySqlConnection(this.Configuration.ConnectionString))
+            {
+                conn.Open();
+                var sql = @"SELECT DATE_FORMAT(createdDate, '%Y-%m-%d') as date, count(1) as count
+                            FROM `release`
+                            group by DATE_FORMAT(createdDate, '%Y-%m-%d')
+                            order by createdDate;";
+                using (var cmd = new MySqlCommand(sql, conn))
+                {
+                    try
+                    {
+                        using (var rdr = cmd.ExecuteReader())
+                        {
+                            if (rdr.HasRows)
+                            {
+                                while (rdr.Read())
+                                {
+                                    result.Add(new DateAndCount
+                                    {
+                                        Date = SafeParser.ToString(rdr["date"]),
+                                        Count = SafeParser.ToNumber<int?>(rdr["count"])
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Logger.LogError(ex);
+                    }
+                    finally
+                    {
+                        conn.Close();
+                    }
+                }
+            }           
+        
+            sw.Stop();
+            return new OperationResult<IEnumerable<DateAndCount>>
+            {
+                OperationTime = sw.ElapsedMilliseconds,
+                Data = result
+            };
         }
 
         public async Task<OperationResult<LibraryStats>> LibraryStatistics()
@@ -102,7 +156,11 @@ namespace Roadie.Api.Services
                     }
                 }
             }
-
+            var lastScan = this.DbContext.ScanHistories.OrderByDescending(x => x.CreatedDate).FirstOrDefault();
+            if(lastScan != null)
+            {
+                result.LastScan = lastScan.CreatedDate;
+            }
             sw.Stop();
             return new OperationResult<LibraryStats>
             {
