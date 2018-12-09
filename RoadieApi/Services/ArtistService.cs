@@ -378,6 +378,17 @@ namespace Roadie.Api.Services
                                      select a.Id
                                      ).ToArray();
             }
+            int[] labelArtistIds = new int[0];
+            if(request.FilterToLabelId.HasValue)
+            {
+                labelArtistIds = (from l in this.DbContext.Labels
+                                  join rl in this.DbContext.ReleaseLabels on l.Id equals rl.LabelId
+                                  join r in this.DbContext.Releases on rl.ReleaseId equals r.Id
+                                  where l.RoadieId == request.FilterToLabelId
+                                  select r.ArtistId)
+                                  .Distinct()
+                                  .ToArray();
+            }
             var onlyWithReleases = onlyIncludeWithReleases ?? true;
             var result = (from a in this.DbContext.Artists
                           where (!onlyWithReleases || a.ReleaseCount > 0)
@@ -385,6 +396,7 @@ namespace Roadie.Api.Services
                           where (request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value)
                           where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue)))
                           where (!request.FilterFavoriteOnly || favoriteArtistIds.Contains(a.Id))
+                          where (request.FilterToLabelId == null || labelArtistIds.Contains(a.Id))
                           select new ArtistList
                           {
                               DatabaseId = a.Id,

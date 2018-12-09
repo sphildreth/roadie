@@ -105,6 +105,7 @@ namespace Roadie.Library.Models.Pagination
         public Guid? FilterToTrackId { get; set; }
         public Guid? FilterToCollectionId { get; set; }
         public Guid? FilterToPlaylistId { get; set; }
+        public Guid? FilterToLabelId { get; set; }
 
         public int? FilterMinimumRating { get; set; }
         public bool FilterRatedOnly { get;  set; }

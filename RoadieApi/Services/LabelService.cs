@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Roadie.Library;
 using Roadie.Library.Caching;
@@ -156,9 +157,26 @@ namespace Roadie.Api.Services
                               TrackCount = l.TrackCount,
                               Thumbnail = this.MakeLabelThumbnailImage(l.RoadieId)
                           });
-            var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Label.Text", "ASC" } }) : request.OrderValue(null);
+            LabelList[] rows = null;
             var rowCount = result.Count();
-            var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            if (doRandomize ?? false)
+            {
+
+                var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
+                request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
+                var sql = "SELECT l.Id FROM `label` l ORDER BY RAND() LIMIT {0}";
+                rows = (from rdn in this.DbContext.Labels.FromSql(sql, randomLimit)
+                        join rs in result on rdn.Id equals rs.DatabaseId
+                        select rs)
+                        .Take(request.LimitValue)
+                        .ToArray();
+
+            }
+            else
+            {
+                var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Label.Text", "ASC" } }) : request.OrderValue(null);
+                 rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            }
             sw.Stop();
             return new Library.Models.Pagination.PagedResult<LabelList>
             {
