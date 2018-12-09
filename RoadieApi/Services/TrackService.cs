@@ -228,6 +228,8 @@ namespace Roadie.Api.Services
                 var sw = new Stopwatch();
                 sw.Start();
 
+                int? rowCount = null;
+
                 IQueryable<int> favoriteTrackIds = (new int[0]).AsQueryable();
                 if (request.FilterFavoriteOnly)
                 {
@@ -241,7 +243,7 @@ namespace Roadie.Api.Services
                 int[] playlistTrackIds = new int[0];
                 if (request.FilterToPlaylistId.HasValue)
                 {
-                    playListTrackPositions = (from plt in this.DbContext.PlaylistTracks
+                    var playlistTrackInfos = (from plt in this.DbContext.PlaylistTracks
                                               join p in this.DbContext.Playlists on plt.PlayListId equals p.Id
                                               join t in this.DbContext.Tracks on plt.TrackId equals t.Id
                                               where p.RoadieId == request.FilterToPlaylistId.Value
@@ -250,7 +252,10 @@ namespace Roadie.Api.Services
                                               {
                                                   plt.ListNumber,
                                                   t.Id
-                                              }).Skip(request.SkipValue).Take(request.LimitValue).ToDictionary(x => x.Id, x => x.ListNumber);
+                                              });
+
+                    rowCount = playlistTrackInfos.Count();
+                    playListTrackPositions = playlistTrackInfos.Skip(request.SkipValue).Take(request.LimitValue).ToDictionary(x => x.Id, x => x.ListNumber);
                     playlistTrackIds = playListTrackPositions.Select(x => x.Key).ToArray();
                     request.Sort = "TrackNumber";
                     request.Order = "ASC";
@@ -434,7 +439,7 @@ namespace Roadie.Api.Services
                               });
                 string sortBy = null;
 
-                var rowCount = result.Count();
+                rowCount = rowCount ?? result.Count();
                 TrackList[] rows = null;
 
                 if (request.Action == User.ActionKeyUserRated)
@@ -491,7 +496,7 @@ namespace Roadie.Api.Services
                 sw.Stop();
                 return new Library.Models.Pagination.PagedResult<TrackList>
                 {
-                    TotalCount = rowCount,
+                    TotalCount = rowCount ?? 0,
                     CurrentPage = request.PageValue,
                     TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                     OperationTime = sw.ElapsedMilliseconds,

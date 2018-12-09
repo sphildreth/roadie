@@ -29,33 +29,22 @@ namespace Roadie.Api.Controllers
             this.PlaylistService = playlistService;
         }
 
-        //[EnableQuery]
-        //public IActionResult Get()
-        //{
-        //    return Ok(this._RoadieDbContext.Tracks.ProjectToType<models.Track>());
-        //}
-
-        //[HttpGet("{id}")]
-        //[ProducesResponseType(200)]
-        //[ProducesResponseType(404)]
-        //public IActionResult Get(Guid id)
-        //{
-        //    var key = id.ToString();
-        //    var result = this._cacheManager.Get<models.Track>(key, () =>
-        //    {
-        //        var d = this._RoadieDbContext.Tracks.FirstOrDefault(x => x.RoadieId == id);
-        //        if (d != null)
-        //        {
-        //            return d.Adapt<models.Track>();
-        //        }
-        //        return null;
-        //    }, key);
-        //    if (result == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    return Ok(result);
-        //}
+        [HttpGet("{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> Get(Guid id, string inc = null)
+        {
+            var result = await this.PlaylistService.ById(await this.CurrentUserModel(), id, (inc ?? models.Playlists.Playlist.DefaultIncludes).ToLower().Split(","));
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
 
         [HttpGet]
         [ProducesResponseType(200)]

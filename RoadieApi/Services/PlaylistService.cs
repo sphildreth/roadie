@@ -1,10 +1,16 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Mapster;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Enums;
+using Roadie.Library.Extensions;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Playlists;
+using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
@@ -19,15 +25,139 @@ namespace Roadie.Api.Services
 {
     public class PlaylistService : ServiceBase, IPlaylistService
     {
+        private IBookmarkService BookmarkService { get; } = null;
+
         public PlaylistService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
                              IHttpContext httpContext,
                              data.IRoadieDbContext dbContext,
                              ICacheManager cacheManager,
-                             ILogger<PlaylistService> logger)
+                             ILogger<PlaylistService> logger,
+                             IBookmarkService bookmarkService)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
+            this.BookmarkService = bookmarkService;
         }
+
+        public async Task<OperationResult<Playlist>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
+        {
+            var sw = Stopwatch.StartNew();
+            sw.Start();
+            var cacheKey = string.Format("urn:playlist_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
+            var result = await this.CacheManager.GetAsync<OperationResult<Playlist>>(cacheKey, async () =>
+            {
+                return await this.PlaylistByIdAction(id, includes);
+            }, data.Artist.CacheRegionUrn(id));
+            sw.Stop();
+            if (result?.Data != null && roadieUser != null)
+            {
+                result.Data.UserCanEdit = result.Data.Maintainer.Id == roadieUser.UserId || roadieUser.IsAdmin;
+                var userBookmarkResult = await this.BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Playlist);
+                if (userBookmarkResult.IsSuccess)
+                {
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
+                }
+            }
+            return new OperationResult<Playlist>(result.Messages)
+            {
+                Data = result?.Data,
+                IsNotFoundResult = result?.IsNotFoundResult ?? false,
+                Errors = result?.Errors,
+                IsSuccess = result?.IsSuccess ?? false,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        private async Task<OperationResult<Playlist>> PlaylistByIdAction(Guid id, IEnumerable<string> includes = null)
+        {
+            var sw = Stopwatch.StartNew();
+            sw.Start();
+
+            var playlist = this.GetPlaylist(id);
+
+            if (playlist == null)
+            {
+                return new OperationResult<Playlist>(true, string.Format("Playlist Not Found [{0}]", id));
+            }
+
+            var result = playlist.Adapt<Playlist>();
+            result.AlternateNames = playlist.AlternateNames;
+            result.Tags = playlist.Tags;
+            result.URLs = playlist.URLs;
+            var maintainer = this.DbContext.Users.Include(x => x.UserRoles).Include("UserRoles.Role").FirstOrDefault(x => x.Id == playlist.UserId);
+            result.Maintainer = UserList.FromDataUser(maintainer, this.MakeUserThumbnailImage(maintainer.RoadieId));
+            result.Thumbnail = this.MakePlaylistThumbnailImage(playlist.RoadieId);
+            result.MediumThumbnail = base.MakeThumbnailImage(id, "playlist", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+            if (includes != null && includes.Any())
+            {
+                var playlistTracks = (from pl in this.DbContext.Playlists
+                                      join pltr in this.DbContext.PlaylistTracks on pl.Id equals pltr.PlayListId
+                                      join t in this.DbContext.Tracks on pltr.TrackId equals t.Id
+                                      where pl.Id == playlist.Id
+                                      select new { t, pltr });
+
+                if (includes.Contains("stats"))
+                {
+                    result.Statistics = new Library.Models.Statistics.ReleaseGroupingStatistics
+                    {
+                        ReleaseCount = result.ReleaseCount,
+                        TrackCount = result.TrackCount,
+                        TrackSize = result.DurationTime,
+                        FileSize = playlistTracks.Sum(x => (long?)x.t.FileSize).ToFileSize()
+                    };
+                }
+                if (includes.Contains("tracks"))
+                {
+                    result.Tracks = (from plt in playlistTracks
+                                      join rm in this.DbContext.ReleaseMedias on plt.t.ReleaseMediaId equals rm.Id
+                                      join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
+                                      join releaseArtist in this.DbContext.Artists on r.ArtistId equals releaseArtist.Id
+                                      join trackArtist in this.DbContext.Artists on plt.t.ArtistId equals trackArtist.Id into tas
+                                      from trackArtist in tas.DefaultIfEmpty()
+                                      select new PlaylistTrack
+                                      {
+                                         ListNumber = plt.pltr.ListNumber,
+                                         Track = new TrackList
+                                         {
+                                             DatabaseId = plt.t.Id,
+                                             Id = plt.t.RoadieId,
+                                             Track = new DataToken
+                                             {
+                                                 Text = plt.t.Title,
+                                                 Value = plt.t.RoadieId.ToString()
+                                             },
+                                             Release = ReleaseList.FromDataRelease(r, releaseArtist, this.HttpContext.BaseUrl, this.MakeArtistThumbnailImage(releaseArtist.RoadieId), this.MakeReleaseThumbnailImage(r.RoadieId)),
+                                             LastPlayed = plt.t.LastPlayed,
+                                             Artist = ArtistList.FromDataArtist(releaseArtist, this.MakeArtistThumbnailImage(releaseArtist.RoadieId)),
+                                             TrackArtist = trackArtist == null ? null : ArtistList.FromDataArtist(trackArtist, this.MakeArtistThumbnailImage(trackArtist.RoadieId)),
+                                             TrackNumber = plt.t.TrackNumber,
+                                             MediaNumber = rm.MediaNumber,
+                                             CreatedDate = plt.t.CreatedDate,
+                                             LastUpdated = plt.t.LastUpdated,
+                                             Duration = plt.t.Duration,
+                                             FileSize = plt.t.FileSize,
+                                             ReleaseDate = r.ReleaseDate,
+                                             PlayedCount = plt.t.PlayedCount,
+                                             Rating = plt.t.Rating,
+                                             Title = plt.t.Title,
+                                             TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ plt.t.RoadieId }.mp3",
+                                             Thumbnail = this.MakeTrackThumbnailImage(plt.t.RoadieId)
+                                         }
+                                     }).ToArray();
+                }
+
+            }
+
+            sw.Stop();
+            return new OperationResult<Playlist>
+            {
+                Data = result,
+                IsSuccess = result != null,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+
+        }
+
 
         public async Task<Library.Models.Pagination.PagedResult<PlaylistList>> List(PagedRequest request, User roadieUser = null)
         {
@@ -62,16 +192,11 @@ namespace Roadie.Api.Services
 
             var result = (from pl in this.DbContext.Playlists
                           join u in this.DbContext.Users on pl.UserId equals u.Id
-                          let duration = (from plt in this.DbContext.PlaylistTracks 
-                                          join t in this.DbContext.Tracks on plt.TrackId equals t.Id
-                                          where plt.PlayListId == pl.Id
-                                          select t.Duration).Sum()
                           where (request.FilterToPlaylistId == null || pl.RoadieId == request.FilterToPlaylistId)
                           where (request.FilterToArtistId == null || playlistWithArtistTrackIds.Contains(pl.Id))
                           where (request.FilterToReleaseId == null || playlistReleaseTrackIds.Contains(pl.Id))
                           where ((roadieUser == null && pl.IsPublic) || (roadieUser != null && u.RoadieId == roadieUser.UserId || pl.IsPublic))
-                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
-                                    pl.Name != null && pl.Name.Contains(request.FilterValue))
+                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (pl.Name != null && pl.Name.Contains(request.FilterValue))
                           ))
                           select new PlaylistList
                           {
@@ -88,7 +213,8 @@ namespace Roadie.Api.Services
                               },
                               PlaylistCount = this.DbContext.PlaylistTracks.Where(x => x.PlayListId == pl.Id).Count(),
                               IsPublic = pl.IsPublic,
-                              Duration = duration,
+                              Duration = pl.Duration,
+                              TrackCount = pl.TrackCount,
                               CreatedDate = pl.CreatedDate,
                               LastUpdated = pl.LastUpdated,
                               UserThumbnail = MakeUserThumbnailImage(u.RoadieId),

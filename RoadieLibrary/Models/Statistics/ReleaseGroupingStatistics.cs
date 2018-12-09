@@ -14,6 +14,6 @@ namespace Roadie.Library.Models.Statistics
         public int? ReleaseMediaCount { get; set; }
         public int? TrackCount { get; set; }
         public int? TrackPlayedCount { get; set; }
-        public string TrackTime { get; set; }
+        public string TrackSize { get; set; }
     }
 }

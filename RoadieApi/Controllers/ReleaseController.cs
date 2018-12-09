@@ -31,12 +31,6 @@ namespace Roadie.Api.Controllers
             this.ReleaseService = releaseService;
         }
 
-        //[EnableQuery]
-        //public IActionResult Get()
-        //{
-        //    return Ok(this._RoadieDbContext.Releases.ProjectToType<models.Releases.Release>());
-        //}
-
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]

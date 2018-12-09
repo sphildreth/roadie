@@ -25,8 +25,7 @@ namespace Roadie.Api.Services
                              data.IRoadieDbContext context,
                              ICacheManager cacheManager,
                              ILogger<BookmarkService> logger,
-                             ICollectionService collectionService,
-                             IPlaylistService playlistService)
+                             ICollectionService collectionService)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
         }

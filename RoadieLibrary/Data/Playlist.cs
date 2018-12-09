@@ -8,6 +8,9 @@ namespace Roadie.Library.Data
     [Table("playlist")]
     public partial class Playlist : NamedEntityBase
     {
+        [NotMapped]
+        public new string SortName { get; set; }
+
         [Column("Description")]
         [MaxLength(1000)]
         public string Description { get; set; }
@@ -21,5 +24,14 @@ namespace Roadie.Library.Data
 
         [Column("userId")]
         public int? UserId { get; set; }
+
+        [Column("duration")]
+        public int? Duration { get; set; } // TODO update this on playlist edit
+
+        [Column("trackCount")]
+        public short TrackCount { get; set; } // TODO update this on playlist edit
+
+        [Column("releaseCount")]
+        public short ReleaseCount { get; set; } // TODO update this on playlist edit
     }
 }

@@ -26,5 +26,7 @@ namespace Roadie.Library.Models.Playlists
             }
 
         }
+
+        public short TrackCount { get; set; }
     }
 }
