@@ -169,6 +169,7 @@ namespace Roadie.Api.Services
                     request.Order = "ASC";
                 }
             }
+
             //
             // TODO list should honor disliked artist and albums for random
             //

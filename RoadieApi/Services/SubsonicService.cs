@@ -376,8 +376,10 @@ namespace Roadie.Api.Services
             {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.ReleaseId}]");
             }
-            var pagedRequest = request.PagedRequest;
-            var releaseTracks = await this.TrackService.List(pagedRequest, roadieUser, false, releaseId);
+            var trackPagedRequest = request.PagedRequest;
+            trackPagedRequest.Sort = "TrackNumber";
+            trackPagedRequest.Order = "ASC";
+            var releaseTracks = await this.TrackService.List(trackPagedRequest, roadieUser, false, releaseId);
             var userRelease = roadieUser == null ? null : this.DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == roadieUser.Id);
             var genre = release.Genres.FirstOrDefault();
             return new subsonic.SubsonicOperationResult<subsonic.Response>
@@ -902,8 +904,10 @@ namespace Roadie.Api.Services
                     directory.starred = releaseRating.LastUpdated ?? releaseRating.CreatedDate;
                     directory.starredSpecified = true;
                 }
-                var pagedRequest = request.PagedRequest;
-                var songTracks = await this.TrackService.List(pagedRequest, roadieUser, false, release.RoadieId);
+                var trackPagedRequest = request.PagedRequest;
+                trackPagedRequest.Sort = "TrackNumber";
+                trackPagedRequest.Order = "ASC";
+                var songTracks = await this.TrackService.List(trackPagedRequest, roadieUser, false, release.RoadieId);
                 directory.child = this.SubsonicChildrenForTracks(songTracks.Rows);
                 directory.playCount = directory.child.Select(x => x.playCount).Sum();
             }
