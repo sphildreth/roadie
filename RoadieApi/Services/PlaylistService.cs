@@ -116,34 +116,18 @@ namespace Roadie.Api.Services
                                       from trackArtist in tas.DefaultIfEmpty()
                                       select new PlaylistTrack
                                       {
-                                         ListNumber = plt.pltr.ListNumber,
-                                         Track = new TrackList
-                                         {
-                                             DatabaseId = plt.t.Id,
-                                             Id = plt.t.RoadieId,
-                                             Track = new DataToken
-                                             {
-                                                 Text = plt.t.Title,
-                                                 Value = plt.t.RoadieId.ToString()
-                                             },
-                                             Release = ReleaseList.FromDataRelease(r, releaseArtist, this.HttpContext.BaseUrl, this.MakeArtistThumbnailImage(releaseArtist.RoadieId), this.MakeReleaseThumbnailImage(r.RoadieId)),
-                                             LastPlayed = plt.t.LastPlayed,
-                                             Artist = ArtistList.FromDataArtist(releaseArtist, this.MakeArtistThumbnailImage(releaseArtist.RoadieId)),
-                                             TrackArtist = trackArtist == null ? null : ArtistList.FromDataArtist(trackArtist, this.MakeArtistThumbnailImage(trackArtist.RoadieId)),
-                                             TrackNumber = plt.t.TrackNumber,
-                                             MediaNumber = rm.MediaNumber,
-                                             CreatedDate = plt.t.CreatedDate,
-                                             LastUpdated = plt.t.LastUpdated,
-                                             Duration = plt.t.Duration,
-                                             FileSize = plt.t.FileSize,
-                                             ReleaseDate = r.ReleaseDate,
-                                             PlayedCount = plt.t.PlayedCount,
-                                             Rating = plt.t.Rating,
-                                             Title = plt.t.Title,
-                                             TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ plt.t.RoadieId }.mp3",
-                                             Thumbnail = this.MakeTrackThumbnailImage(plt.t.RoadieId)
-                                         }
-                                     }).ToArray();
+                                          ListNumber = plt.pltr.ListNumber,
+                                          Track = TrackList.FromDataTrack(plt.t,
+                                                                          rm.MediaNumber,
+                                                                          r,
+                                                                          releaseArtist,
+                                                                          trackArtist,
+                                                                          this.HttpContext.BaseUrl,
+                                                                          this.MakeTrackThumbnailImage(plt.t.RoadieId),
+                                                                          this.MakeReleaseThumbnailImage(r.RoadieId),
+                                                                          this.MakeArtistThumbnailImage(releaseArtist.RoadieId),
+                                                                          this.MakeArtistThumbnailImage(trackArtist == null ? null : (Guid?)trackArtist.RoadieId))
+                                      }).ToArray();
                 }
 
             }
@@ -196,31 +180,8 @@ namespace Roadie.Api.Services
                           where (request.FilterToArtistId == null || playlistWithArtistTrackIds.Contains(pl.Id))
                           where (request.FilterToReleaseId == null || playlistReleaseTrackIds.Contains(pl.Id))
                           where ((roadieUser == null && pl.IsPublic) || (roadieUser != null && u.RoadieId == roadieUser.UserId || pl.IsPublic))
-                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (pl.Name != null && pl.Name.Contains(request.FilterValue))
-                          ))
-                          select new PlaylistList
-                          {
-                              Playlist = new DataToken
-                              {
-                                  Text = pl.Name,
-                                  Value = pl.RoadieId.ToString()
-                                  
-                              },
-                              User = new DataToken
-                              {
-                                  Text = u.UserName,
-                                  Value = u.RoadieId.ToString()
-                              },
-                              PlaylistCount = this.DbContext.PlaylistTracks.Where(x => x.PlayListId == pl.Id).Count(),
-                              IsPublic = pl.IsPublic,
-                              Duration = pl.Duration,
-                              TrackCount = pl.TrackCount,
-                              CreatedDate = pl.CreatedDate,
-                              LastUpdated = pl.LastUpdated,
-                              UserThumbnail = MakeUserThumbnailImage(u.RoadieId),
-                              Id = pl.RoadieId,
-                              Thumbnail = MakePlaylistThumbnailImage(pl.RoadieId)
-                          });
+                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (pl.Name != null && pl.Name.Contains(request.FilterValue))))
+                          select PlaylistList.FromDataPlaylist(pl, u, this.MakePlaylistThumbnailImage(pl.RoadieId), this.MakeUserThumbnailImage(u.RoadieId)));
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Playlist.Text", "ASC" } }) : request.OrderValue(null);
             var rowCount = result.Count();
             var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();

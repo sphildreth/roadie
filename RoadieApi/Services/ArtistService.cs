@@ -330,22 +330,9 @@ namespace Roadie.Api.Services
                                            join r in this.DbContext.Releases on rl.ReleaseId equals r.Id
                                            where r.ArtistId == artist.Id
                                            orderby l.SortName
-                                           select new LabelList
-                                           {
-                                               Id = rl.RoadieId,
-                                               Label = new DataToken
-                                               {
-                                                   Text = l.Name,
-                                                   Value = l.RoadieId.ToString()
-                                               },
-                                               SortName = l.SortName,
-                                               CreatedDate = l.CreatedDate,
-                                               LastUpdated = l.LastUpdated,
-                                               ArtistCount = l.ArtistCount,
-                                               ReleaseCount = l.ReleaseCount,
-                                               TrackCount = l.TrackCount,
-                                               Thumbnail = MakeLabelThumbnailImage(l.RoadieId)
-                                           }).ToArray().GroupBy(x => x.Label.Value).Select(x => x.First()).OrderBy(x => x.SortName).ThenBy(x => x.Label.Text).ToArray();
+                                           select LabelList.FromDataLabel(l, this.MakeLabelThumbnailImage(l.RoadieId)))
+                                           .ToArray()
+                                           .GroupBy(x => x.Label.Value).Select(x => x.First()).OrderBy(x => x.SortName).ThenBy(x => x.Label.Text).ToArray();
                     result.ArtistLabels = result.ArtistLabels.Any() ? result.ArtistLabels : null;
                     tsw.Stop();
                     timings.Add("labels", tsw.ElapsedMilliseconds);

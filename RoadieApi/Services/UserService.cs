@@ -27,9 +27,7 @@ namespace Roadie.Api.Services
                              IHttpContext httpContext,
                              data.IRoadieDbContext context,
                              ICacheManager cacheManager,
-                             ILogger<ArtistService> logger,
-                             ICollectionService collectionService,
-                             IPlaylistService playlistService)
+                             ILogger<ArtistService> logger)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
         }
@@ -204,5 +202,55 @@ namespace Roadie.Api.Services
             return await base.ToggleReleaseFavorite(releaseId, user, isFavorite);
         }
 
+        public async Task<OperationResult<bool>> SetArtistBookmark(Guid artistId, User roadieUser, bool isBookmarked)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            var artist = this.GetArtist(artistId);
+            if (artist == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Artist [{ artistId }]");
+            }
+            var bookmark = this.DbContext.Bookmarks.FirstOrDefault(x => x.BookmarkTargetId == artist.Id &&
+                                                                        x.BookmarkType == Library.Enums.BookmarkType.Artist &&
+                                                                        x.UserId == roadieUser.Id);
+            if (isBookmarked)
+            {
+                // Remove bookmark
+                if(bookmark != null)
+                {
+                    this.DbContext.Bookmarks.Remove(bookmark);
+                    await this.DbContext.SaveChangesAsync();
+                }
+            }
+            else
+            {
+                // Add bookmark
+                if(bookmark == null)
+                {
+                    this.DbContext.Bookmarks.Add(new data.Bookmark
+                    {
+                        UserId = roadieUser.Id,
+                        BookmarkTargetId = artist.Id,
+                        BookmarkType = Library.Enums.BookmarkType.Artist,
+                        CreatedDate = DateTime.UtcNow,
+                        Status = Library.Enums.Statuses.Ok
+                    });
+                    await this.DbContext.SaveChangesAsync();
+                }
+            }
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
     }
 }

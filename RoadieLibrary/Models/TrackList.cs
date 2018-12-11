@@ -76,5 +76,46 @@ namespace Roadie.Library.Models
         }
         public int? FileSize { get; set; }
 
+
+        public static TrackList FromDataTrack(Data.Track track, 
+                                              int releaseMediaNumber,
+                                              Data.Release release, 
+                                              Data.Artist artist, 
+                                              Data.Artist trackArtist,
+                                              string baseUrl,
+                                              Image trackThumbnail,
+                                              Image releaseThumbnail,
+                                              Image artistThumbnail,
+                                              Image trackArtistThumbnail)
+        {
+            return new TrackList
+            {
+                DatabaseId = track.Id,
+                Id = track.RoadieId,
+                Track = new DataToken
+                {
+                    Text = track.Title,
+                    Value = track.RoadieId.ToString()
+                },
+                Release = ReleaseList.FromDataRelease(release, artist, baseUrl, artistThumbnail, releaseThumbnail),
+                LastPlayed = track.LastPlayed,
+                Artist = ArtistList.FromDataArtist(artist, artistThumbnail),
+                TrackArtist = trackArtist == null ? null : ArtistList.FromDataArtist(trackArtist, trackArtistThumbnail),
+                TrackNumber = track.TrackNumber,
+                MediaNumber = releaseMediaNumber,
+                CreatedDate = track.CreatedDate,
+                LastUpdated = track.LastUpdated,
+                Duration = track.Duration,
+                FileSize = track.FileSize,
+                ReleaseDate = release.ReleaseDate,
+                PlayedCount = track.PlayedCount,
+                Rating = track.Rating,
+                Title = track.Title,
+                TrackPlayUrl = $"{ baseUrl }/play/track/{ track.RoadieId }.mp3",
+                Thumbnail = trackThumbnail
+            };
+
+        }
+    
     }
 }

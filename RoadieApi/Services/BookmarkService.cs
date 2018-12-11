@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
@@ -14,6 +15,7 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
+using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Services
 {
@@ -70,39 +72,59 @@ namespace Roadie.Api.Services
                             Text = artist.Name,
                             Value = artist.RoadieId.ToString()
                         };
+                        row.Artist = models.ArtistList.FromDataArtist(artist, this.MakeArtistThumbnailImage(artist.RoadieId));
                         row.Thumbnail = this.MakeArtistThumbnailImage(artist.RoadieId);
                         row.SortName = artist.SortName ?? artist.Name;
                         break;
 
                     case BookmarkType.Release:
-                        var release = this.DbContext.Releases.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
+                        var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.Id == row.BookmarkTargetId);
                         row.Bookmark = new DataToken
                         {
                             Text = release.Title,
                             Value = release.RoadieId.ToString()
                         };
+                        row.Release = models.Releases.ReleaseList.FromDataRelease(release, release.Artist, this.HttpContext.BaseUrl, this.MakeArtistThumbnailImage(release.Artist.RoadieId), this.MakeReleaseThumbnailImage(release.RoadieId));
                         row.Thumbnail = this.MakeReleaseThumbnailImage(release.RoadieId);
                         row.SortName = release.Title;
                         break;
 
                     case BookmarkType.Track:
-                        var track = this.DbContext.Tracks.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
+                        var track = this.DbContext.Tracks
+                                                  .Include(x => x.ReleaseMedia)
+                                                  .Include(x => x.ReleaseMedia.Release)
+                                                  .Include(x => x.ReleaseMedia.Release.Artist)
+                                                  .Include(x => x.TrackArtist)
+                                                  .FirstOrDefault(x => x.Id == row.BookmarkTargetId);
                         row.Bookmark = new DataToken
                         {
                             Text = track.Title,
                             Value = track.RoadieId.ToString()
                         };
+                        row.Track = TrackList.FromDataTrack(track,
+                                                            track.ReleaseMedia.MediaNumber,
+                                                            track.ReleaseMedia.Release,
+                                                            track.ReleaseMedia.Release.Artist,
+                                                            track.TrackArtist,
+                                                            this.HttpContext.BaseUrl,
+                                                            this.MakeTrackThumbnailImage(track.RoadieId),
+                                                            this.MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId),
+                                                            this.MakeArtistThumbnailImage(track.ReleaseMedia.Release.Artist.RoadieId),
+                                                            this.MakeArtistThumbnailImage(track.TrackArtist == null ? null : (Guid?)track.TrackArtist.RoadieId));
                         row.Thumbnail = this.MakeTrackThumbnailImage(track.RoadieId);
                         row.SortName = track.Title;
                         break;
 
                     case BookmarkType.Playlist:
-                        var playlist = this.DbContext.Playlists.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
+                        var playlist = this.DbContext.Playlists
+                                                     .Include(x => x.User)
+                                                     .FirstOrDefault(x => x.Id == row.BookmarkTargetId);
                         row.Bookmark = new DataToken
                         {
                             Text = playlist.Name,
                             Value = playlist.RoadieId.ToString()
                         };
+                        row.Playlist = models.Playlists.PlaylistList.FromDataPlaylist(playlist, playlist.User, this.MakePlaylistThumbnailImage(playlist.RoadieId), this.MakeUserThumbnailImage(playlist.User.RoadieId));
                         row.Thumbnail = this.MakePlaylistThumbnailImage(playlist.RoadieId);
                         row.SortName = playlist.Name;
                         break;
@@ -114,6 +136,9 @@ namespace Roadie.Api.Services
                             Text = collection.Name,
                             Value = collection.RoadieId.ToString()
                         };
+                        row.Collection = models.Collections.CollectionList.FromDataCollection(collection, (from crc in this.DbContext.CollectionReleases
+                                                                                                           where crc.CollectionId == collection.Id
+                                                                                                           select crc.Id).Count(), this.MakeCollectionThumbnailImage(collection.RoadieId));
                         row.Thumbnail = this.MakeCollectionThumbnailImage(collection.RoadieId);
                         row.SortName = collection.SortName ?? collection.Name;
                         break;
@@ -125,6 +150,7 @@ namespace Roadie.Api.Services
                             Text = label.Name,
                             Value = label.RoadieId.ToString()
                         };
+                        row.Label = models.LabelList.FromDataLabel(label, this.MakeLabelThumbnailImage(label.RoadieId));
                         row.Thumbnail = this.MakeLabelThumbnailImage(label.RoadieId);
                         row.SortName = label.SortName ?? label.Name;
                         break;

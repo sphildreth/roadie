@@ -222,9 +222,13 @@ namespace Roadie.Api.Services
             }, ApplicationUser.CacheRegionUrn(id.Value));
         }
 
-        protected Image MakeArtistThumbnailImage(Guid id)
+        protected Image MakeArtistThumbnailImage(Guid? id)
         {
-            return MakeThumbnailImage(id, "artist");
+            if(!id.HasValue)
+            {
+                return null;
+            }
+            return MakeThumbnailImage(id.Value, "artist");
         }
 
         protected Image MakeCollectionThumbnailImage(Guid id)

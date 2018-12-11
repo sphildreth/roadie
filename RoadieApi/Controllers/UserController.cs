@@ -123,6 +123,19 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("setArtistBookmark/{artistId}/{isBookmarked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetArtistBookmark(Guid artistId, bool isBookmarked)
+        {
+            var result = await this.UserService.SetArtistBookmark(artistId, await this.CurrentUserModel(), isBookmarked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
 
         [HttpGet]
         [ProducesResponseType(200)]

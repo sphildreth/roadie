@@ -186,24 +186,9 @@ namespace Roadie.Api.Services
             }
             var result = (from c in collections
                           where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && c.Name.Contains(request.Filter)))
-                          select new CollectionList
-                          {
-                              DatabaseId = c.Id,
-                              Collection = new DataToken
-                              {
-                                  Text = c.Name,
-                                  Value = c.RoadieId.ToString()
-                              },
-                              Id = c.RoadieId,
-                              CollectionCount = c.CollectionCount,
-                              CollectionType = (c.CollectionType ?? CollectionType.Unknown).ToString(),
-                              CollectionFoundCount = (from crc in this.DbContext.CollectionReleases
-                                                      where crc.CollectionId == c.Id
-                                                      select crc.Id).Count(),
-                              CreatedDate = c.CreatedDate,
-                              LastUpdated = c.LastUpdated,
-                              Thumbnail = MakeCollectionThumbnailImage(c.RoadieId)
-                          });
+                          select CollectionList.FromDataCollection(c, (from crc in this.DbContext.CollectionReleases
+                                                                       where crc.CollectionId == c.Id
+                                                                       select crc.Id).Count(), this.MakeCollectionThumbnailImage(c.RoadieId)));
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } }) : request.OrderValue(null);
             var rowCount = result.Count();
             var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
