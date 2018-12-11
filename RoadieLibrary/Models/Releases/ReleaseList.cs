@@ -76,6 +76,11 @@ namespace Roadie.Library.Models.Releases
         /// </summary>
         public int? ListNumber { get; set; }
 
+        public ReleaseList ShallowCopy()
+        {
+            return (ReleaseList)this.MemberwiseClone();
+        }
+
         public static ReleaseList FromDataRelease(Data.Release release, Data.Artist artist, string baseUrl, Image artistThumbnail, Image thumbnail)
         {
             return new ReleaseList

@@ -281,45 +281,54 @@ namespace Roadie.Api.Services
 
                 if (request.FilterToCollectionId.HasValue)
                 {
-                    // Get and number the releases found for the Collection
+                    var newRows = new List<ReleaseList>(rows);
+                    var collection = this.GetCollection(request.FilterToCollectionId.Value);
                     var collectionReleases = (from c in this.DbContext.Collections
                                               join cr in this.DbContext.CollectionReleases on c.Id equals cr.CollectionId
                                               where c.RoadieId == request.FilterToCollectionId
                                               where collectionReleaseIds.Contains(cr.ReleaseId)
                                               orderby cr.ListNumber
                                               select cr);
-                    foreach (var release in rows)
+                    foreach (var par in collection.PositionArtistReleases())
                     {
-                        var cr = collectionReleases.FirstOrDefault(x => x.ReleaseId == release.DatabaseId);
+                        var cr = collectionReleases.FirstOrDefault(x => x.ListNumber == par.Position);
+                        // Release is known for Collection CSV, find newRow and update ListNumber
                         if (cr != null)
                         {
-                            release.ListNumber = cr.ListNumber;
+                            var parRelease = rows.FirstOrDefault(x => x.DatabaseId == cr.ReleaseId);
+                            if(parRelease != null)
+                            {
+                                if(!parRelease.ListNumber.HasValue)
+                                {
+                                    parRelease.ListNumber = par.Position;
+                                }
+                                else
+                                {
+                                    var anotherInstanceOfReleaseInCollection = parRelease.ShallowCopy();
+                                    anotherInstanceOfReleaseInCollection.ListNumber = par.Position;
+                                    newRows.Add(anotherInstanceOfReleaseInCollection);
+                                }
+                            }
                         }
-                    }
-                    // For the missing releases create a dummy release list item
-                    var resultListNumbers = (from x in rows select x.ListNumber).ToList();
-                    var collection = this.GetCollection(request.FilterToCollectionId.Value);
-                    var missingReleases = (from par in collection.PositionArtistReleases()
-                                           where !resultListNumbers.Contains(par.Position)
-                                           select par);
-                    var newRows = new List<ReleaseList>(rows);
-                    foreach(var missingRelease in missingReleases)
-                    {
-                        newRows.Add(new ReleaseList
+                        // Release is not known add missing dummy release to rows
+                        else
                         {
-                            Artist = new DataToken
+                            newRows.Add(new ReleaseList
                             {
-                                Text = missingRelease.Artist
-                            },
-                            Release = new DataToken
-                            {
-                                Text = missingRelease.Release
-                            },
-                            CssClass = "missing",
-                            ArtistThumbnail = new Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
-                            Thumbnail = new Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
-                            ListNumber = missingRelease.Position
-                        });
+                                Artist = new DataToken
+                                {
+                                    Text = par.Artist
+                                },
+                                Release = new DataToken
+                                {
+                                    Text = par.Release
+                                },
+                                CssClass = "missing",
+                                ArtistThumbnail = new Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
+                                Thumbnail = new Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
+                                ListNumber = par.Position
+                            });
+                        }
                     }
                     // Resort the list for the collection by listNumber
                     rows = newRows.OrderBy(x => x.ListNumber).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
