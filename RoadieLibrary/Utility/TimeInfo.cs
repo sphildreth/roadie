@@ -21,7 +21,7 @@ namespace Roadie.Library.Utility
 
         public decimal Hours { get; set; }
 
-        public string HoursForamtted
+        public string HoursFormatted
         {
             get
             {
@@ -77,6 +77,7 @@ namespace Roadie.Library.Utility
 
         public TimeInfo(decimal milliseconds)
         {
+
             var secondsTotal = milliseconds / 1000;
             var minutesTotal = Math.Floor(secondsTotal / 60);
             var hoursTotal = Math.Floor(minutesTotal / 60);
@@ -96,9 +97,18 @@ namespace Roadie.Library.Utility
             return $"{ (string.IsNullOrEmpty(yearsFormatted) ? string.Empty : yearsFormatted + ":") }{ this.ToString() }";
         }
 
+        public string ToShortFormattedString()
+        {
+            return $"{ MinutesFormatted }:{ SecondsFormatted }";
+        }
+
         public override string ToString()
         {
-            return $"{ DaysFormatted}:{ HoursForamtted}:{ MinutesFormatted }";
+            if(this.Days > 0)
+            {
+                return $"{ DaysFormatted}:{ HoursFormatted}:{ MinutesFormatted}:{ SecondsFormatted }";
+            }
+            return $"{ HoursFormatted}:{ MinutesFormatted }:{ SecondsFormatted }";
         }
     }
 }

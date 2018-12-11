@@ -206,7 +206,7 @@ namespace Roadie.Api.Services
                                              join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                              where r.ArtistId == artist.Id
                                              select rm.Id).Count(),
-                        TrackTime = validCartistTracks.Any() ? TimeSpan.FromSeconds(Math.Floor((double)trackTime / 1000)).ToString(@"dd\:hh\:mm\:ss") : "--:--",
+                        TrackTime = validCartistTracks.Any() ? new TimeInfo((decimal)trackTime).ToFullFormattedString() : "--:--",
                         TrackCount = validCartistTracks.Count(),
                         TrackPlayedCount = artist.PlayedCount
                     };

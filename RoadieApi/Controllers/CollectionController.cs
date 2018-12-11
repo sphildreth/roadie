@@ -7,8 +7,10 @@ using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
+using System;
 using System.Net;
 using System.Threading.Tasks;
+using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
 {
@@ -27,33 +29,22 @@ namespace Roadie.Api.Controllers
             this.CollectionService = collectionService;
         }
 
-        //[EnableQuery]
-        //public IActionResult Get()
-        //{
-        //    return Ok(this._RoadieDbContext.Labels.ProjectToType<models.Label>());
-        //}
-
-        //[HttpGet("{id}")]
-        //[ProducesResponseType(200)]
-        //[ProducesResponseType(404)]
-        //public IActionResult Get(Guid id)
-        //{
-        //    var key = id.ToString();
-        //    var result = this._cacheManager.Get<models.Label>(key, () =>
-        //    {
-        //        var d = this._RoadieDbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
-        //        if (d != null)
-        //        {
-        //            return d.Adapt<models.Label>();
-        //        }
-        //        return null;
-        //    }, key);
-        //    if (result == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    return Ok(result);
-        //}
+        [HttpGet("{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> Get(Guid id, string inc = null)
+        {
+            var result = await this.CollectionService.ById(await this.CurrentUserModel(), id, (inc ?? models.Collections.Collection.DefaultIncludes).ToLower().Split(","));
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
 
         [HttpGet]
         [ProducesResponseType(200)]

@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using Roadie.Library.Models.Statistics;
 using Roadie.Library.Models.Users;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -28,7 +29,7 @@ namespace Roadie.Library.Models.Playlists
         public Image MediumThumbnail { get; set; }
         public short? TrackCount { get; set; }
         public short? ReleaseCount { get; set; }
-        public int? Duration { get; set; }
+        public decimal? Duration { get; set; }
         public string DurationTime
         {
             get
@@ -37,7 +38,7 @@ namespace Roadie.Library.Models.Playlists
                 {
                     return "--:--";
                 }
-                return TimeSpan.FromSeconds(this.Duration.Value / 1000).ToString(@"dd\.hh\:mm\:ss");
+                return new TimeInfo(this.Duration.Value).ToFullFormattedString();
             }
 
         }

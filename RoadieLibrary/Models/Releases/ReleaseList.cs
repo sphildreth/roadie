@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.Models.Users;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -47,7 +48,7 @@ namespace Roadie.Library.Models.Releases
         public Statuses? Status { get; set; }
         public DataToken Genre { get; set; }
         public DateTime? LastPlayed { get; set; }
-        public int? Duration { get; set; }
+        public decimal? Duration { get; set; }
         public string DurationTime
         {
             get
@@ -56,11 +57,24 @@ namespace Roadie.Library.Models.Releases
                 {
                     return "--:--";
                 }
-                return TimeSpan.FromSeconds(this.Duration.Value / 1000).ToString(@"hh\:mm\:ss");
+                return new TimeInfo(this.Duration.Value).ToFullFormattedString();
             }
 
         }
         public int? MediaCount { get; set; }
+
+        public bool IsValid
+        {
+            get
+            {
+                return this.Id != Guid.Empty;
+            }
+        }
+
+        /// <summary>
+        /// This is populated on a request to get the list of releases for a collection.
+        /// </summary>
+        public int? ListNumber { get; set; }
 
         public static ReleaseList FromDataRelease(Data.Release release, Data.Artist artist, string baseUrl, Image artistThumbnail, Image thumbnail)
         {

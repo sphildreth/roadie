@@ -24,8 +24,7 @@ namespace Roadie.Api.Services
                              IHttpContext httpContext,
                              data.IRoadieDbContext context,
                              ICacheManager cacheManager,
-                             ILogger<BookmarkService> logger,
-                             ICollectionService collectionService)
+                             ILogger<BookmarkService> logger)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
         }

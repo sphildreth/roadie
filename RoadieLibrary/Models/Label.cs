@@ -1,4 +1,5 @@
 ﻿using Roadie.Library.Models.Statistics;
+using Roadie.Library.Utility;
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -32,7 +33,7 @@ namespace Roadie.Library.Models
 
         public ReleaseGroupingStatistics Statistics { get; set; }
 
-        public int? Duration { get; set; }
+        public decimal? Duration { get; set; }
         public string DurationTime
         {
             get
@@ -41,7 +42,7 @@ namespace Roadie.Library.Models
                 {
                     return "--:--";
                 }
-                return TimeSpan.FromSeconds(this.Duration.Value / 1000).ToString(@"dd\.hh\:mm\:ss");
+                return new TimeInfo(this.Duration.Value).ToFullFormattedString();
             }
 
         }

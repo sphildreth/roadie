@@ -135,6 +135,7 @@ namespace Roadie.Api.Services
                                         join r in this.DbContext.Releases on cr.ReleaseId equals r.Id
                                         where c.RoadieId == request.FilterToCollectionId.Value
                                         select r.Id).ToArray();
+
             }
             int[] favoriteReleaseIds = new int[0];
             if (request.FilterFavoriteOnly)
@@ -269,6 +270,52 @@ namespace Roadie.Api.Services
                 {
                     var genre = genreData.FirstOrDefault(x => x.ReleaseId == release.DatabaseId);
                     release.Genre = genre?.dt ?? new DataToken();
+                }
+
+                if (request.FilterToCollectionId.HasValue)
+                {
+                    // Get and number the releases found for the Collection
+                    var collectionReleases = (from c in this.DbContext.Collections
+                                              join cr in this.DbContext.CollectionReleases on c.Id equals cr.CollectionId
+                                              where collectionReleaseIds.Contains(cr.ReleaseId)
+                                              orderby cr.ListNumber
+                                              select cr);
+                    foreach (var release in rows)
+                    {
+                        var cr = collectionReleases.FirstOrDefault(x => x.ReleaseId == release.DatabaseId);
+                        if (cr != null)
+                        {
+                            release.ListNumber = cr.ListNumber;
+                        }
+                    }
+                    // For the missing releases create a dummy release list item
+                    var resultListNumbers = (from x in rows select x.ListNumber).ToList();
+                    var collection = this.GetCollection(request.FilterToCollectionId.Value);
+                    var missingReleases = (from par in collection.PositionArtistReleases()
+                                           where !resultListNumbers.Contains(par.Position)
+                                           select par);
+                    var newRows = new List<ReleaseList>(rows);
+                    foreach(var missingRelease in missingReleases)
+                    {
+                        newRows.Add(new ReleaseList
+                        {
+                            Artist = new DataToken
+                            {
+                                Text = missingRelease.Artist
+                            },
+                            Release = new DataToken
+                            {
+                                Text = missingRelease.Release
+                            },
+                            CssClass = "missing",
+                            ArtistThumbnail = new Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
+                            Thumbnail = new Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
+                            ListNumber = missingRelease.Position
+                        });
+                    }
+                    // Resort the list for the collection by listNumber
+                    rows = newRows.OrderBy(x => x.ListNumber).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                    rowCount = newRows.Count();
                 }
 
                 if (roadieUser != null)
@@ -507,7 +554,7 @@ namespace Roadie.Api.Services
                         TrackCount = release.TrackCount,
                         TrackPlayedCount = release.PlayedCount,
                         TrackSize = releaseTracks.Sum(x => (long?)x.size).ToFileSize(),
-                        TrackTime = releaseTracks.Any() ? TimeSpan.FromSeconds(Math.Floor((double)releaseTime / 1000)).ToString(@"hh\:mm\:ss") : "--:--"
+                        TrackTime = releaseTracks.Any() ? new TimeInfo((decimal)releaseTime).ToFullFormattedString() : "--:--"
                     };
                     result.MaxMediaNumber = releaseMedias.Max(x => x.MediaNumber);
                     result.Statistics = releaseStats;

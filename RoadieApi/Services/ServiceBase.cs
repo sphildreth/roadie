@@ -518,6 +518,7 @@ namespace Roadie.Api.Services
             };
         }
 
+
         private Image MakeImage(Guid id, string type, int? width, int? height, string caption = null)
         {
             if (width.HasValue && height.HasValue && (width.Value != this.Configuration.ThumbnailImageSize.Width || height.Value != this.Configuration.ThumbnailImageSize.Height))
@@ -526,5 +527,7 @@ namespace Roadie.Api.Services
             }
             return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}", caption, null);
         }
+
+        
     }
 }

@@ -8,7 +8,7 @@ namespace Roadie.Library.Models.Collections
     [Serializable]
     public class CollectionRelease
     {
-        public Release Release { get; set; }
+        public ReleaseList Release { get; set; }
         public int ListNumber { get; set; }
     }
 }

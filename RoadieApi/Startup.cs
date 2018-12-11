@@ -71,6 +71,9 @@ namespace Roadie.Api
             //    c.SwaggerEndpoint("/swagger/swagger.json", "Roadie API");
             //    c.RoutePrefix = string.Empty;
             //});
+
+            app.UseStaticFiles();
+
             app.UseSignalR(routes =>
             {
                 routes.MapHub<PlayActivityHub>("/playActivityHub");

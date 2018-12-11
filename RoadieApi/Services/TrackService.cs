@@ -150,9 +150,9 @@ namespace Roadie.Api.Services
                             FavoriteCount = userTracks.Count(x => x.IsFavorite ?? false),
                             PlayedCount = userTracks.Sum(x => x.PlayedCount),
                             FileSizeFormatted = ((long?)track.FileSize).ToFileSize(),                            
-                            Time = TimeSpan.FromSeconds(Math.Floor((double)track.Duration / 1000)).ToString(@"hh\:mm\:ss")
+                            Time = new TimeInfo((decimal)track.Duration).ToFullFormattedString()
                         };
-                    }
+                    } 
                 }
             }
 

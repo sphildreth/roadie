@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Users;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -24,14 +25,14 @@ namespace Roadie.Library.Models
         {
             get
             {
-                return this.Duration.HasValue ? TimeSpan.FromSeconds(this.Duration.Value / 1000).ToString(@"hh\:mm\:ss") : "--:--";
+                return this.Duration.HasValue ? new TimeInfo((decimal)this.Duration.Value).ToFullFormattedString() : "--:--";
             }
         }
         public string DurationTimeShort
         {
             get
             {
-                return this.Duration.HasValue ? TimeSpan.FromSeconds(this.Duration.Value / 1000).ToString(@"mm\:ss") : "--:--";
+                return this.Duration.HasValue ? new TimeInfo((decimal)this.Duration.Value).ToShortFormattedString() : "--:--";
             }
         }
         public DateTime? LastPlayed { get; set; }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Roadie.Library.Utility;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -13,7 +14,7 @@ namespace Roadie.Library.Models.Playlists
         public int? PlaylistCount { get; set; }
         public Image UserThumbnail { get; set; }
         public bool IsPublic { get; set; }
-        public int? Duration { get; set; }
+        public decimal? Duration { get; set; }
         public string DurationTime
         {
             get
@@ -22,7 +23,7 @@ namespace Roadie.Library.Models.Playlists
                 {
                     return "--:--";
                 }
-                return TimeSpan.FromSeconds(this.Duration.Value / 1000).ToString(@"hh\:mm\:ss");
+                return new TimeInfo(this.Duration.Value).ToFullFormattedString();
             }
 
         }
