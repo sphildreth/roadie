@@ -130,13 +130,14 @@ namespace Roadie.Api.Services
 
                     result.Statistics = new CollectionStatistics
                     {
-                         FileSize = collectionTracks.Sum(x => (long?)x.FileSize).ToFileSize(),
-                         MissingTrackCount = collectionTracks.Count(x => x.Hash != null),
-                         ReleaseCount = collectionReleases.Count(),
-                         ReleaseMediaCount = collectionReleases.Sum(x => x.MediaCount),
-                         Duration = collectionReleases.Sum(x => (long?)x.Duration),
-                         TrackCount = collectionReleases.Sum(x => x.TrackCount),
-                         TrackPlayedCount = collectionReleases.Sum(x => x.PlayedCount)
+                        ArtistCount = collectionReleases.Select(x => x.ArtistId).Distinct().Count(),
+                        FileSize = collectionTracks.Sum(x => (long?)x.FileSize).ToFileSize(),
+                        MissingTrackCount = collectionTracks.Count(x => x.Hash != null),
+                        ReleaseCount = collectionReleases.Count(),
+                        ReleaseMediaCount = collectionReleases.Sum(x => x.MediaCount),
+                        Duration = collectionReleases.Sum(x => (long?)x.Duration),
+                        TrackCount = collectionReleases.Sum(x => x.TrackCount),
+                        TrackPlayedCount = collectionReleases.Sum(x => x.PlayedCount)
                     };
                 }
 

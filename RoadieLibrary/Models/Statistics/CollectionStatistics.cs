@@ -6,6 +6,7 @@ namespace Roadie.Library.Models.Statistics
     [Serializable]
     public class CollectionStatistics
     {
+        public int? ArtistCount { get; set; }
         public string FileSize { get; set; }
         public int? MissingTrackCount { get; set; }
         public int? ReleaseCount { get; set; }
