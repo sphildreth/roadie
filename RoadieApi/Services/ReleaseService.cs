@@ -247,7 +247,14 @@ namespace Roadie.Api.Services
                 {
                     result = result.Where(x => x.Rating.HasValue && x.Rating.Value >= request.FilterMinimumRating.Value);
                 }
-                rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                if (request.FilterToCollectionId.HasValue)
+                {
+                    rows = result.ToArray();
+                }
+                else
+                {
+                    rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                }
             }
             if (rows.Any())
             {
@@ -277,6 +284,7 @@ namespace Roadie.Api.Services
                     // Get and number the releases found for the Collection
                     var collectionReleases = (from c in this.DbContext.Collections
                                               join cr in this.DbContext.CollectionReleases on c.Id equals cr.CollectionId
+                                              where c.RoadieId == request.FilterToCollectionId
                                               where collectionReleaseIds.Contains(cr.ReleaseId)
                                               orderby cr.ListNumber
                                               select cr);
