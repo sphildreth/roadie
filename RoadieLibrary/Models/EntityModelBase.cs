@@ -1,5 +1,7 @@
 ﻿using Mapster;
 using Newtonsoft.Json;
+using Roadie.Library.Enums;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -45,6 +47,14 @@ namespace Roadie.Library.Models
         public string SortName { get; set; }
 
         public int? Status { get; set; }
+
+        public string StatusVerbose
+        {
+            get
+            {
+                return SafeParser.ToEnum<Statuses>(this.Status).ToString();
+            }
+        }
 
         [MaxLength(65535)]
         [JsonIgnore]
