@@ -24,6 +24,14 @@ namespace Roadie.Library.Data
             }
         }
 
+        public string CacheRegion
+        {
+            get
+            {
+                return Playlist.CacheRegionUrn(this.RoadieId);
+            }
+        }
+
         public override string ToString()
         {
             return $"Id [{this.Id}], Name [{this.Name}], RoadieId [{ this.RoadieId}]";

@@ -151,57 +151,6 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<short>> SetArtistRating(Guid artistId, User roadieUser, short rating)
-        {
-            var user = this.GetUser(roadieUser.UserId);
-            if (user == null)
-            {
-                return new OperationResult<short>(true, $"Invalid User [{ roadieUser }]");
-            }
-            return await base.SetArtistRating(artistId, user, rating);
-        }
-
-        public async Task<OperationResult<short>> SetReleaseRating(Guid releaseId, User roadieUser, short rating)
-        {
-            var user = this.GetUser(roadieUser.UserId);
-            if (user == null)
-            {
-                return new OperationResult<short>(true, $"Invalid User [{ roadieUser }]");
-            }
-            return await base.SetReleaseRating(releaseId, user, rating);
-        }
-
-        public async Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating)
-        {
-            var user = this.GetUser(roadieUser.UserId);
-            if (user == null)
-            {
-                return new OperationResult<short>(true, $"Invalid User [{ roadieUser }]");
-            }
-            return await base.SetTrackRating(trackId, user, rating);
-        }
-
-        public async Task<OperationResult<bool>> SetArtistFavorite(Guid artistId, User roadieUser, bool isFavorite)
-        {
-            var user = this.GetUser(roadieUser.UserId);
-            if (user == null)
-            {
-                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
-            }
-            return await base.ToggleArtistFavorite(artistId, user, isFavorite);
-
-        }
-
-        public async Task<OperationResult<bool>> SetReleaseFavorite(Guid releaseId, User roadieUser, bool isFavorite)
-        {
-            var user = this.GetUser(roadieUser.UserId);
-            if (user == null)
-            {
-                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
-            }
-            return await base.ToggleReleaseFavorite(releaseId, user, isFavorite);
-        }
-
         public async Task<OperationResult<bool>> SetArtistBookmark(Guid artistId, User roadieUser, bool isBookmarked)
         {
             var user = this.GetUser(roadieUser.UserId);
@@ -214,13 +163,191 @@ namespace Roadie.Api.Services
             {
                 return new OperationResult<bool>(true, $"Invalid Artist [{ artistId }]");
             }
-            var bookmark = this.DbContext.Bookmarks.FirstOrDefault(x => x.BookmarkTargetId == artist.Id &&
-                                                                        x.BookmarkType == Library.Enums.BookmarkType.Artist &&
-                                                                        x.UserId == roadieUser.Id);
+            var result = await this.SetBookmark(user, Library.Enums.BookmarkType.Artist, artist.Id, isBookmarked);
+
+            this.CacheManager.ClearRegion(artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        public async Task<OperationResult<bool>> SetArtistFavorite(Guid artistId, User roadieUser, bool isFavorite)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.ToggleArtistFavorite(artistId, user, isFavorite);
+        }
+
+        public async Task<OperationResult<short>> SetArtistRating(Guid artistId, User roadieUser, short rating)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<short>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.SetArtistRating(artistId, user, rating);
+        }
+
+        public async Task<OperationResult<bool>> SetCollectionBookmark(Guid collectionId, User roadieUser, bool isBookmarked)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            var collection = this.GetCollection(collectionId);
+            if (collection == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Collection [{ collectionId }]");
+            }
+            var result = await this.SetBookmark(user, Library.Enums.BookmarkType.Collection, collection.Id, isBookmarked);
+
+            this.CacheManager.ClearRegion(collection.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        public async Task<OperationResult<bool>> SetLabelBookmark(Guid labelId, User roadieUser, bool isBookmarked)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            var label = this.GetLabel(labelId);
+            if (label == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Label [{ labelId }]");
+            }
+            var result = await this.SetBookmark(user, Library.Enums.BookmarkType.Label, label.Id, isBookmarked);
+
+            this.CacheManager.ClearRegion(label.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        public async Task<OperationResult<bool>> SetPlaylistBookmark(Guid playlistId, User roadieUser, bool isBookmarked)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            var playlist = this.GetPlaylist(playlistId);
+            if (playlist == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Playlist [{ playlistId }]");
+            }
+            var result = await this.SetBookmark(user, Library.Enums.BookmarkType.Playlist, playlist.Id, isBookmarked);
+
+            this.CacheManager.ClearRegion(playlist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        public async Task<OperationResult<bool>> SetReleaseBookmark(Guid releaseid, User roadieUser, bool isBookmarked)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            var release = this.GetRelease(releaseid);
+            if (release == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Release [{ releaseid }]");
+            }
+            var result = await this.SetBookmark(user, Library.Enums.BookmarkType.Release, release.Id, isBookmarked);
+
+            this.CacheManager.ClearRegion(release.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        public async Task<OperationResult<bool>> SetReleaseFavorite(Guid releaseId, User roadieUser, bool isFavorite)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.ToggleReleaseFavorite(releaseId, user, isFavorite);
+        }
+
+        public async Task<OperationResult<short>> SetReleaseRating(Guid releaseId, User roadieUser, short rating)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<short>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.SetReleaseRating(releaseId, user, rating);
+        }
+
+        public async Task<OperationResult<bool>> SetTrackBookmark(Guid trackId, User roadieUser, bool isBookmarked)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            var track = this.GetTrack(trackId);
+            if (track == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Track [{ trackId }]");
+            }
+            var result = await this.SetBookmark(user, Library.Enums.BookmarkType.Track, track.Id, isBookmarked);
+
+            this.CacheManager.ClearRegion(track.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        public async Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<short>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.SetTrackRating(trackId, user, rating);
+        }
+
+        private async Task<OperationResult<bool>> SetBookmark(ApplicationUser user, Library.Enums.BookmarkType bookmarktype, int bookmarkTargetId, bool isBookmarked)
+        {
+            var bookmark = this.DbContext.Bookmarks.FirstOrDefault(x => x.BookmarkTargetId == bookmarkTargetId &&
+                                                                        x.BookmarkType == bookmarktype &&
+                                                                        x.UserId == user.Id);
             if (isBookmarked)
             {
                 // Remove bookmark
-                if(bookmark != null)
+                if (bookmark != null)
                 {
                     this.DbContext.Bookmarks.Remove(bookmark);
                     await this.DbContext.SaveChangesAsync();
@@ -229,13 +356,13 @@ namespace Roadie.Api.Services
             else
             {
                 // Add bookmark
-                if(bookmark == null)
+                if (bookmark == null)
                 {
                     this.DbContext.Bookmarks.Add(new data.Bookmark
                     {
-                        UserId = roadieUser.Id,
-                        BookmarkTargetId = artist.Id,
-                        BookmarkType = Library.Enums.BookmarkType.Artist,
+                        UserId = user.Id,
+                        BookmarkTargetId = bookmarkTargetId,
+                        BookmarkType = bookmarktype,
                         CreatedDate = DateTime.UtcNow,
                         Status = Library.Enums.Statuses.Ok
                     });
@@ -244,7 +371,6 @@ namespace Roadie.Api.Services
             }
 
             this.CacheManager.ClearRegion(user.CacheRegion);
-            this.CacheManager.ClearRegion(artist.CacheRegion);
 
             return new OperationResult<bool>
             {

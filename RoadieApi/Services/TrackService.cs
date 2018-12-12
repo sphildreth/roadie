@@ -7,6 +7,7 @@ using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
@@ -26,14 +27,18 @@ namespace Roadie.Api.Services
 {
     public class TrackService : ServiceBase, ITrackService
     {
+        private IBookmarkService BookmarkService { get; } = null;
+
         public TrackService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
                              IHttpContext httpContext,
                              data.IRoadieDbContext dbContext,
                              ICacheManager cacheManager,
-                             ILogger<TrackService> logger)
+                             ILogger<TrackService> logger,
+                             IBookmarkService bookmarkService)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
+            this.BookmarkService = bookmarkService;
         }
 
         public async Task<OperationResult<Track>> ById(User roadieUser, Guid id, IEnumerable<string> includes)
@@ -47,33 +52,25 @@ namespace Roadie.Api.Services
             }, data.Track.CacheRegionUrn(id));
             if (result?.Data != null && roadieUser != null)
             {
-                //var artist = this.GetArtist(id);
-                //result.Data.UserBookmark = this.GetUserBookmarks(roadieUser).FirstOrDefault(x => x.Type == BookmarkType.Artist && x.Bookmark.Value == artist.RoadieId.ToString());
-                //var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == roadieUser.Id);
-                //if (userArtist != null)
-                //{
-                //    result.Data.UserRating = new UserArtist
-                //    {
-                //        IsDisliked = userArtist.IsDisliked ?? false,
-                //        IsFavorite = userArtist.IsFavorite ?? false,
-                //        Rating = userArtist.Rating
-                //    };
-                //}
-
-                //if (this.RoadieUser != null)
-                //{
-                //    var userTrack = context.usertracks.FirstOrDefault(x => x.trackId == trackInfo.t.id && x.userId == this.RoadieUser.id);
-                //    if (userTrack != null)
-                //    {
-                //        result.UserTrack = Map.ObjectToObject<dto.UserTrack>(userTrack);
-                //        result.UserTrack.userId = this.RoadieUser.roadieId;
-                //        result.UserTrack.trackId = result.roadieId;
-                //        result.UserTrack.createdDateTime = userTrack.createdDate;
-                //        result.UserTrack.lastUpdatedDateTime = userTrack.lastUpdated;
-                //    }
-                //}
-
-            }
+                var track = this.GetTrack(id);
+                var userBookmarkResult = await this.BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Track);
+                if (userBookmarkResult.IsSuccess)
+                {
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == track.RoadieId.ToString()) != null;
+                }
+                var userTrack = this.DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == roadieUser.Id);
+                if (userTrack != null)
+                {
+                    result.Data.UserRating = new UserTrack
+                    {
+                        Rating = userTrack.Rating,
+                        IsDisliked = userTrack.IsDisliked ?? false,
+                        IsFavorite = userTrack.IsFavorite ?? false,
+                        LastPlayed = userTrack.LastPlayed,
+                        PlayedCount = userTrack.PlayedCount
+                    };
+                }
+            }        
             sw.Stop();
             return new OperationResult<Track>(result.Messages)
             {

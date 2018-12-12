@@ -29,6 +29,14 @@ namespace Roadie.Library.Data
             }
         }
 
+        public string CacheRegion
+        {
+            get
+            {
+                return Collection.CacheRegionUrn(this.RoadieId);
+            }
+        }
+
         public int? _positionColumn = null;
         public int PositionColumn
         {

@@ -136,6 +136,71 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("setReleaseBookmark/{releaseId}/{isBookmarked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetReleaseBookmark(Guid releaseId, bool isBookmarked)
+        {
+            var result = await this.UserService.SetReleaseBookmark(releaseId, await this.CurrentUserModel(), isBookmarked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setTrackBookmark/{trackId}/{isBookmarked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetTrackBookmark(Guid trackId, bool isBookmarked)
+        {
+            var result = await this.UserService.SetTrackBookmark(trackId, await this.CurrentUserModel(), isBookmarked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setPlaylistBookmark/{playlistId}/{isBookmarked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetPlaylistBookmark(Guid playlistId, bool isBookmarked)
+        {
+            var result = await this.UserService.SetPlaylistBookmark(playlistId, await this.CurrentUserModel(), isBookmarked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setCollectionBookmark/{collectionId}/{isBookmarked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetCollectionBookmark(Guid collectionId, bool isBookmarked)
+        {
+            var result = await this.UserService.SetCollectionBookmark(collectionId, await this.CurrentUserModel(), isBookmarked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+
+        [HttpPost("setLabelBookmark/{labelId}/{isBookmarked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetLabelBookmark(Guid labelId, bool isBookmarked)
+        {
+            var result = await this.UserService.SetLabelBookmark(labelId, await this.CurrentUserModel(), isBookmarked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
 
         [HttpGet]
         [ProducesResponseType(200)]
