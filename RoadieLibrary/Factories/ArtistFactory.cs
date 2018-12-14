@@ -1042,7 +1042,7 @@ namespace Roadie.Library.Factories
                 getParams.Add(new MySqlParameter("@sinAlt", string.Format("%|{0}|%", specialSearchName)));
                 getParams.Add(new MySqlParameter("@sendAlt", string.Format("%|{0}", specialSearchName)));
                 return this.DbContext.Artists.FromSql(@"SELECT *
-                FROM `Artist`
+                FROM `artist`
                 WHERE LCASE(name) = @isName
                 OR LCASE(sortName) = @isName
                 OR LCASE(sortName) = @isSortName
@@ -1053,7 +1053,7 @@ namespace Roadie.Library.Factories
                 OR alternatenames like @sinAlt
                 OR (alternatenames like @endAlt
                 OR alternatenames like @sendAlt)
-                LIMIT 1;", getParams.ToArray()).FirstOrDefault();
+                LIMIT 1", getParams.ToArray()).FirstOrDefault();
             }
             catch (Exception ex)
             {

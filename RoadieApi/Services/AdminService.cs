@@ -31,6 +31,16 @@ namespace Roadie.Api.Services
 {
     public class AdminService : ServiceBase, IAdminService
     {
+        private IEventMessageLogger EventMessageLogger { get; }
+
+        private ILogger MessageLogger
+        {
+            get
+            {
+                return this.EventMessageLogger as ILogger;
+            }
+        }
+
         protected IHubContext<ScanActivityHub> ScanActivityHub { get; }
 
         public AdminService(IRoadieSettings configuration,
@@ -44,6 +54,13 @@ namespace Roadie.Api.Services
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
             this.ScanActivityHub = scanActivityHub;
+            this.EventMessageLogger = new EventMessageLogger();
+            this.EventMessageLogger.Messages += EventMessageLogger_Messages;
+        }
+
+        private void EventMessageLogger_Messages(object sender, EventMessage e)
+        {
+            Task.WaitAll(this.LogAndPublish(e.Message, e.Level));
         }
 
         public async Task<OperationResult<bool>> ScanInboundFolder(ApplicationUser user, bool isReadOnly = false)
@@ -58,7 +75,7 @@ namespace Roadie.Api.Services
             await this.LogAndPublish($"** Processing Folder: [{d.FullName}]");
 
             long processedFolders = 0;
-            var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, this.Configuration.LibraryFolder, this.DbContext, this.CacheManager, this.Logger);
+            var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, this.Configuration.LibraryFolder, this.DbContext, this.CacheManager, this.MessageLogger);
             foreach (var folder in Directory.EnumerateDirectories(d.FullName).ToArray())
             {
                 await folderProcessor.Process(new DirectoryInfo(folder), isReadOnly);
@@ -77,6 +94,8 @@ namespace Roadie.Api.Services
                 OperationTime = sw.ElapsedMilliseconds
             };
         }
+
+
 
         private async Task LogAndPublish(string message, LogLevel level = LogLevel.Trace)
         {

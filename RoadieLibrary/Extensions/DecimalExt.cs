@@ -15,5 +15,14 @@ namespace Roadie.Library.Extensions
             }
             return 0;
         }
+
+        public static TimeSpan? ToTimeSpan(this decimal? value)
+        {
+            if(!value.HasValue)
+            {
+                return null;
+            }
+            return TimeSpan.FromSeconds((double)value);
+        }
     }
 }

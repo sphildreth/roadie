@@ -36,13 +36,14 @@ namespace Roadie.Library.Processors
                         {
                             if (t.GetInterface("IFilePlugin") != null && !t.IsAbstract && !t.IsInterface)
                             {
-                                IFilePlugin plugin = Activator.CreateInstance(t, new object[] { this.ArtistFactory, this.ReleaseFactory, this.ImageFactory, this.CacheManager, this.Logger }) as IFilePlugin;
+                                IFilePlugin plugin = Activator.CreateInstance(t, new object[] { this.Configuration, this.HttpEncoder, this.ArtistFactory, this.ReleaseFactory, this.ImageFactory, this.CacheManager, this.Logger }) as IFilePlugin;
                                 plugins.Add(plugin);
                             }
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        this.Logger.LogError(ex);
                     }
                     this._plugins = plugins.ToArray();
                 }

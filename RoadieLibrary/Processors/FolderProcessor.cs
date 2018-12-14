@@ -49,16 +49,18 @@ namespace Roadie.Library.Processors
             return result;
         }
 
-        public async Task<OperationResult<bool>> Process(DirectoryInfo inboundFolder, bool doJustInfo, int? submissionId = null)
+        public async Task<OperationResult<bool>> Process(DirectoryInfo folder, bool doJustInfo, int? submissionId = null)
         {
             var sw = new Stopwatch();
             sw.Start();
-            this.PrePrecessFolder(inboundFolder, doJustInfo);
+            await this.PreProcessFolder(folder, doJustInfo);
             int processedFiles = 0;
             var pluginResultInfos = new List<PluginResultInfo>();
             var errors = new List<string>();
+
             this.FileProcessor.SubmissionId = submissionId;
-            foreach (var file in Directory.EnumerateFiles(inboundFolder.FullName, "*.*", SearchOption.AllDirectories).ToArray())
+
+            foreach (var file in Directory.EnumerateFiles(folder.FullName, "*.*", SearchOption.AllDirectories).ToArray())
             {
                 var operation = await this.FileProcessor.Process(file, doJustInfo);
                 if (operation != null && operation.AdditionalData != null && operation.AdditionalData.ContainsKey(PluginResultInfo.AdditionalDataKeyPluginResultInfo))
@@ -67,7 +69,7 @@ namespace Roadie.Library.Processors
                 }
                 if (operation == null)
                 {
-                    var fileExtensionsToDelete = this.Configuration.FileExtensionsToDelete;
+                    var fileExtensionsToDelete = this.Configuration.FileExtensionsToDelete ?? new string[0];
                     if (fileExtensionsToDelete.Any(x => x.Equals(Path.GetExtension(file), StringComparison.OrdinalIgnoreCase)))
                     {
                         if (!doJustInfo)
@@ -86,9 +88,9 @@ namespace Roadie.Library.Processors
                     break;
                 }
             }
-            await this.PostProcessFolder(inboundFolder, pluginResultInfos, doJustInfo);
+            await this.PostProcessFolder(folder, pluginResultInfos, doJustInfo);
             sw.Stop();
-            this.Logger.LogInformation("** Completed! Processed Folder [{0}]: Processed Files [{1}] : Elapsed Time [{2}]", inboundFolder.FullName.ToString(), processedFiles, sw.Elapsed);
+            this.Logger.LogInformation("** Completed! Processed Folder [{0}]: Processed Files [{1}] : Elapsed Time [{2}]", folder.FullName.ToString(), processedFiles, sw.Elapsed);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -98,7 +100,6 @@ namespace Roadie.Library.Processors
                     { "newReleases", this.ReleaseFactory.AddedReleaseIds.Count() },
                     { "newTracks",  this.ReleaseFactory.AddedTrackIds.Count() }
                 },
-
                 OperationTime = sw.ElapsedMilliseconds
             };
         }
@@ -131,29 +132,8 @@ namespace Roadie.Library.Processors
         /// <summary>
         /// Perform any operations to the given folder before processing
         /// </summary>
-        private bool PrePrecessFolder(DirectoryInfo inboundFolder, bool doJustInfo = false)
+        private async Task<bool> PreProcessFolder(DirectoryInfo inboundFolder, bool doJustInfo = false)
         {
-            // If Folder name starts with "~" then remove the tilde and set all files in the folder artist to the folder name
-            if (this.Configuration.Processing.DoFolderArtistNameSet && inboundFolder.Name.StartsWith("~"))
-            {
-                var artist = inboundFolder.Name.Replace("~", "");
-                this.Logger.LogInformation("Setting Folder File Tags To [{0}]", artist);
-                if (!doJustInfo)
-                {
-                    foreach (var file in inboundFolder.GetFiles("*.*", SearchOption.AllDirectories))
-                    {
-                        var extension = file.Extension.ToLower();
-                        if (extension.Equals(".mp3") || extension.Equals(".flac"))
-                        {
-                            // TODO 
-                            //var tagFile = TagLib.File.Create(file.FullName);
-                            //tagFile.Tag.Performers = null;
-                            //tagFile.Tag.Performers = new[] { artist };
-                            //tagFile.Save();
-                        }
-                    }
-                }
-            }
             return true;
         }
     }

@@ -9,6 +9,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using IdSharp.AudioInfo;
+using IdSharp.Common.Utils;
+using IdSharp.Tagging.ID3v1;
+using IdSharp.Tagging.ID3v2;
+using Newtonsoft.Json;
 
 namespace Roadie.Library.MetaData.ID3Tags
 {
@@ -21,12 +26,7 @@ namespace Roadie.Library.MetaData.ID3Tags
 
         public OperationResult<AudioMetaData> MetaDataForFile(string fileName)
         {
-            var result = this.MetaDataForFileFromTagLib(fileName);
-            if (result.IsSuccess)
-            {
-                return result;
-            }
-            result = this.MetaDataForFileFromNTagLite(fileName);
+            var result = this.MetaDataForFileFromIdSharp(fileName);
             if (result.IsSuccess)
             {
                 return result;
@@ -39,18 +39,10 @@ namespace Roadie.Library.MetaData.ID3Tags
             var result = new List<AudioMetaData>();
             foreach (var fileName in fileNames)
             {
-                var r = this.MetaDataForFileFromTagLib(fileName);
+                var r = this.MetaDataForFileFromIdSharp(fileName);
                 if (r.IsSuccess)
                 {
                     result.Add(r.Data);
-                }
-                else
-                {
-                    r = this.MetaDataForFileFromNTagLite(fileName);
-                    if (r.IsSuccess)
-                    {
-                        result.Add(r.Data);
-                    }
                 }
             }
             return new OperationResult<IEnumerable<AudioMetaData>>
@@ -102,7 +94,8 @@ namespace Roadie.Library.MetaData.ID3Tags
             return false;
         }
 
-        private OperationResult<AudioMetaData> MetaDataForFileFromNTagLite(string fileName)
+
+        private OperationResult<AudioMetaData> MetaDataForFileFromIdSharp(string fileName)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -110,81 +103,57 @@ namespace Roadie.Library.MetaData.ID3Tags
             var isSuccess = false;
             try
             {
-                // TODO
+                IAudioFile audioFile = AudioFile.Create(fileName, true);
+                if (ID3v2Tag.DoesTagExist(fileName))
+                {
+                    IID3v2Tag id3v2 = new ID3v2Tag(fileName);
+                    result.Release = id3v2.Album;
+                    result.Artist = id3v2.AlbumArtist ?? id3v2.Artist;
+                    result.ArtistRaw = id3v2.AlbumArtist ?? id3v2.Artist;
+                    result.Genres = id3v2.Genre?.Split(new char[] { ',', '\\' });
+                    result.TrackArtist = id3v2.OriginalArtist ?? id3v2.Artist ?? id3v2.AlbumArtist;
+                    result.TrackArtistRaw = id3v2.OriginalArtist;
+                    result.AudioBitrate = (int?)audioFile.Bitrate;
+                    result.AudioChannels = audioFile.Channels;
+                    result.AudioSampleRate = (int)audioFile.Bitrate;
+                    result.Disk = SafeParser.ToNumber<int?>(id3v2.DiscNumber);
+                    result.Images = id3v2.PictureList?.Select(x => new AudioMetaDataImage
+                    {
+                        Data = x.PictureData,
+                        Description = x.Description,
+                        MimeType = x.MimeType,
+                        Type = (AudioMetaDataImageType)x.PictureType
+                    }).ToArray();
+                    result.Time = (int)audioFile.TotalSeconds > 0 ? ((decimal?)audioFile.TotalSeconds).ToTimeSpan() : null;
+                    result.Title = id3v2.Title.ToTitleCase(false);
 
-                //var file = LiteFile.LoadFromFile(fileName);
-                //var tpos = file.Tag.FindFirstFrameById(FrameId.TPOS);
-                //Picture[] pics = file.Tag.FindFramesById(FrameId.APIC).Select(f => f.GetPicture()).ToArray();
-                //result.Release = file.Tag.Album;
-                //result.Artist = file.Tag.Artist;
-                //result.ArtistRaw = file.Tag.Artist;
-                //result.Genres = (file.Tag.Genre ?? string.Empty).Split(';');
-                //result.TrackArtist = file.Tag.OriginalArtist;
-                //result.TrackArtistRaw = file.Tag.OriginalArtist;
-                //result.AudioBitrate = file.Bitrate;
-                //result.AudioChannels = file.AudioMode.HasValue ? (int?)file.AudioMode.Value : null;
-                //result.AudioSampleRate = file.Frequency;
-                //result.Disk = tpos != null ? SafeParser.ToNumber<int?>(tpos.Text) : null;
-                //result.Images = pics.Select(x => new AudioMetaDataImage
-                //{
-                //    Data = x.Data,
-                //    Description = x.Description,
-                //    MimeType = x.MimeType,
-                //    Type = (AudioMetaDataImageType)x.PictureType
-                //}).ToArray();
-                //result.Time = file.Duration;
-                //result.Title = file.Tag.Title.ToTitleCase(false);
-                //result.TotalTrackNumbers = file.Tag.TrackCount;
-                //result.TrackNumber = file.Tag.TrackNumber;
-                //result.Year = file.Tag.Year;
-                isSuccess = true;
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex, "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
-            }
-            sw.Stop();
-            return new OperationResult<AudioMetaData>
-            {
-                IsSuccess = isSuccess,
-                OperationTime = sw.ElapsedMilliseconds,
-                Data = result
-            };
-        }
+                    var trackparts = id3v2.TrackNumber?.Split('/');
+                    result.TrackNumber = SafeParser.ToNumber<short?>(trackparts[0]);
+                    result.TotalTrackNumbers = trackparts.Length > 1 ? SafeParser.ToNumber<short?>(trackparts[1]) : 0;
+                    result.Year = SafeParser.ToNumber<int?>(id3v2.Year);
+                    isSuccess = true;
+                }
 
-        private OperationResult<AudioMetaData> MetaDataForFileFromTagLib(string fileName)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            AudioMetaData result = new AudioMetaData();
-            var isSuccess = false;
-            try
-            {
-                // TODO 
-                //var tagFile = TagLib.File.Create(fileName);
-                //result.Release = tagFile.Tag.Album;
-                //result.Artist = !string.IsNullOrEmpty(tagFile.Tag.JoinedAlbumArtists) ? tagFile.Tag.JoinedAlbumArtists : tagFile.Tag.JoinedPerformers;
-                //result.ArtistRaw = !string.IsNullOrEmpty(tagFile.Tag.JoinedAlbumArtists) ? tagFile.Tag.JoinedAlbumArtists : tagFile.Tag.JoinedPerformers;
-                //result.Genres = tagFile.Tag.Genres != null ? tagFile.Tag.Genres : new string[0];
-                //result.TrackArtist = tagFile.Tag.JoinedPerformers;
-                //result.TrackArtistRaw = tagFile.Tag.JoinedPerformers;
-                //result.AudioBitrate = (tagFile.Properties.AudioBitrate > 0 ? (int?)tagFile.Properties.AudioBitrate : null);
-                //result.AudioChannels = (tagFile.Properties.AudioChannels > 0 ? (int?)tagFile.Properties.AudioChannels : null);
-                //result.AudioSampleRate = (tagFile.Properties.AudioSampleRate > 0 ? (int?)tagFile.Properties.AudioSampleRate : null);
-                //result.Disk = (tagFile.Tag.Disc > 0 ? (int?)tagFile.Tag.Disc : null);
-                //result.Images = (tagFile.Tag.Pictures != null ? tagFile.Tag.Pictures.Select(x => new AudioMetaDataImage
-                //{
-                //    Data = x.Data.Data,
-                //    Description = x.Description,
-                //    MimeType = x.MimeType,
-                //    Type = (AudioMetaDataImageType)x.Type
-                //}).ToArray() : null);
-                //result.Time = (tagFile.Properties.Duration.TotalMinutes > 0 ? (TimeSpan?)tagFile.Properties.Duration : null);
-                //result.Title = tagFile.Tag.Title.ToTitleCase(false);
-                //result.TotalTrackNumbers = (tagFile.Tag.TrackCount > 0 ? (int?)tagFile.Tag.TrackCount : null);
-                //result.TrackNumber = (tagFile.Tag.Track > 0 ? (short?)tagFile.Tag.Track : null);
-                //result.Year = (tagFile.Tag.Year > 0 ? (int?)tagFile.Tag.Year : null);
-                isSuccess = true;
+                if (!isSuccess)
+                {
+                    if (ID3v1Tag.DoesTagExist(fileName))
+                    {
+                        IID3v1Tag id3v1 = new ID3v1Tag(fileName);
+                        result.Release = id3v1.Album;
+                        result.Artist = id3v1.Artist;
+                        result.ArtistRaw = id3v1.Artist;
+                        result.AudioBitrate = (int?)audioFile.Bitrate;
+                        result.AudioChannels = audioFile.Channels;
+                        result.AudioSampleRate = (int)audioFile.Bitrate;
+                        result.Time = (int)audioFile.TotalSeconds > 0 ? ((decimal?)audioFile.TotalSeconds).ToTimeSpan() : null;
+                        result.Title = id3v1.Title.ToTitleCase(false);
+
+                        result.TrackNumber = (short?)id3v1.TrackNumber;
+                        result.Year = SafeParser.ToNumber<int?>(id3v1.Year);
+                        isSuccess = true;
+                    }
+                }
+
             }
             catch (Exception ex)
             {
