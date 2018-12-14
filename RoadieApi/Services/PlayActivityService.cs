@@ -202,7 +202,7 @@ namespace Roadie.Api.Services
             {
                 try
                 {
-                    await this.PlayActivityHub.Clients.All.SendAsync(JsonConvert.SerializeObject(pl));
+                    await this.PlayActivityHub.Clients.All.SendAsync("SendActivity",pl);
                 }
                 catch (Exception ex)
                 {

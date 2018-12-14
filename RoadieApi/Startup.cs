@@ -42,6 +42,8 @@ namespace Roadie.Api
             this._configuration = configuration;
             this._loggerFactory = loggerFactory;
 
+
+
             TypeAdapterConfig<Roadie.Library.Data.Image, Roadie.Library.Models.Image>
                 .NewConfig()
                 .Map(i => i.ArtistId,
@@ -77,6 +79,7 @@ namespace Roadie.Api
             app.UseSignalR(routes =>
             {
                 routes.MapHub<PlayActivityHub>("/playActivityHub");
+                routes.MapHub<ScanActivityHub>("/scanActivityHub");
             });
             app.UseMvc();
         }
@@ -123,7 +126,7 @@ namespace Roadie.Api
             services.AddAuthorization(options =>
             {
                 options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
-                options.AddPolicy("Editor", policy => policy.RequireRole("Editor"));
+                options.AddPolicy("Editor", policy => policy.RequireRole("Admin", "Editor"));
             });
 
             services.Configure<IConfiguration>(this._configuration);
@@ -136,6 +139,30 @@ namespace Roadie.Api
                 var hostingEnvironment = ctx.GetService<IHostingEnvironment>();
                 settings.ContentPath = hostingEnvironment.WebRootPath;
                 settings.ConnectionString = this._configuration.GetConnectionString("RoadieDatabaseConnection");
+
+                var integrationKeys = this._configuration.GetSection("IntegrationKeys")
+                                                         .Get<IntegrationKey>();
+
+                settings.Integrations.ApiKeys = new System.Collections.Generic.List<ApiKey>
+                {
+                    new ApiKey
+                    {
+                        ApiName = "LastFMApiKey",
+                        Key = integrationKeys.LastFMApiKey,
+                        KeySecret = integrationKeys.LastFMSecret
+                    },
+                    new ApiKey
+                    {
+                        ApiName = "DiscogsConsumerKey",
+                        Key = integrationKeys.DiscogsConsumerKey,
+                        KeySecret = integrationKeys.DiscogsConsumerSecret
+                    },
+                    new ApiKey
+                    {
+                        ApiName = "BingImageSearch",
+                        Key = integrationKeys.BingImageSearch
+                    }
+                };
                 return settings;
             });
             services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
@@ -154,6 +181,7 @@ namespace Roadie.Api
             services.AddScoped<IGenreService, GenreService>();
             services.AddScoped<ISubsonicService, SubsonicService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IAdminService, AdminService>();
 
             var securityKey = new SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration["Tokens:PrivateKey"]));
 
@@ -211,5 +239,15 @@ namespace Roadie.Api
             });
         }
 
+        private class IntegrationKey
+        {
+            public string BingImageSearch { get; set; }
+            public string LastFMApiKey { get; set; }
+            public string LastFMSecret { get; set; }
+            public string DiscogsConsumerKey { get; set; }
+            public string DiscogsConsumerSecret { get; set; }
+        }
     }
+
+
 }

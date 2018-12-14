@@ -690,6 +690,7 @@ namespace Roadie.Api.Services
                                 Text = track.Title,
                                 Value = track.RoadieId.ToString()
                             };
+                            t.CssClass = string.IsNullOrEmpty(track.Hash) ? "Missing" : "Ok";
                             t.TrackArtist = track.TrackArtist != null ? ArtistList.FromDataArtist(track.TrackArtist, this.MakeArtistThumbnailImage(track.TrackArtist.RoadieId)) : null;
                             t.TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ t.Id}.mp3";
                             rmTracks.Add(t);
