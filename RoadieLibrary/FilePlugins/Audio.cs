@@ -22,9 +22,6 @@ namespace Roadie.Library.FilePlugins
     public class Audio : PluginBase
     {
         private Guid _artistId = Guid.Empty;
-        //private AudioMetaDataHelper _audioMetaDataHelper = null;
-        //private ILastFmHelper _lastFmHelper = null;
-        //private MusicBrainzProvider _musicBrainzProvider = null;
         private Guid _releaseId = Guid.Empty;
 
         public IAudioMetaDataHelper AudioMetaDataHelper { get; }
@@ -37,15 +34,11 @@ namespace Roadie.Library.FilePlugins
             }
         }
 
-        public ILastFmHelper LastFmHelper { get; }
-
-        public IMusicBrainzProvider MusicBrainzProvider { get; }
-
         public Audio(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
-            ArtistFactory artistFactory,
-            ReleaseFactory releaseFactory,
-            ImageFactory imageFactory,
+            IArtistFactory artistFactory,
+            IReleaseFactory releaseFactory,
+            IImageFactory imageFactory,
             ICacheManager cacheManager,
             ILogger logger,
             IArtistLookupEngine artistLookupEngine,

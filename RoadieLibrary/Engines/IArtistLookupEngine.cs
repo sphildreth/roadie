@@ -9,7 +9,7 @@ namespace Roadie.Library.Engines
 {
     public interface IArtistLookupEngine
     {
-        List<int> AddedArtistIds { get; }
+        IEnumerable<int> AddedArtistIds { get; }
         IArtistSearchEngine DiscogsArtistSearchEngine { get; }
         IArtistSearchEngine ITunesArtistSearchEngine { get; }
         IArtistSearchEngine LastFmArtistSearchEngine { get; }

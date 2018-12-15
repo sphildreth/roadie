@@ -1,11 +1,15 @@
 ﻿using Roadie.Library.MetaData.Audio;
 using Roadie.Library.SearchEngines.MetaData;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Roadie.Library.Engines
 {
     public interface IReleaseLookupEngine
     {
+        IEnumerable<int> AddedReleaseIds { get; }
+        IEnumerable<int> AddedTrackIds { get; }
+
         IReleaseSearchEngine DiscogsReleaseSearchEngine { get; }
         IReleaseSearchEngine ITunesReleaseSearchEngine { get; }
         IReleaseSearchEngine LastFmReleaseSearchEngine { get; }

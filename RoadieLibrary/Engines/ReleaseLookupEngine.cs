@@ -33,7 +33,25 @@ namespace Roadie.Library.Engines
         private IArtistLookupEngine ArtistLookupEngine { get; }
         private ILabelLookupEngine LabelLookupEngine { get; }
 
-        public List<int> AddedReleaseIds { get; } = new List<int>();
+        public List<int> _addedReleaseIds = new List<int>();
+        public List<int> _addedTrackIds = new List<int>();
+
+        public IEnumerable<int> AddedReleaseIds
+        {
+            get
+            {
+                return this._addedReleaseIds;
+            }
+        }
+
+        public IEnumerable<int> AddedTrackIds
+        {
+            get
+            {
+                return this._addedTrackIds;
+            }
+        }
+       
 
         public IReleaseSearchEngine MusicBrainzReleaseSearchEngine { get; }
         public IReleaseSearchEngine DiscogsReleaseSearchEngine { get; }
@@ -193,7 +211,7 @@ namespace Roadie.Library.Engines
                 }
                 if (inserted > 0 && release.Id > 0)
                 {
-                    this.AddedReleaseIds.Add(release.Id);
+                    this._addedReleaseIds.Add(release.Id);
                     if (releaseGenreTables != null && releaseGenreTables.Any(x => x.GenreId == null))
                     {
                         foreach (var releaseGenreTable in releaseGenreTables)
@@ -333,6 +351,7 @@ namespace Roadie.Library.Engines
                                 }
                                 releasemedia.Tracks = releasemediatracks;
                                 this.DbContext.ReleaseMedias.Add(releasemedia);
+                                this._addedTrackIds.AddRange(releasemedia.Tracks.Select(x => x.Id));
                             }
                             try
                             {

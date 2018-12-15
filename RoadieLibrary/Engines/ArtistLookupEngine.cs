@@ -28,7 +28,14 @@ namespace Roadie.Library.Engines
 {
     public class ArtistLookupEngine : LookupEngineBase, IArtistLookupEngine
     {
-        public List<int> AddedArtistIds { get; } = new List<int>();
+        private List<int> _addedArtistIds = new List<int>();
+        public IEnumerable<int> AddedArtistIds
+        {
+            get
+            {
+                return this._addedArtistIds;
+            }
+        }
         public IArtistSearchEngine ITunesArtistSearchEngine { get; }
         public IArtistSearchEngine DiscogsArtistSearchEngine { get; }
         public IArtistSearchEngine LastFmArtistSearchEngine { get; }
@@ -85,7 +92,7 @@ namespace Roadie.Library.Engines
                 var addArtistResult = this.DbContext.Artists.Add(artist);
                 int inserted = 0;
                 inserted = await this.DbContext.SaveChangesAsync();
-                this.AddedArtistIds.Add(artist.Id);
+                this._addedArtistIds.Add(artist.Id);
                 if (artist.Id < 1 && addArtistResult.Entity.Id > 0)
                 {
                     artist.Id = addArtistResult.Entity.Id;

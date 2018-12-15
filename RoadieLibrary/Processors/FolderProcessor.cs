@@ -100,9 +100,9 @@ namespace Roadie.Library.Processors
                 IsSuccess = !errors.Any(),
                 AdditionalData = new Dictionary<string, object> {
                     { "processedFiles", processedFiles },
-                    { "newArtists",  this.ArtistFactory.AddedArtistIds.Count() },
-                    { "newReleases", this.ReleaseFactory.AddedReleaseIds.Count() },
-                    { "newTracks",  this.ReleaseFactory.AddedTrackIds.Count() }
+                    { "newArtists",  this.ArtistLookupEngine.AddedArtistIds.Count() },
+                    { "newReleases", this.ReleaseLookupEngine.AddedReleaseIds.Count() },
+                    { "newTracks",  this.ReleaseLookupEngine.AddedTrackIds.Count() }
                 },
                 OperationTime = sw.ElapsedMilliseconds
             };

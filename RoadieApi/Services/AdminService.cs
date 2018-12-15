@@ -1,9 +1,6 @@
-﻿using Mapster;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Api.Hubs;
 using Roadie.Library;
 using Roadie.Library.Caching;
@@ -11,7 +8,6 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Enums;
-using Roadie.Library.Extensions;
 using Roadie.Library.Factories;
 using Roadie.Library.Identity;
 using Roadie.Library.MetaData.Audio;
@@ -19,19 +15,11 @@ using Roadie.Library.MetaData.FileName;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.MetaData.MusicBrainz;
-using Roadie.Library.Models;
-using Roadie.Library.Models.Pagination;
-using Roadie.Library.Models.Releases;
-using Roadie.Library.Models.Statistics;
-using Roadie.Library.Models.Users;
 using Roadie.Library.Processors;
 using Roadie.Library.Utility;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 
@@ -39,26 +27,17 @@ namespace Roadie.Api.Services
 {
     public class AdminService : ServiceBase, IAdminService
     {
-        private IEventMessageLogger EventMessageLogger { get; }
-
-        private IArtistLookupEngine ArtistLookupEngine { get; }
-        private ILabelLookupEngine LabelLookupEngine { get; }
-        private IReleaseLookupEngine ReleaseLookupEngine { get; }
-
+        protected IHubContext<ScanActivityHub> ScanActivityHub { get; }
         private IArtistFactory ArtistFactory { get; }
-
-        private IReleaseFactory ReleaseFactory { get; }
-
-        private ILabelFactory LabelFactory { get; }
-
-        private IImageFactory ImageFactory { get; }
-
+        private IArtistLookupEngine ArtistLookupEngine { get; }
         private IAudioMetaDataHelper AudioMetaDataHelper { get; }
-
-        private IMusicBrainzProvider MusicBrainzProvider { get; }
-        private ILastFmHelper LastFmHelper { get; }
+        private IEventMessageLogger EventMessageLogger { get; }
         private IFileNameHelper FileNameHelper { get; }
         private IID3TagsHelper ID3TagsHelper { get; }
+        private IImageFactory ImageFactory { get; }
+        private ILabelFactory LabelFactory { get; }
+        private ILabelLookupEngine LabelLookupEngine { get; }
+        private ILastFmHelper LastFmHelper { get; }
 
         private ILogger MessageLogger
         {
@@ -68,7 +47,9 @@ namespace Roadie.Api.Services
             }
         }
 
-        protected IHubContext<ScanActivityHub> ScanActivityHub { get; }
+        private IMusicBrainzProvider MusicBrainzProvider { get; }
+        private IReleaseFactory ReleaseFactory { get; }
+        private IReleaseLookupEngine ReleaseLookupEngine { get; }
 
         public AdminService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
@@ -94,15 +75,10 @@ namespace Roadie.Api.Services
             this.ReleaseLookupEngine = new ReleaseLookupEngine(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.LabelLookupEngine);
             this.ImageFactory = new ImageFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
             this.LabelFactory = new LabelFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
-            this.AudioMetaDataHelper = new AudioMetaDataHelper(configuration, httpEncoder, context, this.MusicBrainzProvider, this.LastFmHelper, cacheManager, 
-                                                               logger, this.ArtistLookupEngine, this.ImageFactory, this.FileNameHelper, this.ID3TagsHelper); 
+            this.AudioMetaDataHelper = new AudioMetaDataHelper(configuration, httpEncoder, context, this.MusicBrainzProvider, this.LastFmHelper, cacheManager,
+                                                               logger, this.ArtistLookupEngine, this.ImageFactory, this.FileNameHelper, this.ID3TagsHelper);
             this.ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.LabelFactory, this.AudioMetaDataHelper, this.ReleaseLookupEngine);
             this.ArtistFactory = new ArtistFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
-        }
-
-        private void EventMessageLogger_Messages(object sender, EventMessage e)
-        {
-            Task.WaitAll(this.LogAndPublish(e.Message, e.Level));
         }
 
         /// <summary>
@@ -151,7 +127,7 @@ namespace Roadie.Api.Services
                 Name = "Various Artists",
                 SortName = "Various Artist",
                 Status = Statuses.Ok,
-                Tags = "compilations|various",                
+                Tags = "compilations|various",
                 URLs = "https://en.wikipedia.org/wiki/Compilation_album"
             });
             await this.DbContext.SaveChangesAsync();
@@ -184,7 +160,7 @@ namespace Roadie.Api.Services
             foreach (var folder in Directory.EnumerateDirectories(d.FullName).ToArray())
             {
                 var result = await folderProcessor.Process(new DirectoryInfo(folder), isReadOnly);
-                if(result.AdditionalData != null)
+                if (result.AdditionalData != null)
                 {
                     newArtists += SafeParser.ToNumber<int>(result.AdditionalData["newArtists"]);
                     newReleases += SafeParser.ToNumber<int>(result.AdditionalData["newReleases"]);
@@ -203,7 +179,7 @@ namespace Roadie.Api.Services
                 NewArtists = newArtists,
                 NewReleases = newReleases,
                 NewTracks = newTracks,
-                TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds                
+                TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
             });
             await this.DbContext.SaveChangesAsync();
             this.CacheManager.Clear();
@@ -216,7 +192,10 @@ namespace Roadie.Api.Services
             };
         }
 
-
+        private void EventMessageLogger_Messages(object sender, EventMessage e)
+        {
+            Task.WaitAll(this.LogAndPublish(e.Message, e.Level));
+        }
 
         private async Task LogAndPublish(string message, LogLevel level = LogLevel.Trace)
         {
@@ -225,15 +204,19 @@ namespace Roadie.Api.Services
                 case LogLevel.Trace:
                     this.Logger.LogTrace(message);
                     break;
+
                 case LogLevel.Debug:
                     this.Logger.LogDebug(message);
                     break;
+
                 case LogLevel.Information:
                     this.Logger.LogInformation(message);
                     break;
+
                 case LogLevel.Warning:
                     this.Logger.LogWarning(message);
                     break;
+
                 case LogLevel.Critical:
                     this.Logger.LogCritical(message);
                     break;

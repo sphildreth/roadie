@@ -7,8 +7,6 @@ namespace Roadie.Library.Factories
 {
     public interface IArtistFactory
     {
-        IEnumerable<int> AddedArtistIds { get; }
-
         Task<OperationResult<bool>> Delete(Artist Artist);
 
         Task<OperationResult<bool>> Delete(Guid RoadieId);
