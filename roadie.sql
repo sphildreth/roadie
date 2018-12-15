@@ -42,7 +42,7 @@ CREATE TABLE `artist` (
   `birthDate` date DEFAULT NULL,
   `beginDate` date DEFAULT NULL,
   `endDate` date DEFAULT NULL,
-  `artistType` enum('Person','Group','Orchestra','Choir','Character','Other') DEFAULT NULL,
+  `artistType` enum('Character','Choir','Group','Meta','Orchestra','Other','Person') DEFAULT NULL,
   `bioContext` text,
   `bandStatus` enum('Active','On Hold','Split Up') DEFAULT NULL,
   `discogsId` varchar(50) DEFAULT NULL,

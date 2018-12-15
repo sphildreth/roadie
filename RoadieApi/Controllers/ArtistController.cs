@@ -57,7 +57,8 @@ namespace Roadie.Api.Controllers
         {
             var result = await this.ArtistService.List(roadieUser: await this.CurrentUserModel(),
                                                         request: request,
-                                                        doRandomize: doRandomize ?? false);
+                                                        doRandomize: doRandomize ?? false,
+                                                        onlyIncludeWithReleases: false);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

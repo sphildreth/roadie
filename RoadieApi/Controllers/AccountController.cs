@@ -29,8 +29,10 @@ namespace Roadie.Api.Controllers
         private readonly UserManager<ApplicationUser> userManager;        
         private IRoadieSettings RoadieSettings { get; }
         private ICacheManager CacheManager { get; }
+        private IAdminService AdminService { get; }
 
         public AccountController(
+           IAdminService adminService,
            UserManager<ApplicationUser> userManager,
            SignInManager<ApplicationUser> signInManager,
            IConfiguration configuration,
@@ -47,7 +49,7 @@ namespace Roadie.Api.Controllers
 
             this.RoadieSettings = new RoadieSettings();
             configuration.GetSection("RoadieSettings").Bind(this.RoadieSettings);
-
+            this.AdminService = adminService;
         }
 
         [HttpPost]
@@ -124,15 +126,31 @@ namespace Roadie.Api.Controllers
                 var user = new ApplicationUser
                 {
                     UserName = registerModel.Username,
-                    Email = registerModel.Email,
-                    CreatedDate = DateTime.UtcNow
+                    Email = registerModel.Email
                 };
 
                 var identityResult = await this.userManager.CreateAsync(user, registerModel.Password);
                 if (identityResult.Succeeded)
                 {
+                    if(user.Id == 1)
+                    {
+                        await this.AdminService.DoInitialSetup(user, this.userManager);
+                    }
                     await signInManager.SignInAsync(user, isPersistent: false);
-                    return Ok(this.tokenService.GenerateToken(user, this.userManager));
+                    var t = await this.tokenService.GenerateToken(user, this.userManager);
+                    this.logger.LogInformation($"Successfully authenticated User [{ registerModel.Username}]");
+                    this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+                    var avatarUrl = $"{this.Request.Scheme}://{this.Request.Host}/images/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
+                    return Ok(new
+                    {
+                        Username = user.UserName,
+                        user.Email,
+                        user.LastLogin,
+                        avatarUrl,
+                        Token = t,
+                        user.Timeformat,
+                        user.Timezone
+                    });
                 }
                 else
                 {

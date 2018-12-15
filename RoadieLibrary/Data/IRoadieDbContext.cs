@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Roadie.Library.Identity;
-using Roadie.Library.Models.Releases;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -38,6 +37,7 @@ namespace Roadie.Library.Data
         DbSet<UserArtist> UserArtists { get; set; }
         DbSet<UserQue> UserQues { get; set; }
         DbSet<UserRelease> UserReleases { get; set; }
+        DbSet<ApplicationRole> UserRoles { get; set; }
         DbSet<ApplicationUser> Users { get; set; }
         DbSet<UserTrack> UserTracks { get; set; }
 
