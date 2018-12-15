@@ -165,6 +165,7 @@ namespace Roadie.Api.Services
                 TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds                
             });
             await this.DbContext.SaveChangesAsync();
+            this.CacheManager.Clear();
             await this.LogAndPublish($"**Completed!Processed Folders[{ processedFolders }], Processed Files[{ processedFiles}] : Elapsed Time[{ sw.Elapsed}]");
             return new OperationResult<bool>
             {
