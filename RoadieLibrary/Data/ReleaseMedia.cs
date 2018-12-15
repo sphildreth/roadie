@@ -24,5 +24,10 @@ namespace Roadie.Library.Data
         public short TrackCount { get; set; }
 
         public ICollection<Track> Tracks { get; set; }
+
+        public ReleaseMedia()
+        {
+            this.Tracks = new HashSet<Track>();
+        }
     }
 }

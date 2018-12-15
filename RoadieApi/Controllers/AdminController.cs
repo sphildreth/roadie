@@ -33,7 +33,7 @@ namespace Roadie.Api.Controllers
         [Authorize("Admin")]
         public async Task<IActionResult> Scan()
         {
-            var result = await this.AdminService.ScanInboundFolder(await this.UserManager.GetUserAsync(User), true);
+            var result = await this.AdminService.ScanInboundFolder(await this.UserManager.GetUserAsync(User));
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

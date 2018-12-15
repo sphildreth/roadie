@@ -62,6 +62,7 @@ namespace Roadie.Library.Identity
             this.DoUseHtmlPlayer = true;
             this.PlayerTrackLimit = 50;
             this.Timeformat = "YYYY-MM-DD HH:mm:ss";
+            this.Timezone = "US/Central";
             this.IsPrivate = false;
             this.RecentlyPlayedLimit = 20;
             this.RandomReleaseLimit = 20;

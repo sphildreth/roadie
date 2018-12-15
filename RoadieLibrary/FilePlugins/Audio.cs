@@ -214,7 +214,6 @@ namespace Roadie.Library.FilePlugins
                 }
             }
 
-            result.IsSuccess = true;
             result.AdditionalData.Add(PluginResultInfo.AdditionalDataKeyPluginResultInfo, new PluginResultInfo
             {
                 ArtistFolder = artistFolder,
@@ -225,6 +224,7 @@ namespace Roadie.Library.FilePlugins
                 TrackNumber = metaData.TrackNumber,
                 TrackTitle = metaData.Title
             });
+            result.IsSuccess = true;
             return result;
         }
 

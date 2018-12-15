@@ -24,15 +24,13 @@ namespace Roadie.Library.Data
         public string Profile { get; set; }
 
         [Column("artistCount")]
-        public int? ArtistCount { get; set; } // TODO update this on artist folder scane
-
+        public int? ArtistCount { get; set; } 
 
         [Column("releaseCount")]
-        public int? ReleaseCount { get; set; } // TODO update this on artist folder scan
+        public int? ReleaseCount { get; set; } 
 
         [Column("trackCount")]
-        public int? TrackCount { get; set; } // TODO update this on artist folder scan
-
+        public int? TrackCount { get; set; } 
 
         public List<ReleaseLabel> ReleaseLabels { get; set; }
     }

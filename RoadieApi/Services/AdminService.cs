@@ -76,9 +76,19 @@ namespace Roadie.Api.Services
 
             long processedFolders = 0;
             var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, this.Configuration.LibraryFolder, this.DbContext, this.CacheManager, this.MessageLogger);
+
+            var newArtists = 0;
+            var newReleases = 0;
+            var newTracks = 0;
             foreach (var folder in Directory.EnumerateDirectories(d.FullName).ToArray())
             {
-                await folderProcessor.Process(new DirectoryInfo(folder), isReadOnly);
+                var result = await folderProcessor.Process(new DirectoryInfo(folder), isReadOnly);
+                if(result.AdditionalData != null)
+                {
+                    newArtists += SafeParser.ToNumber<int>(result.AdditionalData["newArtists"]);
+                    newReleases += SafeParser.ToNumber<int>(result.AdditionalData["newReleases"]);
+                    newTracks += SafeParser.ToNumber<int>(result.AdditionalData["newTracks"]);
+                }
                 processedFolders++;
             }
             if (!isReadOnly)
@@ -86,6 +96,15 @@ namespace Roadie.Api.Services
                 folderProcessor.DeleteEmptyFolders(d);
             }
             sw.Stop();
+            this.DbContext.ScanHistories.Add(new data.ScanHistory
+            {
+                UserId = user.Id,
+                NewArtists = newArtists,
+                NewReleases = newReleases,
+                NewTracks = newTracks,
+                TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds                
+            });
+            await this.DbContext.SaveChangesAsync();
             await this.LogAndPublish($"**Completed!Processed Folders[{ processedFolders }], Processed Files[{ processedFiles}] : Elapsed Time[{ sw.Elapsed}]");
             return new OperationResult<bool>
             {

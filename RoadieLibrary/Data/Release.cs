@@ -109,5 +109,11 @@ namespace Roadie.Library.Data
         [Column("urls", TypeName = "text")]
         [MaxLength(65535)]
         public string URLs { get; set; }
+
+        public Release()
+        {
+            this.Rating = 0;
+            this.Medias = new HashSet<ReleaseMedia>();
+        }
     }
 }

@@ -32,7 +32,7 @@ namespace Roadie.Library
 
         [JsonIgnore]
         [XmlIgnore]
-        public Dictionary<string, object> AdditionalData { get; set; }
+        public Dictionary<string, object> AdditionalData { get; set; } = new Dictionary<string, object>();
 
         /// <summary>
         /// Client friendly exceptions

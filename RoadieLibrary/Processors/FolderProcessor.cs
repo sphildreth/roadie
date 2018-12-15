@@ -116,11 +116,6 @@ namespace Roadie.Library.Processors
             }
             if (pluginResults != null)
             {
-                //await Task.Run(() => Parallel.ForEach(pluginResults.GroupBy(x => x.ReleaseId).Select(x => x.First()), async releasesInfo =>
-                //{
-                //    await this.ReleaseFactory.ScanReleaseFolder(releasesInfo.ReleaseId, this.DestinationRoot, doJustInfo);
-                //}));
-
                 foreach (var releasesInfo in pluginResults.GroupBy(x => x.ReleaseId).Select(x => x.First()))
                 {
                     await this.ReleaseFactory.ScanReleaseFolder(releasesInfo.ReleaseId, this.DestinationRoot, doJustInfo);

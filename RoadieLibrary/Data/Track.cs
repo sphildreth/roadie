@@ -85,5 +85,10 @@ namespace Roadie.Library.Data
         [Column("trackNumber")]
         [Required]
         public short TrackNumber { get; set; }
+
+        public Track()
+        {
+            this.Rating = 0;
+        }
     }
 }

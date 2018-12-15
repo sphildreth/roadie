@@ -564,19 +564,19 @@ namespace Roadie.Api.Services
                                              rm.Id,
                                              rm.MediaNumber
                                          });
-                    var releaseTime = releaseTracks.Sum(x => x.time);
+                    var releaseTime = releaseTracks?.Sum(x => x.time) ?? 0;
                     var releaseStats = new ReleaseStatistics
                     {
                         MediaCount = release.MediaCount,
-                        MissingTrackCount = releaseTracks.Where(x => x.isMissing).Count(),
+                        MissingTrackCount = releaseTracks?.Where(x => x.isMissing).Count(),
                         TrackCount = release.TrackCount,
                         TrackPlayedCount = release.PlayedCount,
-                        TrackSize = releaseTracks.Sum(x => (long?)x.size).ToFileSize(),
+                        TrackSize =  releaseTracks?.Sum(x => (long?)x.size).ToFileSize(),
                         TrackTime = releaseTracks.Any() ? new TimeInfo((decimal)releaseTime).ToFullFormattedString() : "--:--"
                     };
-                    result.MaxMediaNumber = releaseMedias.Max(x => x.MediaNumber);
+                    result.MaxMediaNumber = releaseMedias.Any() ? releaseMedias.Max(x => x.MediaNumber) : (short)0;
                     result.Statistics = releaseStats;
-                    result.MediaCount = release.MediaCount ?? (short?)releaseStats.MediaCount;
+                    result.MediaCount = release.MediaCount ?? (short?)releaseStats?.MediaCount;
                 }
                 if (includes.Contains("images"))
                 {

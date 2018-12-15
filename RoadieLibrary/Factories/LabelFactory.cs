@@ -92,7 +92,7 @@ namespace Roadie.Library.Factories
                 OR alternatenames like @startAlt
                 OR alternatenames like @inAlt
                 OR alternatenames like @endAlt
-                LIMIT 1;", getParams.ToArray()).FirstOrDefault();
+                LIMIT 1", getParams.ToArray()).FirstOrDefault();
                 sw.Stop();
                 if (Label == null || !Label.IsValid)
                 {

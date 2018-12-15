@@ -112,7 +112,7 @@ namespace Roadie.Library.Factories
                                 }
                                 if (genre != null && genre.Id > 0)
                                 {
-                                    sql = string.Format("INSERT INTO `ArtistGenreTable` (ArtistId, genreId) VALUES ({0}, {1});", artist.Id, genre.Id);
+                                    sql = string.Format("INSERT INTO `artistGenreTable` (artistId, genreId) VALUES ({0}, {1});", artist.Id, genre.Id);
                                     await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
                                 }
                             }
@@ -236,9 +236,9 @@ namespace Roadie.Library.Factories
                         Data = resultInCache
                     };
                 }
-                var Artist = this.DatabaseQueryForArtistName(ArtistName);
+                var artist = this.DatabaseQueryForArtistName(ArtistName);
                 sw.Stop();
-                if (Artist == null || !Artist.IsValid)
+                if (artist == null || !artist.IsValid)
                 {
                     this._logger.LogInformation("ArtistFactory: Artist Not Found By Name [{0}]", ArtistName);
                     if (doFindIfNotInDatabase)
@@ -254,12 +254,12 @@ namespace Roadie.Library.Factories
                         }
                         if (ArtistSearch.IsSuccess)
                         {
-                            Artist = ArtistSearch.Data;
+                            artist = ArtistSearch.Data;
                             // See if Artist already exist with either Name or Sort Name
                             var alreadyExists = this.DatabaseQueryForArtistName(ArtistSearch.Data.Name, ArtistSearch.Data.SortNameValue);
                             if (alreadyExists == null || !alreadyExists.IsValid)
                             {
-                                var addResult = await this.Add(Artist);
+                                var addResult = await this.Add(artist);
                                 if (!addResult.IsSuccess)
                                 {
                                     sw.Stop();
@@ -270,24 +270,24 @@ namespace Roadie.Library.Factories
                                         Errors = addResult.Errors
                                     };
                                 }
-                                Artist = addResult.Data;
+                                artist = addResult.Data;
                             }
                             else
                             {
-                                Artist = alreadyExists;
+                                artist = alreadyExists;
                             }
                         }
                     }
                 }
-                if (Artist != null && Artist.IsValid)
+                if (artist != null && artist.IsValid)
                 {
-                    this.CacheManager.Add(cacheKey, Artist);
+                    this.CacheManager.Add(cacheKey, artist);
                 }
                 return new OperationResult<Artist>
                 {
-                    IsSuccess = Artist != null,
+                    IsSuccess = artist != null,
                     OperationTime = sw.ElapsedMilliseconds,
-                    Data = Artist
+                    Data = artist
                 };
             }
             catch (Exception ex)
@@ -301,12 +301,12 @@ namespace Roadie.Library.Factories
         /// Merge one Artist into another one
         /// </summary>
         /// <param name="ArtistToMerge">The Artist to be merged</param>
-        /// <param name="ArtistToMergeInto">The Artist to merge into</param>
+        /// <param name="artistToMergeInto">The Artist to merge into</param>
         /// <returns></returns>
-        public async Task<OperationResult<Artist>> MergeArtists(Artist ArtistToMerge, Artist ArtistToMergeInto, bool doDbUpdates = false)
+        public async Task<OperationResult<Artist>> MergeArtists(Artist ArtistToMerge, Artist artistToMergeInto, bool doDbUpdates = false)
         {
             SimpleContract.Requires<ArgumentNullException>(ArtistToMerge != null, "Invalid Artist");
-            SimpleContract.Requires<ArgumentNullException>(ArtistToMergeInto != null, "Invalid Artist");
+            SimpleContract.Requires<ArgumentNullException>(artistToMergeInto != null, "Invalid Artist");
 
             var result = false;
             var now = DateTime.UtcNow;
@@ -314,48 +314,48 @@ namespace Roadie.Library.Factories
             var sw = new Stopwatch();
             sw.Start();
 
-            ArtistToMergeInto.RealName = ArtistToMerge.RealName ?? ArtistToMergeInto.RealName;
-            ArtistToMergeInto.MusicBrainzId = ArtistToMerge.MusicBrainzId ?? ArtistToMergeInto.MusicBrainzId;
-            ArtistToMergeInto.ITunesId = ArtistToMerge.ITunesId ?? ArtistToMergeInto.ITunesId;
-            ArtistToMergeInto.AmgId = ArtistToMerge.AmgId ?? ArtistToMergeInto.AmgId;
-            ArtistToMergeInto.SpotifyId = ArtistToMerge.SpotifyId ?? ArtistToMergeInto.SpotifyId;
-            ArtistToMergeInto.Thumbnail = ArtistToMerge.Thumbnail ?? ArtistToMergeInto.Thumbnail;
-            ArtistToMergeInto.Profile = ArtistToMerge.Profile ?? ArtistToMergeInto.Profile;
-            ArtistToMergeInto.BirthDate = ArtistToMerge.BirthDate ?? ArtistToMergeInto.BirthDate;
-            ArtistToMergeInto.BeginDate = ArtistToMerge.BeginDate ?? ArtistToMergeInto.BeginDate;
-            ArtistToMergeInto.EndDate = ArtistToMerge.EndDate ?? ArtistToMergeInto.EndDate;
+            artistToMergeInto.RealName = ArtistToMerge.RealName ?? artistToMergeInto.RealName;
+            artistToMergeInto.MusicBrainzId = ArtistToMerge.MusicBrainzId ?? artistToMergeInto.MusicBrainzId;
+            artistToMergeInto.ITunesId = ArtistToMerge.ITunesId ?? artistToMergeInto.ITunesId;
+            artistToMergeInto.AmgId = ArtistToMerge.AmgId ?? artistToMergeInto.AmgId;
+            artistToMergeInto.SpotifyId = ArtistToMerge.SpotifyId ?? artistToMergeInto.SpotifyId;
+            artistToMergeInto.Thumbnail = ArtistToMerge.Thumbnail ?? artistToMergeInto.Thumbnail;
+            artistToMergeInto.Profile = ArtistToMerge.Profile ?? artistToMergeInto.Profile;
+            artistToMergeInto.BirthDate = ArtistToMerge.BirthDate ?? artistToMergeInto.BirthDate;
+            artistToMergeInto.BeginDate = ArtistToMerge.BeginDate ?? artistToMergeInto.BeginDate;
+            artistToMergeInto.EndDate = ArtistToMerge.EndDate ?? artistToMergeInto.EndDate;
             if (!string.IsNullOrEmpty(ArtistToMerge.ArtistType) && !ArtistToMerge.ArtistType.Equals("Other", StringComparison.OrdinalIgnoreCase))
             {
-                ArtistToMergeInto.ArtistType = ArtistToMerge.ArtistType;
+                artistToMergeInto.ArtistType = ArtistToMerge.ArtistType;
             }
-            ArtistToMergeInto.BioContext = ArtistToMerge.BioContext ?? ArtistToMergeInto.BioContext;
-            ArtistToMergeInto.DiscogsId = ArtistToMerge.DiscogsId ?? ArtistToMergeInto.DiscogsId;
+            artistToMergeInto.BioContext = ArtistToMerge.BioContext ?? artistToMergeInto.BioContext;
+            artistToMergeInto.DiscogsId = ArtistToMerge.DiscogsId ?? artistToMergeInto.DiscogsId;
 
-            ArtistToMergeInto.Tags = ArtistToMergeInto.Tags.AddToDelimitedList(ArtistToMerge.Tags.ToListFromDelimited());
+            artistToMergeInto.Tags = artistToMergeInto.Tags.AddToDelimitedList(ArtistToMerge.Tags.ToListFromDelimited());
             var altNames = ArtistToMerge.AlternateNames.ToListFromDelimited().ToList();
             altNames.Add(ArtistToMerge.Name);
             altNames.Add(ArtistToMerge.SortName);
-            ArtistToMergeInto.AlternateNames = ArtistToMergeInto.AlternateNames.AddToDelimitedList(altNames);
-            ArtistToMergeInto.URLs = ArtistToMergeInto.URLs.AddToDelimitedList(ArtistToMerge.URLs.ToListFromDelimited());
-            ArtistToMergeInto.ISNIList = ArtistToMergeInto.ISNIList.AddToDelimitedList(ArtistToMerge.ISNIList.ToListFromDelimited());
-            ArtistToMergeInto.LastUpdated = now;
+            artistToMergeInto.AlternateNames = artistToMergeInto.AlternateNames.AddToDelimitedList(altNames);
+            artistToMergeInto.URLs = artistToMergeInto.URLs.AddToDelimitedList(ArtistToMerge.URLs.ToListFromDelimited());
+            artistToMergeInto.ISNIList = artistToMergeInto.ISNIList.AddToDelimitedList(ArtistToMerge.ISNIList.ToListFromDelimited());
+            artistToMergeInto.LastUpdated = now;
 
             if (doDbUpdates)
             {
                 string sql = null;
 
-                sql = "UPDATE `ArtistGenreTable` set ArtistId = " + ArtistToMergeInto.Id + " WHERE ArtistId = " + ArtistToMerge.Id + ";";
+                sql = "UPDATE `artistGenreTable` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " + ArtistToMerge.Id + ";";
                 await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
-                sql = "UPDATE `image` set ArtistId = " + ArtistToMergeInto.Id + " WHERE ArtistId = " + ArtistToMerge.Id + ";";
+                sql = "UPDATE `image` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " + ArtistToMerge.Id + ";";
                 await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
-                sql = "UPDATE `userArtist` set ArtistId = " + ArtistToMergeInto.Id + " WHERE ArtistId = " + ArtistToMerge.Id + ";";
+                sql = "UPDATE `userArtist` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " + ArtistToMerge.Id + ";";
                 await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
-                sql = "UPDATE `track` set ArtistId = " + ArtistToMergeInto.Id + " WHERE ArtistId = " + ArtistToMerge.Id + ";";
+                sql = "UPDATE `track` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " + ArtistToMerge.Id + ";";
                 await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
 
                 try
                 {
-                    sql = "UPDATE `release` set ArtistId = " + ArtistToMergeInto.Id + " WHERE ArtistId = " + ArtistToMerge.Id + ";";
+                    sql = "UPDATE `release` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " + ArtistToMerge.Id + ";";
                     await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
                 }
                 catch (Exception ex)
@@ -377,7 +377,7 @@ namespace Roadie.Library.Factories
             sw.Stop();
             return new OperationResult<Artist>
             {
-                Data = ArtistToMergeInto,
+                Data = artistToMergeInto,
                 IsSuccess = result,
                 OperationTime = sw.ElapsedMilliseconds
             };

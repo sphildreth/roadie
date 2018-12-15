@@ -130,7 +130,8 @@ namespace Roadie.Library.MetaData.ID3Tags
                     var trackparts = id3v2.TrackNumber?.Split('/');
                     result.TrackNumber = SafeParser.ToNumber<short?>(trackparts[0]);
                     result.TotalTrackNumbers = trackparts.Length > 1 ? SafeParser.ToNumber<short?>(trackparts[1]) : 0;
-                    result.Year = SafeParser.ToNumber<int?>(id3v2.Year);
+                    var date = SafeParser.ToDateTime(id3v2.Year);
+                    result.Year = date?.Year ?? SafeParser.ToNumber<int?>(id3v2.Year);
                     isSuccess = true;
                 }
 

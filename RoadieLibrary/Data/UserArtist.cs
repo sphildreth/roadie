@@ -27,5 +27,10 @@ namespace Roadie.Library.Data
         [Column("userId")]
         [Required]
         public int UserId { get; set; }
+
+        public UserArtist()
+        {
+            this.Rating = 0;
+        }
     }
 }

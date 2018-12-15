@@ -107,6 +107,7 @@ namespace Roadie.Library.Factories
                 release.Images = null;
                 release.Labels = null;
                 release.Medias = null;
+                release.Genres = null;
                 release.LibraryStatus = LibraryStatus.Incomplete;
                 release.Status = Statuses.New;
                 if (!release.IsValid)
@@ -517,7 +518,7 @@ namespace Roadie.Library.Factories
                 OR alternatenames like @sinAlt
                 OR alternatenames like @endAlt
                 OR alternatenames like @sendAlt)
-                LIMIT 1;", getParams.ToArray()).FirstOrDefault();
+                LIMIT 1", getParams.ToArray()).FirstOrDefault();
                 sw.Stop();
                 if (release == null || !release.IsValid)
                 {
@@ -1402,7 +1403,7 @@ namespace Roadie.Library.Factories
 
                 #region Scan Folder and Add or Update Existing Tracks from Files
 
-                var existingReleaseMedia = this.DbContext.ReleaseMedias.Include("tracks").Where(x => x.ReleaseId == release.Id).ToList();
+                var existingReleaseMedia = this.DbContext.ReleaseMedias.Include(x => x.Tracks).Where(x => x.ReleaseId == release.Id).ToList();
                 var foundInFolderTracks = new List<Data.Track>();
                 short totalNumberOfTracksFound = 0;
                 // This is the number of tracks metadata says the release should have (releaseMediaNumber, TotalNumberOfTracks)
@@ -1633,6 +1634,10 @@ namespace Roadie.Library.Factories
                 }
 
                 sw.Stop();
+
+                await base.UpdateReleaseCounts(release.Id, now);
+                await base.UpdateArtistCounts(release.ArtistId, now);
+
                 this.Logger.LogInformation("Scanned Release `{0}` Folder [{1}], Modified Release [{2}], OperationTime [{3}]", release.ToString(), releasePath, modifiedRelease, sw.ElapsedMilliseconds);
                 result = true;
             }

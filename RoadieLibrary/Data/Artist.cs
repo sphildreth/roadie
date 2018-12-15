@@ -82,6 +82,7 @@ namespace Roadie.Library.Data
         public Artist()
         {
             this.Releases = new HashSet<Release>();
+            this.Rating = 0;
         }
 
     }

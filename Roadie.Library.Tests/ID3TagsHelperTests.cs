@@ -68,6 +68,7 @@ namespace Roadie.Library.Tests
                 Assert.NotNull(metaData.TrackNumber);
                 Assert.True(metaData.TotalSeconds > 0);
                 Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
             }
             else
             {
@@ -100,6 +101,7 @@ namespace Roadie.Library.Tests
                     Assert.NotNull(metaData.Title);
                     Assert.True(metaData.Year > 0);
                     Assert.True(metaData.ValidWeight > 30);
+                    Assert.True(metaData.IsValid);
                 }
             }
 
@@ -122,6 +124,7 @@ namespace Roadie.Library.Tests
                 Assert.True(metaData.TotalSeconds > 0);
                 Assert.False(metaData.IsSoundTrack);
                 Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
             }
             else
             {
@@ -147,6 +150,7 @@ namespace Roadie.Library.Tests
                 Assert.True(metaData.TotalSeconds > 0);
                 Assert.True(metaData.IsSoundTrack);
                 Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
             }
             else
             {
@@ -172,6 +176,7 @@ namespace Roadie.Library.Tests
                 Assert.NotNull(metaData.TrackNumber);
                 Assert.True(metaData.TotalSeconds > 0);
                 Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
             }
             else
             {
@@ -198,6 +203,7 @@ namespace Roadie.Library.Tests
                 Assert.NotNull(metaData.TrackNumber);
                 Assert.True(metaData.TotalSeconds > 0);
                 Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
             }
             else
             {
@@ -224,6 +230,7 @@ namespace Roadie.Library.Tests
                 Assert.NotNull(metaData.TrackNumber);
                 Assert.True(metaData.TotalSeconds > 0);
                 Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
             }
             else
             {
@@ -250,6 +257,7 @@ namespace Roadie.Library.Tests
                 Assert.NotNull(metaData.TrackNumber);
                 Assert.True(metaData.TotalSeconds > 0);
                 Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
             }
             else
             {
@@ -298,14 +306,16 @@ namespace Roadie.Library.Tests
                 var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
+                Assert.True(metaData.IsValid);
                 Assert.NotNull(metaData.Artist);
                 Assert.NotNull(metaData.Release);
                 Assert.NotNull(metaData.Title);
                 Assert.True(metaData.Year > 0);
                 Assert.NotNull(metaData.TrackNumber);
-                Assert.Equal(metaData.TrackNumber.Value, 10);
+                Assert.Equal(10, metaData.TrackNumber.Value);
                 Assert.True(metaData.TotalSeconds > 0);
                 Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
             }
             else
             {
@@ -332,6 +342,7 @@ namespace Roadie.Library.Tests
                 Assert.Equal(10, metaData.TotalTrackNumbers.Value);
                 Assert.True(metaData.TotalSeconds > 0);
                 Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
             }
             else
             {
@@ -354,9 +365,10 @@ namespace Roadie.Library.Tests
                 Assert.NotNull(metaData.Title);
                 Assert.True(metaData.Year > 0);
                 Assert.NotNull(metaData.TrackNumber);
-                Assert.Equal(metaData.TrackNumber.Value, 10);
+                Assert.Equal(10, metaData.TrackNumber.Value);
                 Assert.True(metaData.TotalSeconds > 0);
                 Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
             }
             else
             {
@@ -365,6 +377,31 @@ namespace Roadie.Library.Tests
             }
         }
 
+        [Fact]
+        public void ReadID3TagsFromFile5()
+        {
+            var file = new FileInfo(@"E:\Roadie_Test_Files\01 Martian.mp3");
+            if (file.Exists)
+            {
+                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                Assert.True(tagLib.IsSuccess);
+                var metaData = tagLib.Data;
+                Assert.NotNull(metaData.Artist);
+                Assert.NotNull(metaData.Release);
+                Assert.NotNull(metaData.Title);
+                Assert.True(metaData.Year > 0);
+                Assert.NotNull(metaData.TrackNumber);
+                Assert.Equal(1, metaData.TrackNumber.Value);
+                Assert.True(metaData.TotalSeconds > 0);
+                Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
+            }
+            else
+            {
+                Console.WriteLine($"skipping { file}");
+                Assert.True(true);
+            }
+        }
 
     }
 }
