@@ -17,7 +17,7 @@ using Newtonsoft.Json;
 
 namespace Roadie.Library.MetaData.ID3Tags
 {
-    public class ID3TagsHelper : MetaDataProviderBase
+    public class ID3TagsHelper : MetaDataProviderBase, IID3TagsHelper
     {
         public ID3TagsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger)
             : base(configuration, cacheManager, logger)

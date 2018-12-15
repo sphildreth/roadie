@@ -2,6 +2,7 @@
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Engines;
 using Roadie.Library.Factories;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.Utility;
@@ -14,15 +15,13 @@ namespace Roadie.Library.FilePlugins
 {
     public abstract class PluginBase : IFilePlugin
     {
-        protected readonly ArtistFactory _artistFactory = null;
-        protected readonly ICacheManager _cacheManager = null;
-        protected readonly IRoadieSettings _configuration = null;
-        protected readonly IHttpEncoder _httpEncoder = null;
-        protected readonly ImageFactory _imageFactory = null;
-        protected readonly ILogger _logger = null;
-        protected readonly ReleaseFactory _releaseFactory = null;
-        protected Audio _audioPlugin = null;
-        protected ID3TagsHelper _id3TagsHelper = null;
+        //protected readonly ICacheManager _cacheManager = null;
+        //protected readonly IRoadieSettings _configuration = null;
+        //protected readonly IHttpEncoder _httpEncoder = null;
+        //protected readonly IImageFactory _imageFactory = null;
+        //protected readonly ILogger _logger = null;
+        //protected readonly IReleaseFactory _releaseFactory = null;
+        //protected IID3TagsHelper _id3TagsHelper = null;
         public abstract string[] HandlesTypes { get; }
 
         public int MinWeightToDelete
@@ -33,95 +32,38 @@ namespace Roadie.Library.FilePlugins
             }
         }
 
-        protected ArtistFactory ArtistFactory
-        {
-            get
-            {
-                return this._artistFactory;
-            }
-        }
+        protected IArtistFactory ArtistFactory { get; }
 
-        protected Audio AudioPlugin
-        {
-            get
-            {
-                return this._audioPlugin ?? (this._audioPlugin = new Audio(this.Configuration, this.HttpEncoder, this.ArtistFactory, this.ReleaseFactory, this.ImageFactory, this.CacheManager, this.Logger));
-            }
-            set
-            {
-                this._audioPlugin = value;
-            }
-        }
 
-        protected ICacheManager CacheManager
-        {
-            get
-            {
-                return this._cacheManager;
-            }
-        }
+        protected ICacheManager CacheManager { get; }
 
-        protected IRoadieSettings Configuration
-        {
-            get
-            {
-                return this._configuration;
-            }
-        }
+        protected IRoadieSettings Configuration { get; }
 
-        protected IHttpEncoder HttpEncoder
-        {
-            get
-            {
-                return this._httpEncoder;
-            }
-        }
+        protected IHttpEncoder HttpEncoder { get; }
 
-        protected ID3TagsHelper ID3TagsHelper
-        {
-            get
-            {
-                return this._id3TagsHelper ?? (this._id3TagsHelper = new ID3TagsHelper(this.Configuration, this.CacheManager, this.Logger));
-            }
-            set
-            {
-                this._id3TagsHelper = value;
-            }
-        }
+        protected IID3TagsHelper ID3TagsHelper { get; }
 
-        protected ImageFactory ImageFactory
-        {
-            get
-            {
-                return this._imageFactory;
-            }
-        }
+        protected IImageFactory ImageFactory { get; }
 
-        protected ILogger Logger
-        {
-            get
-            {
-                return this._logger;
-            }
-        }
+        protected ILogger Logger { get; }
 
-        protected ReleaseFactory ReleaseFactory
-        {
-            get
-            {
-                return this._releaseFactory;
-            }
-        }
+        protected IReleaseFactory ReleaseFactory { get; }
 
-        public PluginBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, ArtistFactory artistFactory, ReleaseFactory releaseFactory, ImageFactory imageFactory, ICacheManager cacheManager, ILogger logger)
+        protected IArtistLookupEngine ArtistLookupEngine { get; }
+        protected IReleaseLookupEngine ReleaseLookupEngine { get; }
+
+        public PluginBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, IArtistFactory artistFactory, IReleaseFactory releaseFactory, IImageFactory imageFactory, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine)
         {
-            this._configuration = configuration;
-            this._httpEncoder = httpEncoder;
-            this._artistFactory = artistFactory;
-            this._releaseFactory = releaseFactory;
-            this._imageFactory = imageFactory;
-            this._cacheManager = cacheManager;
-            this._logger = logger;
+            this.Configuration = configuration;
+            this.HttpEncoder = httpEncoder;
+            this.ArtistFactory = artistFactory;
+            this.ReleaseFactory = releaseFactory;
+            this.ImageFactory = imageFactory;
+            this.CacheManager = cacheManager;
+            this.Logger = logger;
+            this.ArtistLookupEngine = artistLookupEngine;
+            this.ReleaseLookupEngine = releaseLookupEngine;
+
         }
 
         /// <summary>

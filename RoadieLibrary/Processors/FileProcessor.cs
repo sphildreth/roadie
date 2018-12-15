@@ -3,7 +3,9 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
+using Roadie.Library.Engines;
 using Roadie.Library.Extensions;
+using Roadie.Library.Factories;
 using Roadie.Library.FilePlugins;
 
 using System;
@@ -51,8 +53,8 @@ namespace Roadie.Library.Processors
             }
         }
 
-        public FileProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
-            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, logger)
+        public FileProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IArtistFactory artistFactory, IReleaseFactory releaseFactory, IImageFactory imageFactory)
+            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, logger, artistLookupEngine, artistFactory, releaseFactory, imageFactory)
         {
         }
 

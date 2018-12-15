@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace Roadie.Library.SearchEngines.Imaging
 {
     #pragma warning disable 1998
-    public class ITunesSearchEngine : ImageSearchEngineBase, IArtistSearchEngine, IReleaseSearchEngine
+    public class ITunesSearchEngine : ImageSearchEngineBase, IArtistSearchEngine, IReleaseSearchEngine, IITunesSearchEngine
     {
         private readonly ICacheManager _cacheManager = null;
 

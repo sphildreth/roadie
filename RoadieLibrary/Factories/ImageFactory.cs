@@ -3,6 +3,7 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
+using Roadie.Library.Engines;
 using Roadie.Library.Extensions;
 using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.Audio;
@@ -15,10 +16,10 @@ using System.Linq;
 
 namespace Roadie.Library.Factories
 {
-    public sealed class ImageFactory : FactoryBase
+    public sealed class ImageFactory : FactoryBase, IImageFactory
     {
-        public ImageFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
-            : base(configuration, context, cacheManager, logger, httpEncoder)
+        public ImageFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine)
+            : base(configuration, context, cacheManager, logger, httpEncoder, artistLookupEngine, releaseLookupEngine)
         {
         }
 

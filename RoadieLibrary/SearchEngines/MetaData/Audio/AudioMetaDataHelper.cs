@@ -3,6 +3,7 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
+using Roadie.Library.Engines;
 using Roadie.Library.Extensions;
 using Roadie.Library.Factories;
 using Roadie.Library.MetaData.FileName;
@@ -19,18 +20,9 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.MetaData.Audio
 {
-    public sealed class AudioMetaDataHelper : IDisposable
+    public sealed class AudioMetaDataHelper : IAudioMetaDataHelper
     {
-        private readonly ICacheManager _cacheManager = null;
-        private readonly IRoadieSettings _configuration = null;
-        private readonly IRoadieDbContext _dbContext = null;
-        private readonly FileNameHelper _fileNameHelper = null;
-        private readonly IHttpEncoder _httpEncoder = null;
-        private readonly LastFmHelper _lastFmHelper = null;
-        private readonly ILogger _logger = null;
-        private readonly MusicBrainzProvider _musicBrainzProvider = null;
-        private ID3TagsHelper _id3TagsHelper = null;
-        private ImageFactory _imageFactory = null;
+        private IArtistLookupEngine ArtistLookupEngine { get; }
 
         private IntPtr nativeResource = Marshal.AllocHGlobal(100);
 
@@ -44,106 +36,40 @@ namespace Roadie.Library.MetaData.Audio
 
         public bool DoParseFromMusicBrainz { get; set; }
 
-        private ICacheManager CacheManager
-        {
-            get
-            {
-                return this._cacheManager;
-            }
-        }
+        private ICacheManager CacheManager { get; }
 
-        private IRoadieSettings Configuration
-        {
-            get
-            {
-                return this._configuration;
-            }
-        }
+        private IRoadieSettings Configuration { get; }
 
-        private IRoadieDbContext DBContext
-        {
-            get
-            {
-                return this._dbContext;
-            }
-        }
+        private IFileNameHelper FileNameHelper { get; } 
 
-        private FileNameHelper FileNameHelper
-        {
-            get
-            {
-                return this._fileNameHelper;
-            }
-        }
+        private IHttpEncoder HttpEncoder { get; }
 
-        private IHttpEncoder HttpEncoder
-        {
-            get
-            {
-                return this._httpEncoder;
-            }
-        }
+        private IID3TagsHelper ID3TagsHelper { get; }
 
-        private ID3TagsHelper ID3TagsHelper
-        {
-            get
-            {
-                return this._id3TagsHelper ?? (this._id3TagsHelper = new ID3TagsHelper(this.Configuration, this.CacheManager, this.Logger));
-            }
-            set
-            {
-                this._id3TagsHelper = value;
-            }
-        }
+        private IImageFactory ImageFactory { get; }
 
-        private ImageFactory ImageFactory
-        {
-            get
-            {
-                return this._imageFactory ?? (this._imageFactory = new ImageFactory(this.Configuration, this.HttpEncoder, this.DBContext, this.CacheManager, this.Logger));
-            }
-            set
-            {
-                this._imageFactory = value;
-            }
-        }
+        private ILastFmHelper LastFmHelper { get; }
 
-        private LastFmHelper LastFmHelper
-        {
-            get
-            {
-                return this._lastFmHelper;
-            }
-        }
+        private ILogger Logger { get; }
 
-        private ILogger Logger
-        {
-            get
-            {
-                return this._logger;
-            }
-        }
+        private IMusicBrainzProvider MusicBrainzProvider { get; }
 
-        private MusicBrainzProvider MusicBrainzProvider
+        public AudioMetaDataHelper(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, IMusicBrainzProvider musicBrainzHelper, 
+                                   ILastFmHelper lastFmHelper, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, 
+                                   IImageFactory imageFactory, IFileNameHelper filenameHelper, IID3TagsHelper id3TagsHelper)
         {
-            get
-            {
-                return this._musicBrainzProvider;
-            }
-        }
+            this.Configuration = configuration;
+            this.HttpEncoder = httpEncoder;
+            this.CacheManager = cacheManager;
+            this.Logger = logger;
+            this.ImageFactory = ImageFactory;
+            this.FileNameHelper = filenameHelper;
+            this.ID3TagsHelper = id3TagsHelper;
 
-        public AudioMetaDataHelper(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, MusicBrainzProvider musicBrainzHelper, LastFmHelper lastFmHelper, ICacheManager cacheManager, ILogger logger, ImageFactory imageFactory = null)
-        {
-            this._configuration = configuration;
-            this._httpEncoder = httpEncoder;
-            this._dbContext = context;
-            this._cacheManager = cacheManager;
-            this._logger = logger;
-            this._imageFactory = imageFactory;
-            this._fileNameHelper = new FileNameHelper(configuration, cacheManager, logger);
+            this.MusicBrainzProvider = musicBrainzHelper;
+            this.LastFmHelper = lastFmHelper;
 
-            this._musicBrainzProvider = musicBrainzHelper;
-            this._lastFmHelper = lastFmHelper;
+            this.ArtistLookupEngine = artistLookupEngine;
 
             this.DoParseFromFileName = configuration.Processing.DoParseFromFileName;
             this.DoParseFromDiscogsDBFindingTrackForArtist = configuration.Processing.DoParseFromDiscogsDBFindingTrackForArtist;
@@ -152,43 +78,6 @@ namespace Roadie.Library.MetaData.Audio
             this.DoParseFromLastFM = configuration.Processing.DoParseFromLastFM;
         }
 
-        #region IDisposable Implementation
-
-        ~AudioMetaDataHelper()
-        {
-            Dispose(false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        public void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                //if(this._discogsDB != null)
-                //{
-                //    try
-                //    {
-                //        this._discogsDB.Dispose();
-                //    }
-                //    finally
-                //    {
-                //        this._discogsDB = null;
-                //    }
-                //}
-            }
-            if (nativeResource != IntPtr.Zero)
-            {
-                Marshal.FreeHGlobal(nativeResource);
-                nativeResource = IntPtr.Zero;
-            }
-        }
-
-        #endregion IDisposable Implementation
 
         /// <summary>
         /// For the given File extract out all the information if successfully pulled out then return true

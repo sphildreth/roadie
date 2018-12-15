@@ -3,7 +3,9 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
+using Roadie.Library.Engines;
 using Roadie.Library.Extensions;
+using Roadie.Library.Factories;
 using Roadie.Library.FilePlugins;
 using Roadie.Library.Utility;
 using System;
@@ -28,14 +30,14 @@ namespace Roadie.Library.Processors
             }
         }
 
-        public FolderProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
-            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, logger)
+        public FolderProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IArtistFactory artistFactory, IReleaseFactory releaseFactory, IImageFactory imageFactory)
+            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, logger, artistLookupEngine, artistFactory, releaseFactory, imageFactory)
         {
             SimpleContract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(destinationRoot), "Invalid Destination Folder");
-            this._fileProcessor = new FileProcessor(configuration, httpEncoder, destinationRoot, context, cacheManager, logger);
+            this._fileProcessor = new FileProcessor(configuration, httpEncoder, destinationRoot, context, cacheManager, logger, artistLookupEngine, artistFactory, releaseFactory, imageFactory);
         }
 
-        public OperationResult<bool> DeleteEmptyFolders(DirectoryInfo processingFolder)
+        public static OperationResult<bool> DeleteEmptyFolders(DirectoryInfo processingFolder, ILogger logger)
         {
             var result = new OperationResult<bool>();
             try
@@ -44,7 +46,7 @@ namespace Roadie.Library.Processors
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex, string.Format("Error Deleting Empty Folder [{0}] Error [{1}]", processingFolder.FullName, ex.Serialize()));
+                logger.LogError(ex, string.Format("Error Deleting Empty Folder [{0}] Error [{1}]", processingFolder.FullName, ex.Serialize()));
             }
             return result;
         }
@@ -112,7 +114,8 @@ namespace Roadie.Library.Processors
             SimpleContract.Requires<ArgumentNullException>(inboundFolder != null, "Invalid InboundFolder");
             if (!doJustInfo)
             {
-                this.DeleteEmptyFolders(inboundFolder);
+                FolderProcessor.DeleteEmptyFolders(inboundFolder, this.Logger);
+                
             }
             if (pluginResults != null)
             {

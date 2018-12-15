@@ -3,6 +3,7 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
+using Roadie.Library.Engines;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,10 +12,10 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.Factories
 {
-    public class PlaylistFactory : FactoryBase
+    public class PlaylistFactory : FactoryBase, IPlaylistFactory
     {
-        public PlaylistFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
-            : base(configuration, context, cacheManager, logger, httpEncoder)
+        public PlaylistFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine)
+            : base(configuration, context, cacheManager, logger, httpEncoder, artistLookupEngine, releaseLookupEngine)
         {
         }
 

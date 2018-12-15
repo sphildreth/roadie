@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.MetaData.LastFm
 {
-    public class LastFmHelper : MetaDataProviderBase, IArtistSearchEngine, IReleaseSearchEngine
+    public class LastFmHelper : MetaDataProviderBase, IArtistSearchEngine, IReleaseSearchEngine, ILastFmHelper
     {
         public override bool IsEnabled
         {

@@ -3,6 +3,7 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
+using Roadie.Library.Engines;
 using Roadie.Library.Factories;
 
 
@@ -10,69 +11,22 @@ namespace Roadie.Library.Processors
 {
     public abstract class ProcessorBase
     {
-        protected readonly ICacheManager _cacheManager = null;
-        protected readonly IRoadieSettings _configuration = null;
-        protected readonly IRoadieDbContext _dbContext = null;
-        protected readonly string _destinationRoot = null;
-        protected readonly IHttpEncoder _httpEncoder = null;
-        protected readonly ILogger _logger = null;
-        protected ArtistFactory _artistFactory = null;
-        protected ImageFactory _imageFactory = null;
-        protected ReleaseFactory _releaseFactory = null;
-
-        public IHttpEncoder HttpEncoder
-        {
-            get
-            {
-                return this._httpEncoder;
-            }
-        }
+        public IHttpEncoder HttpEncoder { get; }
 
         public int? SubmissionId { get; set; }
 
-        protected ArtistFactory ArtistFactory
-        {
-            get
-            {
-                return this._artistFactory ?? (this._artistFactory = new ArtistFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.Logger));
-            }
-            set
-            {
-                this._artistFactory = value;
-            }
-        }
+        protected IArtistFactory ArtistFactory { get; }
 
-        protected ICacheManager CacheManager
-        {
-            get
-            {
-                return this._cacheManager;
-            }
-        }
+        protected ICacheManager CacheManager { get; }
 
-        protected IRoadieSettings Configuration
-        {
-            get
-            {
-                return this._configuration;
-            }
-        }
+        protected IRoadieSettings Configuration { get; }
 
-        protected IRoadieDbContext DbContext
-        {
-            get
-            {
-                return this._dbContext;
-            }
-        }
 
-        protected string DestinationRoot
-        {
-            get
-            {
-                return this._destinationRoot;
-            }
-        }
+        protected IRoadieDbContext DbContext { get; }
+
+
+        protected string DestinationRoot { get; }
+
 
         protected bool DoDeleteUnknowns
         {
@@ -90,37 +44,11 @@ namespace Roadie.Library.Processors
             }
         }
 
-        protected ImageFactory ImageFactory
-        {
-            get
-            {
-                return this._imageFactory ?? (this._imageFactory = new ImageFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.Logger));
-            }
-            set
-            {
-                this._imageFactory = value;
-            }
-        }
+        protected IImageFactory ImageFactory { get; }
 
-        protected ILogger Logger
-        {
-            get
-            {
-                return this._logger;
-            }
-        }
+        protected ILogger Logger { get; }
 
-        protected ReleaseFactory ReleaseFactory
-        {
-            get
-            {
-                return this._releaseFactory ?? (this._releaseFactory = new ReleaseFactory(this.Configuration, this.HttpEncoder, this.DbContext, this.CacheManager, this.Logger));
-            }
-            set
-            {
-                this._releaseFactory = value;
-            }
-        }
+        protected IReleaseFactory ReleaseFactory { get; }
 
         protected string UnknownFolder
         {
@@ -130,14 +58,22 @@ namespace Roadie.Library.Processors
             }
         }
 
-        public ProcessorBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
+        protected IArtistLookupEngine ArtistLookupEngine { get; }
+
+        public ProcessorBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, 
+                             ILogger logger, IArtistLookupEngine artistLookupEngine, IArtistFactory artistFactory, IReleaseFactory releaseFactory, IImageFactory imageFactory)
         {
-            this._configuration = configuration;
-            this._httpEncoder = httpEncoder;
-            this._dbContext = context;
-            this._destinationRoot = destinationRoot;
-            this._cacheManager = cacheManager;
-            this._logger = logger;
+            this.Configuration = configuration;
+            this.HttpEncoder = httpEncoder;
+            this.DbContext = context;
+            this.CacheManager = cacheManager;
+            this.Logger = logger;
+
+            this.DestinationRoot = destinationRoot;
+            this.ArtistLookupEngine = artistLookupEngine;
+            this.ArtistFactory = artistFactory;
+            this.ReleaseFactory = releaseFactory;
+            this.ImageFactory = imageFactory;
         }
     }
 }

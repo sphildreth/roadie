@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.MetaData.MusicBrainz
 {
-    public class MusicBrainzProvider : MetaDataProviderBase, IArtistSearchEngine, IReleaseSearchEngine
+    public class MusicBrainzProvider : MetaDataProviderBase, IArtistSearchEngine, IReleaseSearchEngine, IMusicBrainzProvider
     {
         public override bool IsEnabled
         {

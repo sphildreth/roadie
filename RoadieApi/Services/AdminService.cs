@@ -9,9 +9,16 @@ using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Engines;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
+using Roadie.Library.Factories;
 using Roadie.Library.Identity;
+using Roadie.Library.MetaData.Audio;
+using Roadie.Library.MetaData.FileName;
+using Roadie.Library.MetaData.ID3Tags;
+using Roadie.Library.MetaData.LastFm;
+using Roadie.Library.MetaData.MusicBrainz;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
@@ -33,6 +40,25 @@ namespace Roadie.Api.Services
     public class AdminService : ServiceBase, IAdminService
     {
         private IEventMessageLogger EventMessageLogger { get; }
+
+        private IArtistLookupEngine ArtistLookupEngine { get; }
+        private ILabelLookupEngine LabelLookupEngine { get; }
+        private IReleaseLookupEngine ReleaseLookupEngine { get; }
+
+        private IArtistFactory ArtistFactory { get; }
+
+        private IReleaseFactory ReleaseFactory { get; }
+
+        private ILabelFactory LabelFactory { get; }
+
+        private IImageFactory ImageFactory { get; }
+
+        private IAudioMetaDataHelper AudioMetaDataHelper { get; }
+
+        private IMusicBrainzProvider MusicBrainzProvider { get; }
+        private ILastFmHelper LastFmHelper { get; }
+        private IFileNameHelper FileNameHelper { get; }
+        private IID3TagsHelper ID3TagsHelper { get; }
 
         private ILogger MessageLogger
         {
@@ -57,6 +83,21 @@ namespace Roadie.Api.Services
             this.ScanActivityHub = scanActivityHub;
             this.EventMessageLogger = new EventMessageLogger();
             this.EventMessageLogger.Messages += EventMessageLogger_Messages;
+
+            this.MusicBrainzProvider = new MusicBrainzProvider(configuration, cacheManager, logger);
+            this.LastFmHelper = new LastFmHelper(configuration, cacheManager, logger);
+            this.FileNameHelper = new FileNameHelper(configuration, cacheManager, logger);
+            this.ID3TagsHelper = new ID3TagsHelper(configuration, cacheManager, logger);
+
+            this.ArtistLookupEngine = new ArtistLookupEngine(configuration, httpEncoder, context, cacheManager, logger);
+            this.LabelLookupEngine = new LabelLookupEngine(configuration, httpEncoder, context, cacheManager, logger);
+            this.ReleaseLookupEngine = new ReleaseLookupEngine(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.LabelLookupEngine);
+            this.ImageFactory = new ImageFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
+            this.LabelFactory = new LabelFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
+            this.AudioMetaDataHelper = new AudioMetaDataHelper(configuration, httpEncoder, context, this.MusicBrainzProvider, this.LastFmHelper, cacheManager, 
+                                                               logger, this.ArtistLookupEngine, this.ImageFactory, this.FileNameHelper, this.ID3TagsHelper); 
+            this.ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.LabelFactory, this.AudioMetaDataHelper, this.ReleaseLookupEngine);
+            this.ArtistFactory = new ArtistFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine);
         }
 
         private void EventMessageLogger_Messages(object sender, EventMessage e)
@@ -135,7 +176,7 @@ namespace Roadie.Api.Services
             await this.LogAndPublish($"** Processing Folder: [{d.FullName}]");
 
             long processedFolders = 0;
-            var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, this.Configuration.LibraryFolder, this.DbContext, this.CacheManager, this.MessageLogger);
+            var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, this.Configuration.LibraryFolder, this.DbContext, this.CacheManager, this.MessageLogger, this.ArtistLookupEngine, this.ArtistFactory, this.ReleaseFactory, this.ImageFactory);
 
             var newArtists = 0;
             var newReleases = 0;
@@ -153,7 +194,7 @@ namespace Roadie.Api.Services
             }
             if (!isReadOnly)
             {
-                folderProcessor.DeleteEmptyFolders(d);
+                FolderProcessor.DeleteEmptyFolders(d, this.Logger);
             }
             sw.Stop();
             this.DbContext.ScanHistories.Add(new data.ScanHistory
