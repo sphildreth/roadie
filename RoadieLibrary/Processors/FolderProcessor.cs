@@ -7,6 +7,8 @@ using Roadie.Library.Engines;
 using Roadie.Library.Extensions;
 using Roadie.Library.Factories;
 using Roadie.Library.FilePlugins;
+using Roadie.Library.MetaData.Audio;
+using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -30,11 +32,11 @@ namespace Roadie.Library.Processors
             }
         }
 
-        public FolderProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IArtistFactory artistFactory, IReleaseFactory releaseFactory, IImageFactory imageFactory)
-            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, logger, artistLookupEngine, artistFactory, releaseFactory, imageFactory)
+        public FolderProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IArtistFactory artistFactory, IReleaseFactory releaseFactory, IImageFactory imageFactory, IReleaseLookupEngine releaseLookupEngine, IAudioMetaDataHelper audioMetaDataHelper)
+            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, logger, artistLookupEngine, artistFactory, releaseFactory, imageFactory, releaseLookupEngine, audioMetaDataHelper)
         {
             SimpleContract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(destinationRoot), "Invalid Destination Folder");
-            this._fileProcessor = new FileProcessor(configuration, httpEncoder, destinationRoot, context, cacheManager, logger, artistLookupEngine, artistFactory, releaseFactory, imageFactory);
+            this._fileProcessor = new FileProcessor(configuration, httpEncoder, destinationRoot, context, cacheManager, logger, artistLookupEngine, artistFactory, releaseFactory, imageFactory, releaseLookupEngine, audioMetaDataHelper);
         }
 
         public static OperationResult<bool> DeleteEmptyFolders(DirectoryInfo processingFolder, ILogger logger)

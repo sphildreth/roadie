@@ -22,6 +22,7 @@ namespace Roadie.Library.Factories
         protected ILogger Logger { get; }
         protected IReleaseLookupEngine ReleaseLookupEngine { get; }
 
+
         public FactoryBase(IRoadieSettings configuration, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IHttpEncoder httpEncoder, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine)
         {
             this.Configuration = configuration;

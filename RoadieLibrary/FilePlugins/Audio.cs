@@ -7,6 +7,7 @@ using Roadie.Library.Extensions;
 using Roadie.Library.Factories;
 using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.Audio;
+using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.MetaData.MusicBrainz;
 using Roadie.Library.Utility;
@@ -48,9 +49,11 @@ namespace Roadie.Library.FilePlugins
             ICacheManager cacheManager,
             ILogger logger,
             IArtistLookupEngine artistLookupEngine,
-            IReleaseLookupEngine releaseLookupEngine) 
+            IReleaseLookupEngine releaseLookupEngine,
+            IAudioMetaDataHelper audioMetaDataHelper) 
             : base(configuration, httpEncoder, artistFactory, releaseFactory, imageFactory, cacheManager, logger, artistLookupEngine, releaseLookupEngine)
         {
+            this.AudioMetaDataHelper = audioMetaDataHelper;
         }
 
         public override async Task<OperationResult<bool>> Process(string destinationRoot, FileInfo fileInfo, bool doJustInfo, int? submissionId)

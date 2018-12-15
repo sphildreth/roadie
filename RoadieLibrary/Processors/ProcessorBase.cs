@@ -5,7 +5,8 @@ using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Factories;
-
+using Roadie.Library.MetaData.Audio;
+using Roadie.Library.MetaData.ID3Tags;
 
 namespace Roadie.Library.Processors
 {
@@ -49,6 +50,7 @@ namespace Roadie.Library.Processors
         protected ILogger Logger { get; }
 
         protected IReleaseFactory ReleaseFactory { get; }
+        
 
         protected string UnknownFolder
         {
@@ -59,9 +61,11 @@ namespace Roadie.Library.Processors
         }
 
         protected IArtistLookupEngine ArtistLookupEngine { get; }
+        protected IReleaseLookupEngine ReleaseLookupEngine { get; }
+        protected IAudioMetaDataHelper AudioMetaDataHelper { get; }
 
         public ProcessorBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, 
-                             ILogger logger, IArtistLookupEngine artistLookupEngine, IArtistFactory artistFactory, IReleaseFactory releaseFactory, IImageFactory imageFactory)
+                             ILogger logger, IArtistLookupEngine artistLookupEngine, IArtistFactory artistFactory, IReleaseFactory releaseFactory, IImageFactory imageFactory, IReleaseLookupEngine releaseLookupEngine, IAudioMetaDataHelper audioMetaDataHelper)
         {
             this.Configuration = configuration;
             this.HttpEncoder = httpEncoder;
@@ -71,9 +75,11 @@ namespace Roadie.Library.Processors
 
             this.DestinationRoot = destinationRoot;
             this.ArtistLookupEngine = artistLookupEngine;
+            this.ReleaseLookupEngine = releaseLookupEngine;
             this.ArtistFactory = artistFactory;
             this.ReleaseFactory = releaseFactory;
             this.ImageFactory = imageFactory;
+            this.AudioMetaDataHelper = audioMetaDataHelper;
         }
     }
 }

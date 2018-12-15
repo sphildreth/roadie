@@ -7,7 +7,8 @@ using Roadie.Library.Engines;
 using Roadie.Library.Extensions;
 using Roadie.Library.Factories;
 using Roadie.Library.FilePlugins;
-
+using Roadie.Library.MetaData.Audio;
+using Roadie.Library.MetaData.ID3Tags;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -38,7 +39,11 @@ namespace Roadie.Library.Processors
                         {
                             if (t.GetInterface("IFilePlugin") != null && !t.IsAbstract && !t.IsInterface)
                             {
-                                IFilePlugin plugin = Activator.CreateInstance(t, new object[] { this.Configuration, this.HttpEncoder, this.ArtistFactory, this.ReleaseFactory, this.ImageFactory, this.CacheManager, this.Logger }) as IFilePlugin;
+      
+
+                                IFilePlugin plugin = Activator.CreateInstance(t, new object[] { this.Configuration, this.HttpEncoder, this.ArtistFactory, this.ReleaseFactory,
+                                                                                                this.ImageFactory, this.CacheManager, this.Logger, this.ArtistLookupEngine,
+                                                                                                this.ReleaseLookupEngine, this.AudioMetaDataHelper}) as IFilePlugin;
                                 plugins.Add(plugin);
                             }
                         }
@@ -53,8 +58,8 @@ namespace Roadie.Library.Processors
             }
         }
 
-        public FileProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IArtistFactory artistFactory, IReleaseFactory releaseFactory, IImageFactory imageFactory)
-            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, logger, artistLookupEngine, artistFactory, releaseFactory, imageFactory)
+        public FileProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IArtistFactory artistFactory, IReleaseFactory releaseFactory, IImageFactory imageFactory, IReleaseLookupEngine releaseLookupEngine, IAudioMetaDataHelper audioMetaDataHelper )
+            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, logger, artistLookupEngine, artistFactory, releaseFactory, imageFactory, releaseLookupEngine, audioMetaDataHelper)
         {
         }
 

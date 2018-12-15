@@ -8,6 +8,7 @@ using Roadie.Library.Engines;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.MetaData.Audio;
+using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.Processors;
 using Roadie.Library.Utility;
 using System;
@@ -35,13 +36,15 @@ namespace Roadie.Library.Factories
 
         private IReleaseFactory ReleaseFactory { get; }
         private IImageFactory ImageFactory { get; }
+        private IAudioMetaDataHelper AudioMetaDataHelper { get; }
 
         public ArtistFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
-                             ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IReleaseFactory releaseFactory, IImageFactory imageFactory, IReleaseLookupEngine releaseLookupEngine)
+                             ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IReleaseFactory releaseFactory, IImageFactory imageFactory, IReleaseLookupEngine releaseLookupEngine, IAudioMetaDataHelper audioMetaDataHelper)
             : base(configuration, context, cacheManager, logger, httpEncoder, artistLookupEngine, releaseLookupEngine)
         {
             this.ReleaseFactory = releaseFactory;
             this.ImageFactory = imageFactory;
+            this.AudioMetaDataHelper = audioMetaDataHelper;
         }
 
         public async Task<OperationResult<bool>> Delete(Guid RoadieId)
@@ -299,7 +302,7 @@ namespace Roadie.Library.Factories
                     }
                 }
                 // Any folder found in Artist folder not already scanned scan
-                var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, destinationFolder, this.DbContext, this.CacheManager, this.Logger, this.ArtistLookupEngine, this, this.ReleaseFactory, this.ImageFactory);
+                var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, destinationFolder, this.DbContext, this.CacheManager, this.Logger, this.ArtistLookupEngine, this, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
                 var nonReleaseFolders = (from d in Directory.EnumerateDirectories(ArtistFolder)
                                          where !(from r in scannedArtistFolders select r).Contains(d)
                                          orderby d

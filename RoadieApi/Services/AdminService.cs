@@ -97,7 +97,7 @@ namespace Roadie.Api.Services
             this.AudioMetaDataHelper = new AudioMetaDataHelper(configuration, httpEncoder, context, this.MusicBrainzProvider, this.LastFmHelper, cacheManager, 
                                                                logger, this.ArtistLookupEngine, this.ImageFactory, this.FileNameHelper, this.ID3TagsHelper); 
             this.ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.LabelFactory, this.AudioMetaDataHelper, this.ReleaseLookupEngine);
-            this.ArtistFactory = new ArtistFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine);
+            this.ArtistFactory = new ArtistFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
         }
 
         private void EventMessageLogger_Messages(object sender, EventMessage e)
@@ -176,7 +176,7 @@ namespace Roadie.Api.Services
             await this.LogAndPublish($"** Processing Folder: [{d.FullName}]");
 
             long processedFolders = 0;
-            var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, this.Configuration.LibraryFolder, this.DbContext, this.CacheManager, this.MessageLogger, this.ArtistLookupEngine, this.ArtistFactory, this.ReleaseFactory, this.ImageFactory);
+            var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, this.Configuration.LibraryFolder, this.DbContext, this.CacheManager, this.MessageLogger, this.ArtistLookupEngine, this.ArtistFactory, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
 
             var newArtists = 0;
             var newReleases = 0;

@@ -15,13 +15,6 @@ namespace Roadie.Library.FilePlugins
 {
     public abstract class PluginBase : IFilePlugin
     {
-        //protected readonly ICacheManager _cacheManager = null;
-        //protected readonly IRoadieSettings _configuration = null;
-        //protected readonly IHttpEncoder _httpEncoder = null;
-        //protected readonly IImageFactory _imageFactory = null;
-        //protected readonly ILogger _logger = null;
-        //protected readonly IReleaseFactory _releaseFactory = null;
-        //protected IID3TagsHelper _id3TagsHelper = null;
         public abstract string[] HandlesTypes { get; }
 
         public int MinWeightToDelete
@@ -40,8 +33,6 @@ namespace Roadie.Library.FilePlugins
         protected IRoadieSettings Configuration { get; }
 
         protected IHttpEncoder HttpEncoder { get; }
-
-        protected IID3TagsHelper ID3TagsHelper { get; }
 
         protected IImageFactory ImageFactory { get; }
 
