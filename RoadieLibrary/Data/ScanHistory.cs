@@ -20,5 +20,10 @@ namespace Roadie.Library.Data
         public int TimeSpanInSeconds { get; set; }
         [NotMapped]
         public new bool? IsLocked { get; set; }
+
+        public ScanHistory()
+        {
+            this.Status = Enums.Statuses.Complete;
+        }
     }
 }

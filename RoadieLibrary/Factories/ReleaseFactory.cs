@@ -1607,6 +1607,7 @@ namespace Roadie.Library.Factories
                     }
                     release.LibraryStatus = release.TrackCount > 0 && release.TrackCount == totalNumberOfTracksFound ? LibraryStatus.Complete : LibraryStatus.Incomplete;
                     release.LastUpdated = now;
+                    release.Status = release.LibraryStatus == LibraryStatus.Complete ? Statuses.Complete : Statuses.Incomplete;
 
                     await this.DbContext.SaveChangesAsync();
                     this.CacheManager.ClearRegion(release.Artist.CacheRegion);

@@ -74,15 +74,16 @@ namespace Roadie.Library.Data
         public string SpotifyId { get; set; }
 
         [Column("releaseCount")]
-        public int? ReleaseCount { get; set; } // TODO update this on artist folder scan
+        public int? ReleaseCount { get; set; } 
 
         [Column("trackCount")]
-        public int? TrackCount { get; set; } // TODO update this on artist folder scane
+        public int? TrackCount { get; set; }
 
         public Artist()
         {
             this.Releases = new HashSet<Release>();
             this.Rating = 0;
+            this.Status = Statuses.Ok;
         }
 
     }
