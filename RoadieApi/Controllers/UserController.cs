@@ -7,6 +7,7 @@ using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
+using Roadie.Library.Models.Users;
 using System;
 using System.Net;
 using System.Net.Http;
@@ -21,41 +22,73 @@ namespace Roadie.Api.Controllers
     public class UserController : EntityControllerBase
     {
         private IUserService UserService { get; }
+        private readonly ITokenService TokenService;
 
-        public UserController(IUserService userService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+        public UserController(IUserService userService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, ITokenService tokenService, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
         {
-            this.Logger = logger.CreateLogger("RoadieApi.Controllers.LabelController");
+            this.Logger = logger.CreateLogger("RoadieApi.Controllers.UserController");
             this.UserService = userService;
+            this.TokenService = tokenService;
         }
 
-        //[EnableQuery]
-        //public IActionResult Get()
-        //{
-        //    return Ok(this._RoadieDbContext.Labels.ProjectToType<models.Label>());
-        //}
+        [HttpGet("{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> Get(Guid id)
+        {
+            var user = await this.CurrentUserModel();
+            var result = await this.CacheManager.GetAsync($"urn:user_model_by_id:{ id }", async () =>
+            {
+                return await this.UserService.ById(user, id);
+            }, ControllerCacheRegionUrn);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
 
-        //[HttpGet("{id}")]
-        //[ProducesResponseType(200)]
-        //[ProducesResponseType(404)]
-        //public IActionResult Get(Guid id)
-        //{
-        //    var key = id.ToString();
-        //    var result = this._cacheManager.Get<models.Label>(key, () =>
-        //    {
-        //        var d = this._RoadieDbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
-        //        if (d != null)
-        //        {
-        //            return d.Adapt<models.Label>();
-        //        }
-        //        return null;
-        //    }, key);
-        //    if (result == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    return Ok(result);
-        //}
+        [HttpPost("profile/edit")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> UpdateProfile(User model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var user = await this.CurrentUserModel();
+            var result = await this.UserService.UpdateProfile(user, model);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(ControllerCacheRegionUrn);
+            var modelUser = await UserManager.FindByNameAsync(model.UserName);
+            var t = await this.TokenService.GenerateToken(modelUser, this.UserManager);
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            var avatarUrl = $"{this.Request.Scheme}://{this.Request.Host}/images/user/{ modelUser.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
+            return Ok(new
+            {
+                IsSuccess = true,
+                Username = modelUser.UserName,
+                modelUser.Email,
+                modelUser.LastLogin,
+                avatarUrl,
+                Token = t,
+                modelUser.Timeformat,
+                modelUser.Timezone
+            });
+        }
 
 
         [HttpPost("setArtistRating/{releaseId}/{rating}")]

@@ -172,7 +172,7 @@ namespace Roadie.Api.Services
                 {
                     BookmarkTargetId = track.Id,
                     BookmarkType = Library.Enums.BookmarkType.Track,
-                    UserId = roadieUser.Id,
+                    UserId = roadieUser.Id.Value,
                     Comment = comment,
                     Position = position
                 };
@@ -1691,7 +1691,7 @@ namespace Roadie.Api.Services
             }
             var chatMessage = new data.ChatMessage
             {
-                UserId = roadieUser.Id,
+                UserId = roadieUser.Id.Value,
                 Message = request.Message
             };
             this.DbContext.ChatMessages.Add(chatMessage);
@@ -1817,7 +1817,7 @@ namespace Roadie.Api.Services
             {
                 // Indexes for "Music" Artists alphabetically
                 pagedRequest.SkipValue = 0;
-                pagedRequest.Limit = int.MaxValue;
+                pagedRequest.Limit = short.MaxValue;
                 pagedRequest.Sort = "Artist.Text";
                 var artistList = await this.ArtistService.List(roadieUser: roadieUser,
                                                                request: pagedRequest,
@@ -1898,7 +1898,7 @@ namespace Roadie.Api.Services
                 // Indexes for Artists alphabetically
                 var pagedRequest = request.PagedRequest;
                 pagedRequest.SkipValue = 0;
-                pagedRequest.Limit = int.MaxValue;
+                pagedRequest.Limit = short.MaxValue;
                 pagedRequest.Sort = "Artist.Text";
                 var artistList = await this.ArtistService.List(roadieUser: roadieUser,
                                                                request: pagedRequest,

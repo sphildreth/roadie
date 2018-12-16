@@ -93,5 +93,19 @@ namespace Roadie.Library.Imaging
                 return outStream.ToArray();
             }
         }
+
+        public static byte[] ImageDataFromUrl(string imageUrl)
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                var dataString = imageUrl.Trim().Replace('-', '+')
+                                         .Replace("data:image/jpeg;base64,", "")
+                                         .Replace("data:image/gif;base64,", "")
+                                         .Replace("data:image/png;base64,", "");
+                return Convert.FromBase64String(dataString);
+            }
+            return null;
+        }
+
     }
 }

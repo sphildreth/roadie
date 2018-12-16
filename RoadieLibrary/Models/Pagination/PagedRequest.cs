@@ -30,8 +30,8 @@ namespace Roadie.Library.Models.Pagination
         }
         public string Sort { get; set; }
         public string Order { get; set; }
-        public int? Limit { get; set; } = 10;
-        public int LimitValue
+        public short? Limit { get; set; } = 10;
+        public short LimitValue
         {
             get
             {

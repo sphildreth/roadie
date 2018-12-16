@@ -10,7 +10,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
     {
         public const string ArtistIdIdentifier = "A:";
         public const string CollectionIdentifier = "C:";
-        public const int MaxPageSize = 100;
+        public const short MaxPageSize = 100;
         public const string PlaylistdIdentifier = "P:";
         public const string ReleaseIdIdentifier = "R:";
         public const string TrackIdIdentifier = "T:";
@@ -199,7 +199,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         /// <summary>
         /// Maximum number of albums to return.
         /// </summary>
-        public int? AlbumCount { get; set; }
+        public short? AlbumCount { get; set; }
 
         /// <summary>
         /// Search result offset for albums. Used for paging.
@@ -209,7 +209,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         /// <summary>
         /// Maximum number of artists to return.
         /// </summary>
-        public int? ArtistCount { get; set; }
+        public short? ArtistCount { get; set; }
 
         /// <summary>
         /// Search result offset for artists. Used for paging.
@@ -313,12 +313,12 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         /// <see>Various *Count properties depending on objects being searched and client version.</see>
         /// <remark>Something this value is posted as 'count' versus 'size'</remark>
         /// </summary>
-        public int? Size { get; set; }
+        public short? Size { get; set; }
 
         /// <summary>
         /// Maximum number of songs to return.
         /// </summary>
-        public int? SongCount { get; set; }
+        public short? SongCount { get; set; }
 
         /// <summary>
         /// Search result offset for songs. Used for paging.

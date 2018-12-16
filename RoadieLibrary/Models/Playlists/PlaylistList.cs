@@ -12,7 +12,7 @@ namespace Roadie.Library.Models.Playlists
         public DataToken Playlist { get; set; }
         public DataToken User { get; set; }
         public Image Thumbnail { get; set; }
-        public int? PlaylistCount { get; set; }
+        public short? PlaylistCount { get; set; }
         public Image UserThumbnail { get; set; }
         public bool IsPublic { get; set; }
         public decimal? Duration { get; set; }

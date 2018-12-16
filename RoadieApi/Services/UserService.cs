@@ -1,10 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Mapster;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
+using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Statistics;
@@ -30,6 +32,142 @@ namespace Roadie.Api.Services
                              ILogger<ArtistService> logger)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
+        }
+
+        public async Task<OperationResult<User>> ById(User user, Guid id)
+        {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
+            var sw = Stopwatch.StartNew();
+            sw.Start();
+            var cacheKey = string.Format("urn:user_by_id_operation:{0}", id);
+            var result = await this.CacheManager.GetAsync<OperationResult<User>>(cacheKey, async () =>
+            {
+                tsw.Restart();
+                var rr = await this.UserByIdAction(id);
+                tsw.Stop();
+                timings.Add("UserByIdAction", tsw.ElapsedMilliseconds);
+                return rr;
+
+            }, ApplicationUser.CacheRegionUrn(id));
+            sw.Stop();
+            if (result?.Data != null)
+            {
+                result.Data.Avatar = this.MakeUserThumbnailImage(id);
+            }
+            timings.Add("operation", sw.ElapsedMilliseconds);
+            this.Logger.LogDebug("ById Timings: id [{0}]", id);
+            return new OperationResult<User>(result.Messages)
+            {
+                Data = result?.Data,
+                Errors = result?.Errors,
+                IsNotFoundResult = result?.IsNotFoundResult ?? false,
+                IsSuccess = result?.IsSuccess ?? false,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<OperationResult<bool>> UpdateProfile(User userPerformingUpdate, User userBeingUpdatedModel)
+        {
+            var user = this.DbContext.Users.FirstOrDefault(x => x.RoadieId == userBeingUpdatedModel.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, string.Format("User Not Found [{0}]", userBeingUpdatedModel.UserId));
+            }
+            if (user.Id != userPerformingUpdate.Id && !userPerformingUpdate.IsAdmin)
+            {
+                return new OperationResult<bool>
+                {
+                    Errors = new List<Exception> { new Exception("Access Denied") }
+                };
+            }
+            // Check concurrency stamp
+            if(user.ConcurrencyStamp != userBeingUpdatedModel.ConcurrencyStamp)
+            {
+                return new OperationResult<bool>
+                {
+                    Errors = new List<Exception> { new Exception("User data is stale.") }
+                };
+            }
+            // Check that username (if changed) doesn't already exist 
+            if (user.UserName != userBeingUpdatedModel.UserName)
+            {
+                var userByUsername = this.DbContext.Users.FirstOrDefault(x => x.NormalizedUserName == userBeingUpdatedModel.UserName.ToUpper());
+                if (userByUsername != null)
+                {
+                    return new OperationResult<bool>
+                    {
+                        Errors = new List<Exception> { new Exception("Username already in use") }
+                    };
+                }
+            }
+            // Check that email (if changed) doesn't already exist
+            if (user.Email != userBeingUpdatedModel.Email)
+            {
+                var userByEmail = this.DbContext.Users.FirstOrDefault(x => x.NormalizedEmail == userBeingUpdatedModel.Email.ToUpper());
+                if (userByEmail != null)
+                {
+                    return new OperationResult<bool>
+                    {
+                        Errors = new List<Exception> { new Exception("Email already in use") }
+                    };
+                }
+            }
+            user.UserName = userBeingUpdatedModel.UserName;
+            user.NormalizedUserName = userBeingUpdatedModel.UserName.ToUpper();
+            user.Email = userBeingUpdatedModel.Email;
+            user.NormalizedEmail = userBeingUpdatedModel.Email.ToUpper();
+            user.ApiToken = userBeingUpdatedModel.ApiToken;
+            user.Timezone = userBeingUpdatedModel.Timezone;
+            user.Timeformat = userBeingUpdatedModel.Timeformat;
+            user.PlayerTrackLimit = userBeingUpdatedModel.PlayerTrackLimit;
+            user.RandomReleaseLimit = userBeingUpdatedModel.RandomReleaseLimit;
+            user.RecentlyPlayedLimit = userBeingUpdatedModel.RecentlyPlayedLimit;
+            user.Profile = userBeingUpdatedModel.Profile;
+            user.DoUseHtmlPlayer = userBeingUpdatedModel.DoUseHtmlPlayer;
+            user.IsPrivate = userBeingUpdatedModel.IsPrivate;
+            user.LastUpdated = DateTime.UtcNow;
+            user.FtpUrl = userBeingUpdatedModel.FtpUrl;
+            user.FtpDirectory = userBeingUpdatedModel.FtpDirectory;
+            user.FtpUsername = userBeingUpdatedModel.FtpUsername;
+            user.FtpPassword = EncryptionHelper.Encrypt(userBeingUpdatedModel.FtpPassword, user.RoadieId.ToString());
+            user.ConcurrencyStamp = Guid.NewGuid().ToString();
+
+            if(!string.IsNullOrEmpty(userBeingUpdatedModel.AvatarData))
+            {
+                var imageData = ImageHelper.ImageDataFromUrl(userBeingUpdatedModel.AvatarData);
+                if(imageData != null)
+                {
+                    user.Avatar = ImageHelper.ResizeImage(imageData, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
+                }
+            }
+
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(ApplicationUser.CacheRegionUrn(user.RoadieId));
+
+            this.Logger.LogInformation($"User `{ userPerformingUpdate }` modifed user `{ userBeingUpdatedModel }`");
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        private async Task<OperationResult<User>> UserByIdAction(Guid id)
+        {
+            var user = this.GetUser(id);
+            if (user == null)
+            {
+                return new OperationResult<User>(true, string.Format("User Not Found [{0}]", id));
+            }
+            return new OperationResult<User>
+            {
+                IsSuccess = true,
+                Data = user.Adapt<User>()
+            };
         }
 
         public async Task<Library.Models.Pagination.PagedResult<UserList>> List(PagedRequest request)

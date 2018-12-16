@@ -109,9 +109,9 @@ namespace Roadie.Api.ModelBinding
 
             var model = new SubsonicRequest
             {
-                AlbumCount = SafeParser.ToNumber<int?>(modelDictionary["albumCount"]) ?? 20,
+                AlbumCount = SafeParser.ToNumber<short?>(modelDictionary["albumCount"]) ?? 20,
                 AlbumOffset = SafeParser.ToNumber<int?>(modelDictionary["albumOffset"]),
-                ArtistCount = SafeParser.ToNumber<int?>(modelDictionary["artistCount"]) ?? 20,
+                ArtistCount = SafeParser.ToNumber<short?>(modelDictionary["artistCount"]) ?? 20,
                 ArtistName = SafeParser.ToString(modelDictionary["artist"]),
                 ArtistOffset = SafeParser.ToNumber<int?>(modelDictionary["artistOffset"]),
                 c = SafeParser.ToString(modelDictionary["c"]),
@@ -127,8 +127,8 @@ namespace Roadie.Api.ModelBinding
                 p = SafeParser.ToString(modelDictionary["p"]),
                 Query = SafeParser.ToString(modelDictionary["query"]),
                 s = SafeParser.ToString(modelDictionary["s"]),
-                Size = SafeParser.ToNumber<int?>(modelDictionary["size"]),
-                SongCount = SafeParser.ToNumber<int?>(modelDictionary["songCount"]) ?? 20,
+                Size = SafeParser.ToNumber<short?>(modelDictionary["size"]),
+                SongCount = SafeParser.ToNumber<short?>(modelDictionary["songCount"]) ?? 20,
                 SongOffset = SafeParser.ToNumber<int?>(modelDictionary["songOffset"]),
                 t = SafeParser.ToString(modelDictionary["t"]),
                 ToYear = SafeParser.ToNumber<int?>(modelDictionary["toYear"]),

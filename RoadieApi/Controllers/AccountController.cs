@@ -22,11 +22,11 @@ namespace Roadie.Api.Controllers
     [AllowAnonymous]
     public class AccountController : ControllerBase
     {
-        private readonly IConfiguration configuration;
-        private readonly ILogger<AccountController> logger;
-        private readonly SignInManager<ApplicationUser> signInManager;
-        private readonly ITokenService tokenService;
-        private readonly UserManager<ApplicationUser> userManager;        
+        private readonly IConfiguration Configuration;
+        private readonly ILogger<AccountController> Logger;
+        private readonly SignInManager<ApplicationUser> SignInManager;
+        private readonly ITokenService TokenService;
+        private readonly UserManager<ApplicationUser> UserManager;        
         private IRoadieSettings RoadieSettings { get; }
         private ICacheManager CacheManager { get; }
         private IAdminService AdminService { get; }
@@ -40,11 +40,11 @@ namespace Roadie.Api.Controllers
            ITokenService tokenService,
            ICacheManager cacheManager)
         {
-            this.userManager = userManager;
-            this.signInManager = signInManager;
-            this.configuration = configuration;
-            this.logger = logger;
-            this.tokenService = tokenService;
+            this.UserManager = userManager;
+            this.SignInManager = signInManager;
+            this.Configuration = configuration;
+            this.Logger = logger;
+            this.TokenService = tokenService;
             this.CacheManager = cacheManager;
 
             this.RoadieSettings = new RoadieSettings();
@@ -61,19 +61,19 @@ namespace Roadie.Api.Controllers
                 try
                 {
                     // Login user
-                    var loginResult = await signInManager.PasswordSignInAsync(model.Username, model.Password, isPersistent: false, lockoutOnFailure: false);
+                    var loginResult = await SignInManager.PasswordSignInAsync(model.Username, model.Password, isPersistent: false, lockoutOnFailure: false);
                     if (!loginResult.Succeeded)
                     {
                         return BadRequest();
                     }                    
-                    var user = await userManager.FindByNameAsync(model.Username);
+                    var user = await UserManager.FindByNameAsync(model.Username);
                     var now = DateTime.UtcNow;
                     user.LastLogin = now;
                     user.LastApiAccess = now;
                     user.LastUpdated = now;
-                    await userManager.UpdateAsync(user);
-                    var t = await this.tokenService.GenerateToken(user, this.userManager);
-                    this.logger.LogInformation($"Successfully authenticated User [{ model.Username}]");
+                    await UserManager.UpdateAsync(user);
+                    var t = await this.TokenService.GenerateToken(user, this.UserManager);
+                    this.Logger.LogInformation($"Successfully authenticated User [{ model.Username}]");
                     this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
                     var avatarUrl = $"{this.Request.Scheme}://{this.Request.Host}/images/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
                     return Ok(new 
@@ -89,7 +89,7 @@ namespace Roadie.Api.Controllers
                 }
                 catch (Exception ex)
                 {
-                    this.logger.LogError(ex, "Eror in CreateToken");
+                    this.Logger.LogError(ex, "Eror in CreateToken");
                     return BadRequest();
                 }
             }
@@ -106,8 +106,8 @@ namespace Roadie.Api.Controllers
 
             if (!String.IsNullOrWhiteSpace(username))
             {
-                var user = await userManager.FindByNameAsync(username);
-                return Ok(await this.tokenService.GenerateToken(user, this.userManager));
+                var user = await UserManager.FindByNameAsync(username);
+                return Ok(await this.TokenService.GenerateToken(user, this.UserManager));
             }
             else
             {
@@ -126,19 +126,20 @@ namespace Roadie.Api.Controllers
                 var user = new ApplicationUser
                 {
                     UserName = registerModel.Username,
+                    RegisteredOn = DateTime.UtcNow,
                     Email = registerModel.Email
                 };
 
-                var identityResult = await this.userManager.CreateAsync(user, registerModel.Password);
+                var identityResult = await this.UserManager.CreateAsync(user, registerModel.Password);
                 if (identityResult.Succeeded)
                 {
                     if(user.Id == 1)
                     {
-                        await this.AdminService.DoInitialSetup(user, this.userManager);
+                        await this.AdminService.DoInitialSetup(user, this.UserManager);
                     }
-                    await signInManager.SignInAsync(user, isPersistent: false);
-                    var t = await this.tokenService.GenerateToken(user, this.userManager);
-                    this.logger.LogInformation($"Successfully authenticated User [{ registerModel.Username}]");
+                    await SignInManager.SignInAsync(user, isPersistent: false);
+                    var t = await this.TokenService.GenerateToken(user, this.UserManager);
+                    this.Logger.LogInformation($"Successfully created and authenticated User [{ registerModel.Username}]");
                     this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
                     var avatarUrl = $"{this.Request.Scheme}://{this.Request.Host}/images/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
                     return Ok(new
@@ -172,12 +173,12 @@ namespace Roadie.Api.Controllers
                     CreatedDate = DateTime.UtcNow
                 };
 
-                var identityResult = await this.userManager.ResetPasswordAsync(user, resetPasswordModel.Token, resetPasswordModel.Password);
+                var identityResult = await this.UserManager.ResetPasswordAsync(user, resetPasswordModel.Token, resetPasswordModel.Password);
                 if (identityResult.Succeeded)
                 {
                     this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-                    await signInManager.SignInAsync(user, isPersistent: false);
-                    return Ok(this.tokenService.GenerateToken(user, this.userManager));
+                    await SignInManager.SignInAsync(user, isPersistent: false);
+                    return Ok(this.TokenService.GenerateToken(user, this.UserManager));
                 }
                 else
                 {

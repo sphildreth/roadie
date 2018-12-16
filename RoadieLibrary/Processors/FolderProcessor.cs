@@ -102,7 +102,7 @@ namespace Roadie.Library.Processors
                     { "processedFiles", processedFiles },
                     { "newArtists",  this.ArtistLookupEngine.AddedArtistIds.Count() },
                     { "newReleases", this.ReleaseLookupEngine.AddedReleaseIds.Count() },
-                    { "newTracks",  this.ReleaseLookupEngine.AddedTrackIds.Count() }
+                    { "newTracks",  this.ReleaseFactory.AddedTrackIds.Count() }
                 },
                 OperationTime = sw.ElapsedMilliseconds
             };

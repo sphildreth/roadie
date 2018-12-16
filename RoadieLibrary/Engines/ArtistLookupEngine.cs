@@ -180,7 +180,7 @@ namespace Roadie.Library.Engines
                 sw.Stop();
                 if (artist == null || !artist.IsValid)
                 {
-                    this.Logger.LogInformation("ArtistFactory: Artist Not Found By Name [{0}]", ArtistName);
+                    this.Logger.LogInformation("ArtistLookupEngine: Artist Not Found By Name [{0}]", ArtistName);
                     if (doFindIfNotInDatabase)
                     {
                         OperationResult<Artist> ArtistSearch = null;
