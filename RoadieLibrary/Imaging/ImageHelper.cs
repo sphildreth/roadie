@@ -96,7 +96,7 @@ namespace Roadie.Library.Imaging
 
         public static byte[] ImageDataFromUrl(string imageUrl)
         {
-            if (!string.IsNullOrEmpty(imageUrl))
+            if (!string.IsNullOrEmpty(imageUrl) && !imageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
             {
                 var dataString = imageUrl.Trim().Replace('-', '+')
                                          .Replace("data:image/jpeg;base64,", "")

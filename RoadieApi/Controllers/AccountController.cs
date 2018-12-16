@@ -127,6 +127,7 @@ namespace Roadie.Api.Controllers
                 {
                     UserName = registerModel.Username,
                     RegisteredOn = DateTime.UtcNow,
+                    DoUseHtmlPlayer = true,
                     Email = registerModel.Email
                 };
 
