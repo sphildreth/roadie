@@ -12,5 +12,7 @@ namespace Roadie.Api.Services
     {
         Task<OperationResult<bool>> DoInitialSetup(ApplicationUser user, UserManager<ApplicationUser> userManager);
         Task<OperationResult<bool>> ScanInboundFolder(ApplicationUser user, bool isReadOnly = false);
+        Task<OperationResult<bool>> ScanArtist(ApplicationUser user, Guid artistId, bool isReadOnly = false);
+        Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false);
     }
 }

@@ -27,7 +27,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="FilePlugins\" />
     <Folder Include="Models\Subsonic\" />
   </ItemGroup>
 

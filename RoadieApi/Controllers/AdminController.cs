@@ -6,11 +6,9 @@ using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Identity;
-using Roadie.Library.Models.Pagination;
 using System;
 using System.Net;
 using System.Threading.Tasks;
-using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
 {
@@ -41,14 +39,30 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-
-        [HttpPost("{id}")]
+        [HttpPost("scan/artist/{id}")]
         [ProducesResponseType(200)]
+        [Authorize("Admin")]
         public async Task<IActionResult> ScanArtist(Guid id)
         {
-            throw new NotImplementedException();
+            var result = await this.AdminService.ScanArtist(await this.UserManager.GetUserAsync(User), id);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
         }
 
-
+        [HttpPost("scan/release/{id}")]
+        [ProducesResponseType(200)]
+        [Authorize("Admin")]
+        public async Task<IActionResult> ScanRelease(Guid id)
+        {
+            var result = await this.AdminService.ScanRelease(await this.UserManager.GetUserAsync(User), id);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
     }
 }

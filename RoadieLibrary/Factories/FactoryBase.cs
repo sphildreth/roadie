@@ -48,6 +48,7 @@ namespace Roadie.Library.Factories
                                      select tr).Count();
                 artist.LastUpdated = now;
                 await this.DbContext.SaveChangesAsync();
+                this.CacheManager.ClearRegion(artist.CacheRegion);
             }
         }
 
@@ -70,6 +71,7 @@ namespace Roadie.Library.Factories
                                     where rl.LabelId == label.Id
                                     select t).Count();
                 await this.DbContext.SaveChangesAsync();
+                this.CacheManager.ClearRegion(label.CacheRegion);
             }
         }
 
@@ -83,6 +85,7 @@ namespace Roadie.Library.Factories
                                     where rm.ReleaseId == releaseId
                                     select t).Sum(x => x.Duration);
                 await this.DbContext.SaveChangesAsync();
+                this.CacheManager.ClearRegion(release.CacheRegion);
             }
         }
     }

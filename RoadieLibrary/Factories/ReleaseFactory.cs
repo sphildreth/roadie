@@ -504,7 +504,10 @@ namespace Roadie.Library.Factories
             string releasePath = null;
             try
             {
-                var release = releaseToScan ?? this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == releaseId);
+                var release = releaseToScan ?? this.DbContext.Releases
+                                                             .Include(x => x.Artist)
+                                                             .Include(x => x.Labels)
+                                                             .FirstOrDefault(x => x.RoadieId == releaseId);
                 if (release == null)
                 {
                     this.Logger.LogCritical("Unable To Find Release [{0}]", releaseId);
@@ -767,19 +770,28 @@ namespace Roadie.Library.Factories
 
                 if (release.Thumbnail == null)
                 {
-                    // See if there is a cover file ("cover.jpg") if so set thumbnail image to that
-                    var coverFileName = Path.Combine(releasePath, ReleaseFactory.CoverFilename);
-                    if (File.Exists(coverFileName))
+                    var imageFiles = ImageHelper.ImageFilesInFolder(releasePath);
+                    if (imageFiles != null && imageFiles.Any())
                     {
-                        // Read image and convert to jpeg
-                        release.Thumbnail = File.ReadAllBytes(coverFileName);
-                        release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
-                        release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
-                        release.LastUpdated = now;
-                        await this.DbContext.SaveChangesAsync();
-                        this.CacheManager.ClearRegion(release.Artist.CacheRegion);
-                        this.CacheManager.ClearRegion(release.CacheRegion);
-                        this.Logger.LogInformation("Update Thumbnail using Release Cover File [{0}]", coverFileName);
+                        foreach (var imageFile in imageFiles)
+                        {
+                            var i = new FileInfo(imageFile);
+                            var iName = i.Name.ToLower().Trim();
+                            var isCoverArtType = iName.Contains("cover") || iName.Contains("folder") || iName.Contains("front") || iName.Contains("release") || iName.Contains("album");
+                            if (isCoverArtType)
+                            {
+                                // Read image and convert to jpeg
+                                release.Thumbnail = File.ReadAllBytes(i.FullName);
+                                release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                                release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
+                                release.LastUpdated = now;
+                                await this.DbContext.SaveChangesAsync();
+                                this.CacheManager.ClearRegion(release.Artist.CacheRegion);
+                                this.CacheManager.ClearRegion(release.CacheRegion);
+                                this.Logger.LogInformation("Update Thumbnail using Release Cover File [{0}]", iName);
+                                break;
+                            }
+                        }
                     }
                 }
 
@@ -787,6 +799,13 @@ namespace Roadie.Library.Factories
 
                 await base.UpdateReleaseCounts(release.Id, now);
                 await base.UpdateArtistCounts(release.ArtistId, now);
+                if(release.Labels != null && release.Labels.Any())
+                {
+                    foreach(var label in release.Labels)
+                    {
+                        await base.UpdateLabelCounts(label.Id, now);
+                    }
+                }
 
                 this.Logger.LogInformation("Scanned Release `{0}` Folder [{1}], Modified Release [{2}], OperationTime [{3}]", release.ToString(), releasePath, modifiedRelease, sw.ElapsedMilliseconds);
                 result = true;

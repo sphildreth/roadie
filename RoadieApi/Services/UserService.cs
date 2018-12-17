@@ -161,10 +161,10 @@ namespace Roadie.Api.Services
                 string resetToken = await UserManager.GeneratePasswordResetTokenAsync(user);
                 var identityResult = await UserManager.ResetPasswordAsync(user, resetToken, userBeingUpdatedModel.Password);
                 if (!identityResult.Succeeded)
-                {
+                {                    
                     return new OperationResult<bool>
                     {
-                        Errors = new List<Exception> { new Exception("Unable to reset password") }
+                        Errors = identityResult.Errors != null ? identityResult.Errors.Select(x => new Exception($"Code [{ x.Code }], Description [{ x.Description }]")) : new List<Exception> { new Exception("Unable to reset password") }
                     };
                 }
             }

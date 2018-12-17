@@ -30,7 +30,7 @@ namespace Roadie.Library.FilePlugins
         {
             get
             {
-                return new string[2] { "audio/mpeg", "text/json" };
+                return new string[1] { "audio/mpeg" };
             }
         }
 
@@ -118,7 +118,7 @@ namespace Roadie.Library.FilePlugins
                     var i = new FileInfo(imageFile);
                     var iName = i.Name.ToLower().Trim();
                     this.Logger.LogDebug("Found Image File [{0}] [{1}]", imageFile, iName);
-                    var isCoverArtType = iName.StartsWith("cover") || iName.StartsWith("folder") || iName.StartsWith("front") || iName.StartsWith("release") || iName.StartsWith("album");
+                    var isCoverArtType = iName.Contains("cover") || iName.Contains("folder") || iName.Contains("front") || iName.Contains("release") || iName.Contains("album");
                     if (isCoverArtType)
                     {
                         var coverFileName = Path.Combine(releaseFolder, Factories.ReleaseFactory.CoverFilename);

@@ -221,18 +221,22 @@ namespace Roadie.Api.Services
                 string artistFolder = null;
                 try
                 {
-                    // See if artist images exists in artist folder
-                    artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
-                    if (!Directory.Exists(artistFolder))
+                    // Artist thumbnail is updated on artist rescan.
+                    if (artist.Thumbnail == null)
                     {
-                        this.Logger.LogWarning($"Artist Folder [{ artistFolder }], Not Found For Artist `{ artist.ToString() }`");
-                    }
-                    else
-                    {
-                        var artistImages = Directory.GetFiles(artistFolder, "artist*.*");
-                        if (artistImages.Any())
+                        // See if artist images exists in artist folder
+                        artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                        if (!Directory.Exists(artistFolder))
                         {
-                            imageBytes = File.ReadAllBytes(artistImages.First());
+                            this.Logger.LogWarning($"Artist Folder [{ artistFolder }], Not Found For Artist `{ artist.ToString() }`");
+                        }
+                        else
+                        {
+                            var artistImages = Directory.GetFiles(artistFolder, "artist*.*");
+                            if (artistImages.Any())
+                            {
+                                imageBytes = File.ReadAllBytes(artistImages.First());
+                            }
                         }
                     }
                 }

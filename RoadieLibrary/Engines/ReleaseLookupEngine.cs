@@ -445,7 +445,7 @@ namespace Roadie.Library.Engines
                                 ITunesId = i.iTunesId,
                                 Title = result.Title ?? i.ReleaseTitle,
                                 Thumbnail = i.ReleaseThumbnailUrl != null ? WebHelper.BytesForImageUrl(i.ReleaseThumbnailUrl) : null,
-                                ReleaseType = SafeParser.ToEnum<ReleaseType>(i.ReleaseType)
+                                ReleaseType = result.ReleaseType == ReleaseType.Unknown ? SafeParser.ToEnum<ReleaseType>(i.ReleaseType) : result.ReleaseType
                             });
                             if (i.ReleaseLabel != null)
                             {
@@ -506,7 +506,7 @@ namespace Roadie.Library.Engines
                                 ITunesId = mb.iTunesId,
                                 Title = result.Title ?? mb.ReleaseTitle,
                                 Thumbnail = mb.ReleaseThumbnailUrl != null ? WebHelper.BytesForImageUrl(mb.ReleaseThumbnailUrl) : null,
-                                ReleaseType = SafeParser.ToEnum<ReleaseType>(mb.ReleaseType)
+                                ReleaseType = result.ReleaseType == ReleaseType.Unknown ? SafeParser.ToEnum<ReleaseType>(mb.ReleaseType) : result.ReleaseType
                             });
                             if (mb.ReleaseLabel != null)
                             {
@@ -569,7 +569,7 @@ namespace Roadie.Library.Engines
                                 ITunesId = l.iTunesId,
                                 Title = result.Title ?? l.ReleaseTitle,
                                 Thumbnail = l.ReleaseThumbnailUrl != null ? WebHelper.BytesForImageUrl(l.ReleaseThumbnailUrl) : null,
-                                ReleaseType = SafeParser.ToEnum<ReleaseType>(l.ReleaseType)
+                                ReleaseType = result.ReleaseType == ReleaseType.Unknown ? SafeParser.ToEnum<ReleaseType>(l.ReleaseType) : result.ReleaseType
                             });
                             if (l.ReleaseLabel != null)
                             {
@@ -627,7 +627,7 @@ namespace Roadie.Library.Engines
                                 ITunesId = s.iTunesId,
                                 Title = result.Title ?? s.ReleaseTitle,
                                 Thumbnail = s.ReleaseThumbnailUrl != null ? WebHelper.BytesForImageUrl(s.ReleaseThumbnailUrl) : null,
-                                ReleaseType = SafeParser.ToEnum<ReleaseType>(s.ReleaseType)
+                                ReleaseType = result.ReleaseType == ReleaseType.Unknown ? SafeParser.ToEnum<ReleaseType>(s.ReleaseType) : result.ReleaseType
                             });
                             if (s.ReleaseLabel != null)
                             {
@@ -677,7 +677,7 @@ namespace Roadie.Library.Engines
                                 DiscogsId = d.DiscogsId,
                                 Title = result.Title ?? d.ReleaseTitle,
                                 Thumbnail = d.ReleaseThumbnailUrl != null ? WebHelper.BytesForImageUrl(d.ReleaseThumbnailUrl) : null,
-                                ReleaseType = SafeParser.ToEnum<ReleaseType>(d.ReleaseType)
+                                ReleaseType = result.ReleaseType == ReleaseType.Unknown ? SafeParser.ToEnum<ReleaseType>(d.ReleaseType) : result.ReleaseType
                             });
                             if (d.ReleaseLabel != null)
                             {
@@ -871,6 +871,15 @@ namespace Roadie.Library.Engines
                 {
                     // See if there is a cover file ("cover.jpg") if so set thumbnail image to that
                     var coverFileName = Path.Combine(releaseFolder, ReleaseFactory.CoverFilename);
+                    if(!File.Exists(coverFileName))
+                    {
+                        // See if any file exists in the release folder with "cover" in the name
+                        var coverFiles = Directory.GetFiles(releaseFolder, "*cover*.jpg", new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive });
+                        if(coverFiles != null && coverFiles.Any())
+                        {
+                            coverFileName = coverFiles.First();
+                        }
+                    }
                     if (File.Exists(coverFileName))
                     {
                         // Read image and convert to jpeg

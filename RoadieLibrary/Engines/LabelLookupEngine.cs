@@ -90,7 +90,7 @@ namespace Roadie.Library.Engines
                 getParams.Add(new MySqlParameter("@inAlt", string.Format("%|{0}|%", searchName)));
                 getParams.Add(new MySqlParameter("@endAlt", string.Format("%|{0}", searchName)));
                 var Label = this.DbContext.Labels.FromSql(@"SELECT *
-                FROM `Label`
+                FROM `label`
                 WHERE LCASE(name) = @isName
                 OR LCASE(sortName) = @isName
                 OR LCASE(alternatenames) = @isName

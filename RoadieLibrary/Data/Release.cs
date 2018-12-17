@@ -113,7 +113,12 @@ namespace Roadie.Library.Data
         public Release()
         {
             this.Rating = 0;
+            this.ReleaseType = Enums.ReleaseType.Release;
+            this.Images = new HashSet<Image>();
             this.Medias = new HashSet<ReleaseMedia>();
+            this.Labels = new HashSet<ReleaseLabel>();
+            this.Collections = new HashSet<CollectionRelease>();
+            this.Genres = new HashSet<ReleaseGenre>();
         }
     }
 }

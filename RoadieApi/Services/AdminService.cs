@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Hubs;
 using Roadie.Library;
@@ -17,6 +18,8 @@ using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.MetaData.MusicBrainz;
 using Roadie.Library.Processors;
 using Roadie.Library.Utility;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -65,20 +68,20 @@ namespace Roadie.Api.Services
             this.EventMessageLogger = new EventMessageLogger();
             this.EventMessageLogger.Messages += EventMessageLogger_Messages;
 
-            this.MusicBrainzProvider = new MusicBrainzProvider(configuration, cacheManager, logger);
-            this.LastFmHelper = new LastFmHelper(configuration, cacheManager, logger);
-            this.FileNameHelper = new FileNameHelper(configuration, cacheManager, logger);
-            this.ID3TagsHelper = new ID3TagsHelper(configuration, cacheManager, logger);
+            this.MusicBrainzProvider = new MusicBrainzProvider(configuration, cacheManager, MessageLogger);
+            this.LastFmHelper = new LastFmHelper(configuration, cacheManager, MessageLogger);
+            this.FileNameHelper = new FileNameHelper(configuration, cacheManager, MessageLogger);
+            this.ID3TagsHelper = new ID3TagsHelper(configuration, cacheManager, MessageLogger);
 
-            this.ArtistLookupEngine = new ArtistLookupEngine(configuration, httpEncoder, context, cacheManager, logger);
-            this.LabelLookupEngine = new LabelLookupEngine(configuration, httpEncoder, context, cacheManager, logger);
-            this.ReleaseLookupEngine = new ReleaseLookupEngine(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.LabelLookupEngine);
-            this.ImageFactory = new ImageFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
-            this.LabelFactory = new LabelFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
+            this.ArtistLookupEngine = new ArtistLookupEngine(configuration, httpEncoder, context, cacheManager, MessageLogger);
+            this.LabelLookupEngine = new LabelLookupEngine(configuration, httpEncoder, context, cacheManager, MessageLogger);
+            this.ReleaseLookupEngine = new ReleaseLookupEngine(configuration, httpEncoder, context, cacheManager, MessageLogger, this.ArtistLookupEngine, this.LabelLookupEngine);
+            this.ImageFactory = new ImageFactory(configuration, httpEncoder, context, cacheManager, MessageLogger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
+            this.LabelFactory = new LabelFactory(configuration, httpEncoder, context, cacheManager, MessageLogger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
             this.AudioMetaDataHelper = new AudioMetaDataHelper(configuration, httpEncoder, context, this.MusicBrainzProvider, this.LastFmHelper, cacheManager,
-                                                               logger, this.ArtistLookupEngine, this.ImageFactory, this.FileNameHelper, this.ID3TagsHelper);
-            this.ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.LabelFactory, this.AudioMetaDataHelper, this.ReleaseLookupEngine);
-            this.ArtistFactory = new ArtistFactory(configuration, httpEncoder, context, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
+                                                               MessageLogger, this.ArtistLookupEngine, this.ImageFactory, this.FileNameHelper, this.ID3TagsHelper);
+            this.ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, context, cacheManager, MessageLogger, this.ArtistLookupEngine, this.LabelFactory, this.AudioMetaDataHelper, this.ReleaseLookupEngine);
+            this.ArtistFactory = new ArtistFactory(configuration, httpEncoder, context, cacheManager, MessageLogger, this.ArtistLookupEngine, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
         }
 
         /// <summary>
@@ -192,6 +195,76 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<bool>> ScanArtist(ApplicationUser user, Guid artistId, bool isReadOnly = false)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
+            if (artist == null)
+            {
+                await this.LogAndPublish($"ScanArtist Unknown Release [{ artistId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Artist Not Found [{ artistId }]");
+            }
+            try
+            {
+                var result = await this.ArtistFactory.ScanArtistReleasesFolders(artist.RoadieId, this.Configuration.LibraryFolder, isReadOnly);
+                this.CacheManager.ClearRegion(artist.CacheRegion);
+            }
+            catch (Exception ex)
+            {
+                await this.LogAndPublish(ex.ToString(), LogLevel.Error);
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"ScanArtist `{artist}`, By User `{user}`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                AdditionalData = new Dictionary<string, object> { { "artistAverage", artist.Rating } },
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+            var release = this.DbContext.Releases
+                                        .Include(x => x.Artist)
+                                        .Include(x => x.Labels)
+                                        .FirstOrDefault(x => x.RoadieId == releaseId);
+            if (release == null)
+            {
+                await this.LogAndPublish($"ScanRelease Unknown Release [{ releaseId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Release Not Found [{ releaseId }]");
+            }
+            try
+            {
+                var result = await this.ReleaseFactory.ScanReleaseFolder(release.RoadieId, this.Configuration.LibraryFolder, isReadOnly, release);
+                this.CacheManager.ClearRegion(release.CacheRegion);
+            }
+            catch (Exception ex)
+            {
+                await this.LogAndPublish(ex.ToString(), LogLevel.Error);
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"ScanRelease `{release}`, By User `{user}`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+
         private void EventMessageLogger_Messages(object sender, EventMessage e)
         {
             Task.WaitAll(this.LogAndPublish(e.Message, e.Level));
@@ -223,5 +296,7 @@ namespace Roadie.Api.Services
             }
             await this.ScanActivityHub.Clients.All.SendAsync("SendSystemActivity", message);
         }
+
+
     }
 }

@@ -7,6 +7,7 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
+using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.Processors;
@@ -267,7 +268,7 @@ namespace Roadie.Library.Factories
 
         public async Task<OperationResult<bool>> ScanArtistReleasesFolders(Guid artistId, string destinationFolder, bool doJustInfo)
         {
-            SimpleContract.Requires<ArgumentOutOfRangeException>(artistId == Guid.Empty, "Invalid ArtistId");
+            SimpleContract.Requires<ArgumentOutOfRangeException>(artistId != Guid.Empty, "Invalid ArtistId");
 
             var result = true;
             var resultErrors = new List<Exception>();
@@ -275,25 +276,28 @@ namespace Roadie.Library.Factories
             sw.Start();
             try
             {
-                var Artist = this.DbContext.Artists.Include("releases").FirstOrDefault(x => x.RoadieId == artistId);
-                if (Artist == null)
+                var artist = this.DbContext.Artists
+                                           .Include("Releases")
+                                           .Include("Releases.Labels")
+                                           .FirstOrDefault(x => x.RoadieId == artistId);
+                if (artist == null)
                 {
                     this.Logger.LogWarning("Unable To Find Artist [{0}]", artistId);
                     return new OperationResult<bool>();
                 }
                 var releaseScannedCount = 0;
-                var ArtistFolder = Artist.ArtistFileFolder(this.Configuration, destinationFolder);
+                var artistFolder = artist.ArtistFileFolder(this.Configuration, destinationFolder);
                 var scannedArtistFolders = new List<string>();
                 // Scan known releases for changes
-                if (Artist.Releases != null)
+                if (artist.Releases != null)
                 {
-                    foreach (var release in Artist.Releases)
+                    foreach (var release in artist.Releases)
                     {
                         try
                         {
                             result = result && (await this.ReleaseFactory.ScanReleaseFolder(Guid.Empty, destinationFolder, doJustInfo, release)).Data;
                             releaseScannedCount++;
-                            scannedArtistFolders.Add(release.ReleaseFileFolder(ArtistFolder));
+                            scannedArtistFolders.Add(release.ReleaseFileFolder(artistFolder));
                         }
                         catch (Exception ex)
                         {
@@ -303,7 +307,7 @@ namespace Roadie.Library.Factories
                 }
                 // Any folder found in Artist folder not already scanned scan
                 var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, destinationFolder, this.DbContext, this.CacheManager, this.Logger, this.ArtistLookupEngine, this, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
-                var nonReleaseFolders = (from d in Directory.EnumerateDirectories(ArtistFolder)
+                var nonReleaseFolders = (from d in Directory.EnumerateDirectories(artistFolder)
                                          where !(from r in scannedArtistFolders select r).Contains(d)
                                          orderby d
                                          select d);
@@ -313,11 +317,33 @@ namespace Roadie.Library.Factories
                 }
                 if (!doJustInfo)
                 {
-                    FolderProcessor.DeleteEmptyFolders(new DirectoryInfo(ArtistFolder), this.Logger);
+                    FolderProcessor.DeleteEmptyFolders(new DirectoryInfo(artistFolder), this.Logger);
                 }
+
+                // Always update artist image if artist image is found on an artist rescan
+                var imageFiles = ImageHelper.ImageFilesInFolder(artistFolder);
+                if (imageFiles != null && imageFiles.Any())
+                {
+                    var imageFile = imageFiles.First();
+                    var i = new FileInfo(imageFile);
+                    var iName = i.Name.ToLower().Trim();
+                    var isArtistImage = iName.Contains("artist") || iName.Contains(artist.Name.ToLower());
+                    if (isArtistImage)
+                    {
+                        // Read image and convert to jpeg
+                        artist.Thumbnail = File.ReadAllBytes(i.FullName);
+                        artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                        artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
+                        artist.LastUpdated = DateTime.UtcNow;
+                        await this.DbContext.SaveChangesAsync();
+                        this.CacheManager.ClearRegion(artist.CacheRegion);
+                        this.Logger.LogInformation("Update Thumbnail using Artist File [{0}]", iName);
+                    }
+                }
+
                 sw.Stop();
-                this.CacheManager.ClearRegion(Artist.CacheRegion);
-                this.Logger.LogInformation("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", Artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
+                this.CacheManager.ClearRegion(artist.CacheRegion);
+                this.Logger.LogInformation("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {

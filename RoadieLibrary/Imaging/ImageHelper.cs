@@ -6,6 +6,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -46,7 +47,7 @@ namespace Roadie.Library.Imaging
 
         public static string[] ImageExtensions()
         {
-            return new string[8] { "*.bmp", "*.jpeg", "*.jpe", "*.jpg", "*.png", "*.gif", "*.tif", "*.tiff" };
+            return new string[6] { "*.bmp", "*.jpeg", "*.jpe", "*.jpg", "*.png", "*.gif" };
         }
 
         public static string[] ImageFilesInFolder(string folder)
@@ -56,7 +57,7 @@ namespace Roadie.Library.Imaging
 
         public static string[] ImageMimeTypes()
         {
-            return new string[5] { "image/bmp", "image/jpeg", "image/png", "image/gif", "image/tiff" };
+            return new string[4] { "image/bmp", "image/jpeg", "image/png", "image/gif" };
         }
 
         public static ImageSearchResult ImageSearchResultForImageUrl(string imageUrl)
@@ -82,16 +83,28 @@ namespace Roadie.Library.Imaging
         /// </summary>
         public static byte[] ResizeImage(byte[] imageBytes, int width, int height)
         {
-            using (MemoryStream outStream = new MemoryStream())
+            if(imageBytes == null)
             {
-                IImageFormat imageFormat = null;
-                using (Image<Rgba32> image = Image.Load(imageBytes, out imageFormat))
-                {
-                    image.Mutate(ctx => ctx.Resize(width, height));
-                    image.Save(outStream, imageFormat);
-                }
-                return outStream.ToArray();
+                return null;
             }
+            try
+            {
+                using (MemoryStream outStream = new MemoryStream())
+                {
+                    IImageFormat imageFormat = null;
+                    using (Image<Rgba32> image = Image.Load(imageBytes, out imageFormat))
+                    {
+                        image.Mutate(ctx => ctx.Resize(width, height));
+                        image.Save(outStream, imageFormat);
+                    }
+                    return outStream.ToArray();
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Error Resizing Image [{ ex.ToString() }]");
+            }
+            return null;
         }
 
         public static byte[] ImageDataFromUrl(string imageUrl)
