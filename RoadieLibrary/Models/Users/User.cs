@@ -1,6 +1,8 @@
 ﻿using Mapster;
+using Newtonsoft.Json;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Roadie.Library.Models.Users
 {
@@ -70,6 +72,20 @@ namespace Roadie.Library.Models.Users
         [Required]
         [MaxLength(20)]
         public string UserName { get; set; }
+
+        /// <summary>
+        /// Posted password only used when changing password from profile edits
+        /// </summary>
+        [NotMapped]
+        [AdaptIgnore]
+        public string Password { get; set; }
+
+        /// <summary>
+        /// Posted password confirmation only used when changing password from profile edits
+        /// </summary>
+        [NotMapped]
+        [AdaptIgnore]
+        public string PasswordConfirmation { get; set; }
 
         public override string ToString()
         {

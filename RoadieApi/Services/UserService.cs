@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Roadie.Library;
@@ -24,14 +25,18 @@ namespace Roadie.Api.Services
 {
     public class UserService : ServiceBase, IUserService
     {
+        private UserManager<ApplicationUser> UserManager { get; }
+
         public UserService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
                              IHttpContext httpContext,
                              data.IRoadieDbContext context,
                              ICacheManager cacheManager,
-                             ILogger<ArtistService> logger)
+                             ILogger<ArtistService> logger,
+                             UserManager<ApplicationUser> userManager)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
+            this.UserManager = userManager;
         }
 
         public async Task<OperationResult<User>> ById(User user, Guid id)
@@ -142,8 +147,27 @@ namespace Roadie.Api.Services
                     user.Avatar = ImageHelper.ResizeImage(imageData, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
                 }
             }
-
             await this.DbContext.SaveChangesAsync();
+
+            if(!string.IsNullOrEmpty(userBeingUpdatedModel.Password) && !string.IsNullOrEmpty(userBeingUpdatedModel.PasswordConfirmation))
+            {
+                if(userBeingUpdatedModel.Password !=  userBeingUpdatedModel.PasswordConfirmation)
+                {
+                    return new OperationResult<bool>
+                    {
+                        Errors = new List<Exception> { new Exception("Password does not match confirmation") }
+                    };
+                }
+                string resetToken = await UserManager.GeneratePasswordResetTokenAsync(user);
+                var identityResult = await UserManager.ResetPasswordAsync(user, resetToken, userBeingUpdatedModel.Password);
+                if (!identityResult.Succeeded)
+                {
+                    return new OperationResult<bool>
+                    {
+                        Errors = new List<Exception> { new Exception("Unable to reset password") }
+                    };
+                }
+            }
 
             this.CacheManager.ClearRegion(ApplicationUser.CacheRegionUrn(user.RoadieId));
 
