@@ -29,16 +29,7 @@ namespace Roadie.Library.Factories
     {
         public const string CoverFilename = "cover.jpg";
 
-        private List<int> _addedReleaseIds = new List<int>();
         private List<int> _addedTrackIds = new List<int>();
-
-        public IEnumerable<int> AddedReleaseIds
-        {
-            get
-            {
-                return this._addedReleaseIds;
-            }
-        }
 
         public IEnumerable<int> AddedTrackIds
         {
@@ -495,6 +486,8 @@ namespace Roadie.Library.Factories
         public async Task<OperationResult<bool>> ScanReleaseFolder(Guid releaseId, string destinationFolder, bool doJustInfo, Data.Release releaseToScan = null)
         {
             SimpleContract.Requires<ArgumentOutOfRangeException>((releaseId != Guid.Empty && releaseToScan == null) || releaseToScan != null, "Invalid ReleaseId");
+
+            this._addedTrackIds.Clear();
 
             var result = false;
             var resultErrors = new List<Exception>();

@@ -8,9 +8,7 @@ namespace Roadie.Library.Factories
 {
     public interface IReleaseFactory
     {
-        IEnumerable<int> AddedReleaseIds { get; }
         IEnumerable<int> AddedTrackIds { get; }
-
 
         Task<OperationResult<bool>> CheckAndChangeReleaseTitle(Release release, string oldReleaseFolder, string destinationFolder = null);
 

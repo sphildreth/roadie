@@ -218,6 +218,15 @@ namespace Roadie.Api.Services
                 errors.Add(ex);
             }
             sw.Stop();
+            this.DbContext.ScanHistories.Add(new data.ScanHistory
+            {
+                UserId = user.Id,
+                ForArtistId = artist.Id,
+                NewReleases = this.ReleaseLookupEngine.AddedReleaseIds.Count(),
+                NewTracks = this.ReleaseFactory.AddedTrackIds.Count(),
+                TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
+            });
+            await this.DbContext.SaveChangesAsync();
             await this.LogAndPublish($"ScanArtist `{artist}`, By User `{user}`", LogLevel.Information);
             return new OperationResult<bool>
             {
@@ -254,6 +263,14 @@ namespace Roadie.Api.Services
                 errors.Add(ex);
             }
             sw.Stop();
+            this.DbContext.ScanHistories.Add(new data.ScanHistory
+            {
+                UserId = user.Id,
+                ForReleaseId = release.Id,
+                NewTracks = this.ReleaseFactory.AddedTrackIds.Count(),
+                TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
+            });
+            await this.DbContext.SaveChangesAsync();
             await this.LogAndPublish($"ScanRelease `{release}`, By User `{user}`", LogLevel.Information);
             return new OperationResult<bool>
             {
@@ -264,6 +281,80 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+
+            var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == releaseId);
+            try
+            {
+                if (release == null)
+                {
+                    await this.LogAndPublish($"DeleteRelease Unknown Release [{ releaseId}]", LogLevel.Warning);
+                    return new OperationResult<bool>(true, $"Release Not Found [{ releaseId }]");
+                }
+                await this.ReleaseFactory.Delete(release, doDeleteFiles ?? false);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                await this.LogAndPublish("Error deleting release.");
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"DeleteRelease `{ release }`, By User `{ user}`", LogLevel.Information);
+            this.CacheManager.Clear();
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data =true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+
+        }
+
+        public async Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
+            if (artist == null)
+            {
+                await this.LogAndPublish($"DeleteArtist Unknown Artist [{ artistId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Artist Not Found [{ artistId }]");
+            }
+            try
+            {
+                var result = await this.ArtistFactory.Delete(artist);
+                if (!result.IsSuccess)
+                {
+                    return new OperationResult<bool>
+                    {
+                        Errors = result.Errors
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                await this.LogAndPublish("Error deleting artist.");
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"DeleteArtist `{ artist }`, By User `{user }`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data= true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
 
         private void EventMessageLogger_Messages(object sender, EventMessage e)
         {
