@@ -280,6 +280,7 @@ namespace Roadie.Api.Services
                     randomLimit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
                     var sql = "SELECT t.* FROM `track` t WHERE t.Hash IS NOT NULL ORDER BY RAND() LIMIT {0}";
                     randomTrackIds = this.DbContext.Tracks.FromSql(sql, randomLimit).Select(x => x.Id).ToArray();
+                    rowCount = this.DbContext.Tracks.Where(x => x.Hash != null).Count();
                 }
                 Guid?[] filterToTrackIds = null;
                 if (request.FilterToTrackId.HasValue || request.FilterToTrackIds != null)

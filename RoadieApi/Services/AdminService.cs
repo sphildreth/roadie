@@ -147,7 +147,11 @@ namespace Roadie.Api.Services
         {
             var d = new DirectoryInfo(this.Configuration.InboundFolder);
             var dest = new DirectoryInfo(this.Configuration.LibraryFolder);
+            return await this.ScanFolder(d, dest, user, isReadOnly);
+        }
 
+        private async Task<OperationResult<bool>> ScanFolder(DirectoryInfo d, DirectoryInfo dest, ApplicationUser user, bool isReadOnly)
+        {
             var sw = new Stopwatch();
             sw.Start();
 
@@ -193,6 +197,14 @@ namespace Roadie.Api.Services
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             };
+
+        }
+
+        public async Task<OperationResult<bool>> ScanLibraryFolder(ApplicationUser user, bool isReadOnly = false)
+        {
+            var d = new DirectoryInfo(this.Configuration.LibraryFolder);
+            var dest = new DirectoryInfo(this.Configuration.LibraryFolder);
+            return await this.ScanFolder(d, dest, user, isReadOnly);
         }
 
         public async Task<OperationResult<bool>> ScanArtist(ApplicationUser user, Guid artistId, bool isReadOnly = false)

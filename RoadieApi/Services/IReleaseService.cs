@@ -1,4 +1,5 @@
-﻿using Roadie.Library;
+﻿using Microsoft.AspNetCore.Http;
+using Roadie.Library;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Users;
@@ -14,5 +15,7 @@ namespace Roadie.Api.Services
 
         Task<PagedResult<ReleaseList>> List(User user, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null);
         Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id);
+        Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl);
+        Task<OperationResult<Library.Models.Image>> UploadReleaseImage(User user, Guid id, IFormFile file);
     }
 }

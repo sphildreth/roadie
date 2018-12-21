@@ -26,12 +26,25 @@ namespace Roadie.Api.Controllers
             this.AdminService = adminService;
         }
 
-        [HttpGet("scan")]
+        [HttpGet("scan/inbound")]
         [ProducesResponseType(200)]
         [Authorize("Admin")]
-        public async Task<IActionResult> Scan()
+        public async Task<IActionResult> ScanInbound()
         {
             var result = await this.AdminService.ScanInboundFolder(await this.UserManager.GetUserAsync(User));
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpGet("scan/library")]
+        [ProducesResponseType(200)]
+        [Authorize("Admin")]
+        public async Task<IActionResult> ScanLibrary()
+        {
+            var result = await this.AdminService.ScanLibraryFolder(await this.UserManager.GetUserAsync(User));
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Roadie.Library;
@@ -7,6 +8,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
+using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Collections;
 using Roadie.Library.Models.Pagination;
@@ -483,6 +485,70 @@ namespace Roadie.Api.Services
                 IsSuccess = zipBytes != null,
                 Data = zipBytes,
                 AdditionalData = new Dictionary<string, object> { { "ZipFileName", zipFileName } }
+            };
+        }
+
+        public async Task<OperationResult<Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl)
+        {
+            return await this.SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
+        }
+
+        public async Task<OperationResult<Image>> UploadReleaseImage(User user, Guid id, IFormFile file)
+        {
+            var bytes = new byte[0];
+            using (var ms = new MemoryStream())
+            {
+                file.CopyTo(ms);
+                bytes = ms.ToArray();
+            }
+            return await this.SaveImageBytes(user, id, bytes);
+        }
+
+        private async Task<OperationResult<Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == id);
+            if (release == null)
+            {
+                return new OperationResult<Image>(true, string.Format("Release Not Found [{0}]", id));
+            }
+            try
+            {
+                var now = DateTime.UtcNow;
+                release.Thumbnail = imageBytes;
+                if (release.Thumbnail != null)
+                {
+                    // Ensure is jpeg first
+                    release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
+
+                    // Save unaltered image to cover file
+                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder)), "cover.jpg");
+                    File.WriteAllBytes(coverFileName, release.Thumbnail);
+
+                    // Resize to store in database as thumbnail
+                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+
+                }
+                release.LastUpdated = now;
+                await this.DbContext.SaveChangesAsync();
+                this.CacheManager.ClearRegion(release.CacheRegion);
+                this.Logger.LogInformation($"UploadReleaseImage `{ release }` By User `{ user }`");
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+
+            return new OperationResult<Image>
+            {
+                IsSuccess = !errors.Any(),
+                Data = this.MakeReleaseThumbnailImage(id),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
             };
         }
 

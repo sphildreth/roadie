@@ -25,6 +25,11 @@ namespace Roadie.Api.Services
     public class ImageService : ServiceBase, IImageService
     {
         private IDefaultNotFoundImages DefaultNotFoundImages { get; }
+        private IImageSearchEngine BingSearchEngine { get; }
+        private IImageSearchEngine ITunesSearchEngine { get; }
+
+        private string Referrer { get; }
+        private string RequestIp { get; }
 
         public ImageService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
@@ -36,6 +41,8 @@ namespace Roadie.Api.Services
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
             this.DefaultNotFoundImages = defaultNotFoundImages;
+            this.BingSearchEngine = new BingImageSearchEngine(configuration, logger, this.RequestIp, this.Referrer);
+            this.ITunesSearchEngine = new ITunesSearchEngine(configuration, cacheManager, logger, this.RequestIp, this.Referrer);
         }
 
         public async Task<FileOperationResult<Image>> ArtistImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
@@ -207,6 +214,41 @@ namespace Roadie.Api.Services
                                                     },
                                                     etag: etag);
         }
+
+        public async Task<OperationResult<IEnumerable<ImageSearchResult>>> Search(string query, int resultsCount = 10)
+        {
+            var sw = Stopwatch.StartNew();
+
+            var result = new List<ImageSearchResult>();
+
+            if (WebHelper.IsStringUrl(query))
+            {
+                var s = ImageHelper.ImageSearchResultForImageUrl(query);
+                if (s != null)
+                {
+                    result.Add(s);
+                }
+            }
+            var bingResults = await this.BingSearchEngine.PerformImageSearch(query, resultsCount);
+            if (bingResults != null)
+            {
+                result.AddRange(bingResults);
+            }
+            var iTunesResults = await this.ITunesSearchEngine.PerformImageSearch(query, resultsCount);
+            if (iTunesResults != null)
+            {
+                result.AddRange(iTunesResults);
+            }
+            sw.Stop();
+            return new OperationResult<IEnumerable<ImageSearchResult>>
+            {
+                IsSuccess = true,
+                Data = result,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+                
+        }
+
 
         private async Task<FileOperationResult<Image>> ArtistImageAction(Guid id, EntityTagHeaderValue etag = null)
         {
@@ -542,5 +584,7 @@ namespace Roadie.Api.Services
             }
             return new FileOperationResult<Image>(OperationMessages.ErrorOccured);
         }
+
+
     }
 }
