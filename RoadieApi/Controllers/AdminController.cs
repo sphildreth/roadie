@@ -26,6 +26,17 @@ namespace Roadie.Api.Controllers
             this.AdminService = adminService;
         }
 
+        [HttpGet("clearcache")]
+        [ProducesResponseType(200)]
+        [Authorize("Admin")]
+        public IActionResult ClearCache()
+        {
+            this.CacheManager.Clear();
+            this.Logger.LogInformation("Cache Cleared");
+            return Ok();
+        }
+
+
         [HttpGet("scan/inbound")]
         [ProducesResponseType(200)]
         [Authorize("Admin")]
