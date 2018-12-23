@@ -40,6 +40,7 @@ namespace Roadie.Library.Data
             : base(options)
         {
         }
+                          
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -123,6 +124,19 @@ namespace Roadie.Library.Data
             builder.Entity<ReleaseGenre>()
                 .HasOne(rg => rg.Genre)
                 .WithMany(g => g.Releases)
+                .HasForeignKey(rg => rg.GenreId);
+
+            builder.Entity<ArtistGenre>()
+                .HasKey(rg => new { rg.ArtistId, rg.GenreId });
+
+            builder.Entity<ArtistGenre>()
+                .HasOne(rg => rg.Artist)
+                .WithMany(r => r.Genres)
+                .HasForeignKey(rg => rg.ArtistId);
+
+            builder.Entity<ArtistGenre>()
+                .HasOne(rg => rg.Genre)
+                .WithMany(g => g.Artists)
                 .HasForeignKey(rg => rg.GenreId);
 
             builder.Entity<CollectionRelease>()

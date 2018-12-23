@@ -17,5 +17,6 @@ namespace Roadie.Api.Services
         Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id);
         Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl);
         Task<OperationResult<Library.Models.Image>> UploadReleaseImage(User user, Guid id, IFormFile file);
+        Task<OperationResult<bool>> UpdateRelease(User user, Release release);
     }
 }

@@ -262,6 +262,7 @@ namespace Roadie.Library.Extensions
             return input.Split(delimiter);
         }
 
+
         public static string ToTitleCase(this string input, bool doPutTheAtEnd = true)
         {
             if (string.IsNullOrEmpty(input))

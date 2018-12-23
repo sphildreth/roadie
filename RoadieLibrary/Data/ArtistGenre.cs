@@ -20,6 +20,7 @@ namespace Roadie.Library.Data
 
         [Column("id")]
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
     }
 }

@@ -6,7 +6,9 @@ namespace Roadie.Library.Identity
     [Table("usersInRoles")]
     public class ApplicationUserRole : IdentityUserRole<int>
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
+
         public virtual ApplicationRole Role { get; set; }
 
         [Column("userRoleId")]

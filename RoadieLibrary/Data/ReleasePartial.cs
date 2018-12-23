@@ -15,7 +15,7 @@ namespace Roadie.Library.Data
 
         public static string CacheUrn(Guid Id)
         {
-            return $"urn:artist_by_id:{ Id }";
+            return $"urn:release_by_id:{ Id }";
         }
 
         public string CacheKey

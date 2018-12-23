@@ -16,15 +16,24 @@ namespace Roadie.Library.Models
         [IgnoreDataMember]
         public string AlternateNames { get; set; }
 
+        private IEnumerable<string> _alternateNamesList = null;
         public IEnumerable<string> AlternateNamesList
         {
             get
             {
-                if (string.IsNullOrEmpty(this.AlternateNames))
+                if (this._alternateNamesList == null)
                 {
-                    return null;
+                    if (string.IsNullOrEmpty(this.AlternateNames))
+                    {
+                        return null;
+                    }
+                    return this.AlternateNames.Split('|');
                 }
-                return this.AlternateNames.Split('|');
+                return this._alternateNamesList;
+            }
+            set
+            {
+                this._alternateNamesList = value;
             }
         }
 
@@ -61,15 +70,24 @@ namespace Roadie.Library.Models
         [IgnoreDataMember]
         public string Tags { get; set; }
 
+        private IEnumerable<string> _tagsList = null;
         public IEnumerable<string> TagsList
         {
             get
             {
-                if (string.IsNullOrEmpty(this.Tags))
+                if (this._tagsList == null)
                 {
-                    return null;
+                    if (string.IsNullOrEmpty(this.Tags))
+                    {
+                        return null;
+                    }
+                    return this.Tags.Split('|');
                 }
-                return this.Tags.Split('|');
+                return this._tagsList;
+            }
+            set
+            {
+                this._tagsList = value;
             }
         }
 
@@ -78,15 +96,24 @@ namespace Roadie.Library.Models
         [IgnoreDataMember]
         public string URLs { get; set; }
 
+        private IEnumerable<string> _urlsList = null;
         public IEnumerable<string> URLsList
         {
             get
             {
-                if (string.IsNullOrEmpty(this.URLs))
+                if (this._urlsList == null)
                 {
-                    return null;
+                    if (string.IsNullOrEmpty(this.URLs))
+                    {
+                        return null;
+                    }
+                    return this.URLs.Split('|');
                 }
-                return this.URLs.Split('|');
+                return this._urlsList;
+            }
+            set
+            {
+                this._urlsList = value;
             }
         }
 

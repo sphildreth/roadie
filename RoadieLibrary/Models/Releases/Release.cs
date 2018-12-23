@@ -66,6 +66,9 @@ namespace Roadie.Library.Models.Releases
 
         public Image Thumbnail { get; set; }
 
+        // When populated a "data:image" base64 byte array of an image to use as new Thumbnail
+        public string NewThumbnailData { get; set; }
+
 
         [MaxLength(250)]
         [Required]

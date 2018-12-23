@@ -14,7 +14,7 @@ namespace Roadie.Api.Controllers
 {
     [Route("admin")]
     [ApiController]
-    [Authorize("Editor")]
+    [Authorize("Admin")]
     public class AdminController : EntityControllerBase
     {
         private IAdminService AdminService { get; }
@@ -28,7 +28,6 @@ namespace Roadie.Api.Controllers
 
         [HttpGet("clearcache")]
         [ProducesResponseType(200)]
-        [Authorize("Admin")]
         public IActionResult ClearCache()
         {
             this.CacheManager.Clear();
@@ -39,7 +38,6 @@ namespace Roadie.Api.Controllers
 
         [HttpGet("scan/inbound")]
         [ProducesResponseType(200)]
-        [Authorize("Admin")]
         public async Task<IActionResult> ScanInbound()
         {
             var result = await this.AdminService.ScanInboundFolder(await this.UserManager.GetUserAsync(User));
@@ -52,7 +50,6 @@ namespace Roadie.Api.Controllers
 
         [HttpGet("scan/library")]
         [ProducesResponseType(200)]
-        [Authorize("Admin")]
         public async Task<IActionResult> ScanLibrary()
         {
             var result = await this.AdminService.ScanLibraryFolder(await this.UserManager.GetUserAsync(User));
@@ -65,7 +62,6 @@ namespace Roadie.Api.Controllers
 
         [HttpPost("scan/artist/{id}")]
         [ProducesResponseType(200)]
-        [Authorize("Admin")]
         public async Task<IActionResult> ScanArtist(Guid id)
         {
             var result = await this.AdminService.ScanArtist(await this.UserManager.GetUserAsync(User), id);
@@ -78,7 +74,6 @@ namespace Roadie.Api.Controllers
 
         [HttpPost("scan/release/{id}")]
         [ProducesResponseType(200)]
-        [Authorize("Admin")]
         public async Task<IActionResult> ScanRelease(Guid id)
         {
             var result = await this.AdminService.ScanRelease(await this.UserManager.GetUserAsync(User), id);
@@ -91,7 +86,6 @@ namespace Roadie.Api.Controllers
 
         [HttpPost("delete/release/{id}")]
         [ProducesResponseType(200)]
-        [Authorize("Admin")]
         public async Task<IActionResult> DeleteRelease(Guid id, bool? doDeleteFiles)
         {
             var result = await this.AdminService.DeleteRelease(await this.UserManager.GetUserAsync(User), id, doDeleteFiles);
@@ -104,7 +98,6 @@ namespace Roadie.Api.Controllers
 
         [HttpPost("delete/artist/{id}")]
         [ProducesResponseType(200)]
-        [Authorize("Admin")]
         public async Task<IActionResult> DeleteArtist(Guid id)
         {
             var result = await this.AdminService.DeleteArtist(await this.UserManager.GetUserAsync(User), id);

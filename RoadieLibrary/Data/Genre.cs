@@ -12,5 +12,12 @@ namespace Roadie.Library.Data
         public string Name { get; set; }
 
         public ICollection<ReleaseGenre> Releases { get; set; }
+        public ICollection<ArtistGenre> Artists { get; set; }
+
+        public Genre()
+        {
+            this.Releases = new HashSet<ReleaseGenre>();
+            this.Artists = new HashSet<ArtistGenre>();
+        }
     }
 }

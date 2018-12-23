@@ -6,9 +6,16 @@ using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Engines;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
+using Roadie.Library.Factories;
 using Roadie.Library.Imaging;
+using Roadie.Library.MetaData.Audio;
+using Roadie.Library.MetaData.FileName;
+using Roadie.Library.MetaData.ID3Tags;
+using Roadie.Library.MetaData.LastFm;
+using Roadie.Library.MetaData.MusicBrainz;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Collections;
 using Roadie.Library.Models.Pagination;
@@ -30,10 +37,20 @@ namespace Roadie.Api.Services
 {
     public class ReleaseService : ServiceBase, IReleaseService
     {
+        private IArtistLookupEngine ArtistLookupEngine { get; }
+        private IAudioMetaDataHelper AudioMetaDataHelper { get; }
         private IBookmarkService BookmarkService { get; } = null;
         private ICollectionService CollectionService { get; } = null;
-
+        private IFileNameHelper FileNameHelper { get; }
+        private IID3TagsHelper ID3TagsHelper { get; }
+        private IImageFactory ImageFactory { get; }
+        private ILabelFactory LabelFactory { get; }
+        private ILabelLookupEngine LabelLookupEngine { get; }
+        private ILastFmHelper LastFmHelper { get; }
+        private IMusicBrainzProvider MusicBrainzProvider { get; }
         private IPlaylistService PlaylistService { get; } = null;
+        private IReleaseFactory ReleaseFactory { get; }
+        private IReleaseLookupEngine ReleaseLookupEngine { get; }
 
         public ReleaseService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
@@ -49,14 +66,28 @@ namespace Roadie.Api.Services
             this.CollectionService = collectionService;
             this.PlaylistService = playlistService;
             this.BookmarkService = bookmarkService;
+
+            this.MusicBrainzProvider = new MusicBrainzProvider(configuration, cacheManager, logger);
+            this.LastFmHelper = new LastFmHelper(configuration, cacheManager, logger);
+            this.FileNameHelper = new FileNameHelper(configuration, cacheManager, logger);
+            this.ID3TagsHelper = new ID3TagsHelper(configuration, cacheManager, logger);
+
+            this.ArtistLookupEngine = new ArtistLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);
+            this.LabelLookupEngine = new LabelLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);
+            this.ReleaseLookupEngine = new ReleaseLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.LabelLookupEngine);
+            this.ImageFactory = new ImageFactory(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
+            this.LabelFactory = new LabelFactory(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
+            this.AudioMetaDataHelper = new AudioMetaDataHelper(configuration, httpEncoder, dbContext, this.MusicBrainzProvider, this.LastFmHelper, cacheManager,
+                                                               logger, this.ArtistLookupEngine, this.ImageFactory, this.FileNameHelper, this.ID3TagsHelper);
+            this.ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.LabelFactory, this.AudioMetaDataHelper, this.ReleaseLookupEngine);
         }
 
-        public async Task<OperationResult<Release>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
+        public async Task<OperationResult<Library.Models.Releases.Release>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
             var cacheKey = string.Format("urn:release_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
-            var result = await this.CacheManager.GetAsync<OperationResult<Release>>(cacheKey, async () =>
+            var result = await this.CacheManager.GetAsync<OperationResult<Library.Models.Releases.Release>>(cacheKey, async () =>
             {
                 return await this.ReleaseByIdAction(id, includes);
             }, data.Artist.CacheRegionUrn(id));
@@ -114,7 +145,7 @@ namespace Roadie.Api.Services
                 }
             }
             sw.Stop();
-            return new OperationResult<Release>(result.Messages)
+            return new OperationResult<Library.Models.Releases.Release>(result.Messages)
             {
                 Data = result?.Data,
                 IsNotFoundResult = result?.IsNotFoundResult ?? false,
@@ -138,7 +169,6 @@ namespace Roadie.Api.Services
                                         where c.RoadieId == request.FilterToCollectionId.Value
                                         orderby cr.ListNumber
                                         select r.Id).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
-
             }
             int[] favoriteReleaseIds = new int[0];
             if (request.FilterFavoriteOnly)
@@ -299,9 +329,9 @@ namespace Roadie.Api.Services
                         if (cr != null)
                         {
                             var parRelease = rows.FirstOrDefault(x => x.DatabaseId == cr.ReleaseId);
-                            if(parRelease != null)
+                            if (parRelease != null)
                             {
-                                if(!parRelease.ListNumber.HasValue)
+                                if (!parRelease.ListNumber.HasValue)
                                 {
                                     parRelease.ListNumber = par.Position;
                                 }
@@ -327,8 +357,8 @@ namespace Roadie.Api.Services
                                     Text = par.Release
                                 },
                                 CssClass = "missing",
-                                ArtistThumbnail = new Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
-                                Thumbnail = new Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
+                                ArtistThumbnail = new Library.Models.Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
+                                Thumbnail = new Library.Models.Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
                                 ListNumber = par.Position
                             });
                         }
@@ -488,12 +518,152 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl)
+        public async Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl)
         {
             return await this.SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
 
-        public async Task<OperationResult<Image>> UploadReleaseImage(User user, Guid id, IFormFile file)
+        public async Task<OperationResult<bool>> UpdateRelease(User user, Library.Models.Releases.Release model)
+        {
+            var didChangeArtist = false;
+            var didChangeThumbnail = false;
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var release = this.DbContext.Releases
+                                        .Include(x => x.Artist)
+                                        .Include(x => x.Genres)
+                                        .Include("Genres.Genre")
+                                        .Include(x => x.Labels)
+                                        .Include("Labels.Label")
+                                        .FirstOrDefault(x => x.RoadieId == model.Id);
+            if (release == null)
+            {
+                return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", model.Id));
+            }
+            try
+            {
+                var now = DateTime.UtcNow;
+                var artistFolder = release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                var originalReleaseFolder = release.ReleaseFileFolder(artistFolder);
+                release.IsLocked = model.IsLocked;
+                release.IsVirtual = model.IsVirtual;
+                release.Status = SafeParser.ToEnum<Statuses>(model.Status);
+                release.Title = model.Title;
+                release.AlternateNames = model.AlternateNamesList.ToDelimitedList();
+                release.ReleaseDate = model.ReleaseDate;
+                release.Rating = model.Rating;
+                release.TrackCount = model.TrackCount;
+                release.MediaCount = model.MediaCount;
+                release.Profile = model.Profile;
+                release.DiscogsId = model.DiscogsId;
+                release.ReleaseType = SafeParser.ToEnum<ReleaseType>(model.ReleaseType);
+                release.LibraryStatus = SafeParser.ToEnum<LibraryStatus>(model.LibraryStatus);
+                release.ITunesId = model.ITunesId;
+                release.AmgId = model.AmgId;
+                release.LastFMId = model.LastFMId;
+                release.LastFMSummary = model.LastFMSummary;
+                release.MusicBrainzId = model.MusicBrainzId;
+                release.SpotifyId = model.SpotifyId;
+                release.Tags = model.TagsList.ToDelimitedList();
+                release.URLs = model.URLsList.ToDelimitedList();
+
+                if (model?.Artist?.Artist?.Value != null)
+                {
+                    var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == SafeParser.ToGuid(model.Artist.Artist.Value));
+                    if (artist != null && release.ArtistId != artist.Id)
+                    {
+                        release.ArtistId = artist.Id;
+                        didChangeArtist = true;
+                    }
+                }
+
+                var releaseImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
+                if (releaseImage != null)
+                {
+                    // Ensure is jpeg first
+                    release.Thumbnail = ImageHelper.ConvertToJpegFormat(releaseImage);
+
+                    // Save unaltered image to cover file
+                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder)), "cover.jpg");
+                    File.WriteAllBytes(coverFileName, release.Thumbnail);
+
+                    // Resize to store in database as thumbnail
+                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                    didChangeThumbnail = true;
+                }
+
+                if (model.Genres != null && model.Genres.Any())
+                {
+                    // Remove existing Genres not in model list
+                    foreach (var genre in release.Genres.ToList())
+                    {
+                        var doesExistInModel = model.Genres.Any(x => SafeParser.ToGuid(x.Value) == genre.Genre.RoadieId);
+                        if (!doesExistInModel)
+                        {
+                            release.Genres.Remove(genre);
+                        }
+                    }
+
+                    // Add new Genres in model not in data
+                    foreach (var genre in model.Genres)
+                    {
+                        var genreId = SafeParser.ToGuid(genre.Value);
+                        var doesExistInData = release.Genres.Any(x => x.Genre.RoadieId == genreId);
+                        if (!doesExistInData)
+                        {
+                            var g = this.DbContext.Genres.FirstOrDefault(x => x.RoadieId == genreId);
+                            if (g != null)
+                            {
+                                release.Genres.Add(new data.ReleaseGenre
+                                {
+                                    ReleaseId = release.Id,
+                                    GenreId = g.Id,
+                                    Genre = g
+                                });
+                            }
+                        }
+                    }
+                }
+                else if (model.Genres == null || !model.Genres.Any())
+                {
+                    release.Genres.Clear();
+                }
+
+                if (model.Labels != null && model.Labels.Any())
+                {
+                    // TODO
+
+                }
+
+                if (model.Images != null && model.Images.Any())
+                {
+                    // TODO
+                }
+
+                release.LastUpdated = now;
+                await this.DbContext.SaveChangesAsync();
+                await this.ReleaseFactory.CheckAndChangeReleaseTitle(release, originalReleaseFolder);
+                this.CacheManager.ClearRegion(release.CacheRegion);
+                this.Logger.LogInformation($"UpdateRelease `{ release }` By User `{ user }`: Edited Artist [{ didChangeArtist }], Uploaded new image [{ didChangeThumbnail }]");
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<Library.Models.Image>> UploadReleaseImage(User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
             using (var ms = new MemoryStream())
@@ -504,55 +674,7 @@ namespace Roadie.Api.Services
             return await this.SaveImageBytes(user, id, bytes);
         }
 
-        private async Task<OperationResult<Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-            var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == id);
-            if (release == null)
-            {
-                return new OperationResult<Image>(true, string.Format("Release Not Found [{0}]", id));
-            }
-            try
-            {
-                var now = DateTime.UtcNow;
-                release.Thumbnail = imageBytes;
-                if (release.Thumbnail != null)
-                {
-                    // Ensure is jpeg first
-                    release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
-
-                    // Save unaltered image to cover file
-                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder)), "cover.jpg");
-                    File.WriteAllBytes(coverFileName, release.Thumbnail);
-
-                    // Resize to store in database as thumbnail
-                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
-
-                }
-                release.LastUpdated = now;
-                await this.DbContext.SaveChangesAsync();
-                this.CacheManager.ClearRegion(release.CacheRegion);
-                this.Logger.LogInformation($"UploadReleaseImage `{ release }` By User `{ user }`");
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex);
-                errors.Add(ex);
-            }
-            sw.Stop();
-
-            return new OperationResult<Image>
-            {
-                IsSuccess = !errors.Any(),
-                Data = this.MakeReleaseThumbnailImage(id),
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-        private async Task<OperationResult<Release>> ReleaseByIdAction(Guid id, IEnumerable<string> includes = null)
+        private async Task<OperationResult<Library.Models.Releases.Release>> ReleaseByIdAction(Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
@@ -561,9 +683,9 @@ namespace Roadie.Api.Services
 
             if (release == null)
             {
-                return new OperationResult<Release>(true, string.Format("Release Not Found [{0}]", id));
+                return new OperationResult<Library.Models.Releases.Release>(true, string.Format("Release Not Found [{0}]", id));
             }
-            var result = release.Adapt<Release>();
+            var result = release.Adapt<Library.Models.Releases.Release>();
             result.Artist = ArtistList.FromDataArtist(release.Artist, this.MakeArtistThumbnailImage(release.Artist.RoadieId));
             result.Thumbnail = this.MakeReleaseThumbnailImage(release.RoadieId);
             result.MediumThumbnail = base.MakeThumbnailImage(id, "release", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
@@ -637,7 +759,7 @@ namespace Roadie.Api.Services
                         MissingTrackCount = releaseTracks?.Where(x => x.isMissing).Count(),
                         TrackCount = release.TrackCount,
                         TrackPlayedCount = release.PlayedCount,
-                        TrackSize =  releaseTracks?.Sum(x => (long?)x.size).ToFileSize(),
+                        TrackSize = releaseTracks?.Sum(x => (long?)x.size).ToFileSize(),
                         TrackTime = releaseTracks.Any() ? new TimeInfo((decimal)releaseTime).ToFullFormattedString() : "--:--"
                     };
                     result.MaxMediaNumber = releaseMedias.Any() ? releaseMedias.Max(x => x.MediaNumber) : (short)0;
@@ -685,6 +807,8 @@ namespace Roadie.Api.Services
                                 BeginDate = releaseLabel.rl.BeginDate,
                                 EndDate = releaseLabel.rl.EndDate,
                                 CatalogNumber = releaseLabel.rl.CatalogNumber,
+                                CreatedDate = releaseLabel.rl.CreatedDate,
+                                Id = releaseLabel.rl.RoadieId,
                                 Label = new LabelList
                                 {
                                     Id = releaseLabel.rl.RoadieId,
@@ -768,11 +892,58 @@ namespace Roadie.Api.Services
                 }
             }
             sw.Stop();
-            return new OperationResult<Release>
+            return new OperationResult<Library.Models.Releases.Release>
             {
                 Data = result,
                 IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == id);
+            if (release == null)
+            {
+                return new OperationResult<Library.Models.Image>(true, string.Format("Release Not Found [{0}]", id));
+            }
+            try
+            {
+                var now = DateTime.UtcNow;
+                release.Thumbnail = imageBytes;
+                if (release.Thumbnail != null)
+                {
+                    // Ensure is jpeg first
+                    release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
+
+                    // Save unaltered image to cover file
+                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder)), "cover.jpg");
+                    File.WriteAllBytes(coverFileName, release.Thumbnail);
+
+                    // Resize to store in database as thumbnail
+                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                }
+                release.LastUpdated = now;
+                await this.DbContext.SaveChangesAsync();
+                this.CacheManager.ClearRegion(release.CacheRegion);
+                this.Logger.LogInformation($"UploadReleaseImage `{ release }` By User `{ user }`");
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+
+            return new OperationResult<Library.Models.Image>
+            {
+                IsSuccess = !errors.Any(),
+                Data = this.MakeReleaseThumbnailImage(id),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
             };
         }
     }

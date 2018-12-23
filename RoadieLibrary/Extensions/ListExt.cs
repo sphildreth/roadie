@@ -25,7 +25,7 @@ namespace Roadie.Library.Extensions
             return ((ICollection<T>)list).ToDelimitedList(delimiter);
         }
 
-        public static string ToDelimitedList<T>(this ICollection<T> list, char delimiter = '|')
+        public static string ToDelimitedList<T>(this IEnumerable<T> list, char delimiter = '|')
         {
             if (list == null || !list.Any())
             {

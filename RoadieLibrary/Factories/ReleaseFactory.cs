@@ -817,6 +817,7 @@ namespace Roadie.Library.Factories
             };
         }
 
+        [Obsolete]
         public async Task<OperationResult<Data.Release>> Update(Data.Release release, IEnumerable<Data.Image> releaseImages, string originalReleaseFolder, string destinationFolder = null)
         {
             SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
@@ -832,7 +833,7 @@ namespace Roadie.Library.Factories
                 BeginDate = x.BeginDate,
                 EndDate = x.EndDate,
                 ReleaseId = release.Id,
-                LabelId = x.Label.Id,
+                LabelId = x.Label != null && x.Label.Id > 0 ? x.Label.Id : x.LabelId,
                 Status = x.Status,
                 RoadieId = x.RoadieId
             }).ToList();
