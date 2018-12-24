@@ -346,6 +346,16 @@ namespace Roadie.Api.Services
             return await base.ToggleArtistFavorite(artistId, user, isFavorite);
         }
 
+        public async Task<OperationResult<bool>> SetArtistDisliked(Guid artistId, User roadieUser, bool isDisliked)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.ToggleArtistDisliked(artistId, user, isDisliked);
+        }
+
         public async Task<OperationResult<short>> SetArtistRating(Guid artistId, User roadieUser, short rating)
         {
             var user = this.GetUser(roadieUser.UserId);
@@ -456,6 +466,16 @@ namespace Roadie.Api.Services
                 return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
             }
             return await base.ToggleReleaseFavorite(releaseId, user, isFavorite);
+        }
+
+        public async Task<OperationResult<bool>> SetReleaseDisliked(Guid releaseId, User roadieUser, bool isDisliked)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.ToggleReleaseDisliked(releaseId, user, isDisliked);
         }
 
         public async Task<OperationResult<short>> SetReleaseRating(Guid releaseId, User roadieUser, short rating)

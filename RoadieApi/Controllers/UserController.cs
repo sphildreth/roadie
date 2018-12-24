@@ -143,11 +143,37 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("setArtistDisliked/{artistId}/{isDisliked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetArtistDisliked(Guid artistId, bool isDisliked)
+        {
+            var result = await this.UserService.SetArtistDisliked(artistId, await this.CurrentUserModel(), isDisliked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
         [HttpPost("setReleaseFavorite/{releaseId}/{isFavorite}")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetReleaseFavorite(Guid releaseId, bool isFavorite)
         {
             var result = await this.UserService.SetReleaseFavorite(releaseId, await this.CurrentUserModel(), isFavorite);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setReleaseDisliked/{releaseId}/{isDisliked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetReleaseDisliked(Guid releaseId, bool isDisliked)
+        {
+            var result = await this.UserService.SetReleaseDisliked(releaseId, await this.CurrentUserModel(), isDisliked);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

@@ -426,7 +426,7 @@ namespace Roadie.Api.Services
             {
                 userArtist = new data.UserArtist
                 {
-                    IsFavorite = true,
+                    IsFavorite = isFavorite,
                     UserId = user.Id,
                     ArtistId = artist.Id
                 };
@@ -449,6 +449,77 @@ namespace Roadie.Api.Services
             };
         }
 
+        protected async Task<OperationResult<bool>> ToggleArtistDisliked(Guid artistId, ApplicationUser user, bool isDisliked)
+        {
+            var artist = this.GetArtist(artistId);
+            if (artist == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Artist Id [{ artistId }]");
+            }
+            var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == user.Id);
+            if (userArtist == null)
+            {
+                userArtist = new data.UserArtist
+                {
+                    IsDisliked = isDisliked,
+                    UserId = user.Id,
+                    ArtistId = artist.Id
+                };
+                this.DbContext.UserArtists.Add(userArtist);
+            }
+            else
+            {
+                userArtist.IsDisliked = isDisliked;
+                userArtist.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        protected async Task<OperationResult<bool>> ToggleReleaseDisliked(Guid releaseId, ApplicationUser user, bool isDisliked)
+        {
+            var release = this.GetRelease(releaseId);
+            if (release == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Release Id [{ releaseId }]");
+            }
+            var userRelease = this.DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == user.Id);
+            if (userRelease == null)
+            {
+                userRelease = new data.UserRelease
+                {
+                    IsDisliked = isDisliked,
+                    UserId = user.Id,
+                    ReleaseId = release.Id
+                };
+                this.DbContext.UserReleases.Add(userRelease);
+            }
+            else
+            {
+                userRelease.IsDisliked = isDisliked;
+                userRelease.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(release.CacheRegion);
+            this.CacheManager.ClearRegion(release.Artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
         protected async Task<OperationResult<bool>> ToggleReleaseFavorite(Guid releaseId, ApplicationUser user, bool isFavorite)
         {
             var release = this.GetRelease(releaseId);
@@ -461,7 +532,7 @@ namespace Roadie.Api.Services
             {
                 userRelease = new data.UserRelease
                 {
-                    IsFavorite = true,
+                    IsFavorite = isFavorite,
                     UserId = user.Id,
                     ReleaseId = release.Id
                 };
@@ -497,7 +568,7 @@ namespace Roadie.Api.Services
             {
                 userTrack = new data.UserTrack
                 {
-                    IsFavorite = true,
+                    IsFavorite = isFavorite,
                     UserId = user.Id,
                     TrackId = track.Id
                 };
