@@ -180,21 +180,21 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<User>> UserByIdAction(Guid id)
+        private Task<OperationResult<User>> UserByIdAction(Guid id)
         {
             var user = this.GetUser(id);
             if (user == null)
             {
-                return new OperationResult<User>(true, string.Format("User Not Found [{0}]", id));
+                return Task.FromResult(new OperationResult<User>(true, string.Format("User Not Found [{0}]", id)));
             }
-            return new OperationResult<User>
+            return Task.FromResult(new OperationResult<User>
             {
                 IsSuccess = true,
                 Data = user.Adapt<User>()
-            };
+            });
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<UserList>> List(PagedRequest request)
+        public Task<Library.Models.Pagination.PagedResult<UserList>> List(PagedRequest request)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -303,14 +303,14 @@ namespace Roadie.Api.Services
                 }
             }
             sw.Stop();
-            return new Library.Models.Pagination.PagedResult<UserList>
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<UserList>
             {
                 TotalCount = rowCount,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
-            };
+            });
         }
 
         public async Task<OperationResult<bool>> SetArtistBookmark(Guid artistId, User roadieUser, bool isBookmarked)

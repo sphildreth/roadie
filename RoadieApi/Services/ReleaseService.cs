@@ -155,7 +155,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
+        public Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -451,22 +451,22 @@ namespace Roadie.Api.Services
                 rows = rows.OrderBy(x => x.UserRating.Rating).ToArray();
             }
             sw.Stop();
-            return new Library.Models.Pagination.PagedResult<ReleaseList>
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<ReleaseList>
             {
                 TotalCount = rowCount,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
-            };
+            });
         }
 
-        public async Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id)
+        public Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id)
         {
             var release = this.GetRelease(id);
             if (release == null)
             {
-                return new FileOperationResult<byte[]>(true, string.Format("Release Not Found [{0}]", id));
+                return Task.FromResult(new FileOperationResult<byte[]>(true, string.Format("Release Not Found [{0}]", id)));
             }
 
             byte[] zipBytes = null;
@@ -478,7 +478,7 @@ namespace Roadie.Api.Services
                 if (!Directory.Exists(releaseFolder))
                 {
                     this.Logger.LogCritical($"Release Folder [{ releaseFolder }] not found for Release `{ release }`");
-                    return new FileOperationResult<byte[]>(true, string.Format("Release Folder Not Found [{0}]", id));
+                    return Task.FromResult(new FileOperationResult<byte[]>(true, string.Format("Release Folder Not Found [{0}]", id)));
                 }
                 var releaseFiles = Directory.GetFiles(releaseFolder);
                 using (MemoryStream zipStream = new MemoryStream())
@@ -510,12 +510,12 @@ namespace Roadie.Api.Services
             {
                 this.Logger.LogError(ex, "Error creating zip for Release `{0}`", release.ToString());
             }
-            return new FileOperationResult<byte[]>
+            return Task.FromResult(new FileOperationResult<byte[]>
             {
                 IsSuccess = zipBytes != null,
                 Data = zipBytes,
                 AdditionalData = new Dictionary<string, object> { { "ZipFileName", zipFileName } }
-            };
+            });
         }
 
         public async Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl)

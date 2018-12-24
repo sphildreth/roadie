@@ -27,7 +27,7 @@ namespace Roadie.Api.Services
         {
         }
 
-        public async Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDate()
+        public Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDate()
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -72,11 +72,11 @@ namespace Roadie.Api.Services
             }           
         
             sw.Stop();
-            return new OperationResult<IEnumerable<DateAndCount>>
+            return Task.FromResult(new OperationResult<IEnumerable<DateAndCount>>
             {
                 OperationTime = sw.ElapsedMilliseconds,
                 Data = result
-            };
+            });
         }
 
         public async Task<OperationResult<LibraryStats>> LibraryStatistics()

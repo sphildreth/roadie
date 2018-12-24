@@ -416,23 +416,23 @@ namespace Roadie.Api.Services
         /// <summary>
         /// Returns album notes, image URLs etc, using data from last.fm.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetAlbumInfo(subsonic.Request request, User roadieUser, subsonic.AlbumInfoVersion version)
+        public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetAlbumInfo(subsonic.Request request, User roadieUser, subsonic.AlbumInfoVersion version)
         {
             var releaseId = SafeParser.ToGuid(request.id);
             if (!releaseId.HasValue)
             {
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.id }]");
+                return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.id }]"));
             }
             var release = this.GetRelease(releaseId.Value);
             if (release == null)
             {
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.id }]");
+                return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.id }]"));
             }
             switch (version)
             {
                 case subsonic.AlbumInfoVersion.One:
                 case subsonic.AlbumInfoVersion.Two:
-                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>
                     {
                         IsSuccess = true,
                         Data = new subsonic.Response
@@ -450,10 +450,10 @@ namespace Roadie.Api.Services
                                 notes = release.Profile
                             }
                         }
-                    };
+                    });
 
                 default:
-                    return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.IncompatibleServerRestProtocolVersion, $"Unknown Album Info Version [{ request.Type}]");
+                    return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.IncompatibleServerRestProtocolVersion, $"Unknown Album Info Version [{ request.Type}]"));
             }
         }
 
@@ -566,23 +566,23 @@ namespace Roadie.Api.Services
         /// <summary>
         /// Returns artist info with biography, image URLs and similar artists, using data from last.fm.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetArtistInfo(subsonic.Request request, int? count, bool includeNotPresent, subsonic.ArtistInfoVersion version)
+        public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetArtistInfo(subsonic.Request request, int? count, bool includeNotPresent, subsonic.ArtistInfoVersion version)
         {
             var artistId = SafeParser.ToGuid(request.id);
             if (!artistId.HasValue)
             {
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid ArtistId [{ request.id }]");
+                return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid ArtistId [{ request.id }]"));
             }
             var artist = this.GetArtist(artistId.Value);
             if (artist == null)
             {
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid ArtistId [{ request.id }]");
+                return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid ArtistId [{ request.id }]"));
             }
 
             switch (version)
             {
                 case subsonic.ArtistInfoVersion.One:
-                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>
                     {
                         IsSuccess = true,
                         Data = new subsonic.Response
@@ -592,10 +592,10 @@ namespace Roadie.Api.Services
                             ItemElementName = subsonic.ItemChoiceType.artistInfo,
                             Item = this.SubsonicArtistInfoForArtist(artist)
                         }
-                    };
+                    });
 
                 case subsonic.ArtistInfoVersion.Two:
-                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>
                     {
                         IsSuccess = true,
                         Data = new subsonic.Response
@@ -605,10 +605,10 @@ namespace Roadie.Api.Services
                             ItemElementName = subsonic.ItemChoiceType.artistInfo2,
                             Item = this.SubsonicArtistInfo2InfoForArtist(artist)
                         }
-                    };
+                    });
 
                 default:
-                    return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.IncompatibleServerRestProtocolVersion, $"Unknown ArtistInfoVersion [{ version }]");
+                    return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.IncompatibleServerRestProtocolVersion, $"Unknown ArtistInfoVersion [{ version }]"));
             }
         }
 
@@ -738,7 +738,7 @@ namespace Roadie.Api.Services
         /// <summary>
         /// Returns all genres
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetGenres(subsonic.Request request)
+        public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetGenres(subsonic.Request request)
         {
             var genres = (from g in this.DbContext.Genres
                           let albumCount = (from rg in this.DbContext.ReleaseGenres
@@ -756,7 +756,7 @@ namespace Roadie.Api.Services
                               value = g.Name
                           }).OrderBy(x => x.value).ToArray();
 
-            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>
             {
                 IsSuccess = true,
                 Data = new subsonic.Response
@@ -769,7 +769,7 @@ namespace Roadie.Api.Services
                         genre = genres.ToArray()
                     }
                 }
-            };
+            });
         }
 
         /// <summary>
@@ -931,9 +931,9 @@ namespace Roadie.Api.Services
         /// <summary>
         /// Returns all configured top-level music folders. Takes no extra parameters.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetMusicFolders(subsonic.Request request)
+        public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetMusicFolders(subsonic.Request request)
         {
-            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>
             {
                 IsSuccess = true,
                 Data = new subsonic.Response
@@ -946,7 +946,7 @@ namespace Roadie.Api.Services
                         musicFolder = this.MusicFolders().ToArray()
                     }
                 }
-            };
+            });
         }
 
         /// <summary>
@@ -1011,11 +1011,11 @@ namespace Roadie.Api.Services
         }
 
         /// <summary>
-        /// Returns all Podcast channels the server subscribes to, and (optionally) their episodes. This method can also be used to return details for only one channel - refer to the id parameter. A typical use case for this method would be to first retrieve all channels without episodes, and then retrieve all episodes for the single channel the user selects.
-        /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPodcasts(subsonic.Request request)
+                              /// Returns all Podcast channels the server subscribes to, and (optionally) their episodes. This method can also be used to return details for only one channel - refer to the id parameter. A typical use case for this method would be to first retrieve all channels without episodes, and then retrieve all episodes for the single channel the user selects.
+                              /// </summary>
+        public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPodcasts(subsonic.Request request)
         {
-            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>
             {
                 IsSuccess = true,
                 Data = new subsonic.Response
@@ -1028,7 +1028,7 @@ namespace Roadie.Api.Services
                         channel = new subsonic.PodcastChannel[0]
                     }
                 }
-            };
+            });
         }
 
         /// <summary>
@@ -1059,14 +1059,14 @@ namespace Roadie.Api.Services
         /// <summary>
         /// Returns a random collection of songs from the given artist and similar artists, using data from last.fm. Typically used for artist radio features.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetSimliarSongs(subsonic.Request request, User roadieUser, subsonic.SimilarSongsVersion version, int? count = 50)
+        public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetSimliarSongs(subsonic.Request request, User roadieUser, subsonic.SimilarSongsVersion version, int? count = 50)
         {
             // TODO How to determine similiar songs? Perhaps by genre?
 
             switch (version)
             {
                 case subsonic.SimilarSongsVersion.One:
-                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>
                     {
                         IsSuccess = true,
                         Data = new subsonic.Response
@@ -1079,10 +1079,10 @@ namespace Roadie.Api.Services
                                 song = new subsonic.Child[0]
                             }
                         }
-                    };
+                    });
 
                 case subsonic.SimilarSongsVersion.Two:
-                    return new subsonic.SubsonicOperationResult<subsonic.Response>
+                    return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>
                     {
                         IsSuccess = true,
                         Data = new subsonic.Response
@@ -1095,10 +1095,10 @@ namespace Roadie.Api.Services
                                 song = new subsonic.Child[0]
                             }
                         }
-                    };
+                    });
 
                 default:
-                    return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.IncompatibleServerRestProtocolVersion, $"Unknown SimilarSongsVersion [{ version }]");
+                    return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.IncompatibleServerRestProtocolVersion, $"Unknown SimilarSongsVersion [{ version }]"));
             }
         }
 
@@ -1650,7 +1650,7 @@ namespace Roadie.Api.Services
         /// <summary>
         /// Returns the current visible (non-expired) chat messages.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetChatMessages(subsonic.Request request, User roadieUser, long? since)
+        public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetChatMessages(subsonic.Request request, User roadieUser, long? since)
         {            
             DateTime? messagesSince = since.HasValue ? (DateTime?)since.Value.FromUnixTime() : null;
             var chatMessages = (from cm in this.DbContext.ChatMessages
@@ -1664,7 +1664,7 @@ namespace Roadie.Api.Services
                                      username = u.UserName,
                                      time = cm.CreatedDate.ToUnixTime()
                                 }).ToArray();
-            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>
             {
                 IsSuccess = true,
                 Data = new subsonic.Response
@@ -1677,7 +1677,7 @@ namespace Roadie.Api.Services
                         chatMessage = chatMessages.ToArray()
                     }
                 }
-            };
+            });
         }
         
         /// <summary>

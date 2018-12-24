@@ -118,8 +118,7 @@ namespace Roadie.Library.Engines
                                 }
                                 if (genre != null && genre.Id > 0)
                                 {
-                                    sql = string.Format("INSERT INTO `artistGenreTable` (artistId, genreId) VALUES ({0}, {1});", artist.Id, genre.Id);
-                                    await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
+                                    await this.DbContext.Database.ExecuteSqlCommandAsync("INSERT INTO `artistGenreTable` (artistId, genreId) VALUES ({0}, {1});", artist.Id, genre.Id);
                                 }
                             }
                         }

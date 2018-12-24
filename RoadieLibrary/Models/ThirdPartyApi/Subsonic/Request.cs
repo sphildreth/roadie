@@ -194,8 +194,6 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 
         #region Paging and List Related
 
-        private Library.Models.Pagination.PagedRequest _pagedRequest;
-
         /// <summary>
         /// Maximum number of albums to return.
         /// </summary>

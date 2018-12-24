@@ -693,7 +693,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("star.view")]
         [HttpPost("star.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> Star(SubsonicRequest request, string[] albumId, string[] artistId)
+        public async Task<IActionResult> Star(SubsonicRequest request, [FromQueryAttribute]string[] albumId, [FromQueryAttribute] string[] artistId)
         {
             var authResult = await this.AuthenticateUser(request);
             if (authResult != null)
@@ -725,7 +725,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("unstar.view")]
         [HttpPost("unstar.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> UnStar(SubsonicRequest request, string[] albumId, string[] artistId)
+        public async Task<IActionResult> UnStar(SubsonicRequest request, [FromQueryAttribute]string[] albumId, [FromQueryAttribute]string[] artistId)
         {
             var authResult = await this.AuthenticateUser(request);
             if (authResult != null)
@@ -739,7 +739,7 @@ namespace Roadie.Api.Controllers
         [HttpGet("updatePlaylist.view")]
         [HttpPost("updatePlaylist.view")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> UpdatePlaylist(SubsonicRequest request, string playlistId, string name, string comment, bool? @public, string[] songIdToAdd, int[] songIndexToRemove)
+        public async Task<IActionResult> UpdatePlaylist(SubsonicRequest request, [FromQueryAttribute]string playlistId, [FromQueryAttribute]string name, [FromQueryAttribute]string comment, [FromQueryAttribute]bool? @public, [FromQueryAttribute]string[] songIdToAdd, [FromQueryAttribute]int[] songIndexToRemove)
         {
             var authResult = await this.AuthenticateUser(request);
             if (authResult != null)

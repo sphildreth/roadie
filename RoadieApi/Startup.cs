@@ -93,8 +93,8 @@ namespace Roadie.Api
                 builder
                 .AllowAnyOrigin()
                 .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
+                .AllowAnyMethod();
+              //  .AllowCredentials();
             }));
             
             services.AddSingleton<ITokenService, TokenService>();

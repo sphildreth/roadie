@@ -236,8 +236,7 @@ namespace Roadie.Library.Engines
                                 string sql = null;
                                 try
                                 {
-                                    sql = string.Format("INSERT INTO `releaseGenreTable` (releaseId, genreId) VALUES ({0}, {1});", release.Id, genre.Id);
-                                    await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
+                                    await this.DbContext.Database.ExecuteSqlCommandAsync("INSERT INTO `releaseGenreTable` (releaseId, genreId) VALUES ({0}, {1});", release.Id, genre.Id);
                                 }
                                 catch (Exception ex)
                                 {

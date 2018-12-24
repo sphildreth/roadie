@@ -20,7 +20,6 @@ namespace Roadie.Library.Data
         public bool? IsLocked { get; set; }
 
         [Column("lastUpdated")]
-        [Required]
         public DateTime? LastUpdated { get; set; }
 
         [Column("RoadieId")]

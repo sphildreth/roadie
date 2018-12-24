@@ -82,7 +82,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<Track>> TrackByIdAction(Guid id, IEnumerable<string> includes)
+        private Task<OperationResult<Track>> TrackByIdAction(Guid id, IEnumerable<string> includes)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
@@ -91,7 +91,7 @@ namespace Roadie.Api.Services
 
             if (track == null)
             {
-                return new OperationResult<Track>(true, string.Format("Track Not Found [{0}]", id));
+                return Task.FromResult(new OperationResult<Track>(true, string.Format("Track Not Found [{0}]", id)));
             }
             var result = track.Adapt<Track>();
             result.PlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{track.RoadieId}.mp3";
@@ -155,12 +155,12 @@ namespace Roadie.Api.Services
 
 
             sw.Stop();
-            return new OperationResult<Track>
+            return Task.FromResult(new OperationResult<Track>
             {
                 Data = result,
                 IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
-            };
+            });
         }
 
 
@@ -216,7 +216,7 @@ namespace Roadie.Api.Services
             return result;
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<TrackList>> List(PagedRequest request, User roadieUser, bool? doRandomize = false, Guid? releaseId = null)
+        public Task<Library.Models.Pagination.PagedResult<TrackList>> List(PagedRequest request, User roadieUser, bool? doRandomize = false, Guid? releaseId = null)
         {
             try
             {
@@ -226,6 +226,11 @@ namespace Roadie.Api.Services
                 sw.Start();
 
                 int? rowCount = null;
+
+                if(!string.IsNullOrEmpty(request.Sort))
+                {
+                    request.Sort = request.Sort.Replace("Release.Text", "Release.Release.Text");
+                }
 
                 IQueryable<int> favoriteTrackIds = (new int[0]).AsQueryable();
                 if (request.FilterFavoriteOnly)
@@ -494,22 +499,22 @@ namespace Roadie.Api.Services
                 }
 
                 sw.Stop();
-                return new Library.Models.Pagination.PagedResult<TrackList>
+                return Task.FromResult(new Library.Models.Pagination.PagedResult<TrackList>
                 {
                     TotalCount = rowCount ?? 0,
                     CurrentPage = request.PageValue,
                     TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                     OperationTime = sw.ElapsedMilliseconds,
                     Rows = rows
-                };
+                });
             }
             catch (Exception ex)
             {
                 this.Logger.LogError(ex, "Error In List, Request [{0}], User [{1}]", JsonConvert.SerializeObject(request), roadieUser);
-                return new Library.Models.Pagination.PagedResult<TrackList>
+                return Task.FromResult(new Library.Models.Pagination.PagedResult<TrackList>
                 {                    
                     Message = "An Error has occured" 
-                };
+                });
             }
 
         }

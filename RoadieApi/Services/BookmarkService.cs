@@ -31,7 +31,7 @@ namespace Roadie.Api.Services
         {
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<BookmarkList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, BookmarkType? filterType = null)
+        public Task<Library.Models.Pagination.PagedResult<BookmarkList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, BookmarkType? filterType = null)
         {
             
             var sw = new Stopwatch();
@@ -157,14 +157,14 @@ namespace Roadie.Api.Services
                 }
             };
             sw.Stop();
-            return new Library.Models.Pagination.PagedResult<BookmarkList>
-            {                
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<BookmarkList>
+            {
                 TotalCount = rowCount,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
-            };
+            });
         }
     }
 }

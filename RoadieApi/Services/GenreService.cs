@@ -28,7 +28,7 @@ namespace Roadie.Api.Services
         {
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<GenreList>> List(User roadieUser, PagedRequest request)
+        public Task<Library.Models.Pagination.PagedResult<GenreList>> List(User roadieUser, PagedRequest request)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -58,14 +58,14 @@ namespace Roadie.Api.Services
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Genre.Text", "ASC" } }) : request.OrderValue(null);
             rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             sw.Stop();
-            return new Library.Models.Pagination.PagedResult<GenreList>
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<GenreList>
             {
                 TotalCount = rowCount,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
-            };
+            });
         }
     }
 }

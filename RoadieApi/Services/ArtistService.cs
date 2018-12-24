@@ -24,7 +24,6 @@ using data = Roadie.Library.Data;
 
 namespace Roadie.Api.Services
 {
-#pragma warning disable 1998
 
     public class ArtistService : ServiceBase, IArtistService
     {
@@ -350,7 +349,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true)
+        public Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -450,14 +449,14 @@ namespace Roadie.Api.Services
                 }
             }
             sw.Stop();
-            return new Library.Models.Pagination.PagedResult<ArtistList>
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<ArtistList>
             {
                 TotalCount = rowCount,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
-            };
+            });
         }
     }
 }

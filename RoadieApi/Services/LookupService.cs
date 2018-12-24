@@ -29,103 +29,103 @@ namespace Roadie.Api.Services
         {
         }
 
-        public async Task<OperationResult<IEnumerable<DataToken>>> ArtistTypes()
+        public Task<OperationResult<IEnumerable<DataToken>>> ArtistTypes()
         {
             var sw = Stopwatch.StartNew();
-            return new OperationResult<IEnumerable<DataToken>>
+            return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
                 Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.ArtistType)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
-            };
+            });
         }
 
-        public async Task<OperationResult<IEnumerable<DataToken>>> BandStatus()
+        public Task<OperationResult<IEnumerable<DataToken>>> BandStatus()
         {
             var sw = Stopwatch.StartNew();
-            return new OperationResult<IEnumerable<DataToken>>
+            return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
                 Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.BandStatus)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
-            };
+            });
         }
 
-        public async Task<OperationResult<IEnumerable<DataToken>>> BookmarkTypes()
+        public Task<OperationResult<IEnumerable<DataToken>>> BookmarkTypes()
         {
             var sw = Stopwatch.StartNew();
-            return new OperationResult<IEnumerable<DataToken>>
+            return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
                 Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.BookmarkType)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
-            };
+            });
         }
 
-        public async Task<OperationResult<IEnumerable<DataToken>>> CollectionTypes()
+        public Task<OperationResult<IEnumerable<DataToken>>> CollectionTypes()
         {
             var sw = Stopwatch.StartNew();
-            return new OperationResult<IEnumerable<DataToken>>
+            return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
                 Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.CollectionType)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
-            };
+            });
         }
 
-        public async Task<OperationResult<IEnumerable<DataToken>>> LibraryStatus()
+        public Task<OperationResult<IEnumerable<DataToken>>> LibraryStatus()
         {
             var sw = Stopwatch.StartNew();
-            return new OperationResult<IEnumerable<DataToken>>
+            return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
                 Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.LibraryStatus)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
-            };
+            });
         }
 
-        public async Task<OperationResult<IEnumerable<DataToken>>> ReleaseTypes()
+        public Task<OperationResult<IEnumerable<DataToken>>> ReleaseTypes()
         {
             var sw = Stopwatch.StartNew();
-            return new OperationResult<IEnumerable<DataToken>>
+            return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
                 Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.ReleaseType)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
-            };
+            });
         }
 
-        public async Task<OperationResult<IEnumerable<DataToken>>> RequestStatus()
+        public Task<OperationResult<IEnumerable<DataToken>>> RequestStatus()
         {
             var sw = Stopwatch.StartNew();
-            return new OperationResult<IEnumerable<DataToken>>
+            return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
                 Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.RequestStatus)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
-            };
+            });
         }
 
-        public async Task<OperationResult<IEnumerable<DataToken>>> Status()
+        public Task<OperationResult<IEnumerable<DataToken>>> Status()
         {
             var sw = Stopwatch.StartNew();
-            return new OperationResult<IEnumerable<DataToken>>
+            return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
                 Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.Statuses)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
-            };
+            });
         }
 
-        public async Task<OperationResult<IEnumerable<DataToken>>> QueMessageTypes()
+        public Task<OperationResult<IEnumerable<DataToken>>> QueMessageTypes()
         {
             var sw = Stopwatch.StartNew();
-            return new OperationResult<IEnumerable<DataToken>>
+            return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
                 Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.QueMessageType)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
-            };
+            });
         }
 
         private IEnumerable<DataToken> EnumToDataTokens(Type ee)

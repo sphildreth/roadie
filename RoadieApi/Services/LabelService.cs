@@ -67,7 +67,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<Label>> LabelByIdAction(Guid id, IEnumerable<string> includes = null)
+        private Task<OperationResult<Label>> LabelByIdAction(Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
@@ -76,7 +76,7 @@ namespace Roadie.Api.Services
 
             if (label == null)
             {
-                return new OperationResult<Label>(true, string.Format("Label Not Found [{0}]", id));
+                return Task.FromResult(new OperationResult<Label>(true, string.Format("Label Not Found [{0}]", id)));
             }
 
             var result = label.Adapt<Label>();
@@ -115,17 +115,17 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            return new OperationResult<Label>
+            return Task.FromResult(new OperationResult<Label>
             {
                 Data = result,
                 IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
-            };
+            });
 
         }
 
 
-        public async Task<Library.Models.Pagination.PagedResult<LabelList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
+        public Task<Library.Models.Pagination.PagedResult<LabelList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -178,14 +178,14 @@ namespace Roadie.Api.Services
                  rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }
             sw.Stop();
-            return new Library.Models.Pagination.PagedResult<LabelList>
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<LabelList>
             {
                 TotalCount = rowCount,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
-            };
+            });
         }
     }
 }

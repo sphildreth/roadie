@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.SearchEngines.Imaging
 {
-    #pragma warning disable 1998
     public class ITunesSearchEngine : ImageSearchEngineBase, IArtistSearchEngine, IReleaseSearchEngine, IITunesSearchEngine
     {
         private readonly ICacheManager _cacheManager = null;
@@ -100,6 +99,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             };
         }
 
+        #pragma warning disable CS1998
         public override async Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount)
         {
             var request = this.BuildRequest(query, resultsCount);

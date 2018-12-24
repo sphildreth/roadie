@@ -37,7 +37,7 @@ namespace Roadie.Api.Services
             this.PlayActivityHub = playHubContext;
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<PlayActivityList>> List(PagedRequest request, User roadieUser = null, DateTime? newerThan = null)
+        public Task<Library.Models.Pagination.PagedResult<PlayActivityList>> List(PagedRequest request, User roadieUser = null, DateTime? newerThan = null)
         {
             try
             {
@@ -99,20 +99,20 @@ namespace Roadie.Api.Services
                 var rowCount = result.Count();
                 var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
                 sw.Stop();
-                return new Library.Models.Pagination.PagedResult<PlayActivityList>
+                return Task.FromResult(new Library.Models.Pagination.PagedResult<PlayActivityList>
                 {
                     TotalCount = rowCount,
                     CurrentPage = request.PageValue,
                     TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                     OperationTime = sw.ElapsedMilliseconds,
                     Rows = rows
-                };
+                });
             }
             catch (Exception ex)
             {
                 this.Logger.LogError(ex);
             }
-            return new Library.Models.Pagination.PagedResult<PlayActivityList>();
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<PlayActivityList>());
         }
 
         public async Task<OperationResult<PlayActivityList>> CreatePlayActivity(User roadieUser, TrackStreamInfo streamInfo)

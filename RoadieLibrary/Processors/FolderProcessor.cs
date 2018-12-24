@@ -132,9 +132,9 @@ namespace Roadie.Library.Processors
         /// <summary>
         /// Perform any operations to the given folder before processing
         /// </summary>
-        private async Task<bool> PreProcessFolder(DirectoryInfo inboundFolder, bool doJustInfo = false)
+        private Task<bool> PreProcessFolder(DirectoryInfo inboundFolder, bool doJustInfo = false)
         {
-            return true;
+            return Task.FromResult(true);
         }
     }
 }

@@ -67,7 +67,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<Collection>> CollectionByIdAction(Guid id, IEnumerable<string> includes = null)
+        private Task<OperationResult<Collection>> CollectionByIdAction(Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
@@ -76,7 +76,7 @@ namespace Roadie.Api.Services
 
             if (collection == null)
             {
-                return new OperationResult<Collection>(true, string.Format("Collection Not Found [{0}]", id));
+                return Task.FromResult(new OperationResult<Collection>(true, string.Format("Collection Not Found [{0}]", id)));
             }
 
             var result = collection.Adapt<Collection>();
@@ -144,17 +144,17 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            return new OperationResult<Collection>
+            return Task.FromResult(new OperationResult<Collection>
             {
                 Data = result,
                 IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
-            };
+            });
 
         }
 
 
-        public async Task<Library.Models.Pagination.PagedResult<CollectionList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null, Guid? artistId = null)
+        public Task<Library.Models.Pagination.PagedResult<CollectionList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null, Guid? artistId = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -193,14 +193,14 @@ namespace Roadie.Api.Services
             var rowCount = result.Count();
             var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             sw.Stop();
-            return new Library.Models.Pagination.PagedResult<CollectionList>
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<CollectionList>
             {
                 TotalCount = rowCount,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
-            };
+            });
         }
     }
 }
