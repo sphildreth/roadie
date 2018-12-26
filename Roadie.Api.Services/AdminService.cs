@@ -329,7 +329,7 @@ namespace Roadie.Api.Services
 
         }
 
-        public async Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId)
+        public async Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId, bool doDeleteFiles = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -342,7 +342,7 @@ namespace Roadie.Api.Services
             }
             try
             {
-                this.DbContext.Releases.RemoveRange(this.DbContext.Releases.Where(x => x.ArtistId == artist.Id));
+                await this.ReleaseFactory.DeleteReleases(this.DbContext.Releases.Where(x => x.ArtistId == artist.Id).Select(x => x.RoadieId).ToArray(), doDeleteFiles);
                 await this.DbContext.SaveChangesAsync();
 
             }

@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -8,6 +9,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
+using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
@@ -17,6 +19,7 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
@@ -457,6 +460,69 @@ namespace Roadie.Api.Services
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
             });
+        }
+
+        public async Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl)
+        {
+            return await this.SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
+        }
+
+        public async Task<OperationResult<Library.Models.Image>> UploadArtistImage(User user, Guid id, IFormFile file)
+        {
+            var bytes = new byte[0];
+            using (var ms = new MemoryStream())
+            {
+                file.CopyTo(ms);
+                bytes = ms.ToArray();
+            }
+            return await this.SaveImageBytes(user, id, bytes);
+        }
+
+        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == id);
+            if (artist == null)
+            {
+                return new OperationResult<Library.Models.Image>(true, string.Format("Artist Not Found [{0}]", id));
+            }
+            try
+            {
+                var now = DateTime.UtcNow;
+                artist.Thumbnail = imageBytes;
+                if (artist.Thumbnail != null)
+                {
+                    // Ensure is jpeg first
+                    artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
+
+                    // Save unaltered image to artist file
+                    var coverFileName = Path.Combine(artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder), "artist.jpg");
+                    File.WriteAllBytes(coverFileName, artist.Thumbnail);
+
+                    // Resize to store in database as thumbnail
+                    artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                }
+                artist.LastUpdated = now;
+                await this.DbContext.SaveChangesAsync();
+                this.CacheManager.ClearRegion(artist.CacheRegion);
+                this.Logger.LogInformation($"SaveImageBytes `{ artist }` By User `{ user }`");
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+
+            return new OperationResult<Library.Models.Image>
+            {
+                IsSuccess = !errors.Any(),
+                Data = this.MakeArtistThumbnailImage(id),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
         }
     }
 }

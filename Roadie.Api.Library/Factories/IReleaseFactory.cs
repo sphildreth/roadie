@@ -12,7 +12,7 @@ namespace Roadie.Library.Factories
 
         Task<OperationResult<bool>> CheckAndChangeReleaseTitle(Release release, string oldReleaseFolder, string destinationFolder = null);
 
-        Task<OperationResult<bool>> Delete(Release release, bool doDeleteFiles = false);
+        Task<OperationResult<bool>> Delete(Release release, bool doDeleteFiles = false, bool doUpdateArtistCounts = true);
 
         Task<OperationResult<bool>> DeleteReleases(IEnumerable<Guid> releaseIds, bool doDeleteFiles = false);
 

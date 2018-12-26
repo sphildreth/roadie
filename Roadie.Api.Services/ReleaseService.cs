@@ -929,7 +929,7 @@ namespace Roadie.Api.Services
                 release.LastUpdated = now;
                 await this.DbContext.SaveChangesAsync();
                 this.CacheManager.ClearRegion(release.CacheRegion);
-                this.Logger.LogInformation($"UploadReleaseImage `{ release }` By User `{ user }`");
+                this.Logger.LogInformation($"SaveImageBytes `{ release }` By User `{ user }`");
             }
             catch (Exception ex)
             {

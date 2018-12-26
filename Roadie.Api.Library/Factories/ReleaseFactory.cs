@@ -133,7 +133,7 @@ namespace Roadie.Library.Factories
             };
         }
 
-        public async Task<OperationResult<bool>> Delete(Data.Release release, bool doDeleteFiles = false)
+        public async Task<OperationResult<bool>> Delete(Data.Release release, bool doDeleteFiles = false, bool doUpdateArtistCounts = true)
         {
             SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
             SimpleContract.Requires<ArgumentNullException>(release.Artist != null, "Invalid Artist");
@@ -177,6 +177,7 @@ namespace Roadie.Library.Factories
                     this.Logger.LogError(ex);
                 }
             }
+            var releaseLabelIds = this.DbContext.ReleaseLabels.Where(x => x.ReleaseId == release.Id).Select(x => x.LabelId).ToArray();
             this.DbContext.Releases.Remove(release);
             var i = await this.DbContext.SaveChangesAsync();
             result = true;
@@ -188,6 +189,18 @@ namespace Roadie.Library.Factories
             catch (Exception ex)
             {
                 this.Logger.LogError(ex, string.Format("Error Clearing Cache For Release [{0}] Exception [{1}]", release.Id, ex.Serialize()));
+            }
+            var now = DateTime.UtcNow;
+            if (doUpdateArtistCounts)
+            {
+                await base.UpdateArtistCounts(release.Artist.Id, now);
+            }
+            if (releaseLabelIds != null && releaseLabelIds.Any())
+            {
+                foreach(var releaseLabelId in releaseLabelIds)
+                {
+                    await base.UpdateLabelCounts(releaseLabelId, now);
+                }
             }
             sw.Stop();
             return new OperationResult<bool>
@@ -205,17 +218,23 @@ namespace Roadie.Library.Factories
             var sw = new Stopwatch();
             sw.Start();
 
+            var now = DateTime.UtcNow;
             var releases = (from r in this.DbContext.Releases.Include(r => r.Artist)
                             where releaseIds.Contains(r.RoadieId)
                             select r
                             ).ToArray();
 
+            var artistIds = releases.Select(x => x.ArtistId).Distinct().ToArray();
+
             foreach (var release in releases)
             {
-                var defaultResult = await this.Delete(release, doDeleteFiles);
+                var defaultResult = await this.Delete(release, doDeleteFiles, false);
                 result = result & defaultResult.IsSuccess;
             }
-
+            foreach(var artistId in artistIds)
+            {
+                await base.UpdateArtistCounts(artistId, now);
+            }
             sw.Stop();
 
             return new OperationResult<bool>
