@@ -17,5 +17,6 @@ namespace Roadie.Api.Services
         Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false);
         Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles);
         Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId);
+        Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId);
     }
 }

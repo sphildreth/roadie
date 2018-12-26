@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
+    <AssemblyName>Roadie.Api.Library</AssemblyName>
+    <RootNamespace>Roadie.Api.Library</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

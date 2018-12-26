@@ -329,6 +329,40 @@ namespace Roadie.Api.Services
 
         }
 
+        public async Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
+            if (artist == null)
+            {
+                await this.LogAndPublish($"DeleteArtistReleases Unknown Artist [{ artistId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Artist Not Found [{ artistId }]");
+            }
+            try
+            {
+                this.DbContext.Releases.RemoveRange(this.DbContext.Releases.Where(x => x.ArtistId == artist.Id));
+                await this.DbContext.SaveChangesAsync();
+
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                await this.LogAndPublish("Error deleting artist.");
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"DeleteArtistReleases `{ artist }`, By User `{user }`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
         public async Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId)
         {
             var sw = new Stopwatch();

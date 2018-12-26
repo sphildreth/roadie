@@ -107,5 +107,17 @@ namespace Roadie.Api.Controllers
             }
             return Ok(result);
         }
+
+        [HttpPost("delete/artist/releases/{id}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> DeleteArtistReleases(Guid id)
+        {
+            var result = await this.AdminService.DeleteArtistReleases(await this.UserManager.GetUserAsync(User), id);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
     }
 }
