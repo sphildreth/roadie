@@ -479,6 +479,52 @@ namespace Roadie.Api.Services
                             };
                         }
                     }
+
+                    var releaseIds = rows.Select(x => x.Release.DatabaseId).Distinct().ToArray();
+                    var userReleaseRatings = (from ur in this.DbContext.UserReleases
+                                              where releaseIds.Contains(ur.ReleaseId)
+                                              select ur).ToArray();
+
+                    foreach(var userReleaseRating in userReleaseRatings)
+                    {
+                        foreach(var row in rows.Where(x => x.Release.DatabaseId == userReleaseRating.ReleaseId))
+                        {
+                            row.Release.UserRating = userReleaseRating.Adapt<UserRelease>();
+                        }
+                    }
+
+                    var artistIds = rows.Select(x => x.Artist.DatabaseId).ToArray();
+                    if (artistIds != null && artistIds.Any())
+                    {
+                        var userArtistRatings = (from ua in this.DbContext.UserArtists
+                                                 where ua.UserId == roadieUser.Id
+                                                 where artistIds.Contains(ua.ArtistId)
+                                                 select ua).ToArray();
+                        foreach (var userArtistRating in userArtistRatings)
+                        {
+                            foreach (var artistTrack in rows.Where(x => x.Artist.DatabaseId == userArtistRating.ArtistId))
+                            {
+                                artistTrack.Artist.UserRating = userArtistRating.Adapt<UserArtist>();
+                            }
+                        }
+                    }
+
+                    var trackArtistIds = rows.Where(x => x.TrackArtist != null).Select(x => x.TrackArtist.DatabaseId).ToArray();
+                    if (trackArtistIds != null && trackArtistIds.Any())
+                    {
+                        var userTrackArtistRatings = (from ua in this.DbContext.UserArtists
+                                                      where ua.UserId == roadieUser.Id
+                                                      where trackArtistIds.Contains(ua.ArtistId)
+                                                      select ua).ToArray();
+                        foreach (var userTrackArtistRating in userTrackArtistRatings)
+                        {
+                            foreach (var artistTrack in rows.Where(x => x.TrackArtist.DatabaseId == userTrackArtistRating.ArtistId))
+                            {
+                                artistTrack.Artist.UserRating = userTrackArtistRating.Adapt<UserArtist>();
+                            }
+                        }
+                    }
+
                 }
 
                 if (rows.Any())
