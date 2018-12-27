@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Roadie.Library.Enums;
 using Roadie.Library.Identity;
-using Roadie.Library.Models.Releases;
 using System;
 
 namespace Roadie.Library.Data
@@ -30,17 +28,16 @@ namespace Roadie.Library.Data
         public DbSet<Submission> Submissions { get; set; }
         public DbSet<Track> Tracks { get; set; }
         public DbSet<UserArtist> UserArtists { get; set; }
-        public DbSet<UserRelease> UserReleases { get; set; }
-        public DbSet<ApplicationUser> Users { get; set; }
-        public DbSet<ApplicationRole> UserRoles { get; set; }
-        public DbSet<UserTrack> UserTracks { get; set; }
         public DbSet<UserQue> UserQues { get; set; }
+        public DbSet<UserRelease> UserReleases { get; set; }
+        public DbSet<ApplicationRole> UserRoles { get; set; }
+        public DbSet<ApplicationUser> Users { get; set; }
+        public DbSet<UserTrack> UserTracks { get; set; }
 
         public RoadieDbContext(DbContextOptions<RoadieDbContext> options)
             : base(options)
         {
         }
-                          
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -77,6 +74,14 @@ namespace Roadie.Library.Data
                     v => v.ToString(),
                     v => string.IsNullOrEmpty(v) ? CollectionType.Unknown : (CollectionType)Enum.Parse(typeof(CollectionType), v))
                 .HasDefaultValue(CollectionType.Unknown);
+
+            builder
+                .Entity<Artist>()
+                .Property(e => e.BandStatus)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => string.IsNullOrEmpty(v) ? BandStatus.Unknown : (BandStatus)Enum.Parse(typeof(BandStatus), v))
+                .HasDefaultValue(BandStatus.Unknown);
 
             //builder
             //    .Entity<Bookmark>()
@@ -154,27 +159,10 @@ namespace Roadie.Library.Data
                 .WithMany(u => u.Bookmarks)
                 .HasForeignKey(b => b.UserId);
 
-            builder.Entity<ArtistAssociation>()
-                .HasOne(aa => aa.Artist)
-                .WithMany(a => a.AssociatedArtists)
-                .HasForeignKey(aa => aa.AssociatedArtistId);
-
             //builder.Entity<Track>()
             //    .HasOne(t => t.TrackArtist)
             //    .WithMany(a => a.Tracks)
             //    .HasForeignKey(t => t.ArtistId);
-
-
-            //// I dont understand why the "1" but without this self join generates "1" based columns on the selectd and blows up ef.
-            //builder.Entity<Artist>()
-            //    .HasMany(e => e.AssociatedArtists)
-            //    .WithOne(e => e.Artist)
-            //    .HasForeignKey(e => e.ArtistId);
-
-            //builder.Entity<Artist>()
-            //    .HasMany(e => e.AssociatedArtists1)
-            //    .WithOne(e => e.AssociatedArtist)
-            //    .HasForeignKey(e => e.AssociatedArtistId);
         }
     }
 }

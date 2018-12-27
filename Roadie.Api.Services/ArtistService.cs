@@ -7,9 +7,16 @@ using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Engines;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
+using Roadie.Library.Factories;
 using Roadie.Library.Imaging;
+using Roadie.Library.MetaData.Audio;
+using Roadie.Library.MetaData.FileName;
+using Roadie.Library.MetaData.ID3Tags;
+using Roadie.Library.MetaData.LastFm;
+using mb = Roadie.Library.MetaData.MusicBrainz;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
@@ -24,6 +31,7 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
+using Roadie.Library.Processors;
 
 namespace Roadie.Api.Services
 {
@@ -34,21 +42,45 @@ namespace Roadie.Api.Services
         private IPlaylistService PlaylistService { get; } = null;
         private IBookmarkService BookmarkService { get; } = null;
 
+        private IArtistLookupEngine ArtistLookupEngine { get; }
+        private IAudioMetaDataHelper AudioMetaDataHelper { get; }
+        private IFileNameHelper FileNameHelper { get; }
+        private IID3TagsHelper ID3TagsHelper { get; }
+        private IImageFactory ImageFactory { get; }
+        private ILabelFactory LabelFactory { get; }
+        private ILabelLookupEngine LabelLookupEngine { get; }
+        private ILastFmHelper LastFmHelper { get; }
+        private mb.IMusicBrainzProvider MusicBrainzProvider { get; }
+        private IReleaseFactory ReleaseFactory { get; }
+        private IArtistFactory ArtistFactory { get; }
+        private IReleaseLookupEngine ReleaseLookupEngine { get; }
+
         public ArtistService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
                              IHttpContext httpContext,
-                             data.IRoadieDbContext context,
+                             data.IRoadieDbContext dbContext,
                              ICacheManager cacheManager,
                              ILogger<ArtistService> logger,
                              ICollectionService collectionService,
                              IPlaylistService playlistService,
                              IBookmarkService bookmarkService
             )
-            : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
+            : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
             this.CollectionService = collectionService;
             this.PlaylistService = playlistService;
             this.BookmarkService = bookmarkService;
+
+            this.ArtistLookupEngine = new ArtistLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);
+            this.LabelLookupEngine = new LabelLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);
+            this.ReleaseLookupEngine = new ReleaseLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.LabelLookupEngine);
+            this.ImageFactory = new ImageFactory(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
+            this.LabelFactory = new LabelFactory(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
+            this.AudioMetaDataHelper = new AudioMetaDataHelper(configuration, httpEncoder, dbContext, this.MusicBrainzProvider, this.LastFmHelper, cacheManager,
+                                                               logger, this.ArtistLookupEngine, this.ImageFactory, this.FileNameHelper, this.ID3TagsHelper);
+
+            this.ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.LabelFactory, this.AudioMetaDataHelper, this.ReleaseLookupEngine);
+            this.ArtistFactory = new ArtistFactory(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
         }
 
         public async Task<OperationResult<Artist>> ById(User roadieUser, Guid id, IEnumerable<string> includes)
@@ -272,6 +304,7 @@ namespace Roadie.Api.Services
                                              }).ToArray();
 
                     result.AssociatedArtists = associatedArtists.Union(associatedWithArtists).OrderBy(x => x.SortName);
+                    result.AssociatedArtistsTokens = result.AssociatedArtists.Select(x => x.Artist).ToArray();
                     tsw.Stop();
                     timings.Add("associatedartists", tsw.ElapsedMilliseconds);
 
@@ -477,6 +510,282 @@ namespace Roadie.Api.Services
             }
             return await this.SaveImageBytes(user, id, bytes);
         }
+
+        public async Task<OperationResult<bool>> UpdateArtist(User user, Artist model)
+        {
+            var didRenameArtist = false;
+            var didChangeThumbnail = false;
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var artist = this.DbContext.Artists
+                                        .Include(x => x.Genres)
+                                        .Include("Genres.Genre")
+                                        .FirstOrDefault(x => x.RoadieId == model.Id);
+            if (artist == null)
+            {
+                return new OperationResult<bool>(true, string.Format("Artist Not Found [{0}]", model.Id));
+            }
+            try
+            {
+                var now = DateTime.UtcNow;
+                var originalArtistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                artist.AlternateNames = model.AlternateNamesList.ToDelimitedList();
+                artist.AmgId = model.AmgId;
+                artist.BeginDate = model.BeginDate;
+                artist.BioContext = model.BioContext;
+                artist.BirthDate = model.BirthDate;
+                artist.DiscogsId = model.DiscogsId;
+                artist.EndDate = model.EndDate;
+                artist.IsLocked = model.IsLocked;
+                artist.ISNIList = model.ISNIList.ToDelimitedList();
+                artist.ITunesId = model.ITunesId;
+                artist.MusicBrainzId = model.MusicBrainzId;
+                artist.Name = model.Name;
+                artist.Profile = model.Profile;
+                artist.Rating = model.Rating;
+                artist.RealName = model.RealName;
+                artist.SortName = model.SortName;
+                artist.SpotifyId = model.SpotifyId;
+                artist.Status = SafeParser.ToEnum<Statuses>(model.Status);
+                artist.Tags = model.TagsList.ToDelimitedList();
+                artist.URLs = model.URLsList.ToDelimitedList();
+
+                var newArtistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                if (!newArtistFolder.Equals(originalArtistFolder, StringComparison.OrdinalIgnoreCase))
+                {
+                    didRenameArtist = true;
+
+                    // Rename artist folder to reflect new artist name
+                    this.Logger.LogTrace("Moving Artist From Folder [{0}] To  [{1}]", originalArtistFolder, newArtistFolder);
+                    Directory.Move(originalArtistFolder, newArtistFolder);
+
+                    // Update artist tracks to have new artist name in ID3 metadata
+                    foreach (var mp3 in Directory.GetFiles(newArtistFolder, "*.mp3", SearchOption.AllDirectories))
+                    {
+                        var trackFileInfo = new FileInfo(mp3);
+                        var audioMetaData = await this.AudioMetaDataHelper.GetInfo(trackFileInfo);
+                        if (audioMetaData != null)
+                        {
+                            audioMetaData.Artist = artist.Name;
+                            this.AudioMetaDataHelper.WriteTags(audioMetaData, trackFileInfo);
+                        }
+                    }
+
+                }
+                var artistImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
+                if (artistImage != null)
+                {
+                    // Ensure is jpeg first
+                    artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artistImage);
+
+                    // Save unaltered image to cover file
+                    var artistImageName = Path.Combine(artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder), "artist.jpg");
+                    File.WriteAllBytes(artistImageName, artist.Thumbnail);
+
+                    // Resize to store in database as thumbnail
+                    artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                    didChangeThumbnail = true;
+                }
+
+                if (model.Genres != null && model.Genres.Any())
+                {
+                    // Remove existing Genres not in model list
+                    foreach (var genre in artist.Genres.ToList())
+                    {
+                        var doesExistInModel = model.Genres.Any(x => SafeParser.ToGuid(x.Value) == genre.Genre.RoadieId);
+                        if (!doesExistInModel)
+                        {
+                            artist.Genres.Remove(genre);
+                        }
+                    }
+
+                    // Add new Genres in model not in data
+                    foreach (var genre in model.Genres)
+                    {
+                        var genreId = SafeParser.ToGuid(genre.Value);
+                        var doesExistInData = artist.Genres.Any(x => x.Genre.RoadieId == genreId);
+                        if (!doesExistInData)
+                        {
+                            var g = this.DbContext.Genres.FirstOrDefault(x => x.RoadieId == genreId);
+                            if (g != null)
+                            {
+                                artist.Genres.Add(new data.ArtistGenre
+                                {
+                                    ArtistId = artist.Id,
+                                    GenreId = g.Id,
+                                    Genre = g
+                                });
+                            }
+                        }
+                    }
+                }
+                else if (model.Genres == null || !model.Genres.Any())
+                {
+                    artist.Genres.Clear();
+                }
+
+                if (model.AssociatedArtistsTokens != null && model.AssociatedArtistsTokens.Any())
+                {
+                    var associatedArtists = this.DbContext.ArtistAssociations.Include(x => x.AssociatedArtist).Where(x => x.ArtistId == artist.Id).ToList();
+
+                    // Remove existing AssociatedArtists not in model list
+                    foreach (var associatedArtist in associatedArtists)
+                    {
+                        var doesExistInModel = model.AssociatedArtistsTokens.Any(x => SafeParser.ToGuid(x.Value) == associatedArtist.AssociatedArtist.RoadieId);
+                        if (!doesExistInModel)
+                        {
+                            this.DbContext.ArtistAssociations.Remove(associatedArtist);
+                        }
+                    }
+
+                    // Add new AssociatedArtists in model not in data
+                    foreach (var associatedArtist in model.AssociatedArtistsTokens)
+                    {
+                        var associatedArtistId = SafeParser.ToGuid(associatedArtist.Value);
+                        var doesExistInData = associatedArtists.Any(x => x.AssociatedArtist.RoadieId == associatedArtistId);
+                        if (!doesExistInData)
+                        {
+                            var a = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == associatedArtistId);
+                            if (a != null)
+                            {
+                                this.DbContext.ArtistAssociations.Add(new data.ArtistAssociation
+                                {
+                                    ArtistId = artist.Id,
+                                    AssociatedArtistId = a.Id
+                                });
+                            }
+                        }
+                    }
+                }
+                else if (model.AssociatedArtistsTokens == null || !model.AssociatedArtistsTokens.Any())
+                {
+                    artist.AssociatedArtists.Clear();
+                }
+
+
+                if (model.Images != null && model.Images.Any())
+                {
+                    // TODO
+                }
+
+                artist.LastUpdated = now;
+                await this.DbContext.SaveChangesAsync();
+                if (didRenameArtist) {
+                    await this.ScanArtistReleasesFolders(artist.RoadieId, this.Configuration.LibraryFolder, false);
+                }
+                this.CacheManager.ClearRegion(artist.CacheRegion);
+                this.Logger.LogInformation($"UpdateArtist `{ artist }` By User `{ user }`: Renamed Artist [{ didRenameArtist }], Uploaded new image [{ didChangeThumbnail }]");
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> ScanArtistReleasesFolders(Guid artistId, string destinationFolder, bool doJustInfo)
+        {
+            SimpleContract.Requires<ArgumentOutOfRangeException>(artistId != Guid.Empty, "Invalid ArtistId");
+
+            var result = true;
+            var resultErrors = new List<Exception>();
+            var sw = new Stopwatch();
+            sw.Start();
+            try
+            {
+                var artist = this.DbContext.Artists
+                                           .Include("Releases")
+                                           .Include("Releases.Labels")
+                                           .FirstOrDefault(x => x.RoadieId == artistId);
+                if (artist == null)
+                {
+                    this.Logger.LogWarning("Unable To Find Artist [{0}]", artistId);
+                    return new OperationResult<bool>();
+                }
+                var releaseScannedCount = 0;
+                var artistFolder = artist.ArtistFileFolder(this.Configuration, destinationFolder);
+                var scannedArtistFolders = new List<string>();
+                // Scan known releases for changes
+                if (artist.Releases != null)
+                {
+                    foreach (var release in artist.Releases)
+                    {
+                        try
+                        {
+                            result = result && (await this.ReleaseFactory.ScanReleaseFolder(Guid.Empty, destinationFolder, doJustInfo, release)).Data;
+                            releaseScannedCount++;
+                            scannedArtistFolders.Add(release.ReleaseFileFolder(artistFolder));
+                        }
+                        catch (Exception ex)
+                        {
+                            this.Logger.LogError(ex, ex.Serialize());
+                        }
+                    }
+                }
+                // Any folder found in Artist folder not already scanned scan
+                var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, destinationFolder, this.DbContext, this.CacheManager, this.Logger, this.ArtistLookupEngine, this.ArtistFactory, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
+                var nonReleaseFolders = (from d in Directory.EnumerateDirectories(artistFolder)
+                                         where !(from r in scannedArtistFolders select r).Contains(d)
+                                         orderby d
+                                         select d);
+                foreach (var folder in nonReleaseFolders)
+                {
+                    await folderProcessor.Process(new DirectoryInfo(folder), doJustInfo);
+                }
+                if (!doJustInfo)
+                {
+                    FolderProcessor.DeleteEmptyFolders(new DirectoryInfo(artistFolder), this.Logger);
+                }
+
+                // Always update artist image if artist image is found on an artist rescan
+                var imageFiles = ImageHelper.ImageFilesInFolder(artistFolder);
+                if (imageFiles != null && imageFiles.Any())
+                {
+                    var imageFile = imageFiles.First();
+                    var i = new FileInfo(imageFile);
+                    var iName = i.Name.ToLower().Trim();
+                    var isArtistImage = iName.Contains("artist") || iName.Contains(artist.Name.ToLower());
+                    if (isArtistImage)
+                    {
+                        // Read image and convert to jpeg
+                        artist.Thumbnail = File.ReadAllBytes(i.FullName);
+                        artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                        artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
+                        artist.LastUpdated = DateTime.UtcNow;
+                        await this.DbContext.SaveChangesAsync();
+                        this.CacheManager.ClearRegion(artist.CacheRegion);
+                        this.Logger.LogInformation("Update Thumbnail using Artist File [{0}]", iName);
+                    }
+                }
+
+                sw.Stop();
+                this.CacheManager.ClearRegion(artist.CacheRegion);
+                this.Logger.LogInformation("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex, ex.Serialize());
+                resultErrors.Add(ex);
+            }
+            return new OperationResult<bool>
+            {
+                Data = result,
+                IsSuccess = result,
+                Errors = resultErrors,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
 
         private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
         {

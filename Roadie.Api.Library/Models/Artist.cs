@@ -26,6 +26,8 @@ namespace Roadie.Library.Models
 
         public IEnumerable<ArtistList> AssociatedArtists { get; set; }
 
+        public IEnumerable<DataToken> AssociatedArtistsTokens { get; set; }
+
         public string BandStatus { get; set; }
 
         [MaxLength(65535)]
@@ -66,6 +68,9 @@ namespace Roadie.Library.Models
 
         [MaxLength(250)]
         public string Name { get; set; }
+
+        // When populated a "data:image" base64 byte array of an image to use as new Thumbnail
+        public string NewThumbnailData { get; set; }
 
         [MaxLength(65535)]
         public string Profile { get; set; }

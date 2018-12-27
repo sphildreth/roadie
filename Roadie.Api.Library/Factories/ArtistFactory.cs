@@ -266,6 +266,7 @@ namespace Roadie.Library.Factories
             };
         }
 
+        [Obsolete]
         public async Task<OperationResult<bool>> ScanArtistReleasesFolders(Guid artistId, string destinationFolder, bool doJustInfo)
         {
             SimpleContract.Requires<ArgumentOutOfRangeException>(artistId != Guid.Empty, "Invalid ArtistId");
@@ -359,6 +360,7 @@ namespace Roadie.Library.Factories
             };
         }
 
+        [Obsolete]
         public async Task<OperationResult<Artist>> Update(Artist Artist, IEnumerable<Image> ArtistImages, string destinationFolder = null)
         {
             SimpleContract.Requires<ArgumentNullException>(Artist != null, "Invalid Artist");

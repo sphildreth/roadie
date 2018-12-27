@@ -16,8 +16,8 @@ namespace Roadie.Library.Data
         [Column("artistType", TypeName = "enum")]
         public string ArtistType { get; set; }
 
-        [NotMapped]
-        public virtual ICollection<ArtistAssociation> AssociatedArtists { get; set; }
+        [InverseProperty("Artist")]
+        public ICollection<ArtistAssociation> AssociatedArtists { get; set; }
 
         [Column("bandStatus", TypeName = "enum")]
         public BandStatus? BandStatus { get; set; }
@@ -82,6 +82,8 @@ namespace Roadie.Library.Data
         public Artist()
         {
             this.Releases = new HashSet<Release>();
+            this.Genres = new HashSet<ArtistGenre>();
+            this.AssociatedArtists = new HashSet<ArtistAssociation>();
             this.Rating = 0;
             this.Status = Statuses.Ok;
         }
