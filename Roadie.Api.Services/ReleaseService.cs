@@ -941,7 +941,7 @@ namespace Roadie.Api.Services
             return new OperationResult<Library.Models.Image>
             {
                 IsSuccess = !errors.Any(),
-                Data = this.MakeReleaseThumbnailImage(id),
+                Data = base.MakeThumbnailImage(id, "release", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height, true),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };

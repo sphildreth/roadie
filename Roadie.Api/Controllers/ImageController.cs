@@ -33,7 +33,7 @@ namespace Roadie.Api.Controllers
         //    return Ok(this._RoadieDbContext.Tracks.ProjectToType<models.Image>());
         //}
 
-        [HttpGet("artist/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("artist/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> ArtistImage(Guid id, int? width, int? height)
@@ -55,7 +55,7 @@ namespace Roadie.Api.Controllers
         }
 
 
-        [HttpGet("collection/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("collection/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> CollectionImage(Guid id, int? width, int? height)
@@ -93,7 +93,7 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-        [HttpGet("{id}/{width:int?}/{height:int?}")]
+        [HttpGet("{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, int? width, int? height)
@@ -114,7 +114,7 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
-        [HttpGet("label/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("label/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> LabelImage(Guid id, int? width, int? height)
@@ -135,7 +135,7 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
-        [HttpGet("playlist/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("playlist/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> PlaylistImage(Guid id, int? width, int? height)
@@ -156,7 +156,7 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
-        [HttpGet("release/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("release/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> ReleaseImage(Guid id, int? width, int? height)
@@ -177,7 +177,7 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
-        [HttpGet("track/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("track/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> TrackImage(Guid id, int? width, int? height)
@@ -201,7 +201,7 @@ namespace Roadie.Api.Controllers
         /// <summary>
         /// NOTE that user images/avatars are PNG not JPG this is so it looks better in the menus/applications
         /// </summary>
-        [HttpGet("user/{id}/{width:int?}/{height:int?}")]
+        [HttpGet("user/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> UserImage(Guid id, int? width, int? height)

@@ -82,9 +82,9 @@ namespace Roadie.Api.Services
             this._httpContext = httpContext;
         }
 
-        public Image MakeThumbnailImage(Guid id, string type, int? width = null, int? height = null)
+        public Image MakeThumbnailImage(Guid id, string type, int? width = null, int? height = null, bool includeCachebuster = false)
         {
-            return this.MakeImage(id, type, width ?? this.Configuration.ThumbnailImageSize.Width, height ?? this.Configuration.ThumbnailImageSize.Height);
+            return this.MakeImage(id, type, width ?? this.Configuration.ThumbnailImageSize.Width, height ?? this.Configuration.ThumbnailImageSize.Height, null, includeCachebuster);
         }
 
         protected data.Artist GetArtist(string artistName)
@@ -236,9 +236,9 @@ namespace Roadie.Api.Services
             return MakeThumbnailImage(id, "collection");
         }
 
-        protected Image MakeImage(Guid id, int width = 200, int height = 200, string caption = null)
+        protected Image MakeImage(Guid id, int width = 200, int height = 200, string caption = null, bool includeCachebuster = false)
         {
-            return new Image($"{this.HttpContext.ImageBaseUrl }/{id}/{ width }/{ height }", caption, $"{this.HttpContext.ImageBaseUrl }/{id}/{ this.Configuration.SmallImageSize.Width }/{ this.Configuration.SmallImageSize.Height }");
+            return new Image($"{this.HttpContext.ImageBaseUrl }/{id}/{ width }/{ height }/{ (includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty) }", caption, $"{this.HttpContext.ImageBaseUrl }/{id}/{ this.Configuration.SmallImageSize.Width }/{ this.Configuration.SmallImageSize.Height }");
         }
 
         protected Image MakeFullsizeImage(Guid id, string caption = null)
@@ -594,11 +594,11 @@ namespace Roadie.Api.Services
         }
 
 
-        private Image MakeImage(Guid id, string type, int? width, int? height, string caption = null)
+        private Image MakeImage(Guid id, string type, int? width, int? height, string caption = null, bool includeCachebuster = false)
         {
             if (width.HasValue && height.HasValue && (width.Value != this.Configuration.ThumbnailImageSize.Width || height.Value != this.Configuration.ThumbnailImageSize.Height))
             {
-                return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}/{width}/{height}", caption, $"{this.HttpContext.ImageBaseUrl }/{type}/{id}/{ this.Configuration.ThumbnailImageSize.Width }/{ this.Configuration.ThumbnailImageSize.Height }");
+                return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}/{width}/{height}/{ (includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty) }", caption, $"{this.HttpContext.ImageBaseUrl }/{type}/{id}/{ this.Configuration.ThumbnailImageSize.Width }/{ this.Configuration.ThumbnailImageSize.Height }");
             }
             return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}", caption, null);
         }

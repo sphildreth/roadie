@@ -542,7 +542,7 @@ namespace Roadie.Api.Services
                 artist.DiscogsId = model.DiscogsId;
                 artist.EndDate = model.EndDate;
                 artist.IsLocked = model.IsLocked;
-                artist.ISNIList = model.ISNIList.ToDelimitedList();
+                artist.ISNI = model.ISNIList.ToDelimitedList();
                 artist.ITunesId = model.ITunesId;
                 artist.MusicBrainzId = model.MusicBrainzId;
                 artist.Name = model.Name;
@@ -808,8 +808,16 @@ namespace Roadie.Api.Services
                     // Ensure is jpeg first
                     artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
 
+                    // Ensure artist folder exists
+                    var artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                    if(!Directory.Exists(artistFolder))
+                    {
+                        Directory.CreateDirectory(artistFolder);
+                        this.Logger.LogInformation("Created Artist Folder [0] for `artist`", artistFolder, artist);
+                    }                    
+
                     // Save unaltered image to artist file
-                    var coverFileName = Path.Combine(artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder), "artist.jpg");
+                    var coverFileName = Path.Combine(artistFolder, "artist.jpg");
                     File.WriteAllBytes(coverFileName, artist.Thumbnail);
 
                     // Resize to store in database as thumbnail
@@ -830,7 +838,7 @@ namespace Roadie.Api.Services
             return new OperationResult<Library.Models.Image>
             {
                 IsSuccess = !errors.Any(),
-                Data = this.MakeArtistThumbnailImage(id),
+                Data = base.MakeThumbnailImage(id, "artist", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height, true),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };

@@ -45,18 +45,28 @@ namespace Roadie.Library.Models
         [MaxLength(65535)]
         [JsonIgnore]
         [IgnoreDataMember]
-        public string ISNIList { get; set; }
+        public string ISNI { get; set; }
+
+        private IEnumerable<string> _isniList = null;
 
         [JsonProperty("isniList")]
-        public IEnumerable<string> ISNIListList
+        public IEnumerable<string> ISNIList
         {
             get
             {
-                if (string.IsNullOrEmpty(this.ISNIList))
+                if (this._isniList == null)
                 {
-                    return null;
+                    if (string.IsNullOrEmpty(this.ISNI))
+                    {
+                        return null;
+                    }
+                    return this.ISNI.Split('|');
                 }
-                return this.ISNIList.Split('|');
+                return this._isniList;
+            }
+            set
+            {
+                this._isniList = value;
             }
         }
 

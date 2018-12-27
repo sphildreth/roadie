@@ -154,7 +154,7 @@ namespace Roadie.Library.Factories
             altNames.Add(ArtistToMerge.SortName);
             artistToMergeInto.AlternateNames = artistToMergeInto.AlternateNames.AddToDelimitedList(altNames);
             artistToMergeInto.URLs = artistToMergeInto.URLs.AddToDelimitedList(ArtistToMerge.URLs.ToListFromDelimited());
-            artistToMergeInto.ISNIList = artistToMergeInto.ISNIList.AddToDelimitedList(ArtistToMerge.ISNIList.ToListFromDelimited());
+            artistToMergeInto.ISNI = artistToMergeInto.ISNI.AddToDelimitedList(ArtistToMerge.ISNI.ToListFromDelimited());
             artistToMergeInto.LastUpdated = now;
 
             if (doDbUpdates)

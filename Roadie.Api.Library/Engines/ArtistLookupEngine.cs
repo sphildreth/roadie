@@ -274,7 +274,7 @@ namespace Roadie.Library.Engines
                         }
                         if (i.ISNIs != null)
                         {
-                            result.ISNIList = result.ISNIList.AddToDelimitedList(i.ISNIs);
+                            result.ISNI = result.ISNI.AddToDelimitedList(i.ISNIs);
                         }
                         if (i.ImageUrls != null)
                         {
@@ -329,7 +329,7 @@ namespace Roadie.Library.Engines
                         }
                         if (mb.ISNIs != null)
                         {
-                            result.ISNIList = result.ISNIList.AddToDelimitedList(mb.ISNIs);
+                            result.ISNI = result.ISNI.AddToDelimitedList(mb.ISNIs);
                         }
                         if (mb.ImageUrls != null)
                         {
@@ -388,7 +388,7 @@ namespace Roadie.Library.Engines
                         }
                         if (l.ISNIs != null)
                         {
-                            result.ISNIList = result.ISNIList.AddToDelimitedList(l.ISNIs);
+                            result.ISNI = result.ISNI.AddToDelimitedList(l.ISNIs);
                         }
                         if (l.ImageUrls != null)
                         {

@@ -39,7 +39,7 @@ namespace Roadie.Library.Data
 
         [Column("isniList", TypeName = "text")]
         [MaxLength(65535)]
-        public string ISNIList { get; set; }
+        public string ISNI { get; set; }
 
         [Column("iTunesId")]
         [MaxLength(100)]
