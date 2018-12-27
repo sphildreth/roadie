@@ -71,6 +71,10 @@ namespace Roadie.Api.Services
             this.PlaylistService = playlistService;
             this.BookmarkService = bookmarkService;
 
+            this.MusicBrainzProvider = new mb.MusicBrainzProvider(configuration, cacheManager, logger);
+            this.LastFmHelper = new LastFmHelper(configuration, cacheManager, logger);
+            this.FileNameHelper = new FileNameHelper(configuration, cacheManager, logger);
+            this.ID3TagsHelper = new ID3TagsHelper(configuration, cacheManager, logger);
             this.ArtistLookupEngine = new ArtistLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);
             this.LabelLookupEngine = new LabelLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);
             this.ReleaseLookupEngine = new ReleaseLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.LabelLookupEngine);
@@ -559,19 +563,6 @@ namespace Roadie.Api.Services
                     // Rename artist folder to reflect new artist name
                     this.Logger.LogTrace("Moving Artist From Folder [{0}] To  [{1}]", originalArtistFolder, newArtistFolder);
                     Directory.Move(originalArtistFolder, newArtistFolder);
-
-                    // Update artist tracks to have new artist name in ID3 metadata
-                    foreach (var mp3 in Directory.GetFiles(newArtistFolder, "*.mp3", SearchOption.AllDirectories))
-                    {
-                        var trackFileInfo = new FileInfo(mp3);
-                        var audioMetaData = await this.AudioMetaDataHelper.GetInfo(trackFileInfo);
-                        if (audioMetaData != null)
-                        {
-                            audioMetaData.Artist = artist.Name;
-                            this.AudioMetaDataHelper.WriteTags(audioMetaData, trackFileInfo);
-                        }
-                    }
-
                 }
                 var artistImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (artistImage != null)
@@ -672,6 +663,17 @@ namespace Roadie.Api.Services
                 artist.LastUpdated = now;
                 await this.DbContext.SaveChangesAsync();
                 if (didRenameArtist) {
+                    // Update artist tracks to have new artist name in ID3 metadata
+                    foreach (var mp3 in Directory.GetFiles(newArtistFolder, "*.mp3", SearchOption.AllDirectories))
+                    {
+                        var trackFileInfo = new FileInfo(mp3);
+                        var audioMetaData = await this.AudioMetaDataHelper.GetInfo(trackFileInfo);
+                        if (audioMetaData != null)
+                        {
+                            audioMetaData.Artist = artist.Name;
+                            this.AudioMetaDataHelper.WriteTags(audioMetaData, trackFileInfo);
+                        }
+                    }
                     await this.ScanArtistReleasesFolders(artist.RoadieId, this.Configuration.LibraryFolder, false);
                 }
                 this.CacheManager.ClearRegion(artist.CacheRegion);
