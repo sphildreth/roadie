@@ -219,13 +219,10 @@ namespace Roadie.Api.Services
                 if (includes.Contains("stats"))
                 {
                     tsw.Restart();
-
-                    // TODO this should be on artist properties to speed up fetch times
-
                     var artistTracks = (from r in this.DbContext.Releases
                                         join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                         join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                        where r.ArtistId == artist.Id
+                                        where (r.ArtistId == artist.Id || t.ArtistId == artist.Id)
                                         select new
                                         {
                                             t.Id,

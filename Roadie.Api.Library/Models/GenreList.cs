@@ -8,6 +8,8 @@ namespace Roadie.Library.Models
     public class GenreList : EntityInfoModelBase
     {
         public DataToken Genre { get; set; }
+        public int? ReleaseCount { get; set; }
+        public int? ArtistCount { get; set; }
 
     }
 }

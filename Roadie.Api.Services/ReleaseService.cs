@@ -732,7 +732,6 @@ namespace Roadie.Api.Services
                 }
                 if (includes.Contains("stats"))
                 {
-                    // TODO move these to release properties to speed up fetch times
                     var releaseTracks = (from r in this.DbContext.Releases
                                          join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                          join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId

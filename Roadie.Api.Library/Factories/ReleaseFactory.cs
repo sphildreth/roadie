@@ -809,8 +809,9 @@ namespace Roadie.Library.Factories
 
                 sw.Stop();
 
+
                 await base.UpdateReleaseCounts(release.Id, now);
-                await base.UpdateArtistCounts(release.ArtistId, now);
+                await base.UpdateArtistCountsForRelease(release.Id, now);
                 if(release.Labels != null && release.Labels.Any())
                 {
                     foreach(var label in release.Labels)

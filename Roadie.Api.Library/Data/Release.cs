@@ -26,7 +26,7 @@ namespace Roadie.Library.Data
         public ICollection<CollectionRelease> Collections { get; set; }
 
         [Column("duration")]
-        public int? Duration { get; set; } // TODO update this on release scan
+        public int? Duration { get; set; }
 
         [Column("discogsId")]
         [MaxLength(50)]

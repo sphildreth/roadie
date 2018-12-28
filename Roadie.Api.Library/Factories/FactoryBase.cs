@@ -6,6 +6,7 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.SearchEngines.MetaData;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -35,6 +36,29 @@ namespace Roadie.Library.Factories
             this.ReleaseLookupEngine = releaseLookupEngine;
         }
 
+        protected IEnumerable<int> ArtistIdsForRelease(int releaseId)
+        {
+            var trackArtistIds = (from r in this.DbContext.Releases
+                                join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                join tr in this.DbContext.Tracks on rm.Id equals tr.ReleaseMediaId
+                                where r.Id == releaseId
+                                where tr.ArtistId != null
+                                select tr.ArtistId.Value).ToList();
+            trackArtistIds.Add(this.DbContext.Releases.FirstOrDefault(x => x.Id == releaseId).ArtistId);
+            return trackArtistIds.Distinct().ToArray();
+        }
+
+        /// <summary>
+        /// Update the counts for all artists on a release (both track and release artists)
+        /// </summary>
+        protected async Task UpdateArtistCountsForRelease(int releaseId, DateTime now)
+        {
+            foreach(var artistId in this.ArtistIdsForRelease(releaseId))
+            {
+                await this.UpdateArtistCounts(artistId, now);
+            }
+        }
+
         protected async Task UpdateArtistCounts(int artistId, DateTime now)
         {
             var artist = this.DbContext.Artists.FirstOrDefault(x => x.Id == artistId);
@@ -44,8 +68,9 @@ namespace Roadie.Library.Factories
                 artist.TrackCount = (from r in this.DbContext.Releases
                                      join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                      join tr in this.DbContext.Tracks on rm.Id equals tr.ReleaseMediaId
-                                     where r.ArtistId == artistId
+                                     where (tr.ArtistId == artistId || r.ArtistId == artistId)
                                      select tr).Count();
+
                 artist.LastUpdated = now;
                 await this.DbContext.SaveChangesAsync();
                 this.CacheManager.ClearRegion(artist.CacheRegion);

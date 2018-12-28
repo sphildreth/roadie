@@ -516,11 +516,14 @@ namespace Roadie.Api.Services
                                                       where ua.UserId == roadieUser.Id
                                                       where trackArtistIds.Contains(ua.ArtistId)
                                                       select ua).ToArray();
-                        foreach (var userTrackArtistRating in userTrackArtistRatings)
+                        if (userTrackArtistRatings != null && userTrackArtistRatings.Any())
                         {
-                            foreach (var artistTrack in rows.Where(x => x.TrackArtist.DatabaseId == userTrackArtistRating.ArtistId))
+                            foreach (var userTrackArtistRating in userTrackArtistRatings)
                             {
-                                artistTrack.Artist.UserRating = userTrackArtistRating.Adapt<UserArtist>();
+                                foreach (var artistTrack in rows.Where(x => x.TrackArtist != null && x.TrackArtist.DatabaseId == userTrackArtistRating.ArtistId))
+                                {
+                                    artistTrack.Artist.UserRating = userTrackArtistRating.Adapt<UserArtist>();
+                                }
                             }
                         }
                     }

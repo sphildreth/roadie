@@ -366,51 +366,59 @@ namespace Roadie.Api.Services
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetAlbum(subsonic.Request request, User roadieUser)
         {
-            var releaseId = SafeParser.ToGuid(request.id);
-            if (!releaseId.HasValue)
+            try
             {
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.ReleaseId}]");
-            }
-            var release = this.GetRelease(releaseId.Value);
-            if (release == null)
-            {
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.ReleaseId}]");
-            }
-            var trackPagedRequest = request.PagedRequest;
-            trackPagedRequest.Sort = "TrackNumber";
-            trackPagedRequest.Order = "ASC";
-            var releaseTracks = await this.TrackService.List(trackPagedRequest, roadieUser, false, releaseId);
-            var userRelease = roadieUser == null ? null : this.DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == roadieUser.Id);
-            var genre = release.Genres.FirstOrDefault();
-            return new subsonic.SubsonicOperationResult<subsonic.Response>
-            {
-                IsSuccess = true,
-                Data = new subsonic.Response
+                var releaseId = SafeParser.ToGuid(request.id);
+                if (!releaseId.HasValue)
                 {
-                    version = SubsonicService.SubsonicVersion,
-                    status = subsonic.ResponseStatus.ok,
-                    ItemElementName = subsonic.ItemChoiceType.album,
-                    Item = new subsonic.AlbumWithSongsID3
-                    {
-                        artist = release.Artist.Name,
-                        artistId = subsonic.Request.ArtistIdIdentifier + release.Artist.RoadieId.ToString(),
-                        coverArt = subsonic.Request.ReleaseIdIdentifier + release.RoadieId.ToString(),
-                        created = release.CreatedDate,
-                        duration = release.Duration.ToSecondsFromMilliseconds(),
-                        genre = genre == null ? null : genre.Genre.Name,
-                        id = subsonic.Request.ReleaseIdIdentifier + release.RoadieId.ToString(),
-                        name = release.Title,
-                        playCount = releaseTracks.Rows.Sum(x => x.PlayedCount) ?? 0,
-                        playCountSpecified = releaseTracks.Rows.Any(),
-                        songCount = releaseTracks.Rows.Count(),
-                        starred = userRelease?.LastUpdated ?? userRelease?.CreatedDate ?? DateTime.UtcNow,
-                        starredSpecified = userRelease?.IsFavorite ?? false,
-                        year = release.ReleaseDate != null ? release.ReleaseDate.Value.Year : 0,
-                        yearSpecified = release.ReleaseDate != null,
-                        song = this.SubsonicChildrenForTracks(releaseTracks.Rows)
-                    }
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.ReleaseId}]");
                 }
-            };
+                var release = this.GetRelease(releaseId.Value);
+                if (release == null)
+                {
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.ReleaseId}]");
+                }
+                var trackPagedRequest = request.PagedRequest;
+                trackPagedRequest.Sort = "TrackNumber";
+                trackPagedRequest.Order = "ASC";
+                var releaseTracks = await this.TrackService.List(trackPagedRequest, roadieUser, false, releaseId);
+                var userRelease = roadieUser == null ? null : this.DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == roadieUser.Id);
+                var genre = release.Genres.FirstOrDefault();
+                return new subsonic.SubsonicOperationResult<subsonic.Response>
+                {
+                    IsSuccess = true,
+                    Data = new subsonic.Response
+                    {
+                        version = SubsonicService.SubsonicVersion,
+                        status = subsonic.ResponseStatus.ok,
+                        ItemElementName = subsonic.ItemChoiceType.album,
+                        Item = new subsonic.AlbumWithSongsID3
+                        {
+                            artist = release.Artist.Name,
+                            artistId = subsonic.Request.ArtistIdIdentifier + release.Artist.RoadieId.ToString(),
+                            coverArt = subsonic.Request.ReleaseIdIdentifier + release.RoadieId.ToString(),
+                            created = release.CreatedDate,
+                            duration = release.Duration.ToSecondsFromMilliseconds(),
+                            genre = genre == null ? null : genre.Genre.Name,
+                            id = subsonic.Request.ReleaseIdIdentifier + release.RoadieId.ToString(),
+                            name = release.Title,
+                            playCount = releaseTracks.Rows.Sum(x => x.PlayedCount) ?? 0,
+                            playCountSpecified = releaseTracks.Rows.Any(),
+                            songCount = releaseTracks.Rows.Count(),
+                            starred = userRelease?.LastUpdated ?? userRelease?.CreatedDate ?? DateTime.UtcNow,
+                            starredSpecified = userRelease?.IsFavorite ?? false,
+                            year = release.ReleaseDate != null ? release.ReleaseDate.Value.Year : 0,
+                            yearSpecified = release.ReleaseDate != null,
+                            song = this.SubsonicChildrenForTracks(releaseTracks.Rows)
+                        }
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex, "GetAlbum Request [{0}], User [{1}]", JsonConvert.SerializeObject(request), roadieUser.ToString());
+            }
+            return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.ReleaseId}]");                
         }
 
         /// <summary>

@@ -28,7 +28,7 @@ namespace Roadie.Api.Services
         {
         }
 
-        public Task<Library.Models.Pagination.PagedResult<GenreList>> List(User roadieUser, PagedRequest request)
+        public Task<Library.Models.Pagination.PagedResult<GenreList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -39,6 +39,12 @@ namespace Roadie.Api.Services
                 request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
             }
             var result = (from g in this.DbContext.Genres
+                          let releaseCount = (from rg in this.DbContext.ReleaseGenres
+                                              where rg.GenreId == g.Id
+                                              select rg.Id).Count()
+                          let artistCount = (from rg in this.DbContext.ArtistGenres
+                                              where rg.GenreId == g.Id
+                                              select rg.Id).Count()
                           where (request.FilterValue.Length == 0 || (g.Name.Contains(request.FilterValue)))
                           select new GenreList
                           {
@@ -49,14 +55,25 @@ namespace Roadie.Api.Services
                                   Text = g.Name,
                                   Value = g.RoadieId.ToString()
                               },
+                              ReleaseCount = releaseCount,
+                              ArtistCount = artistCount,
                               CreatedDate = g.CreatedDate,
                               LastUpdated = g.LastUpdated,
                           });
 
             GenreList[] rows = null;
             var rowCount = result.Count();
-            var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Genre.Text", "ASC" } }) : request.OrderValue(null);
-            rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            if (doRandomize ?? false)
+            {
+                var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
+                request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
+                rows = result.OrderBy(x => Guid.NewGuid()).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            }
+            else
+            {
+                var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Genre.Text", "ASC" } }) : request.OrderValue(null);
+                rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            }
             sw.Stop();
             return Task.FromResult(new Library.Models.Pagination.PagedResult<GenreList>
             {

@@ -7,6 +7,6 @@ namespace Roadie.Api.Services
 {
     public interface IGenreService
     {
-        Task<PagedResult<GenreList>> List(User roadieUser, PagedRequest request);
+        Task<PagedResult<GenreList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false);
     }
 }
