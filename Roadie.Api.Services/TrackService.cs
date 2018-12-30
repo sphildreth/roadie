@@ -323,7 +323,7 @@ namespace Roadie.Api.Services
                                    where (request.FilterToPlaylistId == null || playlistTrackIds.Contains(t.Id))
                                    where (!request.FilterTopPlayedOnly || topTrackids.Contains(t.Id))
                                    where (randomTrackIds == null || randomTrackIds.Contains(t.Id))
-                                   where (request.FilterToArtistId == null || request.FilterToArtistId != null && r.Artist.RoadieId == request.FilterToArtistId)
+                                   where (request.FilterToArtistId == null || request.FilterToArtistId != null && ((t.TrackArtist != null && t.TrackArtist.RoadieId == request.FilterToArtistId) ||  r.Artist.RoadieId == request.FilterToArtistId))
                                    select new
                                    {
                                        ti = new
