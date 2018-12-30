@@ -6,8 +6,11 @@ using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Identity;
+using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
+using Roadie.Library.Models.Playlists;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using models = Roadie.Library.Models;
@@ -52,6 +55,19 @@ namespace Roadie.Api.Controllers
         {
             var result = await this.PlaylistService.List(roadieUser: await this.CurrentUserModel(),
                                                         request: request);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("add")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> AddNewPlaylist([FromBody]Playlist model)
+        {
+            var result = await this.PlaylistService.AddNewPlaylist(await this.CurrentUserModel(), model);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

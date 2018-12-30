@@ -36,6 +36,7 @@ namespace Roadie.Library.Factories
             this.ReleaseLookupEngine = releaseLookupEngine;
         }
 
+        [Obsolete("Use Service Methods")]
         protected IEnumerable<int> ArtistIdsForRelease(int releaseId)
         {
             var trackArtistIds = (from r in this.DbContext.Releases
@@ -48,6 +49,7 @@ namespace Roadie.Library.Factories
             return trackArtistIds.Distinct().ToArray();
         }
 
+        [Obsolete("Use Service Methods")]
         /// <summary>
         /// Update the counts for all artists on a release (both track and release artists)
         /// </summary>
@@ -59,6 +61,7 @@ namespace Roadie.Library.Factories
             }
         }
 
+        [Obsolete("Use Service Methods")]
         protected async Task UpdateArtistCounts(int artistId, DateTime now)
         {
             var artist = this.DbContext.Artists.FirstOrDefault(x => x.Id == artistId);
@@ -77,6 +80,7 @@ namespace Roadie.Library.Factories
             }
         }
 
+        [Obsolete("Use Service Methods")]
         protected async Task UpdateLabelCounts(int labelId, DateTime now)
         {
             var label = this.DbContext.Labels.FirstOrDefault(x => x.Id == labelId);
@@ -100,6 +104,7 @@ namespace Roadie.Library.Factories
             }
         }
 
+        [Obsolete("Use Service Methods")]
         protected async Task UpdateReleaseCounts(int releaseId, DateTime now)
         {
             var release = this.DbContext.Releases.FirstOrDefault(x => x.Id == releaseId);

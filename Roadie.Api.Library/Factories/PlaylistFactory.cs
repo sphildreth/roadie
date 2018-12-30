@@ -19,6 +19,7 @@ namespace Roadie.Library.Factories
         {
         }
 
+        [Obsolete("Use PlaylistService")]
         public async Task<OperationResult<bool>> AddTracksToPlaylist(Playlist playlist, IEnumerable<Guid> trackIds)
         {
             var sw = new Stopwatch();
@@ -57,6 +58,7 @@ namespace Roadie.Library.Factories
             };
         }
 
+        [Obsolete("Use PlaylistService")]
         public async Task<OperationResult<bool>> ReorderPlaylist(Playlist playlist)
         {
             var sw = new Stopwatch();
