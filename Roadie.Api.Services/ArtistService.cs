@@ -412,6 +412,20 @@ namespace Roadie.Api.Services
                                   .Distinct()
                                   .ToArray();
             }
+            int[] genreArtistIds = new int[0];
+            var isFilteredToGenre = false;
+            if(!string.IsNullOrEmpty(request.Filter) && request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase))
+            {
+                var genreFilter = request.Filter.Replace(":genre ", "");
+                genreArtistIds = (from ag in this.DbContext.ArtistGenres
+                                  join g in this.DbContext.Genres on ag.GenreId equals g.Id
+                                  where g.Name.Contains(genreFilter)
+                                  select ag.ArtistId)
+                                  .Distinct()
+                                  .ToArray();
+                isFilteredToGenre = true;
+                request.Filter = null;
+            }
             var onlyWithReleases = onlyIncludeWithReleases ?? true;
             var result = (from a in this.DbContext.Artists
                           where (!onlyWithReleases || a.ReleaseCount > 0)
@@ -420,6 +434,7 @@ namespace Roadie.Api.Services
                           where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue)))
                           where (!request.FilterFavoriteOnly || favoriteArtistIds.Contains(a.Id))
                           where (request.FilterToLabelId == null || labelArtistIds.Contains(a.Id))
+                          where (!isFilteredToGenre || genreArtistIds.Contains(a.Id))
                           select new ArtistList
                           {
                               DatabaseId = a.Id,

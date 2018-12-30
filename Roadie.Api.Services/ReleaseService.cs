@@ -181,12 +181,18 @@ namespace Roadie.Api.Services
                                      ).ToArray();
             }
             int[] genreReleaseIds = new int[0];
-            if (!string.IsNullOrEmpty(request.FilterByGenre))
+            var isFilteredToGenre = false;
+            if (!string.IsNullOrEmpty(request.FilterByGenre) || (!string.IsNullOrEmpty(request.Filter) && request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase)))
             {
+                var genreFilter = request.FilterByGenre ?? (request.Filter ?? string.Empty).Replace(":genre ", "", StringComparison.OrdinalIgnoreCase);
                 genreReleaseIds = (from rg in this.DbContext.ReleaseGenres
                                    join g in this.DbContext.Genres on rg.GenreId equals g.Id
-                                   where g.Name == request.FilterByGenre
-                                   select rg.ReleaseId).ToArray();
+                                   where g.Name.Contains(genreFilter)
+                                   select rg.ReleaseId)
+                                   .Distinct()
+                                   .ToArray();
+                request.Filter = null;
+                isFilteredToGenre = true;
             }
             if (request.FilterFromYear.HasValue || request.FilterToYear.HasValue)
             {
@@ -213,7 +219,7 @@ namespace Roadie.Api.Services
                           where (request.FilterToArtistId == null || r.Artist.RoadieId == request.FilterToArtistId)
                           where (request.FilterToCollectionId == null || collectionReleaseIds.Contains(r.Id))
                           where (!request.FilterFavoriteOnly || favoriteReleaseIds.Contains(r.Id))
-                          where (request.FilterByGenre == null || genreReleaseIds.Contains(r.Id))
+                          where (!isFilteredToGenre || genreReleaseIds.Contains(r.Id))
                           where (request.FilterFromYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear)
                           where (request.FilterToYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear)
                           where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || r.AlternateNames.Contains(request.FilterValue)))
@@ -879,6 +885,7 @@ namespace Roadie.Api.Services
                                 Text = track.Title,
                                 Value = track.RoadieId.ToString()
                             };
+                            t.MediaNumber = rm.MediaNumber;
                             t.CssClass = string.IsNullOrEmpty(track.Hash) ? "Missing" : "Ok";
                             t.TrackArtist = track.TrackArtist != null ? ArtistList.FromDataArtist(track.TrackArtist, this.MakeArtistThumbnailImage(track.TrackArtist.RoadieId)) : null;
                             t.TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ t.Id}.mp3";
