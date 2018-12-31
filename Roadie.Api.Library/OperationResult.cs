@@ -61,6 +61,9 @@ namespace Roadie.Library
         [JsonIgnore]
         public bool IsNotFoundResult { get; set; }
 
+        [JsonIgnore]
+        public bool IsAccessDeniedResult { get; set; }
+
         public bool IsSuccess { get; set; }
 
         public IEnumerable<string> Messages

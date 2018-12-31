@@ -17,6 +17,8 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<Playlist>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null);
 
+        Task<OperationResult<bool>> DeletePlaylist(User user, Guid id);
+
         Task<PagedResult<PlaylistList>> List(PagedRequest request, User roadieUser = null);
 
         Task<OperationResult<bool>> ReorderPlaylist(data.Playlist playlist);

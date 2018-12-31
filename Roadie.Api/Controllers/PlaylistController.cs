@@ -75,5 +75,26 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("delete/{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> DeletePlaylist(Guid id)
+        {
+            var result = await this.PlaylistService.DeletePlaylist(await this.CurrentUserModel(), id);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if(result != null && result.IsAccessDeniedResult)
+            {
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
     }
 }
