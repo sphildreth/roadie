@@ -65,10 +65,23 @@ namespace Roadie.Api.Controllers
             return File(System.Text.Encoding.Default.GetBytes(m3u), "audio/mpeg-url");
         }
 
-        [HttpGet("track/{id}.{mp3?}")]
-        public async Task<IActionResult> StreamTrack(Guid id)
+        /// <summary>
+        /// This was done to use a URL based token as many clients don't support adding Auth Bearer tokens to audio requests.
+        /// </summary>
+        [HttpGet("track/{userId}/{trackPlayToken}/{id}.{mp3?}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> StreamTrack(int userId, string trackPlayToken, Guid id)
         {
-            return await base.StreamTrack(id, this.TrackService, this.PlayActivityService);
+            var user = this.UserManager.Users.FirstOrDefault(x => x.Id == userId);
+            if(user == null)
+            {
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+            if(!ServiceBase.ConfirmTrackPlayToken(user, id, trackPlayToken))
+            {
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+            return await base.StreamTrack(id, this.TrackService, this.PlayActivityService, this.UserModelForUser(user));
         }
     }
 }

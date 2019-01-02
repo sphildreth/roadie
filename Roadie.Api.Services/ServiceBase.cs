@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using HashidsNet;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Roadie.Library;
 using Roadie.Library.Caching;
@@ -17,6 +18,8 @@ namespace Roadie.Api.Services
 {
     public abstract class ServiceBase
     {
+        public static string TrackTokenSalt = "B0246908-FBD6-4E12-A96C-AF5B086115B3";
+
         protected readonly ICacheManager _cacheManager = null;
         protected readonly IRoadieSettings _configuration = null;
         protected readonly data.IRoadieDbContext _dbContext = null;
@@ -698,6 +701,32 @@ namespace Roadie.Api.Services
                 await this.DbContext.SaveChangesAsync();
                 this.CacheManager.ClearRegion(release.CacheRegion);
             }
+        }
+
+        public static string TrackPlayToken(ApplicationUser user, Guid trackId)
+        {
+            var hashids = new Hashids(ServiceBase.TrackTokenSalt);
+            var trackIdPart = BitConverter.ToInt32(trackId.ToByteArray(), 6);
+            if(trackIdPart < 0)
+            {
+                trackIdPart = trackIdPart * -1;
+            }
+            var token = hashids.Encode(user.Id, SafeParser.ToNumber<int>(user.CreatedDate.Value.ToString("DDHHmmss")), trackIdPart);
+            return token;
+        }
+
+        protected string MakeTrackPlayUrl(ApplicationUser user, int trackId, Guid trackRoadieId)
+        {
+            return $"{ this.HttpContext.BaseUrl }/play/track/{user.Id}/{ ServiceBase.TrackPlayToken(user, trackRoadieId)}/{ trackRoadieId }.mp3";
+        }
+
+        public static bool ConfirmTrackPlayToken(ApplicationUser user, Guid trackRoadieId, string token)
+        {
+            if(string.IsNullOrEmpty(token))
+            {
+                return false;
+            }
+            return ServiceBase.TrackPlayToken(user, trackRoadieId).Equals(token);
         }
     }
 }

@@ -61,6 +61,8 @@ namespace Roadie.Api.Services
             var rowCount = result.Count();
             BookmarkList[] rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
 
+            var user = this.GetUser(roadieUser.UserId);
+
             foreach (var row in rows)
             {
                 switch (row.Type)
@@ -101,7 +103,8 @@ namespace Roadie.Api.Services
                             Text = track.Title,
                             Value = track.RoadieId.ToString()
                         };
-                        row.Track = TrackList.FromDataTrack(track,
+                        row.Track = TrackList.FromDataTrack(this.MakeTrackPlayUrl(user, track.Id, track.RoadieId),
+                                                            track,
                                                             track.ReleaseMedia.MediaNumber,
                                                             track.ReleaseMedia.Release,
                                                             track.ReleaseMedia.Release.Artist,
@@ -111,6 +114,7 @@ namespace Roadie.Api.Services
                                                             this.MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId),
                                                             this.MakeArtistThumbnailImage(track.ReleaseMedia.Release.Artist.RoadieId),
                                                             this.MakeArtistThumbnailImage(track.TrackArtist == null ? null : (Guid?)track.TrackArtist.RoadieId));
+                        row.Track.TrackPlayUrl = this.MakeTrackPlayUrl(user, track.Id, track.RoadieId);
                         row.Thumbnail = this.MakeTrackThumbnailImage(track.RoadieId);
                         row.SortName = track.Title;
                         break;

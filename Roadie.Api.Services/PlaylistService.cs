@@ -147,6 +147,15 @@ namespace Roadie.Api.Services
             sw.Stop();
             if (result?.Data != null && roadieUser != null)
             {
+                if (result?.Data?.Tracks != null)
+                {
+                    var user = this.GetUser(roadieUser.UserId);
+                    foreach (var track in result.Data.Tracks)
+                    {
+                        track.Track.TrackPlayUrl = this.MakeTrackPlayUrl(user, track.Track.DatabaseId, track.Track.Id);
+                    }
+                }
+
                 result.Data.UserCanEdit = result.Data.Maintainer.Id == roadieUser.UserId || roadieUser.IsAdmin;
                 var userBookmarkResult = await this.BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Playlist);
                 if (userBookmarkResult.IsSuccess)
@@ -294,7 +303,8 @@ namespace Roadie.Api.Services
                                      select new PlaylistTrack
                                      {
                                          ListNumber = plt.pltr.ListNumber,
-                                         Track = TrackList.FromDataTrack(plt.t,
+                                         Track = TrackList.FromDataTrack(null,
+                                                                         plt.t,
                                                                          rm.MediaNumber,
                                                                          r,
                                                                          releaseArtist,

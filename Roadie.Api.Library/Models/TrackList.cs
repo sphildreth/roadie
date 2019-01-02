@@ -77,7 +77,8 @@ namespace Roadie.Library.Models
         public int? FileSize { get; set; }
 
 
-        public static TrackList FromDataTrack(Data.Track track, 
+        public static TrackList FromDataTrack(string trackPlayUrl, 
+                                              Data.Track track, 
                                               int releaseMediaNumber,
                                               Data.Release release, 
                                               Data.Artist artist, 
@@ -111,7 +112,7 @@ namespace Roadie.Library.Models
                 PlayedCount = track.PlayedCount,
                 Rating = track.Rating,
                 Title = track.Title,
-                TrackPlayUrl = $"{ baseUrl }/play/track/{ track.RoadieId }.mp3",
+                TrackPlayUrl = trackPlayUrl,
                 Thumbnail = trackThumbnail
             };
 

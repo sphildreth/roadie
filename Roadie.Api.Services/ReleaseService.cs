@@ -101,6 +101,15 @@ namespace Roadie.Api.Services
                 }
                 if (result.Data.Medias != null)
                 {
+                    var user = this.GetUser(roadieUser.UserId);
+                    foreach(var media in result.Data.Medias)
+                    {
+                        foreach(var track in media.Tracks)
+                        {
+                            track.TrackPlayUrl = this.MakeTrackPlayUrl(user, track.DatabaseId, track.Id);
+                        }
+                    }
+
                     var releaseTrackIds = result.Data.Medias.SelectMany(x => x.Tracks).Select(x => x.Id);
                     var releaseUserTracks = (from ut in this.DbContext.UserTracks
                                              join t in this.DbContext.Tracks on ut.TrackId equals t.Id
@@ -421,6 +430,7 @@ namespace Roadie.Api.Services
                                             where ut.UserId == roadieUser.Id
                                             where (from x in releaseTrackIds select x).Contains(ut.TrackId)
                                             select ut).ToArray();
+                    var user = this.GetUser(roadieUser.UserId);
                     foreach (var release in rows)
                     {
                         var releaseMedias = new List<ReleaseMediaList>();
@@ -432,7 +442,7 @@ namespace Roadie.Api.Services
                             {
                                 var t = track.t.Adapt<TrackList>();
                                 t.CssClass = string.IsNullOrEmpty(track.t.Hash) ? "Missing" : "Ok";
-                                t.TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ track.t.RoadieId}.mp3";
+                                t.TrackPlayUrl = this.MakeTrackPlayUrl(user, track.t.Id, track.t.RoadieId);
                                 var userRating = artistUserTracks.FirstOrDefault(x => x.TrackId == track.t.Id);
                                 if (userRating != null)
                                 {
@@ -888,7 +898,6 @@ namespace Roadie.Api.Services
                             t.MediaNumber = rm.MediaNumber;
                             t.CssClass = string.IsNullOrEmpty(track.Hash) ? "Missing" : "Ok";
                             t.TrackArtist = track.TrackArtist != null ? ArtistList.FromDataArtist(track.TrackArtist, this.MakeArtistThumbnailImage(track.TrackArtist.RoadieId)) : null;
-                            t.TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ t.Id}.mp3";
                             rmTracks.Add(t);
                         }
                         rm.Tracks = rmTracks;

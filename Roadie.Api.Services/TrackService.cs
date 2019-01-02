@@ -415,6 +415,7 @@ namespace Roadie.Api.Services
                         resultQuery = resultQuery.Where(x => x.ti.Tags != null && x.ti.Tags.Contains(tagValue));
                     }
                 }
+                var user = this.GetUser(roadieUser.UserId);
                 var result = resultQuery.Select(x =>
                               new TrackList
                               {
@@ -439,7 +440,7 @@ namespace Roadie.Api.Services
                                   PlayedCount = x.ti.PlayedCount,
                                   Rating = x.ti.Rating,
                                   Title = x.ti.Title,
-                                  TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ x.ti.RoadieId }.mp3",
+                                  TrackPlayUrl = this.MakeTrackPlayUrl(user, x.ti.Id, x.ti.RoadieId),
                                   Thumbnail = this.MakeTrackThumbnailImage(x.ti.RoadieId)
                               });
                 string sortBy = null;
