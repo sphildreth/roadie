@@ -120,6 +120,7 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
 
             var track = this.GetTrack(streamInfo.Track.Value);
+
             if (track == null)
             {
                 return new OperationResult<PlayActivityList>($"CreatePlayActivity: Unable To Find Track [{ streamInfo.Track.Value }]");
@@ -131,6 +132,7 @@ namespace Roadie.Api.Services
             data.UserTrack userTrack = null;
             var now = DateTime.UtcNow;
             track.PlayedCount = (track.PlayedCount ?? 0) + 1;
+            track.LastPlayed = now;
             var user = this.GetUser(roadieUser?.UserId);
             if (user != null)
             {
