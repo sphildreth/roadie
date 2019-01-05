@@ -1,8 +1,11 @@
 ﻿using Newtonsoft.Json;
+using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Statistics;
 using Roadie.Library.Models.Users;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.Serialization;
 
 namespace Roadie.Library.Models
 {
@@ -14,7 +17,7 @@ namespace Roadie.Library.Models
         [MaxLength(50)]
         public string AmgId { get; set; }
 
-        public DataToken Artist { get; set; }
+        public ArtistList Artist { get; set; }
 
         public Image ArtistThumbnail { get; set; }
         public long FileSize { get; set; }
@@ -35,11 +38,34 @@ namespace Roadie.Library.Models
         public string MusicBrainzId { get; set; }
 
         [MaxLength(65535)]
+        [JsonIgnore]
+        [IgnoreDataMember]
         public string PartTitles { get; set; }
+
+        private IEnumerable<string> _partTitles = null;
+        public IEnumerable<string> PartTitlesList
+        {
+            get
+            {
+                if (this._partTitles == null)
+                {
+                    if (string.IsNullOrEmpty(this.PartTitles))
+                    {
+                        return null;
+                    }
+                    return this.PartTitles.Split('|');
+                }
+                return this._partTitles;
+            }
+            set
+            {
+                this._partTitles = value;
+            }
+        }
 
         public int PlayedCount { get; set; }
         public short Rating { get; set; }
-        public DataToken Release { get; set; }
+        public ReleaseList Release { get; set; }
 
         public string ReleaseMediaId { get; set; }
 
@@ -51,6 +77,7 @@ namespace Roadie.Library.Models
         public TrackStatistics Statistics { get; set; }
 
         public Image Thumbnail { get; set; }
+        public Image MediumThumbnail { get; set; }
 
         [MaxLength(250)]
         [Required]
@@ -59,7 +86,7 @@ namespace Roadie.Library.Models
         /// <summary>
         /// Track Artist, not release artist. If this is present then the track has an artist different than the release.
         /// </summary>
-        public DataToken TrackArtist { get; set; }
+        public ArtistList TrackArtist { get; set; }
 
         public Image TrackArtistThumbnail { get; set; }
 
@@ -68,6 +95,6 @@ namespace Roadie.Library.Models
 
         public UserTrack UserRating { get; set; }
 
-        public string PlayUrl { get; set; }
+        public string TrackPlayUrl { get; set; }
     }
 }

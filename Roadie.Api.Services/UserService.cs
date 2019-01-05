@@ -468,6 +468,16 @@ namespace Roadie.Api.Services
             return await base.ToggleReleaseFavorite(releaseId, user, isFavorite);
         }
 
+        public async Task<OperationResult<bool>> SetTrackFavorite(Guid trackId, User roadieUser, bool isFavorite)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.ToggleTrackFavorite(trackId, user, isFavorite);
+        }
+
         public async Task<OperationResult<bool>> SetReleaseDisliked(Guid releaseId, User roadieUser, bool isDisliked)
         {
             var user = this.GetUser(roadieUser.UserId);
@@ -521,12 +531,24 @@ namespace Roadie.Api.Services
             return await base.SetTrackRating(trackId, user, rating);
         }
 
+        public async Task<OperationResult<bool>> SetTrackDisliked(Guid trackId, User roadieUser, bool isDisliked)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.ToggleTrackDisliked(trackId, user, isDisliked);
+        }
+
+
+
         private async Task<OperationResult<bool>> SetBookmark(ApplicationUser user, Library.Enums.BookmarkType bookmarktype, int bookmarkTargetId, bool isBookmarked)
         {
             var bookmark = this.DbContext.Bookmarks.FirstOrDefault(x => x.BookmarkTargetId == bookmarkTargetId &&
                                                                         x.BookmarkType == bookmarktype &&
                                                                         x.UserId == user.Id);
-            if (isBookmarked)
+            if (!isBookmarked)
             {
                 // Remove bookmark
                 if (bookmark != null)

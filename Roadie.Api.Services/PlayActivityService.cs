@@ -1,5 +1,6 @@
 ﻿using Mapster;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Roadie.Api.Hubs;
@@ -118,9 +119,12 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<PlayActivityList>> CreatePlayActivity(User roadieUser, TrackStreamInfo streamInfo)
         {
             var sw = Stopwatch.StartNew();
-
-            var track = this.GetTrack(streamInfo.Track.Value);
-
+            var track = this.DbContext.Tracks
+                                     .Include(x => x.ReleaseMedia)
+                                     .Include(x => x.ReleaseMedia.Release)
+                                     .Include(x => x.ReleaseMedia.Release.Artist)
+                                     .Include(x => x.TrackArtist)
+                                    .FirstOrDefault(x => x.RoadieId == SafeParser.ToGuid(streamInfo.Track.Value));
             if (track == null)
             {
                 return new OperationResult<PlayActivityList>($"CreatePlayActivity: Unable To Find Track [{ streamInfo.Track.Value }]");
@@ -148,16 +152,26 @@ namespace Roadie.Api.Services
                 }
                 userTrack.LastPlayed = now;
                 userTrack.PlayedCount++;
+                userTrack.PlayedCount = (userTrack.PlayedCount ?? 0) + 1;
                 this.CacheManager.ClearRegion(user.CacheRegion);
             }
 
-            var release = this.GetRelease(track.ReleaseMedia.Release.RoadieId);
+            var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == track.ReleaseMedia.Release.RoadieId);
             release.LastPlayed = now;
-            release.PlayedCount++;
+            release.PlayedCount = (release.PlayedCount ?? 0) + 1;
 
-            var artist = this.GetArtist(release.Artist.RoadieId);
+            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == release.Artist.RoadieId);
             artist.LastPlayed = now;
-            artist.PlayedCount++;
+            artist.PlayedCount = (artist.PlayedCount ?? 0) + 1;
+
+            data.Artist trackArtist = null;
+            if (track.ArtistId.HasValue)
+            {
+                trackArtist = this.DbContext.Artists.FirstOrDefault(x => x.Id == track.ArtistId);
+                trackArtist.LastPlayed = now;
+                trackArtist.PlayedCount = (trackArtist.PlayedCount ?? 0) + 1;
+                this.CacheManager.ClearRegion(trackArtist.CacheRegion);
+            }
 
             this.CacheManager.ClearRegion(track.CacheRegion);
             this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);

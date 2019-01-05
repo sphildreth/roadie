@@ -597,6 +597,43 @@ namespace Roadie.Api.Services
             };
         }
 
+        protected async Task<OperationResult<bool>> ToggleTrackDisliked(Guid trackId, ApplicationUser user, bool isDisliked)
+        {
+            var track = this.GetTrack(trackId);
+            if (track == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Track Id [{ trackId }]");
+            }
+            var userTrack = this.DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == user.Id);
+            if (userTrack == null)
+            {
+                userTrack = new data.UserTrack
+                {
+                    IsDisliked = isDisliked,
+                    UserId = user.Id,
+                    TrackId = track.Id
+                };
+                this.DbContext.UserTracks.Add(userTrack);
+            }
+            else
+            {
+                userTrack.IsDisliked = isDisliked;
+                userTrack.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(track.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
 
         private Image MakeImage(Guid id, string type, int? width, int? height, string caption = null, bool includeCachebuster = false)
         {

@@ -56,7 +56,7 @@ namespace Roadie.Api.Controllers
             {
                 Response.StatusCode = (int)HttpStatusCode.NotFound;
             }
-            var release = await this.ReleaseService.ById(user, Guid.Parse(track.Data.Release.Value), new string[1] { "tracks" });
+            var release = await this.ReleaseService.ById(user, track.Data.Release.Id, new string[1] { "tracks" });
             if (release == null || release.IsNotFoundResult)
             {
                 Response.StatusCode = (int)HttpStatusCode.NotFound;

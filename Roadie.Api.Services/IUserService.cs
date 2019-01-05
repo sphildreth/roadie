@@ -38,6 +38,8 @@ namespace Roadie.Api.Services
         Task<OperationResult<bool>> SetTrackBookmark(Guid trackId, User roadieUser, bool isBookmarked);
 
         Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating);
+        Task<OperationResult<bool>> SetTrackDisliked(Guid trackId, User roadieUser, bool isDisliked);
+        Task<OperationResult<bool>> SetTrackFavorite(Guid releaseId, User roadieUser, bool isFavorite);
 
     }
 }

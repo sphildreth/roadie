@@ -10,7 +10,6 @@ using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Users;
 using System;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Controllers
@@ -21,8 +20,8 @@ namespace Roadie.Api.Controllers
     [Authorize]
     public class UserController : EntityControllerBase
     {
-        private IUserService UserService { get; }
         private readonly ITokenService TokenService;
+        private IUserService UserService { get; }
 
         public UserController(IUserService userService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, ITokenService tokenService, UserManager<ApplicationUser> userManager)
             : base(cacheManager, configuration, userManager)
@@ -51,6 +50,213 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
+            return Ok(result);
+        }
+
+        [HttpGet]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> List([FromQuery]PagedRequest request)
+        {
+            var result = await this.UserService.List(request);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("setArtistBookmark/{artistId}/{isBookmarked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetArtistBookmark(Guid artistId, bool isBookmarked)
+        {
+            var result = await this.UserService.SetArtistBookmark(artistId, await this.CurrentUserModel(), isBookmarked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setArtistDisliked/{artistId}/{isDisliked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetArtistDisliked(Guid artistId, bool isDisliked)
+        {
+            var result = await this.UserService.SetArtistDisliked(artistId, await this.CurrentUserModel(), isDisliked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setArtistFavorite/{artistId}/{isFavorite}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetArtistFavorite(Guid artistId, bool isFavorite)
+        {
+            var result = await this.UserService.SetArtistFavorite(artistId, await this.CurrentUserModel(), isFavorite);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setArtistRating/{releaseId}/{rating}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetArtistRating(Guid releaseId, short rating)
+        {
+            var result = await this.UserService.SetArtistRating(releaseId, await this.CurrentUserModel(), rating);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setCollectionBookmark/{collectionId}/{isBookmarked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetCollectionBookmark(Guid collectionId, bool isBookmarked)
+        {
+            var result = await this.UserService.SetCollectionBookmark(collectionId, await this.CurrentUserModel(), isBookmarked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setLabelBookmark/{labelId}/{isBookmarked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetLabelBookmark(Guid labelId, bool isBookmarked)
+        {
+            var result = await this.UserService.SetLabelBookmark(labelId, await this.CurrentUserModel(), isBookmarked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setPlaylistBookmark/{playlistId}/{isBookmarked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetPlaylistBookmark(Guid playlistId, bool isBookmarked)
+        {
+            var result = await this.UserService.SetPlaylistBookmark(playlistId, await this.CurrentUserModel(), isBookmarked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setReleaseBookmark/{releaseId}/{isBookmarked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetReleaseBookmark(Guid releaseId, bool isBookmarked)
+        {
+            var result = await this.UserService.SetReleaseBookmark(releaseId, await this.CurrentUserModel(), isBookmarked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setReleaseDisliked/{releaseId}/{isDisliked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetReleaseDisliked(Guid releaseId, bool isDisliked)
+        {
+            var result = await this.UserService.SetReleaseDisliked(releaseId, await this.CurrentUserModel(), isDisliked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setReleaseFavorite/{releaseId}/{isFavorite}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetReleaseFavorite(Guid releaseId, bool isFavorite)
+        {
+            var result = await this.UserService.SetReleaseFavorite(releaseId, await this.CurrentUserModel(), isFavorite);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setReleaseRating/{releaseId}/{rating}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetReleaseRating(Guid releaseId, short rating)
+        {
+            var result = await this.UserService.SetReleaseRating(releaseId, await this.CurrentUserModel(), rating);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setTrackBookmark/{trackId}/{isBookmarked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetTrackBookmark(Guid trackId, bool isBookmarked)
+        {
+            var result = await this.UserService.SetTrackBookmark(trackId, await this.CurrentUserModel(), isBookmarked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setTrackDisliked/{trackId}/{isDisliked}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetTrackDisliked(Guid trackId, bool isDisliked)
+        {
+            var result = await this.UserService.SetTrackDisliked(trackId, await this.CurrentUserModel(), isDisliked);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setTrackFavorite/{trackId}/{isFavorite}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetTrackFavorite(Guid trackId, bool isFavorite)
+        {
+            var result = await this.UserService.SetTrackFavorite(trackId, await this.CurrentUserModel(), isFavorite);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
+        [HttpPost("setTrackRating/{trackId}/{rating}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SetTrackRating(Guid trackId, short rating)
+        {
+            var result = await this.UserService.SetTrackRating(trackId, await this.CurrentUserModel(), rating);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
             return Ok(result);
         }
 
@@ -90,193 +296,10 @@ namespace Roadie.Api.Controllers
             });
         }
 
-
-        [HttpPost("setArtistRating/{releaseId}/{rating}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetArtistRating(Guid releaseId, short rating)
-        {
-            var result = await this.UserService.SetArtistRating(releaseId, await this.CurrentUserModel(), rating);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-        [HttpPost("setReleaseRating/{releaseId}/{rating}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetReleaseRating(Guid releaseId, short rating)
-        {
-            var result = await this.UserService.SetReleaseRating(releaseId, await this.CurrentUserModel(), rating);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-        [HttpPost("setTrackRating/{releaseId}/{rating}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetTrackRating(Guid releaseId, short rating)
-        {
-            var result = await this.UserService.SetTrackRating(releaseId, await this.CurrentUserModel(), rating);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-        [HttpPost("setArtistFavorite/{artistId}/{isFavorite}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetArtistFavorite(Guid artistId, bool isFavorite)
-        {
-            var result = await this.UserService.SetArtistFavorite(artistId, await this.CurrentUserModel(), isFavorite);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-        [HttpPost("setArtistDisliked/{artistId}/{isDisliked}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetArtistDisliked(Guid artistId, bool isDisliked)
-        {
-            var result = await this.UserService.SetArtistDisliked(artistId, await this.CurrentUserModel(), isDisliked);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-        [HttpPost("setReleaseFavorite/{releaseId}/{isFavorite}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetReleaseFavorite(Guid releaseId, bool isFavorite)
-        {
-            var result = await this.UserService.SetReleaseFavorite(releaseId, await this.CurrentUserModel(), isFavorite);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-        [HttpPost("setReleaseDisliked/{releaseId}/{isDisliked}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetReleaseDisliked(Guid releaseId, bool isDisliked)
-        {
-            var result = await this.UserService.SetReleaseDisliked(releaseId, await this.CurrentUserModel(), isDisliked);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-        [HttpPost("setArtistBookmark/{artistId}/{isBookmarked}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetArtistBookmark(Guid artistId, bool isBookmarked)
-        {
-            var result = await this.UserService.SetArtistBookmark(artistId, await this.CurrentUserModel(), isBookmarked);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-        [HttpPost("setReleaseBookmark/{releaseId}/{isBookmarked}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetReleaseBookmark(Guid releaseId, bool isBookmarked)
-        {
-            var result = await this.UserService.SetReleaseBookmark(releaseId, await this.CurrentUserModel(), isBookmarked);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-        [HttpPost("setTrackBookmark/{trackId}/{isBookmarked}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetTrackBookmark(Guid trackId, bool isBookmarked)
-        {
-            var result = await this.UserService.SetTrackBookmark(trackId, await this.CurrentUserModel(), isBookmarked);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-        [HttpPost("setPlaylistBookmark/{playlistId}/{isBookmarked}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetPlaylistBookmark(Guid playlistId, bool isBookmarked)
-        {
-            var result = await this.UserService.SetPlaylistBookmark(playlistId, await this.CurrentUserModel(), isBookmarked);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-        [HttpPost("setCollectionBookmark/{collectionId}/{isBookmarked}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetCollectionBookmark(Guid collectionId, bool isBookmarked)
-        {
-            var result = await this.UserService.SetCollectionBookmark(collectionId, await this.CurrentUserModel(), isBookmarked);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-
-        [HttpPost("setLabelBookmark/{labelId}/{isBookmarked}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SetLabelBookmark(Guid labelId, bool isBookmarked)
-        {
-            var result = await this.UserService.SetLabelBookmark(labelId, await this.CurrentUserModel(), isBookmarked);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            return Ok(result);
-        }
-
-        [HttpGet]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> List([FromQuery]PagedRequest request)
-        {
-            var result = await this.UserService.List(request);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
         public class PagingParams
         {
-            public int Page { get; set; } = 1;
             public int Limit { get; set; } = 5;
+            public int Page { get; set; } = 1;
         }
     }
 }
