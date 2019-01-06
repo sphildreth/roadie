@@ -242,6 +242,7 @@ namespace Roadie.Api.Services
                                    where (!request.FilterTopPlayedOnly || topTrackids.Contains(t.Id))
                                    where (randomTrackIds == null || randomTrackIds.Contains(t.Id))
                                    where (request.FilterToArtistId == null || request.FilterToArtistId != null && ((t.TrackArtist != null && t.TrackArtist.RoadieId == request.FilterToArtistId) || r.Artist.RoadieId == request.FilterToArtistId))
+                                   where (!request.IsHistoryRequest || t.PlayedCount > 0)
                                    select new
                                    {
                                        ti = new

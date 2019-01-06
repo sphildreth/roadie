@@ -116,6 +116,8 @@ namespace Roadie.Library.Models.Pagination
         public string FilterByGenre { get;  set; }
         public Guid?[] FilterToTrackIds { get; set; }
 
+        public bool IsHistoryRequest { get; set; }
+
         public PagedRequest()
         { }
 
