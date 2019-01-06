@@ -199,10 +199,9 @@ namespace Roadie.Api.Services
                 int[] randomTrackIds = null;
                 if (doRandomize ?? false)
                 {
-                    var randomLimit = roadieUser?.RandomReleaseLimit ?? 50;
-                    randomLimit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
+                    request.Limit = roadieUser?.RandomReleaseLimit ?? 50;
                     var sql = "SELECT t.* FROM `track` t WHERE t.Hash IS NOT NULL ORDER BY RAND() LIMIT {0}";
-                    randomTrackIds = this.DbContext.Tracks.FromSql(sql, randomLimit).Select(x => x.Id).ToArray();
+                    randomTrackIds = this.DbContext.Tracks.FromSql(sql, request.LimitValue).Select(x => x.Id).ToArray();
                     rowCount = this.DbContext.Tracks.Where(x => x.Hash != null).Count();
                 }
                 Guid?[] filterToTrackIds = null;
