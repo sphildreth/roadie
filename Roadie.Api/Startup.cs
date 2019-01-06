@@ -1,12 +1,9 @@
 ﻿using Mapster;
-using Microsoft.AspNet.OData.Builder;
-using Microsoft.AspNet.OData.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
@@ -14,9 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OData.Edm;
 using Newtonsoft.Json;
-using Roadie.Api.Controllers;
 using Roadie.Api.Hubs;
 using Roadie.Api.ModelBinding;
 using Roadie.Api.Services;
@@ -27,9 +22,7 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.Utility;
-using Serilog;
 using System;
-using models = Roadie.Library.Models;
 
 namespace Roadie.Api
 {
@@ -42,8 +35,6 @@ namespace Roadie.Api
         {
             this._configuration = configuration;
             this._loggerFactory = loggerFactory;
-
-
 
             TypeAdapterConfig<Roadie.Library.Data.Image, Roadie.Library.Models.Image>
                 .NewConfig()
@@ -59,7 +50,6 @@ namespace Roadie.Api
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, ILoggerFactory loggerFactory, IHostingEnvironment env)
         {
-
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -91,12 +81,12 @@ namespace Roadie.Api
             services.AddCors(options => options.AddPolicy("CORSPolicy", builder =>
             {
                 builder
-                .AllowAnyOrigin()
+                .WithOrigins("http://localhost:8080", "https://localhost:8080", "http://localhost:80", "https://localhost:80")
                 .AllowAnyHeader()
-                .AllowAnyMethod();
-              //  .AllowCredentials();
+                .AllowAnyMethod()
+                .AllowCredentials();
             }));
-            
+
             services.AddSingleton<ITokenService, TokenService>();
 
             services.AddSingleton<IHttpEncoder, HttpEncoder>();
@@ -229,7 +219,7 @@ namespace Roadie.Api
                 options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
             })
-            .AddXmlSerializerFormatters()                
+            .AddXmlSerializerFormatters()
             .SetCompatibilityVersion(CompatibilityVersion.Latest);
 
             services.Configure<IdentityOptions>(options =>
@@ -241,7 +231,6 @@ namespace Roadie.Api
                 options.Password.RequiredLength = 6;
                 options.Password.RequiredUniqueChars = 1;
             });
-
 
             services.AddHttpContextAccessor();
             services.AddScoped<IHttpContext>(factory =>
@@ -255,12 +244,10 @@ namespace Roadie.Api
         private class IntegrationKey
         {
             public string BingImageSearch { get; set; }
-            public string LastFMApiKey { get; set; }
-            public string LastFMSecret { get; set; }
             public string DiscogsConsumerKey { get; set; }
             public string DiscogsConsumerSecret { get; set; }
+            public string LastFMApiKey { get; set; }
+            public string LastFMSecret { get; set; }
         }
     }
-
-
 }
