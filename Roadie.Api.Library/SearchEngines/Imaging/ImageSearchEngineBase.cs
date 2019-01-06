@@ -56,8 +56,10 @@ namespace Roadie.Library.SearchEngines.Imaging
             this._requestIp = requestIp;
             this._logger = logger;
 
-            this._client = new RestClient(baseUrl);
-            this._client.UserAgent = WebHelper.UserAgent;
+            this._client = new RestClient(baseUrl)
+            {
+                UserAgent = WebHelper.UserAgent
+            };
 
             System.Net.ServicePointManager.ServerCertificateValidationCallback += delegate (object sender, System.Security.Cryptography.X509Certificates.X509Certificate certificate,
                         System.Security.Cryptography.X509Certificates.X509Chain chain,

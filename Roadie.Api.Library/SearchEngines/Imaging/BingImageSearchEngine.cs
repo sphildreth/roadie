@@ -26,7 +26,7 @@ namespace Roadie.Library.SearchEngines.Imaging
         {
             var request = new RestRequest
             {
-                Resource = "/bing/v5.0/images/search",
+                Resource = "/bing/v7.0/images/search",
                 Method = Method.GET,
                 RequestFormat = DataFormat.Json
             };
@@ -70,17 +70,18 @@ namespace Roadie.Library.SearchEngines.Imaging
 
             var response = await _client.ExecuteTaskAsync<BingImageResult>(request);
 
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                throw new AuthenticationException("Api Key is not correct");
+            }
+
             if (response.ResponseStatus == ResponseStatus.Error)
             {
-                if (response.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    throw new AuthenticationException("Api Key is not correct");
-                }
                 throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
             }
             if (response.Data == null || response.Data.value == null)
             {
-                this.Logger.LogWarning("Response Is Null on PerformImageSearch [" + Newtonsoft.Json.JsonConvert.SerializeObject(response) + "]");
+                this.Logger.LogWarning("Response Is Null on PerformImageSearch [" + response.ErrorMessage + "]");
                 return null;
             }
             return response.Data.value.Select(x => new ImageSearchResult
