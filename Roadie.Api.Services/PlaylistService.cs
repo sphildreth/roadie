@@ -105,36 +105,6 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeletePlaylist(User user, Guid id)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var playlist = this.DbContext.Playlists.FirstOrDefault(x => x.RoadieId == id);
-            if (playlist == null)
-            {
-                return new OperationResult<bool>(true, string.Format("Playlist Not Found [{0}]", id));
-            }
-            if(!user.IsAdmin || user.Id != playlist.UserId)
-            {
-                this.Logger.LogWarning("User `{0}` attempted to delete Playlist `{1}`", user, playlist);
-                return new OperationResult<bool>("Access Denied")
-                {
-                    IsAccessDeniedResult = true
-                };
-            }
-            this.DbContext.Playlists.Remove(playlist);
-            await this.DbContext.SaveChangesAsync();
-            this.Logger.LogInformation("User `{0}` deleted Playlist `{1}]`", user, playlist);
-            this.CacheManager.ClearRegion(playlist.CacheRegion);
-            sw.Stop();
-            return new OperationResult<bool>
-            {
-                IsSuccess = true,
-                Data = true,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-        }
-
         public async Task<OperationResult<Playlist>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
@@ -169,6 +139,36 @@ namespace Roadie.Api.Services
                 IsNotFoundResult = result?.IsNotFoundResult ?? false,
                 Errors = result?.Errors,
                 IsSuccess = result?.IsSuccess ?? false,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<OperationResult<bool>> DeletePlaylist(User user, Guid id)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var playlist = this.DbContext.Playlists.FirstOrDefault(x => x.RoadieId == id);
+            if (playlist == null)
+            {
+                return new OperationResult<bool>(true, string.Format("Playlist Not Found [{0}]", id));
+            }
+            if (!user.IsAdmin || user.Id != playlist.UserId)
+            {
+                this.Logger.LogWarning("User `{0}` attempted to delete Playlist `{1}`", user, playlist);
+                return new OperationResult<bool>("Access Denied")
+                {
+                    IsAccessDeniedResult = true
+                };
+            }
+            this.DbContext.Playlists.Remove(playlist);
+            await this.DbContext.SaveChangesAsync();
+            this.Logger.LogInformation("User `{0}` deleted Playlist `{1}]`", user, playlist);
+            this.CacheManager.ClearRegion(playlist.CacheRegion);
+            sw.Stop();
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true,
                 OperationTime = sw.ElapsedMilliseconds
             };
         }

@@ -1,36 +1,16 @@
-﻿using Mapster;
-using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Roadie.Library;
-using Roadie.Library.Caching;
+﻿using Microsoft.AspNetCore.Identity.UI.Services;
 using Roadie.Library.Configuration;
-using Roadie.Library.Encoding;
-using Roadie.Library.Enums;
-using Roadie.Library.Extensions;
-using Roadie.Library.Models;
-using Roadie.Library.Models.Collections;
-using Roadie.Library.Models.Pagination;
-using Roadie.Library.Models.Statistics;
-using Roadie.Library.Models.Users;
-using Roadie.Library.Utility;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Linq.Dynamic.Core;
 using System.Net;
 using System.Net.Mail;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using data = Roadie.Library.Data;
 
 namespace Roadie.Api.Services
 {
     public class EmailSenderService : IEmailSender
     {
-        protected IRoadieSettings Configuration { get;}
+        protected IRoadieSettings Configuration { get; }
 
         public EmailSenderService(IRoadieSettings configuration)
         {

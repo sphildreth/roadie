@@ -24,8 +24,8 @@ namespace Roadie.Api.Services
 {
     public class ImageService : ServiceBase, IImageService
     {
-        private IDefaultNotFoundImages DefaultNotFoundImages { get; }
         private IImageSearchEngine BingSearchEngine { get; }
+        private IDefaultNotFoundImages DefaultNotFoundImages { get; }
         private IImageSearchEngine ITunesSearchEngine { get; }
 
         private string Referrer { get; }
@@ -187,34 +187,6 @@ namespace Roadie.Api.Services
                                                     etag: etag);
         }
 
-        public async Task<FileOperationResult<Image>> TrackImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await this.GetImageFileOperation(type: "TrackThumbnail",
-                                                    regionUrn: data.Track.CacheRegionUrn(id),
-                                                    id: id,
-                                                    width: width,
-                                                    height: height,
-                                                    action: async () =>
-                                                    {
-                                                        return await this.TrackImageAction(id, width, height, etag);
-                                                    },
-                                                    etag: etag);
-        }
-
-        public async Task<FileOperationResult<Image>> UserImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await this.GetImageFileOperation(type: "UserById",
-                                                    regionUrn: ApplicationUser.CacheRegionUrn(id),
-                                                    id: id,
-                                                    width: width,
-                                                    height: height,
-                                                    action: async () =>
-                                                    {
-                                                        return await this.UserImageAction(id, etag);
-                                                    },
-                                                    etag: etag);
-        }
-
         public async Task<OperationResult<IEnumerable<ImageSearchResult>>> Search(string query, int resultsCount = 10)
         {
             var sw = Stopwatch.StartNew();
@@ -246,9 +218,35 @@ namespace Roadie.Api.Services
                 Data = result,
                 OperationTime = sw.ElapsedMilliseconds
             };
-                
         }
 
+        public async Task<FileOperationResult<Image>> TrackImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return await this.GetImageFileOperation(type: "TrackThumbnail",
+                                                    regionUrn: data.Track.CacheRegionUrn(id),
+                                                    id: id,
+                                                    width: width,
+                                                    height: height,
+                                                    action: async () =>
+                                                    {
+                                                        return await this.TrackImageAction(id, width, height, etag);
+                                                    },
+                                                    etag: etag);
+        }
+
+        public async Task<FileOperationResult<Image>> UserImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return await this.GetImageFileOperation(type: "UserById",
+                                                    regionUrn: ApplicationUser.CacheRegionUrn(id),
+                                                    id: id,
+                                                    width: width,
+                                                    height: height,
+                                                    action: async () =>
+                                                    {
+                                                        return await this.UserImageAction(id, etag);
+                                                    },
+                                                    etag: etag);
+        }
 
         private Task<FileOperationResult<Image>> ArtistImageAction(Guid id, EntityTagHeaderValue etag = null)
         {
@@ -580,7 +578,5 @@ namespace Roadie.Api.Services
             }
             return Task.FromResult(new FileOperationResult<Image>(OperationMessages.ErrorOccured));
         }
-
-
     }
 }

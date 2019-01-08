@@ -6,9 +6,14 @@ using System.Threading.Tasks;
 
 namespace Roadie.Api.Models
 {
-    public class ResetPasswordModel : RegisterModel
+    public class ResetPasswordModel : LoginModel
     {
         [Required]
         public string Token { get; set; }
+
+        [Required]
+        [Compare("Password")]
+        public String PasswordConfirmation { get; set; }
+
     }
 }

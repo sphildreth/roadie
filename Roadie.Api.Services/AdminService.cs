@@ -84,6 +84,113 @@ namespace Roadie.Api.Services
             this.ArtistFactory = new ArtistFactory(configuration, httpEncoder, context, cacheManager, MessageLogger, this.ArtistLookupEngine, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
         }
 
+        public async Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
+            if (artist == null)
+            {
+                await this.LogAndPublish($"DeleteArtist Unknown Artist [{ artistId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Artist Not Found [{ artistId }]");
+            }
+            try
+            {
+                var result = await this.ArtistFactory.Delete(artist);
+                if (!result.IsSuccess)
+                {
+                    return new OperationResult<bool>
+                    {
+                        Errors = result.Errors
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                await this.LogAndPublish("Error deleting artist.");
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"DeleteArtist `{ artist }`, By User `{user }`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId, bool doDeleteFiles = false)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
+            if (artist == null)
+            {
+                await this.LogAndPublish($"DeleteArtistReleases Unknown Artist [{ artistId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Artist Not Found [{ artistId }]");
+            }
+            try
+            {
+                await this.ReleaseFactory.DeleteReleases(this.DbContext.Releases.Where(x => x.ArtistId == artist.Id).Select(x => x.RoadieId).ToArray(), doDeleteFiles);
+                await this.DbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                await this.LogAndPublish("Error deleting artist.");
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"DeleteArtistReleases `{ artist }`, By User `{user }`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+
+            var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == releaseId);
+            try
+            {
+                if (release == null)
+                {
+                    await this.LogAndPublish($"DeleteRelease Unknown Release [{ releaseId}]", LogLevel.Warning);
+                    return new OperationResult<bool>(true, $"Release Not Found [{ releaseId }]");
+                }
+                await this.ReleaseFactory.Delete(release, doDeleteFiles ?? false);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                await this.LogAndPublish("Error deleting release.");
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"DeleteRelease `{ release }`, By User `{ user}`", LogLevel.Information);
+            this.CacheManager.Clear();
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
         /// <summary>
         /// This is a very simple way to seed the database or setup configuration when the first (who becomes "Admin") user registers
         /// </summary>
@@ -143,11 +250,136 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<bool>> ScanArtist(ApplicationUser user, Guid artistId, bool isReadOnly = false)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
+            if (artist == null)
+            {
+                await this.LogAndPublish($"ScanArtist Unknown Release [{ artistId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Artist Not Found [{ artistId }]");
+            }
+            try
+            {
+                var result = await this.ArtistFactory.ScanArtistReleasesFolders(artist.RoadieId, this.Configuration.LibraryFolder, isReadOnly);
+                this.CacheManager.ClearRegion(artist.CacheRegion);
+            }
+            catch (Exception ex)
+            {
+                await this.LogAndPublish(ex.ToString(), LogLevel.Error);
+                errors.Add(ex);
+            }
+            sw.Stop();
+            this.DbContext.ScanHistories.Add(new data.ScanHistory
+            {
+                UserId = user.Id,
+                ForArtistId = artist.Id,
+                NewReleases = this.ReleaseLookupEngine.AddedReleaseIds.Count(),
+                NewTracks = this.ReleaseFactory.AddedTrackIds.Count(),
+                TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
+            });
+            await this.DbContext.SaveChangesAsync();
+            await this.LogAndPublish($"ScanArtist `{artist}`, By User `{user}`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                AdditionalData = new Dictionary<string, object> { { "artistAverage", artist.Rating } },
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
         public async Task<OperationResult<bool>> ScanInboundFolder(ApplicationUser user, bool isReadOnly = false)
         {
             var d = new DirectoryInfo(this.Configuration.InboundFolder);
             var dest = new DirectoryInfo(this.Configuration.LibraryFolder);
             return await this.ScanFolder(d, dest, user, isReadOnly);
+        }
+
+        public async Task<OperationResult<bool>> ScanLibraryFolder(ApplicationUser user, bool isReadOnly = false)
+        {
+            var d = new DirectoryInfo(this.Configuration.LibraryFolder);
+            var dest = new DirectoryInfo(this.Configuration.LibraryFolder);
+            return await this.ScanFolder(d, dest, user, isReadOnly);
+        }
+
+        public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+            var release = this.DbContext.Releases
+                                        .Include(x => x.Artist)
+                                        .Include(x => x.Labels)
+                                        .FirstOrDefault(x => x.RoadieId == releaseId);
+            if (release == null)
+            {
+                await this.LogAndPublish($"ScanRelease Unknown Release [{ releaseId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Release Not Found [{ releaseId }]");
+            }
+            try
+            {
+                var result = await this.ReleaseFactory.ScanReleaseFolder(release.RoadieId, this.Configuration.LibraryFolder, isReadOnly, release);
+                this.CacheManager.ClearRegion(release.CacheRegion);
+            }
+            catch (Exception ex)
+            {
+                await this.LogAndPublish(ex.ToString(), LogLevel.Error);
+                errors.Add(ex);
+            }
+            sw.Stop();
+            this.DbContext.ScanHistories.Add(new data.ScanHistory
+            {
+                UserId = user.Id,
+                ForReleaseId = release.Id,
+                NewTracks = this.ReleaseFactory.AddedTrackIds.Count(),
+                TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
+            });
+            await this.DbContext.SaveChangesAsync();
+            await this.LogAndPublish($"ScanRelease `{release}`, By User `{user}`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        private void EventMessageLogger_Messages(object sender, EventMessage e)
+        {
+            Task.WaitAll(this.LogAndPublish(e.Message, e.Level));
+        }
+
+        private async Task LogAndPublish(string message, LogLevel level = LogLevel.Trace)
+        {
+            switch (level)
+            {
+                case LogLevel.Trace:
+                    this.Logger.LogTrace(message);
+                    break;
+
+                case LogLevel.Debug:
+                    this.Logger.LogDebug(message);
+                    break;
+
+                case LogLevel.Information:
+                    this.Logger.LogInformation(message);
+                    break;
+
+                case LogLevel.Warning:
+                    this.Logger.LogWarning(message);
+                    break;
+
+                case LogLevel.Critical:
+                    this.Logger.LogCritical(message);
+                    break;
+            }
+            await this.ScanActivityHub.Clients.All.SendAsync("SendSystemActivity", message);
         }
 
         private async Task<OperationResult<bool>> ScanFolder(DirectoryInfo d, DirectoryInfo dest, ApplicationUser user, bool isReadOnly)
@@ -197,243 +429,6 @@ namespace Roadie.Api.Services
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             };
-
         }
-
-        public async Task<OperationResult<bool>> ScanLibraryFolder(ApplicationUser user, bool isReadOnly = false)
-        {
-            var d = new DirectoryInfo(this.Configuration.LibraryFolder);
-            var dest = new DirectoryInfo(this.Configuration.LibraryFolder);
-            return await this.ScanFolder(d, dest, user, isReadOnly);
-        }
-
-        public async Task<OperationResult<bool>> ScanArtist(ApplicationUser user, Guid artistId, bool isReadOnly = false)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-
-            var errors = new List<Exception>();
-            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
-            if (artist == null)
-            {
-                await this.LogAndPublish($"ScanArtist Unknown Release [{ artistId}]", LogLevel.Warning);
-                return new OperationResult<bool>(true, $"Artist Not Found [{ artistId }]");
-            }
-            try
-            {
-                var result = await this.ArtistFactory.ScanArtistReleasesFolders(artist.RoadieId, this.Configuration.LibraryFolder, isReadOnly);
-                this.CacheManager.ClearRegion(artist.CacheRegion);
-            }
-            catch (Exception ex)
-            {
-                await this.LogAndPublish(ex.ToString(), LogLevel.Error);
-                errors.Add(ex);
-            }
-            sw.Stop();
-            this.DbContext.ScanHistories.Add(new data.ScanHistory
-            {
-                UserId = user.Id,
-                ForArtistId = artist.Id,
-                NewReleases = this.ReleaseLookupEngine.AddedReleaseIds.Count(),
-                NewTracks = this.ReleaseFactory.AddedTrackIds.Count(),
-                TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
-            });
-            await this.DbContext.SaveChangesAsync();
-            await this.LogAndPublish($"ScanArtist `{artist}`, By User `{user}`", LogLevel.Information);
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                AdditionalData = new Dictionary<string, object> { { "artistAverage", artist.Rating } },
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-        public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-
-            var errors = new List<Exception>();
-            var release = this.DbContext.Releases
-                                        .Include(x => x.Artist)
-                                        .Include(x => x.Labels)
-                                        .FirstOrDefault(x => x.RoadieId == releaseId);
-            if (release == null)
-            {
-                await this.LogAndPublish($"ScanRelease Unknown Release [{ releaseId}]", LogLevel.Warning);
-                return new OperationResult<bool>(true, $"Release Not Found [{ releaseId }]");
-            }
-            try
-            {
-                var result = await this.ReleaseFactory.ScanReleaseFolder(release.RoadieId, this.Configuration.LibraryFolder, isReadOnly, release);
-                this.CacheManager.ClearRegion(release.CacheRegion);
-            }
-            catch (Exception ex)
-            {
-                await this.LogAndPublish(ex.ToString(), LogLevel.Error);
-                errors.Add(ex);
-            }
-            sw.Stop();
-            this.DbContext.ScanHistories.Add(new data.ScanHistory
-            {
-                UserId = user.Id,
-                ForReleaseId = release.Id,
-                NewTracks = this.ReleaseFactory.AddedTrackIds.Count(),
-                TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
-            });
-            await this.DbContext.SaveChangesAsync();
-            await this.LogAndPublish($"ScanRelease `{release}`, By User `{user}`", LogLevel.Information);
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data = true,
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-        public async Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-
-            var errors = new List<Exception>();
-
-            var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == releaseId);
-            try
-            {
-                if (release == null)
-                {
-                    await this.LogAndPublish($"DeleteRelease Unknown Release [{ releaseId}]", LogLevel.Warning);
-                    return new OperationResult<bool>(true, $"Release Not Found [{ releaseId }]");
-                }
-                await this.ReleaseFactory.Delete(release, doDeleteFiles ?? false);
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex);
-                await this.LogAndPublish("Error deleting release.");
-                errors.Add(ex);
-            }
-            sw.Stop();
-            await this.LogAndPublish($"DeleteRelease `{ release }`, By User `{ user}`", LogLevel.Information);
-            this.CacheManager.Clear();
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data =true,
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-
-        }
-
-        public async Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId, bool doDeleteFiles = false)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
-            if (artist == null)
-            {
-                await this.LogAndPublish($"DeleteArtistReleases Unknown Artist [{ artistId}]", LogLevel.Warning);
-                return new OperationResult<bool>(true, $"Artist Not Found [{ artistId }]");
-            }
-            try
-            {
-                await this.ReleaseFactory.DeleteReleases(this.DbContext.Releases.Where(x => x.ArtistId == artist.Id).Select(x => x.RoadieId).ToArray(), doDeleteFiles);
-                await this.DbContext.SaveChangesAsync();
-
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex);
-                await this.LogAndPublish("Error deleting artist.");
-                errors.Add(ex);
-            }
-            sw.Stop();
-            await this.LogAndPublish($"DeleteArtistReleases `{ artist }`, By User `{user }`", LogLevel.Information);
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data = true,
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-        public async Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
-            if (artist == null)
-            {
-                await this.LogAndPublish($"DeleteArtist Unknown Artist [{ artistId}]", LogLevel.Warning);
-                return new OperationResult<bool>(true, $"Artist Not Found [{ artistId }]");
-            }
-            try
-            {
-                var result = await this.ArtistFactory.Delete(artist);
-                if (!result.IsSuccess)
-                {
-                    return new OperationResult<bool>
-                    {
-                        Errors = result.Errors
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex);
-                await this.LogAndPublish("Error deleting artist.");
-                errors.Add(ex);
-            }
-            sw.Stop();
-            await this.LogAndPublish($"DeleteArtist `{ artist }`, By User `{user }`", LogLevel.Information);
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data= true,
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-        private void EventMessageLogger_Messages(object sender, EventMessage e)
-        {
-            Task.WaitAll(this.LogAndPublish(e.Message, e.Level));
-        }
-
-        private async Task LogAndPublish(string message, LogLevel level = LogLevel.Trace)
-        {
-            switch (level)
-            {
-                case LogLevel.Trace:
-                    this.Logger.LogTrace(message);
-                    break;
-
-                case LogLevel.Debug:
-                    this.Logger.LogDebug(message);
-                    break;
-
-                case LogLevel.Information:
-                    this.Logger.LogInformation(message);
-                    break;
-
-                case LogLevel.Warning:
-                    this.Logger.LogWarning(message);
-                    break;
-
-                case LogLevel.Critical:
-                    this.Logger.LogCritical(message);
-                    break;
-            }
-            await this.ScanActivityHub.Clients.All.SendAsync("SendSystemActivity", message);
-        }
-
-
     }
 }

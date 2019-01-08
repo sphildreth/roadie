@@ -102,9 +102,9 @@ namespace Roadie.Api.Services
                 if (result.Data.Medias != null)
                 {
                     var user = this.GetUser(roadieUser.UserId);
-                    foreach(var media in result.Data.Medias)
+                    foreach (var media in result.Data.Medias)
                     {
-                        foreach(var track in media.Tracks)
+                        foreach (var track in media.Tracks)
                         {
                             track.TrackPlayUrl = this.MakeTrackPlayUrl(user, track.DatabaseId, track.Id);
                         }
@@ -649,7 +649,6 @@ namespace Roadie.Api.Services
                 if (model.Labels != null && model.Labels.Any())
                 {
                     // TODO
-
                 }
 
                 if (model.Images != null && model.Images.Any())

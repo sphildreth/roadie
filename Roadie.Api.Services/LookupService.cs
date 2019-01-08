@@ -84,6 +84,17 @@ namespace Roadie.Api.Services
             });
         }
 
+        public Task<OperationResult<IEnumerable<DataToken>>> QueMessageTypes()
+        {
+            var sw = Stopwatch.StartNew();
+            return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
+            {
+                Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.QueMessageType)),
+                IsSuccess = true,
+                OperationTime = sw.ElapsedMilliseconds
+            });
+        }
+
         public Task<OperationResult<IEnumerable<DataToken>>> ReleaseTypes()
         {
             var sw = Stopwatch.StartNew();
@@ -112,17 +123,6 @@ namespace Roadie.Api.Services
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
                 Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.Statuses)),
-                IsSuccess = true,
-                OperationTime = sw.ElapsedMilliseconds
-            });
-        }
-
-        public Task<OperationResult<IEnumerable<DataToken>>> QueMessageTypes()
-        {
-            var sw = Stopwatch.StartNew();
-            return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
-            {
-                Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.QueMessageType)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             });

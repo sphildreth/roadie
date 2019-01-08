@@ -54,7 +54,6 @@ namespace Roadie.Api.Services
                 tsw.Stop();
                 timings.Add("UserByIdAction", tsw.ElapsedMilliseconds);
                 return rr;
-
             }, ApplicationUser.CacheRegionUrn(id));
             sw.Stop();
             if (result?.Data != null)
@@ -71,127 +70,6 @@ namespace Roadie.Api.Services
                 IsSuccess = result?.IsSuccess ?? false,
                 OperationTime = sw.ElapsedMilliseconds
             };
-        }
-
-        public async Task<OperationResult<bool>> UpdateProfile(User userPerformingUpdate, User userBeingUpdatedModel)
-        {
-            var user = this.DbContext.Users.FirstOrDefault(x => x.RoadieId == userBeingUpdatedModel.UserId);
-            if (user == null)
-            {
-                return new OperationResult<bool>(true, string.Format("User Not Found [{0}]", userBeingUpdatedModel.UserId));
-            }
-            if (user.Id != userPerformingUpdate.Id && !userPerformingUpdate.IsAdmin)
-            {
-                return new OperationResult<bool>
-                {
-                    Errors = new List<Exception> { new Exception("Access Denied") }
-                };
-            }
-            // Check concurrency stamp
-            if(user.ConcurrencyStamp != userBeingUpdatedModel.ConcurrencyStamp)
-            {
-                return new OperationResult<bool>
-                {
-                    Errors = new List<Exception> { new Exception("User data is stale.") }
-                };
-            }
-            // Check that username (if changed) doesn't already exist 
-            if (user.UserName != userBeingUpdatedModel.UserName)
-            {
-                var userByUsername = this.DbContext.Users.FirstOrDefault(x => x.NormalizedUserName == userBeingUpdatedModel.UserName.ToUpper());
-                if (userByUsername != null)
-                {
-                    return new OperationResult<bool>
-                    {
-                        Errors = new List<Exception> { new Exception("Username already in use") }
-                    };
-                }
-            }
-            // Check that email (if changed) doesn't already exist
-            if (user.Email != userBeingUpdatedModel.Email)
-            {
-                var userByEmail = this.DbContext.Users.FirstOrDefault(x => x.NormalizedEmail == userBeingUpdatedModel.Email.ToUpper());
-                if (userByEmail != null)
-                {
-                    return new OperationResult<bool>
-                    {
-                        Errors = new List<Exception> { new Exception("Email already in use") }
-                    };
-                }
-            }
-            user.UserName = userBeingUpdatedModel.UserName;
-            user.NormalizedUserName = userBeingUpdatedModel.UserName.ToUpper();
-            user.Email = userBeingUpdatedModel.Email;
-            user.NormalizedEmail = userBeingUpdatedModel.Email.ToUpper();
-            user.ApiToken = userBeingUpdatedModel.ApiToken;
-            user.Timezone = userBeingUpdatedModel.Timezone;
-            user.Timeformat = userBeingUpdatedModel.Timeformat;
-            user.PlayerTrackLimit = userBeingUpdatedModel.PlayerTrackLimit;
-            user.RandomReleaseLimit = userBeingUpdatedModel.RandomReleaseLimit;
-            user.RecentlyPlayedLimit = userBeingUpdatedModel.RecentlyPlayedLimit;
-            user.Profile = userBeingUpdatedModel.Profile;
-            user.DoUseHtmlPlayer = userBeingUpdatedModel.DoUseHtmlPlayer;
-            user.IsPrivate = userBeingUpdatedModel.IsPrivate;
-            user.LastUpdated = DateTime.UtcNow;
-            user.FtpUrl = userBeingUpdatedModel.FtpUrl;
-            user.FtpDirectory = userBeingUpdatedModel.FtpDirectory;
-            user.FtpUsername = userBeingUpdatedModel.FtpUsername;
-            user.FtpPassword = EncryptionHelper.Encrypt(userBeingUpdatedModel.FtpPassword, user.RoadieId.ToString());
-            user.ConcurrencyStamp = Guid.NewGuid().ToString();
-
-            if(!string.IsNullOrEmpty(userBeingUpdatedModel.AvatarData))
-            {
-                var imageData = ImageHelper.ImageDataFromUrl(userBeingUpdatedModel.AvatarData);
-                if(imageData != null)
-                {
-                    user.Avatar = ImageHelper.ResizeImage(imageData, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
-                }
-            }
-            await this.DbContext.SaveChangesAsync();
-
-            if(!string.IsNullOrEmpty(userBeingUpdatedModel.Password) && !string.IsNullOrEmpty(userBeingUpdatedModel.PasswordConfirmation))
-            {
-                if(userBeingUpdatedModel.Password !=  userBeingUpdatedModel.PasswordConfirmation)
-                {
-                    return new OperationResult<bool>
-                    {
-                        Errors = new List<Exception> { new Exception("Password does not match confirmation") }
-                    };
-                }
-                string resetToken = await UserManager.GeneratePasswordResetTokenAsync(user);
-                var identityResult = await UserManager.ResetPasswordAsync(user, resetToken, userBeingUpdatedModel.Password);
-                if (!identityResult.Succeeded)
-                {                    
-                    return new OperationResult<bool>
-                    {
-                        Errors = identityResult.Errors != null ? identityResult.Errors.Select(x => new Exception($"Code [{ x.Code }], Description [{ x.Description }]")) : new List<Exception> { new Exception("Unable to reset password") }
-                    };
-                }
-            }
-
-            this.CacheManager.ClearRegion(ApplicationUser.CacheRegionUrn(user.RoadieId));
-
-            this.Logger.LogInformation($"User `{ userPerformingUpdate }` modifed user `{ userBeingUpdatedModel }`");
-
-            return new OperationResult<bool>
-            {
-                IsSuccess = true,
-                Data = true
-            };
-        }
-
-        private Task<OperationResult<User>> UserByIdAction(Guid id)
-        {
-            var user = this.GetUser(id);
-            if (user == null)
-            {
-                return Task.FromResult(new OperationResult<User>(true, string.Format("User Not Found [{0}]", id)));
-            }
-            return Task.FromResult(new OperationResult<User>
-            {
-                IsSuccess = true,
-                Data = user.Adapt<User>()
-            });
         }
 
         public Task<Library.Models.Pagination.PagedResult<UserList>> List(PagedRequest request)
@@ -336,16 +214,6 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> SetArtistFavorite(Guid artistId, User roadieUser, bool isFavorite)
-        {
-            var user = this.GetUser(roadieUser.UserId);
-            if (user == null)
-            {
-                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
-            }
-            return await base.ToggleArtistFavorite(artistId, user, isFavorite);
-        }
-
         public async Task<OperationResult<bool>> SetArtistDisliked(Guid artistId, User roadieUser, bool isDisliked)
         {
             var user = this.GetUser(roadieUser.UserId);
@@ -354,6 +222,16 @@ namespace Roadie.Api.Services
                 return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
             }
             return await base.ToggleArtistDisliked(artistId, user, isDisliked);
+        }
+
+        public async Task<OperationResult<bool>> SetArtistFavorite(Guid artistId, User roadieUser, bool isFavorite)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.ToggleArtistFavorite(artistId, user, isFavorite);
         }
 
         public async Task<OperationResult<short>> SetArtistRating(Guid artistId, User roadieUser, short rating)
@@ -458,26 +336,6 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> SetReleaseFavorite(Guid releaseId, User roadieUser, bool isFavorite)
-        {
-            var user = this.GetUser(roadieUser.UserId);
-            if (user == null)
-            {
-                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
-            }
-            return await base.ToggleReleaseFavorite(releaseId, user, isFavorite);
-        }
-
-        public async Task<OperationResult<bool>> SetTrackFavorite(Guid trackId, User roadieUser, bool isFavorite)
-        {
-            var user = this.GetUser(roadieUser.UserId);
-            if (user == null)
-            {
-                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
-            }
-            return await base.ToggleTrackFavorite(trackId, user, isFavorite);
-        }
-
         public async Task<OperationResult<bool>> SetReleaseDisliked(Guid releaseId, User roadieUser, bool isDisliked)
         {
             var user = this.GetUser(roadieUser.UserId);
@@ -486,6 +344,16 @@ namespace Roadie.Api.Services
                 return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
             }
             return await base.ToggleReleaseDisliked(releaseId, user, isDisliked);
+        }
+
+        public async Task<OperationResult<bool>> SetReleaseFavorite(Guid releaseId, User roadieUser, bool isFavorite)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.ToggleReleaseFavorite(releaseId, user, isFavorite);
         }
 
         public async Task<OperationResult<short>> SetReleaseRating(Guid releaseId, User roadieUser, short rating)
@@ -521,16 +389,6 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating)
-        {
-            var user = this.GetUser(roadieUser.UserId);
-            if (user == null)
-            {
-                return new OperationResult<short>(true, $"Invalid User [{ roadieUser }]");
-            }
-            return await base.SetTrackRating(trackId, user, rating);
-        }
-
         public async Task<OperationResult<bool>> SetTrackDisliked(Guid trackId, User roadieUser, bool isDisliked)
         {
             var user = this.GetUser(roadieUser.UserId);
@@ -541,7 +399,132 @@ namespace Roadie.Api.Services
             return await base.ToggleTrackDisliked(trackId, user, isDisliked);
         }
 
+        public async Task<OperationResult<bool>> SetTrackFavorite(Guid trackId, User roadieUser, bool isFavorite)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.ToggleTrackFavorite(trackId, user, isFavorite);
+        }
 
+        public async Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+            if (user == null)
+            {
+                return new OperationResult<short>(true, $"Invalid User [{ roadieUser }]");
+            }
+            return await base.SetTrackRating(trackId, user, rating);
+        }
+
+        public async Task<OperationResult<bool>> UpdateProfile(User userPerformingUpdate, User userBeingUpdatedModel)
+        {
+            var user = this.DbContext.Users.FirstOrDefault(x => x.RoadieId == userBeingUpdatedModel.UserId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, string.Format("User Not Found [{0}]", userBeingUpdatedModel.UserId));
+            }
+            if (user.Id != userPerformingUpdate.Id && !userPerformingUpdate.IsAdmin)
+            {
+                return new OperationResult<bool>
+                {
+                    Errors = new List<Exception> { new Exception("Access Denied") }
+                };
+            }
+            // Check concurrency stamp
+            if (user.ConcurrencyStamp != userBeingUpdatedModel.ConcurrencyStamp)
+            {
+                return new OperationResult<bool>
+                {
+                    Errors = new List<Exception> { new Exception("User data is stale.") }
+                };
+            }
+            // Check that username (if changed) doesn't already exist
+            if (user.UserName != userBeingUpdatedModel.UserName)
+            {
+                var userByUsername = this.DbContext.Users.FirstOrDefault(x => x.NormalizedUserName == userBeingUpdatedModel.UserName.ToUpper());
+                if (userByUsername != null)
+                {
+                    return new OperationResult<bool>
+                    {
+                        Errors = new List<Exception> { new Exception("Username already in use") }
+                    };
+                }
+            }
+            // Check that email (if changed) doesn't already exist
+            if (user.Email != userBeingUpdatedModel.Email)
+            {
+                var userByEmail = this.DbContext.Users.FirstOrDefault(x => x.NormalizedEmail == userBeingUpdatedModel.Email.ToUpper());
+                if (userByEmail != null)
+                {
+                    return new OperationResult<bool>
+                    {
+                        Errors = new List<Exception> { new Exception("Email already in use") }
+                    };
+                }
+            }
+            user.UserName = userBeingUpdatedModel.UserName;
+            user.NormalizedUserName = userBeingUpdatedModel.UserName.ToUpper();
+            user.Email = userBeingUpdatedModel.Email;
+            user.NormalizedEmail = userBeingUpdatedModel.Email.ToUpper();
+            user.ApiToken = userBeingUpdatedModel.ApiToken;
+            user.Timezone = userBeingUpdatedModel.Timezone;
+            user.Timeformat = userBeingUpdatedModel.Timeformat;
+            user.PlayerTrackLimit = userBeingUpdatedModel.PlayerTrackLimit;
+            user.RandomReleaseLimit = userBeingUpdatedModel.RandomReleaseLimit;
+            user.RecentlyPlayedLimit = userBeingUpdatedModel.RecentlyPlayedLimit;
+            user.Profile = userBeingUpdatedModel.Profile;
+            user.DoUseHtmlPlayer = userBeingUpdatedModel.DoUseHtmlPlayer;
+            user.IsPrivate = userBeingUpdatedModel.IsPrivate;
+            user.LastUpdated = DateTime.UtcNow;
+            user.FtpUrl = userBeingUpdatedModel.FtpUrl;
+            user.FtpDirectory = userBeingUpdatedModel.FtpDirectory;
+            user.FtpUsername = userBeingUpdatedModel.FtpUsername;
+            user.FtpPassword = EncryptionHelper.Encrypt(userBeingUpdatedModel.FtpPassword, user.RoadieId.ToString());
+            user.ConcurrencyStamp = Guid.NewGuid().ToString();
+
+            if (!string.IsNullOrEmpty(userBeingUpdatedModel.AvatarData))
+            {
+                var imageData = ImageHelper.ImageDataFromUrl(userBeingUpdatedModel.AvatarData);
+                if (imageData != null)
+                {
+                    user.Avatar = ImageHelper.ResizeImage(imageData, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
+                }
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(userBeingUpdatedModel.Password) && !string.IsNullOrEmpty(userBeingUpdatedModel.PasswordConfirmation))
+            {
+                if (userBeingUpdatedModel.Password != userBeingUpdatedModel.PasswordConfirmation)
+                {
+                    return new OperationResult<bool>
+                    {
+                        Errors = new List<Exception> { new Exception("Password does not match confirmation") }
+                    };
+                }
+                string resetToken = await UserManager.GeneratePasswordResetTokenAsync(user);
+                var identityResult = await UserManager.ResetPasswordAsync(user, resetToken, userBeingUpdatedModel.Password);
+                if (!identityResult.Succeeded)
+                {
+                    return new OperationResult<bool>
+                    {
+                        Errors = identityResult.Errors != null ? identityResult.Errors.Select(x => new Exception($"Code [{ x.Code }], Description [{ x.Description }]")) : new List<Exception> { new Exception("Unable to reset password") }
+                    };
+                }
+            }
+
+            this.CacheManager.ClearRegion(ApplicationUser.CacheRegionUrn(user.RoadieId));
+
+            this.Logger.LogInformation($"User `{ userPerformingUpdate }` modifed user `{ userBeingUpdatedModel }`");
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
 
         private async Task<OperationResult<bool>> SetBookmark(ApplicationUser user, Library.Enums.BookmarkType bookmarktype, int bookmarkTargetId, bool isBookmarked)
         {
@@ -581,6 +564,20 @@ namespace Roadie.Api.Services
                 IsSuccess = true,
                 Data = true
             };
+        }
+
+        private Task<OperationResult<User>> UserByIdAction(Guid id)
+        {
+            var user = this.GetUser(id);
+            if (user == null)
+            {
+                return Task.FromResult(new OperationResult<User>(true, string.Format("User Not Found [{0}]", id)));
+            }
+            return Task.FromResult(new OperationResult<User>
+            {
+                IsSuccess = true,
+                Data = user.Adapt<User>()
+            });
         }
     }
 }

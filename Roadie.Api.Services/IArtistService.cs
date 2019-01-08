@@ -14,8 +14,11 @@ namespace Roadie.Api.Services
         Task<OperationResult<Artist>> ById(User roadieUser, Guid id, IEnumerable<string> includes);
 
         Task<PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true);
+
         Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl);
-        Task<OperationResult<Library.Models.Image>> UploadArtistImage(User user, Guid id, IFormFile file);
+
         Task<OperationResult<bool>> UpdateArtist(User user, Artist artist);
+
+        Task<OperationResult<Library.Models.Image>> UploadArtistImage(User user, Guid id, IFormFile file);
     }
 }

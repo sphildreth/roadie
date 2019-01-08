@@ -7,7 +7,6 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
-using Roadie.Library.Models;
 using Roadie.Library.Models.Collections;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Statistics;
@@ -65,6 +64,55 @@ namespace Roadie.Api.Services
                 IsSuccess = result?.IsSuccess ?? false,
                 OperationTime = sw.ElapsedMilliseconds
             };
+        }
+
+        public Task<Library.Models.Pagination.PagedResult<CollectionList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null, Guid? artistId = null)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            IQueryable<data.Collection> collections = null;
+            if (artistId.HasValue)
+            {
+                var sql = @"select DISTINCT c.*
+                            from `collectionrelease` cr
+                            join `collection` c on c.id = cr.collectionId
+                            join `release` r on r.id = cr.releaseId
+                            join `artist` a on r.artistId = a.id
+                            where a.roadieId = {0}";
+
+                collections = this.DbContext.Collections.FromSql(sql, artistId);
+            }
+            else if (releaseId.HasValue)
+            {
+                var sql = @"select DISTINCT c.*
+                            from `collectionrelease` cr
+                            join `collection` c on c.id = cr.collectionId
+                            join `release` r on r.id = cr.releaseId
+                            where r.roadieId = {0}";
+
+                collections = this.DbContext.Collections.FromSql(sql, releaseId);
+            }
+            else
+            {
+                collections = this.DbContext.Collections;
+            }
+            var result = (from c in collections
+                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && c.Name.Contains(request.Filter)))
+                          select CollectionList.FromDataCollection(c, (from crc in this.DbContext.CollectionReleases
+                                                                       where crc.CollectionId == c.Id
+                                                                       select crc.Id).Count(), this.MakeCollectionThumbnailImage(c.RoadieId)));
+            var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } }) : request.OrderValue(null);
+            var rowCount = result.Count();
+            var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            sw.Stop();
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<CollectionList>
+            {
+                TotalCount = rowCount,
+                CurrentPage = request.PageValue,
+                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
+                OperationTime = sw.ElapsedMilliseconds,
+                Rows = rows
+            });
         }
 
         private Task<OperationResult<Collection>> CollectionByIdAction(Guid id, IEnumerable<string> includes = null)
@@ -140,7 +188,6 @@ namespace Roadie.Api.Services
                         TrackPlayedCount = collectionReleases.Sum(x => x.PlayedCount)
                     };
                 }
-
             }
 
             sw.Stop();
@@ -149,57 +196,6 @@ namespace Roadie.Api.Services
                 Data = result,
                 IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
-            });
-
-        }
-
-
-        public Task<Library.Models.Pagination.PagedResult<CollectionList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null, Guid? artistId = null)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            IQueryable<data.Collection> collections = null;
-            if(artistId.HasValue)
-            {
-                var sql = @"select DISTINCT c.*
-                            from `collectionrelease` cr
-                            join `collection` c on c.id = cr.collectionId
-                            join `release` r on r.id = cr.releaseId
-                            join `artist` a on r.artistId = a.id
-                            where a.roadieId = {0}";
-
-                collections = this.DbContext.Collections.FromSql(sql, artistId);
-            }
-            else if(releaseId.HasValue)
-            {
-                var sql = @"select DISTINCT c.*
-                            from `collectionrelease` cr
-                            join `collection` c on c.id = cr.collectionId
-                            join `release` r on r.id = cr.releaseId
-                            where r.roadieId = {0}";
-
-                collections = this.DbContext.Collections.FromSql(sql, releaseId);
-            }
-            else
-            {
-                collections = this.DbContext.Collections;
-            }
-            var result = (from c in collections
-                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && c.Name.Contains(request.Filter)))
-                          select CollectionList.FromDataCollection(c, (from crc in this.DbContext.CollectionReleases
-                                                                       where crc.CollectionId == c.Id
-                                                                       select crc.Id).Count(), this.MakeCollectionThumbnailImage(c.RoadieId)));
-            var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } }) : request.OrderValue(null);
-            var rowCount = result.Count();
-            var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
-            sw.Stop();
-            return Task.FromResult(new Library.Models.Pagination.PagedResult<CollectionList>
-            {
-                TotalCount = rowCount,
-                CurrentPage = request.PageValue,
-                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
-                OperationTime = sw.ElapsedMilliseconds,
-                Rows = rows
             });
         }
     }

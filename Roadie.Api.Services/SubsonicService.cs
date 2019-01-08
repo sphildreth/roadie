@@ -38,8 +38,8 @@ namespace Roadie.Api.Services
         private IBookmarkService BookmarkService { get; }
         private ICollectionService CollectionService { get; }
         private IImageService ImageService { get; }
-        private IPlaylistService PlaylistService { get; }
         private IPlayActivityService PlayActivityService { get; }
+        private IPlaylistService PlaylistService { get; }
         private IReleaseService ReleaseService { get; }
         private ITrackService TrackService { get; }
         private UserManager<ApplicationUser> UserManger { get; }
@@ -71,6 +71,34 @@ namespace Roadie.Api.Services
             this.ReleaseService = releaseService;
             this.TrackService = trackService;
             this.UserManger = userManager;
+        }
+
+        /// <summary>
+        /// Adds a message to the chat log.
+        /// </summary>
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> AddChatMessage(subsonic.Request request, User roadieUser)
+        {
+            if (string.IsNullOrEmpty(request.Message))
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.RequiredParameterMissing, $"Message is required");
+            }
+            var chatMessage = new data.ChatMessage
+            {
+                UserId = roadieUser.Id.Value,
+                Message = request.Message
+            };
+            this.DbContext.ChatMessages.Add(chatMessage);
+            await this.DbContext.SaveChangesAsync();
+
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok
+                }
+            };
         }
 
         /// <summary>
@@ -418,7 +446,7 @@ namespace Roadie.Api.Services
             {
                 this.Logger.LogError(ex, "GetAlbum Request [{0}], User [{1}]", JsonConvert.SerializeObject(request), roadieUser.ToString());
             }
-            return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.ReleaseId}]");                
+            return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{ request.ReleaseId}]");
         }
 
         /// <summary>
@@ -657,6 +685,39 @@ namespace Roadie.Api.Services
                     }
                 }
             };
+        }
+
+        /// <summary>
+        /// Returns the current visible (non-expired) chat messages.
+        /// </summary>
+        public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetChatMessages(subsonic.Request request, User roadieUser, long? since)
+        {
+            DateTime? messagesSince = since.HasValue ? (DateTime?)since.Value.FromUnixTime() : null;
+            var chatMessages = (from cm in this.DbContext.ChatMessages
+                                join u in this.DbContext.Users on cm.UserId equals u.Id
+                                where messagesSince == null || cm.CreatedDate >= messagesSince
+                                where cm.Status != Library.Enums.Statuses.Deleted
+                                orderby cm.CreatedDate descending
+                                select new subsonic.ChatMessage
+                                {
+                                    message = cm.Message,
+                                    username = u.UserName,
+                                    time = cm.CreatedDate.ToUnixTime()
+                                }).ToArray();
+            return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok,
+                    ItemElementName = subsonic.ItemChoiceType.chatMessages,
+                    Item = new subsonic.ChatMessages
+                    {
+                        chatMessage = chatMessages.ToArray()
+                    }
+                }
+            });
         }
 
         /// <summary>
@@ -958,6 +1019,51 @@ namespace Roadie.Api.Services
         }
 
         /// <summary>
+        /// Returns what is currently being played by all users. Takes no extra parameters.
+        /// </summary>
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetNowPlaying(subsonic.Request request, User roadieUser)
+        {
+            var pagedRequest = request.PagedRequest;
+            pagedRequest.Sort = "PlayedDateDateTime";
+            pagedRequest.Order = "DESC";
+            var playActivityResult = await this.PlayActivityService.List(pagedRequest, roadieUser, DateTime.UtcNow.AddDays(-1));
+
+            pagedRequest.Sort = null;
+            pagedRequest.Order = null;
+            pagedRequest.FilterToTrackIds = playActivityResult.Rows.Select(x => SafeParser.ToGuid(x.Track.Value)).Distinct().ToArray();
+            var playActivityTracksResult = await this.TrackService.List(pagedRequest, roadieUser);
+
+            var playEntries = new List<subsonic.NowPlayingEntry>();
+            var now = DateTime.UtcNow;
+            foreach (var row in playActivityResult.Rows)
+            {
+                var rowTrack = playActivityTracksResult.Rows.FirstOrDefault(x => x.Track.Value == row.Track.Value);
+                var playEntryTrackChild = this.SubsonicChildForTrack(rowTrack);
+                var playEntry = playEntryTrackChild.Adapt<subsonic.NowPlayingEntry>();
+                playEntry.username = row.User.Text;
+                playEntry.minutesAgo = (int)(now - row.PlayedDateDateTime.Value).TotalMinutes;
+                playEntry.playerId = 0;
+                playEntry.playerName = string.Empty;
+                playEntries.Add(playEntry);
+            }
+
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok,
+                    ItemElementName = subsonic.ItemChoiceType.nowPlaying,
+                    Item = new subsonic.NowPlaying
+                    {
+                        entry = playEntries.ToArray()
+                    }
+                }
+            };
+        }
+
+        /// <summary>
         /// Returns a listing of files in a saved playlist.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPlaylist(subsonic.Request request, User roadieUser)
@@ -1019,8 +1125,53 @@ namespace Roadie.Api.Services
         }
 
         /// <summary>
-                              /// Returns all Podcast channels the server subscribes to, and (optionally) their episodes. This method can also be used to return details for only one channel - refer to the id parameter. A typical use case for this method would be to first retrieve all channels without episodes, and then retrieve all episodes for the single channel the user selects.
-                              /// </summary>
+        /// Returns the state of the play queue for this user (as set by savePlayQueue). This includes the tracks in the play queue, the currently playing track, and the position within this track. Typically used to allow a user to move between different clients/apps while retaining the same play queue (for instance when listening to an audio book).
+        /// </summary>
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPlayQueue(subsonic.Request request, User roadieUser)
+        {
+            var user = this.GetUser(roadieUser.UserId);
+
+            subsonic.PlayQueue playQue = null;
+
+            if (user.UserQues != null && user.UserQues.Any())
+            {
+                var current = user.UserQues.FirstOrDefault(x => x.IsCurrent ?? false) ?? user.UserQues.First();
+                var pagedRequest = request.PagedRequest;
+                pagedRequest.FilterToTrackIds = user.UserQues.Select(x => x.Track?.RoadieId).ToArray();
+                var queTracksResult = await this.TrackService.List(pagedRequest, roadieUser);
+                var queTrackRows = (from tt in queTracksResult.Rows
+                                    join qt in user.UserQues on tt.DatabaseId equals qt.TrackId
+                                    orderby qt.QueSortOrder
+                                    select tt).ToArray();
+                playQue = new subsonic.PlayQueue
+                {
+                    // I didnt specify current as it appears to be a Int and it blows up several client applications changing it to a string.
+                    // current = subsonic.Request.TrackIdIdentifier + current.Track.RoadieId.ToString(),
+                    changedBy = user.UserName,
+                    changed = user.UserQues.OrderByDescending(x => x.CreatedDate).First().CreatedDate,
+                    position = current.Position ?? 0,
+                    positionSpecified = current.Position.HasValue,
+                    username = user.UserName,
+                    entry = this.SubsonicChildrenForTracks(queTrackRows)
+                };
+            }
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                IsEmptyResponse = playQue == null,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok,
+                    ItemElementName = subsonic.ItemChoiceType.playQueue,
+                    Item = playQue
+                }
+            };
+        }
+
+        /// <summary>
+        /// Returns all Podcast channels the server subscribes to, and (optionally) their episodes. This method can also be used to return details for only one channel - refer to the id parameter. A typical use case for this method would be to first retrieve all channels without episodes, and then retrieve all episodes for the single channel the user selects.
+        /// </summary>
         public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPodcasts(subsonic.Request request)
         {
             return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>
@@ -1324,6 +1475,55 @@ namespace Roadie.Api.Services
         }
 
         /// <summary>
+        /// Saves the state of the play queue for this user. This includes the tracks in the play queue, the currently playing track, and the position within this track. Typically used to allow a user to move between different clients/apps while retaining the same play queue (for instance when listening to an audio book).
+        /// </summary>
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> SavePlayQueue(subsonic.Request request, User roadieUser, string current, long? position)
+        {
+            // Remove any existing Que for User
+            var user = this.GetUser(roadieUser.UserId);
+            if (user.UserQues != null && user.UserQues.Any())
+            {
+                this.DbContext.UserQues.RemoveRange(user.UserQues);
+            }
+
+            // Create a new UserQue for each posted TrackId in ids
+            if (request.ids != null && request.ids.Any())
+            {
+                short queSortOrder = 0;
+                var pagedRequest = request.PagedRequest;
+                pagedRequest.FilterToTrackIds = request.ids.Select(x => SafeParser.ToGuid(x)).Where(x => x.HasValue).ToArray();
+                var trackListResult = await this.TrackService.List(pagedRequest, roadieUser);
+                var currentTrackId = SafeParser.ToGuid(current);
+                foreach (var row in trackListResult.Rows)
+                {
+                    queSortOrder++;
+                    this.DbContext.UserQues.Add(new data.UserQue
+                    {
+                        IsCurrent = row.Track.Value == currentTrackId?.ToString(),
+                        Position = row.Track.Value == currentTrackId?.ToString() ? position : null,
+                        QueSortOrder = queSortOrder,
+                        TrackId = row.DatabaseId,
+                        UserId = user.Id
+                    });
+                }
+            }
+
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+
+            return new subsonic.SubsonicOperationResult<subsonic.Response>
+            {
+                IsSuccess = true,
+                Data = new subsonic.Response
+                {
+                    version = SubsonicService.SubsonicVersion,
+                    status = subsonic.ResponseStatus.ok
+                }
+            };
+        }
+
+        /// <summary>
         /// Returns albums, artists and songs matching the given search criteria. Supports paging through the result.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> Search(subsonic.Request request, User roadieUser, subsonic.SearchVersion version)
@@ -1610,207 +1810,20 @@ namespace Roadie.Api.Services
             };
         }
 
-        /// <summary>
-        /// Returns what is currently being played by all users. Takes no extra parameters.
-        /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetNowPlaying(subsonic.Request request, User roadieUser)
-        {
-            var pagedRequest = request.PagedRequest;
-            pagedRequest.Sort = "PlayedDateDateTime";
-            pagedRequest.Order = "DESC";
-            var playActivityResult = await this.PlayActivityService.List(pagedRequest, roadieUser, DateTime.UtcNow.AddDays(-1));
-
-            pagedRequest.Sort = null;
-            pagedRequest.Order = null;
-            pagedRequest.FilterToTrackIds = playActivityResult.Rows.Select(x => SafeParser.ToGuid(x.Track.Value)).Distinct().ToArray();
-            var playActivityTracksResult = await this.TrackService.List(pagedRequest, roadieUser);
-
-            var playEntries = new List<subsonic.NowPlayingEntry>();
-            var now = DateTime.UtcNow;
-            foreach(var row in playActivityResult.Rows)
-            {
-                var rowTrack = playActivityTracksResult.Rows.FirstOrDefault(x => x.Track.Value == row.Track.Value);
-                var playEntryTrackChild = this.SubsonicChildForTrack(rowTrack);
-                var playEntry = playEntryTrackChild.Adapt<subsonic.NowPlayingEntry>();
-                playEntry.username = row.User.Text;
-                playEntry.minutesAgo = (int)(now - row.PlayedDateDateTime.Value).TotalMinutes;
-                playEntry.playerId = 0;
-                playEntry.playerName = string.Empty;
-                playEntries.Add(playEntry);
-            }
-
-            return new subsonic.SubsonicOperationResult<subsonic.Response>
-            {
-                IsSuccess = true,
-                Data = new subsonic.Response
-                {
-                    version = SubsonicService.SubsonicVersion,
-                    status = subsonic.ResponseStatus.ok,
-                    ItemElementName = subsonic.ItemChoiceType.nowPlaying,
-                    Item = new subsonic.NowPlaying
-                    {
-                         entry = playEntries.ToArray()
-                    }
-                }
-            };
-        }
-
-        /// <summary>
-        /// Returns the current visible (non-expired) chat messages.
-        /// </summary>
-        public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetChatMessages(subsonic.Request request, User roadieUser, long? since)
-        {            
-            DateTime? messagesSince = since.HasValue ? (DateTime?)since.Value.FromUnixTime() : null;
-            var chatMessages = (from cm in this.DbContext.ChatMessages
-                                join u in this.DbContext.Users on cm.UserId equals u.Id
-                                where messagesSince == null || cm.CreatedDate >= messagesSince
-                                where cm.Status != Library.Enums.Statuses.Deleted
-                                orderby cm.CreatedDate descending
-                                select new subsonic.ChatMessage
-                                {
-                                     message = cm.Message,
-                                     username = u.UserName,
-                                     time = cm.CreatedDate.ToUnixTime()
-                                }).ToArray();
-            return Task.FromResult(new subsonic.SubsonicOperationResult<subsonic.Response>
-            {
-                IsSuccess = true,
-                Data = new subsonic.Response
-                {
-                    version = SubsonicService.SubsonicVersion,
-                    status = subsonic.ResponseStatus.ok,
-                    ItemElementName = subsonic.ItemChoiceType.chatMessages,
-                    Item = new subsonic.ChatMessages
-                    {
-                        chatMessage = chatMessages.ToArray()
-                    }
-                }
-            });
-        }
-        
-        /// <summary>
-        /// Adds a message to the chat log.
-        /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> AddChatMessage(subsonic.Request request, User roadieUser)
-        {
-            if(string.IsNullOrEmpty(request.Message))
-            {
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.RequiredParameterMissing, $"Message is required");
-            }
-            var chatMessage = new data.ChatMessage
-            {
-                UserId = roadieUser.Id.Value,
-                Message = request.Message
-            };
-            this.DbContext.ChatMessages.Add(chatMessage);
-            await this.DbContext.SaveChangesAsync();
-
-            return new subsonic.SubsonicOperationResult<subsonic.Response>
-            {
-                IsSuccess = true,
-                Data = new subsonic.Response
-                {
-                    version = SubsonicService.SubsonicVersion,
-                    status = subsonic.ResponseStatus.ok
-                }
-            };
-        }
-
-        /// <summary>
-        /// Saves the state of the play queue for this user. This includes the tracks in the play queue, the currently playing track, and the position within this track. Typically used to allow a user to move between different clients/apps while retaining the same play queue (for instance when listening to an audio book).
-        /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> SavePlayQueue(subsonic.Request request, User roadieUser, string current, long? position)
-        {
-            // Remove any existing Que for User
-            var user = this.GetUser(roadieUser.UserId);
-            if(user.UserQues != null && user.UserQues.Any())
-            {
-                this.DbContext.UserQues.RemoveRange(user.UserQues);
-            }
-
-            // Create a new UserQue for each posted TrackId in ids
-            if (request.ids != null && request.ids.Any())
-            {
-                short queSortOrder = 0;
-                var pagedRequest = request.PagedRequest;
-                pagedRequest.FilterToTrackIds = request.ids.Select(x => SafeParser.ToGuid(x)).Where(x => x.HasValue).ToArray();
-                var trackListResult = await this.TrackService.List(pagedRequest, roadieUser);
-                var currentTrackId = SafeParser.ToGuid(current);
-                foreach (var row in trackListResult.Rows)
-                {
-                    queSortOrder++;
-                    this.DbContext.UserQues.Add(new data.UserQue
-                    {
-                        IsCurrent = row.Track.Value == currentTrackId?.ToString(),
-                        Position = row.Track.Value == currentTrackId?.ToString() ? position : null,
-                        QueSortOrder = queSortOrder,
-                        TrackId = row.DatabaseId,
-                        UserId = user.Id                       
-                    });
-                }
-            }
-
-            await this.DbContext.SaveChangesAsync();
-
-            this.CacheManager.ClearRegion(user.CacheRegion);
-
-            return new subsonic.SubsonicOperationResult<subsonic.Response>
-            {
-                IsSuccess = true,
-                Data = new subsonic.Response
-                {
-                    version = SubsonicService.SubsonicVersion,
-                    status = subsonic.ResponseStatus.ok
-                }
-            };
-        }
-
-        /// <summary>
-        /// Returns the state of the play queue for this user (as set by savePlayQueue). This includes the tracks in the play queue, the currently playing track, and the position within this track. Typically used to allow a user to move between different clients/apps while retaining the same play queue (for instance when listening to an audio book).
-        /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPlayQueue(subsonic.Request request, User roadieUser)
-        {
-            var user = this.GetUser(roadieUser.UserId);
-
-            subsonic.PlayQueue playQue = null;
-            
-            if(user.UserQues != null && user.UserQues.Any())
-            {
-                var current = user.UserQues.FirstOrDefault(x => x.IsCurrent ?? false) ?? user.UserQues.First();
-                var pagedRequest = request.PagedRequest;
-                pagedRequest.FilterToTrackIds = user.UserQues.Select(x => x.Track?.RoadieId).ToArray();
-                var queTracksResult = await this.TrackService.List(pagedRequest, roadieUser);
-                var queTrackRows = (from tt in queTracksResult.Rows
-                                    join qt in user.UserQues on tt.DatabaseId equals qt.TrackId
-                                    orderby qt.QueSortOrder
-                                    select tt).ToArray();
-                playQue = new subsonic.PlayQueue
-                {
-                    // I didnt specify current as it appears to be a Int and it blows up several client applications changing it to a string. 
-                    // current = subsonic.Request.TrackIdIdentifier + current.Track.RoadieId.ToString(),
-                    changedBy = user.UserName,
-                    changed = user.UserQues.OrderByDescending(x => x.CreatedDate).First().CreatedDate,
-                    position = current.Position ?? 0,
-                    positionSpecified = current.Position.HasValue,
-                    username = user.UserName,
-                    entry = this.SubsonicChildrenForTracks(queTrackRows)
-                };
-            }
-            return new subsonic.SubsonicOperationResult<subsonic.Response>
-            {
-                IsSuccess = true,
-                IsEmptyResponse = playQue == null,
-                Data = new subsonic.Response
-                {
-                    version = SubsonicService.SubsonicVersion,
-                    status = subsonic.ResponseStatus.ok,
-                    ItemElementName = subsonic.ItemChoiceType.playQueue,
-                    Item = playQue
-                }
-            };
-        }
-
         #region Privates
+
+        private string[] AllowedUsers()
+        {
+            return this.CacheManager.Get<string[]>(CacheManagerBase.SystemCacheRegionUrn + ":active_usernames", () =>
+            {
+                return this.DbContext.Users.Where(x => x.IsActive ?? false).Select(x => x.UserName).ToArray();
+            }, CacheManagerBase.SystemCacheRegionUrn);
+        }
+
+        private subsonic.MusicFolder CollectionMusicFolder()
+        {
+            return this.MusicFolders().First(x => x.id == 1);
+        }
 
         private async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetArtistsAction(subsonic.Request request, User roadieUser)
         {
@@ -1854,19 +1867,6 @@ namespace Roadie.Api.Services
                     }
                 }
             };
-        }
-
-        private string[] AllowedUsers()
-        {
-            return this.CacheManager.Get<string[]>(CacheManagerBase.SystemCacheRegionUrn + ":active_usernames", () =>
-            {
-                return this.DbContext.Users.Where(x => x.IsActive ?? false).Select(x => x.UserName).ToArray();
-            }, CacheManagerBase.SystemCacheRegionUrn);
-        }
-
-        private subsonic.MusicFolder CollectionMusicFolder()
-        {
-            return this.MusicFolders().First(x => x.id == 1);
         }
 
         private async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetIndexesAction(subsonic.Request request, User roadieUser, long? ifModifiedSince = null)
@@ -1955,7 +1955,7 @@ namespace Roadie.Api.Services
         private new async Task<subsonic.SubsonicOperationResult<bool>> SetArtistRating(Guid artistId, ApplicationUser user, short rating)
         {
             var r = await base.SetArtistRating(artistId, user, rating);
-            if(r.IsNotFoundResult)
+            if (r.IsNotFoundResult)
             {
                 return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Artist Id [{ artistId }]");
             }
@@ -2286,7 +2286,7 @@ namespace Roadie.Api.Services
                 avatarLastChangedSpecified = user.LastUpdated.HasValue,
                 commentRole = true,
                 coverArtRole = isEditor || isAdmin,
-                downloadRole = isEditor || isAdmin, 
+                downloadRole = isEditor || isAdmin,
                 email = user.Email,
                 jukeboxRole = false, // Jukebox disabled (what is jukebox?)
                 maxBitRate = 320,
@@ -2295,7 +2295,7 @@ namespace Roadie.Api.Services
                 podcastRole = false, // Disable podcast nonsense
                 scrobblingEnabled = false, // Disable scrobbling
                 settingsRole = isAdmin,
-                shareRole = false, 
+                shareRole = false,
                 streamRole = true,
                 uploadRole = true,
                 username = user.UserName,

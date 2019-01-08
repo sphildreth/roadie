@@ -8,6 +8,7 @@ namespace Roadie.Api.Services
     public interface IStatisticsService
     {
         Task<OperationResult<LibraryStats>> LibraryStatistics();
+
         Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDate();
     }
 }

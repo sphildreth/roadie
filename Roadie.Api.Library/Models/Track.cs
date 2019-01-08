@@ -2,6 +2,7 @@
 using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Statistics;
 using Roadie.Library.Models.Users;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -22,6 +23,17 @@ namespace Roadie.Library.Models
         public Image ArtistThumbnail { get; set; }
         public long FileSize { get; set; }
         public int Duration { get; set; }
+        public string DurationTime
+        {
+            get
+            {
+                if (this.Duration < 1)
+                {
+                    return "--:--";
+                }
+                return new TimeInfo(this.Duration).ToFullFormattedString();
+            }
+        }
 
         [MaxLength(32)]
         public string Hash { get; set; }

@@ -14,9 +14,13 @@ namespace Roadie.Api.Services
         Task<OperationResult<Release>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null);
 
         Task<PagedResult<ReleaseList>> List(User user, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null);
+
         Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id);
+
         Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl);
-        Task<OperationResult<Library.Models.Image>> UploadReleaseImage(User user, Guid id, IFormFile file);
+
         Task<OperationResult<bool>> UpdateRelease(User user, Release release);
+
+        Task<OperationResult<Library.Models.Image>> UploadReleaseImage(User user, Guid id, IFormFile file);
     }
 }

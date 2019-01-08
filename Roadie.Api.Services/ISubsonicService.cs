@@ -75,9 +75,9 @@ namespace Roadie.Api.Services
 
         SubsonicOperationResult<Response> Ping(Request request);
 
-        Task<SubsonicOperationResult<Response>> Search(Request request, Roadie.Library.Models.Users.User roadieUser, SearchVersion version);
-
         Task<SubsonicOperationResult<Response>> SavePlayQueue(Request request, Roadie.Library.Models.Users.User roadieUser, string current, long? position);
+
+        Task<SubsonicOperationResult<Response>> Search(Request request, Roadie.Library.Models.Users.User roadieUser, SearchVersion version);
 
         Task<SubsonicOperationResult<Response>> SetRating(Request request, Roadie.Library.Models.Users.User roadieUser, short rating);
 

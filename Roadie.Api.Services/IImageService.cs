@@ -26,10 +26,10 @@ namespace Roadie.Api.Services
 
         Task<FileOperationResult<Library.Models.Image>> ReleaseImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
+        Task<OperationResult<IEnumerable<ImageSearchResult>>> Search(string query, int resultsCount = 10);
+
         Task<FileOperationResult<Library.Models.Image>> TrackImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
         Task<FileOperationResult<Library.Models.Image>> UserImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
-
-        Task<OperationResult<IEnumerable<ImageSearchResult>>> Search(string query, int resultsCount = 10);
     }
 }

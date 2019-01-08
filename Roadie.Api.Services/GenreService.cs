@@ -43,8 +43,8 @@ namespace Roadie.Api.Services
                                               where rg.GenreId == g.Id
                                               select rg.Id).Count()
                           let artistCount = (from rg in this.DbContext.ArtistGenres
-                                              where rg.GenreId == g.Id
-                                              select rg.Id).Count()
+                                             where rg.GenreId == g.Id
+                                             select rg.Id).Count()
                           where (request.FilterValue.Length == 0 || (g.Name.Contains(request.FilterValue)))
                           select new GenreList
                           {

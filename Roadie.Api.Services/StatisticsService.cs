@@ -27,58 +27,6 @@ namespace Roadie.Api.Services
         {
         }
 
-        public Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDate()
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-
-            var result = new List<DateAndCount>();
-
-            using (var conn = new MySqlConnection(this.Configuration.ConnectionString))
-            {
-                conn.Open();
-                var sql = @"SELECT DATE_FORMAT(createdDate, '%Y-%m-%d') as date, count(1) as count
-                            FROM `release`
-                            group by DATE_FORMAT(createdDate, '%Y-%m-%d')
-                            order by createdDate;";
-                using (var cmd = new MySqlCommand(sql, conn))
-                {
-                    try
-                    {
-                        using (var rdr = cmd.ExecuteReader())
-                        {
-                            if (rdr.HasRows)
-                            {
-                                while (rdr.Read())
-                                {
-                                    result.Add(new DateAndCount
-                                    {
-                                        Date = SafeParser.ToString(rdr["date"]),
-                                        Count = SafeParser.ToNumber<int?>(rdr["count"])
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        this.Logger.LogError(ex);
-                    }
-                    finally
-                    {
-                        conn.Close();
-                    }
-                }
-            }           
-        
-            sw.Stop();
-            return Task.FromResult(new OperationResult<IEnumerable<DateAndCount>>
-            {
-                OperationTime = sw.ElapsedMilliseconds,
-                Data = result
-            });
-        }
-
         public async Task<OperationResult<LibraryStats>> LibraryStatistics()
         {
             LibraryStats result = null;
@@ -157,7 +105,7 @@ namespace Roadie.Api.Services
                 }
             }
             var lastScan = this.DbContext.ScanHistories.OrderByDescending(x => x.CreatedDate).FirstOrDefault();
-            if(lastScan != null)
+            if (lastScan != null)
             {
                 result.LastScan = lastScan.CreatedDate;
             }
@@ -168,6 +116,58 @@ namespace Roadie.Api.Services
                 OperationTime = sw.ElapsedMilliseconds,
                 Data = result
             };
+        }
+
+        public Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDate()
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var result = new List<DateAndCount>();
+
+            using (var conn = new MySqlConnection(this.Configuration.ConnectionString))
+            {
+                conn.Open();
+                var sql = @"SELECT DATE_FORMAT(createdDate, '%Y-%m-%d') as date, count(1) as count
+                            FROM `release`
+                            group by DATE_FORMAT(createdDate, '%Y-%m-%d')
+                            order by createdDate;";
+                using (var cmd = new MySqlCommand(sql, conn))
+                {
+                    try
+                    {
+                        using (var rdr = cmd.ExecuteReader())
+                        {
+                            if (rdr.HasRows)
+                            {
+                                while (rdr.Read())
+                                {
+                                    result.Add(new DateAndCount
+                                    {
+                                        Date = SafeParser.ToString(rdr["date"]),
+                                        Count = SafeParser.ToNumber<int?>(rdr["count"])
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Logger.LogError(ex);
+                    }
+                    finally
+                    {
+                        conn.Close();
+                    }
+                }
+            }
+
+            sw.Stop();
+            return Task.FromResult(new OperationResult<IEnumerable<DateAndCount>>
+            {
+                OperationTime = sw.ElapsedMilliseconds,
+                Data = result
+            });
         }
     }
 }

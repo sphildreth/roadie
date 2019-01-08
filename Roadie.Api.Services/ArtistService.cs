@@ -16,12 +16,12 @@ using Roadie.Library.MetaData.Audio;
 using Roadie.Library.MetaData.FileName;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.MetaData.LastFm;
-using mb = Roadie.Library.MetaData.MusicBrainz;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Statistics;
 using Roadie.Library.Models.Users;
+using Roadie.Library.Processors;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -31,19 +31,17 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
-using Roadie.Library.Processors;
+using mb = Roadie.Library.MetaData.MusicBrainz;
 
 namespace Roadie.Api.Services
 {
-
     public class ArtistService : ServiceBase, IArtistService
     {
-        private ICollectionService CollectionService { get; } = null;
-        private IPlaylistService PlaylistService { get; } = null;
-        private IBookmarkService BookmarkService { get; } = null;
-
+        private IArtistFactory ArtistFactory { get; }
         private IArtistLookupEngine ArtistLookupEngine { get; }
         private IAudioMetaDataHelper AudioMetaDataHelper { get; }
+        private IBookmarkService BookmarkService { get; } = null;
+        private ICollectionService CollectionService { get; } = null;
         private IFileNameHelper FileNameHelper { get; }
         private IID3TagsHelper ID3TagsHelper { get; }
         private IImageFactory ImageFactory { get; }
@@ -51,8 +49,8 @@ namespace Roadie.Api.Services
         private ILabelLookupEngine LabelLookupEngine { get; }
         private ILastFmHelper LastFmHelper { get; }
         private mb.IMusicBrainzProvider MusicBrainzProvider { get; }
+        private IPlaylistService PlaylistService { get; } = null;
         private IReleaseFactory ReleaseFactory { get; }
-        private IArtistFactory ArtistFactory { get; }
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
 
         public ArtistService(IRoadieSettings configuration,
@@ -102,7 +100,6 @@ namespace Roadie.Api.Services
                 tsw.Stop();
                 timings.Add("ArtistByIdAction", tsw.ElapsedMilliseconds);
                 return rr;
-
             }, data.Artist.CacheRegionUrn(id));
             if (result?.Data != null && roadieUser != null)
             {
@@ -145,254 +142,13 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<Artist>> ArtistByIdAction(Guid id, IEnumerable<string> includes)
-        {
-            var timings = new Dictionary<string, long>();
-            var tsw = new Stopwatch();
-
-            var sw = Stopwatch.StartNew();
-            sw.Start();
-
-            tsw.Restart();
-            var artist = this.GetArtist(id);
-            tsw.Stop();
-            timings.Add("getArtist", tsw.ElapsedMilliseconds);
-
-            if (artist == null)
-            {
-                return new OperationResult<Artist>(true, string.Format("Artist Not Found [{0}]", id));
-            }
-            tsw.Restart();
-            var result = artist.Adapt<Artist>();
-            result.BeginDate = result.BeginDate == null || result.BeginDate == DateTime.MinValue ? null : result.BeginDate;
-            result.EndDate = result.EndDate == null || result.EndDate == DateTime.MinValue ? null : result.EndDate;
-            result.BirthDate = result.BirthDate == null || result.BirthDate == DateTime.MinValue ? null : result.BirthDate;
-            tsw.Stop();
-            timings.Add("adaptArtist", tsw.ElapsedMilliseconds);
-            result.Thumbnail = base.MakeArtistThumbnailImage(id);
-            result.MediumThumbnail = base.MakeThumbnailImage(id, "artist", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
-            tsw.Restart();
-            result.Genres = artist.Genres.Select(x => new DataToken { Text = x.Genre.Name, Value = x.Genre.RoadieId.ToString() });
-            tsw.Stop();
-            timings.Add("genres", tsw.ElapsedMilliseconds);
-
-            if (includes != null && includes.Any())
-            {
-                if (includes.Contains("releases"))
-                {
-                    var dtoReleases = new List<ReleaseList>();
-                    foreach (var release in this.DbContext.Releases.Include("Medias").Include("Medias.Tracks").Include("Medias.Tracks").Where(x => x.ArtistId == artist.Id).ToArray())
-                    {
-                        var releaseList = release.Adapt<ReleaseList>();
-                        releaseList.Thumbnail = base.MakeReleaseThumbnailImage(release.RoadieId);
-                        var dtoReleaseMedia = new List<ReleaseMediaList>();
-                        if (includes.Contains("tracks"))
-                        {
-                            foreach (var releasemedia in release.Medias.OrderBy(x => x.MediaNumber).ToArray())
-                            {
-                                var dtoMedia = releasemedia.Adapt<ReleaseMediaList>();
-                                var tracks = new List<TrackList>();
-                                foreach (var t in this.DbContext.Tracks.Where(x => x.ReleaseMediaId == releasemedia.Id).OrderBy(x => x.TrackNumber).ToArray())
-                                {
-                                    var track = t.Adapt<TrackList>();
-                                    ArtistList trackArtist = null;
-                                    if (t.ArtistId.HasValue)
-                                    {
-                                        var ta = this.DbContext.Artists.FirstOrDefault(x => x.Id == t.ArtistId.Value);
-                                        if (ta != null)
-                                        {
-                                            trackArtist = ArtistList.FromDataArtist(ta, this.MakeArtistThumbnailImage(ta.RoadieId));
-                                        }
-                                    }
-                                    track.TrackArtist = trackArtist;
-                                    tracks.Add(track);
-                                }
-                                dtoMedia.Tracks = tracks;
-                                dtoReleaseMedia.Add(dtoMedia);
-                            }
-                        }
-                        releaseList.Media = dtoReleaseMedia;
-                        dtoReleases.Add(releaseList);
-                    }
-                    result.Releases = dtoReleases;
-                }
-                if (includes.Contains("stats"))
-                {
-                    tsw.Restart();
-                    var artistTracks = (from r in this.DbContext.Releases
-                                        join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                        join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                        where (r.ArtistId == artist.Id || t.ArtistId == artist.Id)
-                                        select new
-                                        {
-                                            t.Id,
-                                            size = t.FileSize,
-                                            time = t.Duration,
-                                            isMissing = t.Hash == null
-                                        });
-                    var validCartistTracks = artistTracks.Where(x => !x.isMissing);
-                    var trackTime = validCartistTracks.Sum(x => x.time);
-                    result.Statistics = new CollectionStatistics
-                    {
-                        FileSize = artistTracks.Sum(x => (long?)x.size).ToFileSize(),
-                        MissingTrackCount = artistTracks.Where(x => x.isMissing).Count(),
-                        ReleaseCount = artist.ReleaseCount,
-                        ReleaseMediaCount = (from r in this.DbContext.Releases
-                                             join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                             where r.ArtistId == artist.Id
-                                             select rm.Id).Count(),
-                        TrackTime = validCartistTracks.Any() ? new TimeInfo((decimal)trackTime).ToFullFormattedString() : "--:--",
-                        TrackCount = validCartistTracks.Count(),
-                        TrackPlayedCount = artist.PlayedCount
-                    };
-                    tsw.Stop();
-                    timings.Add("stats", tsw.ElapsedMilliseconds);
-                }
-                if (includes.Contains("images"))
-                {
-                    tsw.Restart();
-                    result.Images = this.DbContext.Images.Where(x => x.ArtistId == artist.Id).Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
-                    tsw.Stop();
-                    timings.Add("images", tsw.ElapsedMilliseconds);
-                }
-                if (includes.Contains("associatedartists"))
-                {
-                    tsw.Restart();
-                    var associatedWithArtists = (from aa in this.DbContext.ArtistAssociations
-                                                    join a in this.DbContext.Artists on aa.AssociatedArtistId equals a.Id
-                                                    where aa.ArtistId == artist.Id
-                                                     select new ArtistList
-                                                     {
-                                                         DatabaseId = a.Id,
-                                                         Id = a.RoadieId,
-                                                         Artist = new DataToken
-                                                         {
-                                                             Text = a.Name,
-                                                             Value = a.RoadieId.ToString()
-                                                         },
-                                                         Thumbnail = this.MakeArtistThumbnailImage(a.RoadieId),
-                                                         Rating = a.Rating,
-                                                         CreatedDate = a.CreatedDate,
-                                                         LastUpdated = a.LastUpdated,
-                                                         LastPlayed = a.LastPlayed,
-                                                         PlayedCount = a.PlayedCount,
-                                                         ReleaseCount = a.ReleaseCount,
-                                                         TrackCount = a.TrackCount,
-                                                         SortName = a.SortName
-                                                     }).ToArray();
-
-                    var associatedArtists = (from aa in this.DbContext.ArtistAssociations
-                                             join a in this.DbContext.Artists on aa.ArtistId equals a.Id
-                                             where aa.AssociatedArtistId == artist.Id
-                                             select new ArtistList
-                                             {
-                                                 DatabaseId = a.Id,
-                                                 Id = a.RoadieId,
-                                                 Artist = new DataToken
-                                                 {
-                                                     Text = a.Name,
-                                                     Value = a.RoadieId.ToString()
-                                                 },
-                                                 Thumbnail = this.MakeArtistThumbnailImage(a.RoadieId),
-                                                 Rating = a.Rating,
-                                                 CreatedDate = a.CreatedDate,
-                                                 LastUpdated = a.LastUpdated,
-                                                 LastPlayed = a.LastPlayed,
-                                                 PlayedCount = a.PlayedCount,
-                                                 ReleaseCount = a.ReleaseCount,
-                                                 TrackCount = a.TrackCount,
-                                                 SortName = a.SortName
-                                             }).ToArray();
-
-                    result.AssociatedArtists = associatedArtists.Union(associatedWithArtists).OrderBy(x => x.SortName);
-                    result.AssociatedArtistsTokens = result.AssociatedArtists.Select(x => x.Artist).ToArray();
-                    tsw.Stop();
-                    timings.Add("associatedartists", tsw.ElapsedMilliseconds);
-
-                }
-                if (includes.Contains("collections"))
-                {
-                    tsw.Restart();
-                    var collectionPagedRequest = new PagedRequest
-                    {
-                        Limit = 100                        
-                    };
-                    var r = await this.CollectionService.List(roadieUser: null,
-                                                              request: collectionPagedRequest, artistId: artist.RoadieId);
-                    if (r.IsSuccess)
-                    {
-                        result.CollectionsWithArtistReleases = r.Rows.ToArray();
-                    }
-                    tsw.Stop();
-                    timings.Add("collections", tsw.ElapsedMilliseconds);
-                }
-                if (includes.Contains("playlists"))
-                {
-                    tsw.Restart();
-                    var pg = new PagedRequest
-                    {
-                        FilterToArtistId = artist.RoadieId
-                    };
-                    var r = await this.PlaylistService.List(pg);
-                    if (r.IsSuccess)
-                    {
-                        result.PlaylistsWithArtistReleases = r.Rows.ToArray();
-                    }
-                    tsw.Stop();
-                    timings.Add("playlists", tsw.ElapsedMilliseconds);
-                }
-                if (includes.Contains("contributions"))
-                {
-                    tsw.Restart();
-                    result.ArtistContributionReleases = (from t in this.DbContext.Tracks
-                                                         join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                                         join r in this.DbContext.Releases.Include(x => x.Artist) on rm.ReleaseId equals r.Id
-                                                         where t.ArtistId == artist.Id
-                                                         group r by r.Id into rr
-                                                         select rr)
-                                                         .ToArray()
-                                                         .Select(rr => rr.First())
-                                                         .Select(r => ReleaseList.FromDataRelease(r, r.Artist, this.HttpContext.BaseUrl, MakeArtistThumbnailImage(r.Artist.RoadieId), MakeReleaseThumbnailImage(r.RoadieId)))
-                                                         .ToArray().OrderBy(x => x.Release.Text).ToArray();
-                    result.ArtistContributionReleases = result.ArtistContributionReleases.Any() ? result.ArtistContributionReleases : null;
-                    tsw.Stop();
-                    timings.Add("contributions", tsw.ElapsedMilliseconds);
-                }
-                if (includes.Contains("labels"))
-                {
-                    tsw.Restart();                   
-                    result.ArtistLabels = (from l in this.DbContext.Labels
-                                           join rl in this.DbContext.ReleaseLabels on l.Id equals rl.LabelId
-                                           join r in this.DbContext.Releases on rl.ReleaseId equals r.Id
-                                           where r.ArtistId == artist.Id
-                                           orderby l.SortName
-                                           select LabelList.FromDataLabel(l, this.MakeLabelThumbnailImage(l.RoadieId)))
-                                           .ToArray()
-                                           .GroupBy(x => x.Label.Value).Select(x => x.First()).OrderBy(x => x.SortName).ThenBy(x => x.Label.Text).ToArray();
-                    result.ArtistLabels = result.ArtistLabels.Any() ? result.ArtistLabels : null;
-                    tsw.Stop();
-                    timings.Add("labels", tsw.ElapsedMilliseconds);
-                }
-            }
-            sw.Stop();
-            timings.Add("operation", sw.ElapsedMilliseconds);
-            this.Logger.LogDebug("ArtistByIdAction Timings: id [{0}], includes [{1}], timings [{3}]", id, includes, JsonConvert.SerializeObject(timings));
-
-            return new OperationResult<Artist>
-            {
-                Data = result,
-                IsSuccess = result != null,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-        }
-
         public Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true)
         {
             var sw = new Stopwatch();
             sw.Start();
 
             int[] favoriteArtistIds = new int[0];
-            if(request.FilterFavoriteOnly)
+            if (request.FilterFavoriteOnly)
             {
                 favoriteArtistIds = (from a in this.DbContext.Artists
                                      join ua in this.DbContext.UserArtists on a.Id equals ua.ArtistId
@@ -402,7 +158,7 @@ namespace Roadie.Api.Services
                                      ).ToArray();
             }
             int[] labelArtistIds = new int[0];
-            if(request.FilterToLabelId.HasValue)
+            if (request.FilterToLabelId.HasValue)
             {
                 labelArtistIds = (from l in this.DbContext.Labels
                                   join rl in this.DbContext.ReleaseLabels on l.Id equals rl.LabelId
@@ -414,7 +170,7 @@ namespace Roadie.Api.Services
             }
             int[] genreArtistIds = new int[0];
             var isFilteredToGenre = false;
-            if(!string.IsNullOrEmpty(request.Filter) && request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(request.Filter) && request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase))
             {
                 var genreFilter = request.Filter.Replace(":genre ", "");
                 genreArtistIds = (from ag in this.DbContext.ArtistGenres
@@ -459,7 +215,6 @@ namespace Roadie.Api.Services
             var rowCount = result.Count();
             if (doRandomize ?? false)
             {
-
                 var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
                 request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
                 rows = result.OrderBy(x => Guid.NewGuid()).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
@@ -481,9 +236,9 @@ namespace Roadie.Api.Services
             {
                 var rowIds = rows.Select(x => x.DatabaseId).ToArray();
                 var userArtistRatings = (from ua in this.DbContext.UserArtists
-                                          where ua.UserId == roadieUser.Id
-                                          where rowIds.Contains(ua.ArtistId)
-                                          select ua).ToArray();
+                                         where ua.UserId == roadieUser.Id
+                                         where rowIds.Contains(ua.ArtistId)
+                                         select ua).ToArray();
 
                 foreach (var userArtistRating in userArtistRatings.Where(x => rows.Select(r => r.DatabaseId).Contains(x.ArtistId)))
                 {
@@ -511,20 +266,102 @@ namespace Roadie.Api.Services
             });
         }
 
+        public async Task<OperationResult<bool>> ScanArtistReleasesFolders(Guid artistId, string destinationFolder, bool doJustInfo)
+        {
+            SimpleContract.Requires<ArgumentOutOfRangeException>(artistId != Guid.Empty, "Invalid ArtistId");
+
+            var result = true;
+            var resultErrors = new List<Exception>();
+            var sw = new Stopwatch();
+            sw.Start();
+            try
+            {
+                var artist = this.DbContext.Artists
+                                           .Include("Releases")
+                                           .Include("Releases.Labels")
+                                           .FirstOrDefault(x => x.RoadieId == artistId);
+                if (artist == null)
+                {
+                    this.Logger.LogWarning("Unable To Find Artist [{0}]", artistId);
+                    return new OperationResult<bool>();
+                }
+                var releaseScannedCount = 0;
+                var artistFolder = artist.ArtistFileFolder(this.Configuration, destinationFolder);
+                var scannedArtistFolders = new List<string>();
+                // Scan known releases for changes
+                if (artist.Releases != null)
+                {
+                    foreach (var release in artist.Releases)
+                    {
+                        try
+                        {
+                            result = result && (await this.ReleaseFactory.ScanReleaseFolder(Guid.Empty, destinationFolder, doJustInfo, release)).Data;
+                            releaseScannedCount++;
+                            scannedArtistFolders.Add(release.ReleaseFileFolder(artistFolder));
+                        }
+                        catch (Exception ex)
+                        {
+                            this.Logger.LogError(ex, ex.Serialize());
+                        }
+                    }
+                }
+                // Any folder found in Artist folder not already scanned scan
+                var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, destinationFolder, this.DbContext, this.CacheManager, this.Logger, this.ArtistLookupEngine, this.ArtistFactory, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
+                var nonReleaseFolders = (from d in Directory.EnumerateDirectories(artistFolder)
+                                         where !(from r in scannedArtistFolders select r).Contains(d)
+                                         orderby d
+                                         select d);
+                foreach (var folder in nonReleaseFolders)
+                {
+                    await folderProcessor.Process(new DirectoryInfo(folder), doJustInfo);
+                }
+                if (!doJustInfo)
+                {
+                    FolderProcessor.DeleteEmptyFolders(new DirectoryInfo(artistFolder), this.Logger);
+                }
+
+                // Always update artist image if artist image is found on an artist rescan
+                var imageFiles = ImageHelper.ImageFilesInFolder(artistFolder);
+                if (imageFiles != null && imageFiles.Any())
+                {
+                    var imageFile = imageFiles.First();
+                    var i = new FileInfo(imageFile);
+                    var iName = i.Name.ToLower().Trim();
+                    var isArtistImage = iName.Contains("artist") || iName.Contains(artist.Name.ToLower());
+                    if (isArtistImage)
+                    {
+                        // Read image and convert to jpeg
+                        artist.Thumbnail = File.ReadAllBytes(i.FullName);
+                        artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                        artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
+                        artist.LastUpdated = DateTime.UtcNow;
+                        await this.DbContext.SaveChangesAsync();
+                        this.CacheManager.ClearRegion(artist.CacheRegion);
+                        this.Logger.LogInformation("Update Thumbnail using Artist File [{0}]", iName);
+                    }
+                }
+
+                sw.Stop();
+                this.CacheManager.ClearRegion(artist.CacheRegion);
+                this.Logger.LogInformation("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex, ex.Serialize());
+                resultErrors.Add(ex);
+            }
+            return new OperationResult<bool>
+            {
+                Data = result,
+                IsSuccess = result,
+                Errors = resultErrors,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
         public async Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl)
         {
             return await this.SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
-        }
-
-        public async Task<OperationResult<Library.Models.Image>> UploadArtistImage(User user, Guid id, IFormFile file)
-        {
-            var bytes = new byte[0];
-            using (var ms = new MemoryStream())
-            {
-                file.CopyTo(ms);
-                bytes = ms.ToArray();
-            }
-            return await this.SaveImageBytes(user, id, bytes);
         }
 
         public async Task<OperationResult<bool>> UpdateArtist(User user, Artist model)
@@ -666,7 +503,6 @@ namespace Roadie.Api.Services
                     artist.AssociatedArtists.Clear();
                 }
 
-
                 if (model.Images != null && model.Images.Any())
                 {
                     // TODO
@@ -674,7 +510,8 @@ namespace Roadie.Api.Services
 
                 artist.LastUpdated = now;
                 await this.DbContext.SaveChangesAsync();
-                if (didRenameArtist) {
+                if (didRenameArtist)
+                {
                     // Update artist tracks to have new artist name in ID3 metadata
                     foreach (var mp3 in Directory.GetFiles(newArtistFolder, "*.mp3", SearchOption.AllDirectories))
                     {
@@ -707,99 +544,256 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> ScanArtistReleasesFolders(Guid artistId, string destinationFolder, bool doJustInfo)
+        public async Task<OperationResult<Library.Models.Image>> UploadArtistImage(User user, Guid id, IFormFile file)
         {
-            SimpleContract.Requires<ArgumentOutOfRangeException>(artistId != Guid.Empty, "Invalid ArtistId");
+            var bytes = new byte[0];
+            using (var ms = new MemoryStream())
+            {
+                file.CopyTo(ms);
+                bytes = ms.ToArray();
+            }
+            return await this.SaveImageBytes(user, id, bytes);
+        }
 
-            var result = true;
-            var resultErrors = new List<Exception>();
-            var sw = new Stopwatch();
+        private async Task<OperationResult<Artist>> ArtistByIdAction(Guid id, IEnumerable<string> includes)
+        {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
+            var sw = Stopwatch.StartNew();
             sw.Start();
-            try
-            {
-                var artist = this.DbContext.Artists
-                                           .Include("Releases")
-                                           .Include("Releases.Labels")
-                                           .FirstOrDefault(x => x.RoadieId == artistId);
-                if (artist == null)
-                {
-                    this.Logger.LogWarning("Unable To Find Artist [{0}]", artistId);
-                    return new OperationResult<bool>();
-                }
-                var releaseScannedCount = 0;
-                var artistFolder = artist.ArtistFileFolder(this.Configuration, destinationFolder);
-                var scannedArtistFolders = new List<string>();
-                // Scan known releases for changes
-                if (artist.Releases != null)
-                {
-                    foreach (var release in artist.Releases)
-                    {
-                        try
-                        {
-                            result = result && (await this.ReleaseFactory.ScanReleaseFolder(Guid.Empty, destinationFolder, doJustInfo, release)).Data;
-                            releaseScannedCount++;
-                            scannedArtistFolders.Add(release.ReleaseFileFolder(artistFolder));
-                        }
-                        catch (Exception ex)
-                        {
-                            this.Logger.LogError(ex, ex.Serialize());
-                        }
-                    }
-                }
-                // Any folder found in Artist folder not already scanned scan
-                var folderProcessor = new FolderProcessor(this.Configuration, this.HttpEncoder, destinationFolder, this.DbContext, this.CacheManager, this.Logger, this.ArtistLookupEngine, this.ArtistFactory, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
-                var nonReleaseFolders = (from d in Directory.EnumerateDirectories(artistFolder)
-                                         where !(from r in scannedArtistFolders select r).Contains(d)
-                                         orderby d
-                                         select d);
-                foreach (var folder in nonReleaseFolders)
-                {
-                    await folderProcessor.Process(new DirectoryInfo(folder), doJustInfo);
-                }
-                if (!doJustInfo)
-                {
-                    FolderProcessor.DeleteEmptyFolders(new DirectoryInfo(artistFolder), this.Logger);
-                }
 
-                // Always update artist image if artist image is found on an artist rescan
-                var imageFiles = ImageHelper.ImageFilesInFolder(artistFolder);
-                if (imageFiles != null && imageFiles.Any())
-                {
-                    var imageFile = imageFiles.First();
-                    var i = new FileInfo(imageFile);
-                    var iName = i.Name.ToLower().Trim();
-                    var isArtistImage = iName.Contains("artist") || iName.Contains(artist.Name.ToLower());
-                    if (isArtistImage)
-                    {
-                        // Read image and convert to jpeg
-                        artist.Thumbnail = File.ReadAllBytes(i.FullName);
-                        artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
-                        artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
-                        artist.LastUpdated = DateTime.UtcNow;
-                        await this.DbContext.SaveChangesAsync();
-                        this.CacheManager.ClearRegion(artist.CacheRegion);
-                        this.Logger.LogInformation("Update Thumbnail using Artist File [{0}]", iName);
-                    }
-                }
+            tsw.Restart();
+            var artist = this.GetArtist(id);
+            tsw.Stop();
+            timings.Add("getArtist", tsw.ElapsedMilliseconds);
 
-                sw.Stop();
-                this.CacheManager.ClearRegion(artist.CacheRegion);
-                this.Logger.LogInformation("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
+            if (artist == null)
             {
-                this.Logger.LogError(ex, ex.Serialize());
-                resultErrors.Add(ex);
+                return new OperationResult<Artist>(true, string.Format("Artist Not Found [{0}]", id));
             }
-            return new OperationResult<bool>
+            tsw.Restart();
+            var result = artist.Adapt<Artist>();
+            result.BeginDate = result.BeginDate == null || result.BeginDate == DateTime.MinValue ? null : result.BeginDate;
+            result.EndDate = result.EndDate == null || result.EndDate == DateTime.MinValue ? null : result.EndDate;
+            result.BirthDate = result.BirthDate == null || result.BirthDate == DateTime.MinValue ? null : result.BirthDate;
+            tsw.Stop();
+            timings.Add("adaptArtist", tsw.ElapsedMilliseconds);
+            result.Thumbnail = base.MakeArtistThumbnailImage(id);
+            result.MediumThumbnail = base.MakeThumbnailImage(id, "artist", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+            tsw.Restart();
+            result.Genres = artist.Genres.Select(x => new DataToken { Text = x.Genre.Name, Value = x.Genre.RoadieId.ToString() });
+            tsw.Stop();
+            timings.Add("genres", tsw.ElapsedMilliseconds);
+
+            if (includes != null && includes.Any())
+            {
+                if (includes.Contains("releases"))
+                {
+                    var dtoReleases = new List<ReleaseList>();
+                    foreach (var release in this.DbContext.Releases.Include("Medias").Include("Medias.Tracks").Include("Medias.Tracks").Where(x => x.ArtistId == artist.Id).ToArray())
+                    {
+                        var releaseList = release.Adapt<ReleaseList>();
+                        releaseList.Thumbnail = base.MakeReleaseThumbnailImage(release.RoadieId);
+                        var dtoReleaseMedia = new List<ReleaseMediaList>();
+                        if (includes.Contains("tracks"))
+                        {
+                            foreach (var releasemedia in release.Medias.OrderBy(x => x.MediaNumber).ToArray())
+                            {
+                                var dtoMedia = releasemedia.Adapt<ReleaseMediaList>();
+                                var tracks = new List<TrackList>();
+                                foreach (var t in this.DbContext.Tracks.Where(x => x.ReleaseMediaId == releasemedia.Id).OrderBy(x => x.TrackNumber).ToArray())
+                                {
+                                    var track = t.Adapt<TrackList>();
+                                    ArtistList trackArtist = null;
+                                    if (t.ArtistId.HasValue)
+                                    {
+                                        var ta = this.DbContext.Artists.FirstOrDefault(x => x.Id == t.ArtistId.Value);
+                                        if (ta != null)
+                                        {
+                                            trackArtist = ArtistList.FromDataArtist(ta, this.MakeArtistThumbnailImage(ta.RoadieId));
+                                        }
+                                    }
+                                    track.TrackArtist = trackArtist;
+                                    tracks.Add(track);
+                                }
+                                dtoMedia.Tracks = tracks;
+                                dtoReleaseMedia.Add(dtoMedia);
+                            }
+                        }
+                        releaseList.Media = dtoReleaseMedia;
+                        dtoReleases.Add(releaseList);
+                    }
+                    result.Releases = dtoReleases;
+                }
+                if (includes.Contains("stats"))
+                {
+                    tsw.Restart();
+                    var artistTracks = (from r in this.DbContext.Releases
+                                        join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                        join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                        where (r.ArtistId == artist.Id || t.ArtistId == artist.Id)
+                                        select new
+                                        {
+                                            t.Id,
+                                            size = t.FileSize,
+                                            time = t.Duration,
+                                            isMissing = t.Hash == null
+                                        });
+                    var validCartistTracks = artistTracks.Where(x => !x.isMissing);
+                    var trackTime = validCartistTracks.Sum(x => x.time);
+                    result.Statistics = new CollectionStatistics
+                    {
+                        FileSize = artistTracks.Sum(x => (long?)x.size).ToFileSize(),
+                        MissingTrackCount = artistTracks.Where(x => x.isMissing).Count(),
+                        ReleaseCount = artist.ReleaseCount,
+                        ReleaseMediaCount = (from r in this.DbContext.Releases
+                                             join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                             where r.ArtistId == artist.Id
+                                             select rm.Id).Count(),
+                        TrackTime = validCartistTracks.Any() ? new TimeInfo((decimal)trackTime).ToFullFormattedString() : "--:--",
+                        TrackCount = validCartistTracks.Count(),
+                        TrackPlayedCount = artist.PlayedCount
+                    };
+                    tsw.Stop();
+                    timings.Add("stats", tsw.ElapsedMilliseconds);
+                }
+                if (includes.Contains("images"))
+                {
+                    tsw.Restart();
+                    result.Images = this.DbContext.Images.Where(x => x.ArtistId == artist.Id).Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
+                    tsw.Stop();
+                    timings.Add("images", tsw.ElapsedMilliseconds);
+                }
+                if (includes.Contains("associatedartists"))
+                {
+                    tsw.Restart();
+                    var associatedWithArtists = (from aa in this.DbContext.ArtistAssociations
+                                                 join a in this.DbContext.Artists on aa.AssociatedArtistId equals a.Id
+                                                 where aa.ArtistId == artist.Id
+                                                 select new ArtistList
+                                                 {
+                                                     DatabaseId = a.Id,
+                                                     Id = a.RoadieId,
+                                                     Artist = new DataToken
+                                                     {
+                                                         Text = a.Name,
+                                                         Value = a.RoadieId.ToString()
+                                                     },
+                                                     Thumbnail = this.MakeArtistThumbnailImage(a.RoadieId),
+                                                     Rating = a.Rating,
+                                                     CreatedDate = a.CreatedDate,
+                                                     LastUpdated = a.LastUpdated,
+                                                     LastPlayed = a.LastPlayed,
+                                                     PlayedCount = a.PlayedCount,
+                                                     ReleaseCount = a.ReleaseCount,
+                                                     TrackCount = a.TrackCount,
+                                                     SortName = a.SortName
+                                                 }).ToArray();
+
+                    var associatedArtists = (from aa in this.DbContext.ArtistAssociations
+                                             join a in this.DbContext.Artists on aa.ArtistId equals a.Id
+                                             where aa.AssociatedArtistId == artist.Id
+                                             select new ArtistList
+                                             {
+                                                 DatabaseId = a.Id,
+                                                 Id = a.RoadieId,
+                                                 Artist = new DataToken
+                                                 {
+                                                     Text = a.Name,
+                                                     Value = a.RoadieId.ToString()
+                                                 },
+                                                 Thumbnail = this.MakeArtistThumbnailImage(a.RoadieId),
+                                                 Rating = a.Rating,
+                                                 CreatedDate = a.CreatedDate,
+                                                 LastUpdated = a.LastUpdated,
+                                                 LastPlayed = a.LastPlayed,
+                                                 PlayedCount = a.PlayedCount,
+                                                 ReleaseCount = a.ReleaseCount,
+                                                 TrackCount = a.TrackCount,
+                                                 SortName = a.SortName
+                                             }).ToArray();
+
+                    result.AssociatedArtists = associatedArtists.Union(associatedWithArtists).OrderBy(x => x.SortName);
+                    result.AssociatedArtistsTokens = result.AssociatedArtists.Select(x => x.Artist).ToArray();
+                    tsw.Stop();
+                    timings.Add("associatedartists", tsw.ElapsedMilliseconds);
+                }
+                if (includes.Contains("collections"))
+                {
+                    tsw.Restart();
+                    var collectionPagedRequest = new PagedRequest
+                    {
+                        Limit = 100
+                    };
+                    var r = await this.CollectionService.List(roadieUser: null,
+                                                              request: collectionPagedRequest, artistId: artist.RoadieId);
+                    if (r.IsSuccess)
+                    {
+                        result.CollectionsWithArtistReleases = r.Rows.ToArray();
+                    }
+                    tsw.Stop();
+                    timings.Add("collections", tsw.ElapsedMilliseconds);
+                }
+                if (includes.Contains("playlists"))
+                {
+                    tsw.Restart();
+                    var pg = new PagedRequest
+                    {
+                        FilterToArtistId = artist.RoadieId
+                    };
+                    var r = await this.PlaylistService.List(pg);
+                    if (r.IsSuccess)
+                    {
+                        result.PlaylistsWithArtistReleases = r.Rows.ToArray();
+                    }
+                    tsw.Stop();
+                    timings.Add("playlists", tsw.ElapsedMilliseconds);
+                }
+                if (includes.Contains("contributions"))
+                {
+                    tsw.Restart();
+                    result.ArtistContributionReleases = (from t in this.DbContext.Tracks
+                                                         join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                                         join r in this.DbContext.Releases.Include(x => x.Artist) on rm.ReleaseId equals r.Id
+                                                         where t.ArtistId == artist.Id
+                                                         group r by r.Id into rr
+                                                         select rr)
+                                                         .ToArray()
+                                                         .Select(rr => rr.First())
+                                                         .Select(r => ReleaseList.FromDataRelease(r, r.Artist, this.HttpContext.BaseUrl, MakeArtistThumbnailImage(r.Artist.RoadieId), MakeReleaseThumbnailImage(r.RoadieId)))
+                                                         .ToArray().OrderBy(x => x.Release.Text).ToArray();
+                    result.ArtistContributionReleases = result.ArtistContributionReleases.Any() ? result.ArtistContributionReleases : null;
+                    tsw.Stop();
+                    timings.Add("contributions", tsw.ElapsedMilliseconds);
+                }
+                if (includes.Contains("labels"))
+                {
+                    tsw.Restart();
+                    result.ArtistLabels = (from l in this.DbContext.Labels
+                                           join rl in this.DbContext.ReleaseLabels on l.Id equals rl.LabelId
+                                           join r in this.DbContext.Releases on rl.ReleaseId equals r.Id
+                                           where r.ArtistId == artist.Id
+                                           orderby l.SortName
+                                           select LabelList.FromDataLabel(l, this.MakeLabelThumbnailImage(l.RoadieId)))
+                                           .ToArray()
+                                           .GroupBy(x => x.Label.Value).Select(x => x.First()).OrderBy(x => x.SortName).ThenBy(x => x.Label.Text).ToArray();
+                    result.ArtistLabels = result.ArtistLabels.Any() ? result.ArtistLabels : null;
+                    tsw.Stop();
+                    timings.Add("labels", tsw.ElapsedMilliseconds);
+                }
+            }
+            sw.Stop();
+            timings.Add("operation", sw.ElapsedMilliseconds);
+            this.Logger.LogDebug("ArtistByIdAction Timings: id [{0}], includes [{1}], timings [{3}]", id, includes, JsonConvert.SerializeObject(timings));
+
+            return new OperationResult<Artist>
             {
                 Data = result,
-                IsSuccess = result,
-                Errors = resultErrors,
+                IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
             };
         }
-
 
         private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
         {
@@ -822,11 +816,11 @@ namespace Roadie.Api.Services
 
                     // Ensure artist folder exists
                     var artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
-                    if(!Directory.Exists(artistFolder))
+                    if (!Directory.Exists(artistFolder))
                     {
                         Directory.CreateDirectory(artistFolder);
                         this.Logger.LogInformation("Created Artist Folder [0] for `artist`", artistFolder, artist);
-                    }                    
+                    }
 
                     // Save unaltered image to artist file
                     var coverFileName = Path.Combine(artistFolder, "artist.jpg");

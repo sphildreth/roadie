@@ -67,6 +67,67 @@ namespace Roadie.Api.Services
             };
         }
 
+        public Task<Library.Models.Pagination.PagedResult<LabelList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            if (!string.IsNullOrEmpty(request.Sort))
+            {
+                request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
+                request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
+            }
+            var result = (from l in this.DbContext.Labels
+                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
+                                    l.Name != null && l.Name.Contains(request.FilterValue) ||
+                                    l.AlternateNames != null && l.AlternateNames.Contains(request.FilterValue)
+                          )))
+                          select new LabelList
+                          {
+                              DatabaseId = l.Id,
+                              Id = l.RoadieId,
+                              Label = new DataToken
+                              {
+                                  Text = l.Name,
+                                  Value = l.RoadieId.ToString()
+                              },
+                              SortName = l.SortName,
+                              CreatedDate = l.CreatedDate,
+                              LastUpdated = l.LastUpdated,
+                              ArtistCount = l.ArtistCount,
+                              ReleaseCount = l.ReleaseCount,
+                              TrackCount = l.TrackCount,
+                              Thumbnail = this.MakeLabelThumbnailImage(l.RoadieId)
+                          });
+            LabelList[] rows = null;
+            var rowCount = result.Count();
+            if (doRandomize ?? false)
+            {
+                var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
+                request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
+                var sql = "SELECT l.Id FROM `label` l ORDER BY RAND() LIMIT {0}";
+                rows = (from rdn in this.DbContext.Labels.FromSql(sql, randomLimit)
+                        join rs in result on rdn.Id equals rs.DatabaseId
+                        select rs)
+                        .Take(request.LimitValue)
+                        .ToArray();
+            }
+            else
+            {
+                var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Label.Text", "ASC" } }) : request.OrderValue(null);
+                rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            }
+            sw.Stop();
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<LabelList>
+            {
+                TotalCount = rowCount,
+                CurrentPage = request.PageValue,
+                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
+                OperationTime = sw.ElapsedMilliseconds,
+                Rows = rows
+            });
+        }
+
         private Task<OperationResult<Label>> LabelByIdAction(Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
@@ -120,71 +181,6 @@ namespace Roadie.Api.Services
                 Data = result,
                 IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
-            });
-
-        }
-
-
-        public Task<Library.Models.Pagination.PagedResult<LabelList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-
-            if (!string.IsNullOrEmpty(request.Sort))
-            {
-                request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
-                request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
-            }
-            var result = (from l in this.DbContext.Labels
-                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
-                                    l.Name != null && l.Name.Contains(request.FilterValue) ||
-                                    l.AlternateNames != null && l.AlternateNames.Contains(request.FilterValue)
-                          )))
-                          select new LabelList
-                          {
-                              DatabaseId = l.Id,
-                              Id = l.RoadieId,
-                              Label = new DataToken
-                              {
-                                  Text = l.Name,
-                                  Value = l.RoadieId.ToString()
-                              },
-                              SortName = l.SortName,
-                              CreatedDate = l.CreatedDate,
-                              LastUpdated = l.LastUpdated,
-                              ArtistCount = l.ArtistCount,
-                              ReleaseCount = l.ReleaseCount,
-                              TrackCount = l.TrackCount,
-                              Thumbnail = this.MakeLabelThumbnailImage(l.RoadieId)
-                          });
-            LabelList[] rows = null;
-            var rowCount = result.Count();
-            if (doRandomize ?? false)
-            {
-
-                var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
-                request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
-                var sql = "SELECT l.Id FROM `label` l ORDER BY RAND() LIMIT {0}";
-                rows = (from rdn in this.DbContext.Labels.FromSql(sql, randomLimit)
-                        join rs in result on rdn.Id equals rs.DatabaseId
-                        select rs)
-                        .Take(request.LimitValue)
-                        .ToArray();
-
-            }
-            else
-            {
-                var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Label.Text", "ASC" } }) : request.OrderValue(null);
-                 rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
-            }
-            sw.Stop();
-            return Task.FromResult(new Library.Models.Pagination.PagedResult<LabelList>
-            {
-                TotalCount = rowCount,
-                CurrentPage = request.PageValue,
-                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
-                OperationTime = sw.ElapsedMilliseconds,
-                Rows = rows
             });
         }
     }

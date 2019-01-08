@@ -86,9 +86,42 @@ namespace Roadie.Api.Services
             this._httpContext = httpContext;
         }
 
+        public static bool ConfirmTrackPlayToken(ApplicationUser user, Guid trackRoadieId, string token)
+        {
+            if (string.IsNullOrEmpty(token))
+            {
+                return false;
+            }
+            return ServiceBase.TrackPlayToken(user, trackRoadieId).Equals(token);
+        }
+
+        public static string TrackPlayToken(ApplicationUser user, Guid trackId)
+        {
+            var hashids = new Hashids(ServiceBase.TrackTokenSalt);
+            var trackIdPart = BitConverter.ToInt32(trackId.ToByteArray(), 6);
+            if (trackIdPart < 0)
+            {
+                trackIdPart = trackIdPart * -1;
+            }
+            var token = hashids.Encode(user.Id, SafeParser.ToNumber<int>(user.CreatedDate.Value.ToString("DDHHmmss")), trackIdPart);
+            return token;
+        }
+
         public Image MakeThumbnailImage(Guid id, string type, int? width = null, int? height = null, bool includeCachebuster = false)
         {
             return this.MakeImage(id, type, width ?? this.Configuration.ThumbnailImageSize.Width, height ?? this.Configuration.ThumbnailImageSize.Height, null, includeCachebuster);
+        }
+
+        protected IEnumerable<int> ArtistIdsForRelease(int releaseId)
+        {
+            var trackArtistIds = (from r in this.DbContext.Releases
+                                  join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                  join tr in this.DbContext.Tracks on rm.Id equals tr.ReleaseMediaId
+                                  where r.Id == releaseId
+                                  where tr.ArtistId != null
+                                  select tr.ArtistId.Value).ToList();
+            trackArtistIds.Add(this.DbContext.Releases.FirstOrDefault(x => x.Id == releaseId).ArtistId);
+            return trackArtistIds.Distinct().ToArray();
         }
 
         protected data.Artist GetArtist(string artistName)
@@ -163,7 +196,6 @@ namespace Roadie.Api.Services
             }, data.Release.CacheRegionUrn(id));
         }
 
-
         /// <summary>
         /// Get Track by Subsonic Id ("T:guid")
         /// </summary>
@@ -228,7 +260,7 @@ namespace Roadie.Api.Services
 
         protected Image MakeArtistThumbnailImage(Guid? id)
         {
-            if(!id.HasValue)
+            if (!id.HasValue)
             {
                 return null;
             }
@@ -240,14 +272,14 @@ namespace Roadie.Api.Services
             return MakeThumbnailImage(id, "collection");
         }
 
+        protected Image MakeFullsizeImage(Guid id, string caption = null)
+        {
+            return new Image($"{this.HttpContext.ImageBaseUrl }/{id}", caption, $"{this.HttpContext.ImageBaseUrl }/{id}/{ this.Configuration.SmallImageSize.Width }/{ this.Configuration.SmallImageSize.Height }");
+        }
+
         protected Image MakeImage(Guid id, int width = 200, int height = 200, string caption = null, bool includeCachebuster = false)
         {
             return new Image($"{this.HttpContext.ImageBaseUrl }/{id}/{ width }/{ height }/{ (includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty) }", caption, $"{this.HttpContext.ImageBaseUrl }/{id}/{ this.Configuration.SmallImageSize.Width }/{ this.Configuration.SmallImageSize.Height }");
-        }
-
-        protected Image MakeFullsizeImage(Guid id, string caption = null)
-        {
-            return new Image($"{this.HttpContext.ImageBaseUrl }/{id}", caption,  $"{this.HttpContext.ImageBaseUrl }/{id}/{ this.Configuration.SmallImageSize.Width }/{ this.Configuration.SmallImageSize.Height }");
         }
 
         protected Image MakeImage(Guid id, string type, ImageSize imageSize)
@@ -273,6 +305,11 @@ namespace Roadie.Api.Services
         protected Image MakeReleaseThumbnailImage(Guid id)
         {
             return MakeThumbnailImage(id, "release");
+        }
+
+        protected string MakeTrackPlayUrl(ApplicationUser user, int trackId, Guid trackRoadieId)
+        {
+            return $"{ this.HttpContext.BaseUrl }/play/track/{user.Id}/{ ServiceBase.TrackPlayToken(user, trackRoadieId)}/{ trackRoadieId }.mp3";
         }
 
         protected Image MakeTrackThumbnailImage(Guid id)
@@ -418,41 +455,6 @@ namespace Roadie.Api.Services
             };
         }
 
-        protected async Task<OperationResult<bool>> ToggleArtistFavorite(Guid artistId, ApplicationUser user, bool isFavorite)
-        {
-            var artist = this.GetArtist(artistId);
-            if (artist == null)
-            {
-                return new OperationResult<bool>(true, $"Invalid Artist Id [{ artistId }]");
-            }
-            var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == user.Id);
-            if (userArtist == null)
-            {
-                userArtist = new data.UserArtist
-                {
-                    IsFavorite = isFavorite,
-                    UserId = user.Id,
-                    ArtistId = artist.Id
-                };
-                this.DbContext.UserArtists.Add(userArtist);
-            }
-            else
-            {
-                userArtist.IsFavorite = isFavorite;
-                userArtist.LastUpdated = DateTime.UtcNow;
-            }
-            await this.DbContext.SaveChangesAsync();
-
-            this.CacheManager.ClearRegion(user.CacheRegion);
-            this.CacheManager.ClearRegion(artist.CacheRegion);
-
-            return new OperationResult<bool>
-            {
-                IsSuccess = true,
-                Data = true
-            };
-        }
-
         protected async Task<OperationResult<bool>> ToggleArtistDisliked(Guid artistId, ApplicationUser user, bool isDisliked)
         {
             var artist = this.GetArtist(artistId);
@@ -474,6 +476,41 @@ namespace Roadie.Api.Services
             else
             {
                 userArtist.IsDisliked = isDisliked;
+                userArtist.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        protected async Task<OperationResult<bool>> ToggleArtistFavorite(Guid artistId, ApplicationUser user, bool isFavorite)
+        {
+            var artist = this.GetArtist(artistId);
+            if (artist == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Artist Id [{ artistId }]");
+            }
+            var userArtist = this.DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == user.Id);
+            if (userArtist == null)
+            {
+                userArtist = new data.UserArtist
+                {
+                    IsFavorite = isFavorite,
+                    UserId = user.Id,
+                    ArtistId = artist.Id
+                };
+                this.DbContext.UserArtists.Add(userArtist);
+            }
+            else
+            {
+                userArtist.IsFavorite = isFavorite;
                 userArtist.LastUpdated = DateTime.UtcNow;
             }
             await this.DbContext.SaveChangesAsync();
@@ -560,43 +597,6 @@ namespace Roadie.Api.Services
             };
         }
 
-        protected async Task<OperationResult<bool>> ToggleTrackFavorite(Guid trackId, ApplicationUser user, bool isFavorite)
-        {
-            var track = this.GetTrack(trackId);
-            if (track == null)
-            {
-                return new OperationResult<bool>(true, $"Invalid Track Id [{ trackId }]");
-            }
-            var userTrack = this.DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == user.Id);
-            if (userTrack == null)
-            {
-                userTrack = new data.UserTrack
-                {
-                    IsFavorite = isFavorite,
-                    UserId = user.Id,
-                    TrackId = track.Id
-                };
-                this.DbContext.UserTracks.Add(userTrack);
-            }
-            else
-            {
-                userTrack.IsFavorite = isFavorite;
-                userTrack.LastUpdated = DateTime.UtcNow;
-            }
-            await this.DbContext.SaveChangesAsync();
-
-            this.CacheManager.ClearRegion(user.CacheRegion);
-            this.CacheManager.ClearRegion(track.CacheRegion);
-            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
-            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
-
-            return new OperationResult<bool>
-            {
-                IsSuccess = true,
-                Data = true
-            };
-        }
-
         protected async Task<OperationResult<bool>> ToggleTrackDisliked(Guid trackId, ApplicationUser user, bool isDisliked)
         {
             var track = this.GetTrack(trackId);
@@ -634,37 +634,41 @@ namespace Roadie.Api.Services
             };
         }
 
-
-        private Image MakeImage(Guid id, string type, int? width, int? height, string caption = null, bool includeCachebuster = false)
+        protected async Task<OperationResult<bool>> ToggleTrackFavorite(Guid trackId, ApplicationUser user, bool isFavorite)
         {
-            if (width.HasValue && height.HasValue && (width.Value != this.Configuration.ThumbnailImageSize.Width || height.Value != this.Configuration.ThumbnailImageSize.Height))
+            var track = this.GetTrack(trackId);
+            if (track == null)
             {
-                return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}/{width}/{height}/{ (includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty) }", caption, $"{this.HttpContext.ImageBaseUrl }/{type}/{id}/{ this.Configuration.ThumbnailImageSize.Width }/{ this.Configuration.ThumbnailImageSize.Height }");
+                return new OperationResult<bool>(true, $"Invalid Track Id [{ trackId }]");
             }
-            return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}", caption, null);
-        }
-
-        protected IEnumerable<int> ArtistIdsForRelease(int releaseId)
-        {
-            var trackArtistIds = (from r in this.DbContext.Releases
-                                  join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                  join tr in this.DbContext.Tracks on rm.Id equals tr.ReleaseMediaId
-                                  where r.Id == releaseId
-                                  where tr.ArtistId != null
-                                  select tr.ArtistId.Value).ToList();
-            trackArtistIds.Add(this.DbContext.Releases.FirstOrDefault(x => x.Id == releaseId).ArtistId);
-            return trackArtistIds.Distinct().ToArray();
-        }
-
-        /// <summary>
-        /// Update the counts for all artists on a release (both track and release artists)
-        /// </summary>
-        protected async Task UpdateArtistCountsForRelease(int releaseId, DateTime now)
-        {
-            foreach (var artistId in this.ArtistIdsForRelease(releaseId))
+            var userTrack = this.DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == user.Id);
+            if (userTrack == null)
             {
-                await this.UpdateArtistCounts(artistId, now);
+                userTrack = new data.UserTrack
+                {
+                    IsFavorite = isFavorite,
+                    UserId = user.Id,
+                    TrackId = track.Id
+                };
+                this.DbContext.UserTracks.Add(userTrack);
             }
+            else
+            {
+                userTrack.IsFavorite = isFavorite;
+                userTrack.LastUpdated = DateTime.UtcNow;
+            }
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(user.CacheRegion);
+            this.CacheManager.ClearRegion(track.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
+            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
         }
 
         protected async Task UpdateArtistCounts(int artistId, DateTime now)
@@ -685,21 +689,14 @@ namespace Roadie.Api.Services
             }
         }
 
-        protected async Task UpdatePlaylistCounts(int playlistId, DateTime now)
+        /// <summary>
+        /// Update the counts for all artists on a release (both track and release artists)
+        /// </summary>
+        protected async Task UpdateArtistCountsForRelease(int releaseId, DateTime now)
         {
-            var playlist = this.DbContext.Playlists.FirstOrDefault(x => x.Id == playlistId);
-            if(playlist != null)
+            foreach (var artistId in this.ArtistIdsForRelease(releaseId))
             {
-                var playlistTracks = this.DbContext.PlaylistTracks
-                                                   .Include(x => x.Track)
-                                                   .Include("Track.ReleaseMedia")
-                                                   .Where(x => x.PlayListId == playlist.Id).ToArray();
-                playlist.TrackCount = (short)playlistTracks.Count();
-                playlist.Duration = playlistTracks.Sum(x => x.Track.Duration);
-                playlist.ReleaseCount = (short)playlistTracks.Select(x => x.Track.ReleaseMedia.ReleaseId).Distinct().Count();
-                playlist.LastUpdated = now;
-                await this.DbContext.SaveChangesAsync();
-                this.CacheManager.ClearRegion(playlist.CacheRegion);
+                await this.UpdateArtistCounts(artistId, now);
             }
         }
 
@@ -726,6 +723,24 @@ namespace Roadie.Api.Services
             }
         }
 
+        protected async Task UpdatePlaylistCounts(int playlistId, DateTime now)
+        {
+            var playlist = this.DbContext.Playlists.FirstOrDefault(x => x.Id == playlistId);
+            if (playlist != null)
+            {
+                var playlistTracks = this.DbContext.PlaylistTracks
+                                                   .Include(x => x.Track)
+                                                   .Include("Track.ReleaseMedia")
+                                                   .Where(x => x.PlayListId == playlist.Id).ToArray();
+                playlist.TrackCount = (short)playlistTracks.Count();
+                playlist.Duration = playlistTracks.Sum(x => x.Track.Duration);
+                playlist.ReleaseCount = (short)playlistTracks.Select(x => x.Track.ReleaseMedia.ReleaseId).Distinct().Count();
+                playlist.LastUpdated = now;
+                await this.DbContext.SaveChangesAsync();
+                this.CacheManager.ClearRegion(playlist.CacheRegion);
+            }
+        }
+
         protected async Task UpdateReleaseCounts(int releaseId, DateTime now)
         {
             var release = this.DbContext.Releases.FirstOrDefault(x => x.Id == releaseId);
@@ -740,30 +755,13 @@ namespace Roadie.Api.Services
             }
         }
 
-        public static string TrackPlayToken(ApplicationUser user, Guid trackId)
+        private Image MakeImage(Guid id, string type, int? width, int? height, string caption = null, bool includeCachebuster = false)
         {
-            var hashids = new Hashids(ServiceBase.TrackTokenSalt);
-            var trackIdPart = BitConverter.ToInt32(trackId.ToByteArray(), 6);
-            if(trackIdPart < 0)
+            if (width.HasValue && height.HasValue && (width.Value != this.Configuration.ThumbnailImageSize.Width || height.Value != this.Configuration.ThumbnailImageSize.Height))
             {
-                trackIdPart = trackIdPart * -1;
+                return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}/{width}/{height}/{ (includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty) }", caption, $"{this.HttpContext.ImageBaseUrl }/{type}/{id}/{ this.Configuration.ThumbnailImageSize.Width }/{ this.Configuration.ThumbnailImageSize.Height }");
             }
-            var token = hashids.Encode(user.Id, SafeParser.ToNumber<int>(user.CreatedDate.Value.ToString("DDHHmmss")), trackIdPart);
-            return token;
-        }
-
-        protected string MakeTrackPlayUrl(ApplicationUser user, int trackId, Guid trackRoadieId)
-        {
-            return $"{ this.HttpContext.BaseUrl }/play/track/{user.Id}/{ ServiceBase.TrackPlayToken(user, trackRoadieId)}/{ trackRoadieId }.mp3";
-        }
-
-        public static bool ConfirmTrackPlayToken(ApplicationUser user, Guid trackRoadieId, string token)
-        {
-            if(string.IsNullOrEmpty(token))
-            {
-                return false;
-            }
-            return ServiceBase.TrackPlayToken(user, trackRoadieId).Equals(token);
+            return new Image($"{this.HttpContext.ImageBaseUrl }/{type}/{id}", caption, null);
         }
     }
 }

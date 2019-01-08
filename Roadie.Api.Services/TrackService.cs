@@ -351,7 +351,7 @@ namespace Roadie.Api.Services
                                   LastPlayed = x.ti.LastPlayed,
                                   LastUpdated = x.ti.LastUpdated,
                                   MediaNumber = x.rmi.MediaNumber,
-                                  PlayedCount = x.ti.PlayedCount,                                 
+                                  PlayedCount = x.ti.PlayedCount,
                                   Rating = x.ti.Rating,
                                   Release = x.rl,
                                   ReleaseDate = x.rl.ReleaseDateDateTime,

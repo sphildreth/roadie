@@ -15,6 +15,7 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
+
 using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Services
@@ -33,7 +34,6 @@ namespace Roadie.Api.Services
 
         public Task<Library.Models.Pagination.PagedResult<BookmarkList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, BookmarkType? filterType = null)
         {
-            
             var sw = new Stopwatch();
             sw.Start();
             var result = (from b in this.DbContext.Bookmarks
@@ -48,13 +48,13 @@ namespace Roadie.Api.Services
                               {
                                   Text = u.UserName,
                                   Value = u.RoadieId.ToString()
-                              },                               
+                              },
                               DatabaseId = b.Id,
                               Id = b.RoadieId,
                               CreatedDate = b.CreatedDate,
                               LastUpdated = b.LastUpdated,
                               Type = b.BookmarkType,
-                              BookmarkTargetId = b.BookmarkTargetId                               
+                              BookmarkTargetId = b.BookmarkTargetId
                           });
 
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "CreatedDate", "DESC" } }) : request.OrderValue(null);

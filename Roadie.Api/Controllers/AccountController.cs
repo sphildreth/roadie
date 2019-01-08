@@ -16,6 +16,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace Roadie.Api.Controllers
 {
@@ -199,25 +200,28 @@ namespace Roadie.Api.Controllers
         {
             var user = await UserManager.FindByNameAsync(username);
             var token = await this.UserManager.GeneratePasswordResetTokenAsync(user);
-            callbackUrl = callbackUrl + "?username=" + username + "&token=" + token;
-            await this.EmailSender.SendEmailAsync(user.Email, $"Reset your { this.RoadieSettings.SiteName } password", $"A request has been made to reset your password for your { this.RoadieSettings.SiteName } account. To proceed <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>click here</a>.");
-            this.Logger.LogInformation("User [{0}] Email [{1}] Requested Password Reset Callback [{2}]", username, user.Email, callbackUrl);
-            return Ok();
+            callbackUrl = callbackUrl + "?username=" + username + "&token=" + WebEncoders.Base64UrlEncode(System.Text.Encoding.ASCII.GetBytes(token));
+            try
+            {
+                await this.EmailSender.SendEmailAsync(user.Email, $"Reset your { this.RoadieSettings.SiteName } password", $"A request has been made to reset your password for your { this.RoadieSettings.SiteName } account. To proceed <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>click here</a>.");
+                this.Logger.LogInformation("User [{0}] Email [{1}] Requested Password Reset Callback [{2}]", username, user.Email, callbackUrl);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+            }
+            return StatusCode(500);
         }
 
         [HttpPost("resetpassword")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel resetPasswordModel)
+        public async Task<IActionResult> ResetPassword([FromBody]ResetPasswordModel resetPasswordModel)
         {
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser
-                {
-                    UserName = resetPasswordModel.Username,
-                    Email = resetPasswordModel.Email,
-                    CreatedDate = DateTime.UtcNow
-                };
-
-                var identityResult = await this.UserManager.ResetPasswordAsync(user, resetPasswordModel.Token, resetPasswordModel.Password);
+                var user = await UserManager.FindByNameAsync(resetPasswordModel.Username);
+                var token = System.Text.Encoding.ASCII.GetString(WebEncoders.Base64UrlDecode(resetPasswordModel.Token));
+                var identityResult = await this.UserManager.ResetPasswordAsync(user, token, resetPasswordModel.Password);
                 if (identityResult.Succeeded)
                 {
                     this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
