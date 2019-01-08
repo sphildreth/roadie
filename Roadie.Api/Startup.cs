@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -23,6 +24,7 @@ using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.Utility;
 using System;
+using System.Diagnostics;
 
 namespace Roadie.Api
 {
@@ -88,8 +90,8 @@ namespace Roadie.Api
             }));
 
             services.AddSingleton<ITokenService, TokenService>();
-
             services.AddSingleton<IHttpEncoder, HttpEncoder>();
+            services.AddSingleton<IEmailSender, EmailSenderService>();
 
             var cacheManager = new DictionaryCacheManager(this._loggerFactory.CreateLogger<DictionaryCacheManager>(), new CachePolicy(TimeSpan.FromHours(4)));
             services.AddSingleton<ICacheManager>(cacheManager);
@@ -112,7 +114,8 @@ namespace Roadie.Api
 
             services.AddIdentity<ApplicationUser, ApplicationRole>()
                 .AddRoles<ApplicationRole>()
-                .AddEntityFrameworkStores<ApplicationUserDbContext>();
+                .AddEntityFrameworkStores<ApplicationUserDbContext>()
+                .AddDefaultTokenProviders();
 
             services.AddAuthorization(options =>
             {
@@ -134,7 +137,13 @@ namespace Roadie.Api
                 var integrationKeys = this._configuration.GetSection("IntegrationKeys")
                                                          .Get<IntegrationKey>();
 
-                settings.Integrations.ApiKeys = new System.Collections.Generic.List<ApiKey>
+                if(integrationKeys == null)
+                {
+                    Console.WriteLine("Unable to find IntegrationKeys, Integrations will not have proper API keys setup.");
+                }
+                else if (integrationKeys != null)
+                {
+                    settings.Integrations.ApiKeys = new System.Collections.Generic.List<ApiKey>
                 {
                     new ApiKey
                     {
@@ -154,6 +163,7 @@ namespace Roadie.Api
                         Key = integrationKeys.BingImageSearch
                     }
                 };
+                }
                 return settings;
             });
             services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();

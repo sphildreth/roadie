@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -12,6 +14,7 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Controllers
@@ -30,6 +33,7 @@ namespace Roadie.Api.Controllers
         private IRoadieSettings RoadieSettings { get; }
         private ICacheManager CacheManager { get; }
         private IAdminService AdminService { get; }
+        private IEmailSender EmailSender { get; }
 
         public AccountController(
            IAdminService adminService,
@@ -38,7 +42,8 @@ namespace Roadie.Api.Controllers
            IConfiguration configuration,
            ILogger<AccountController> logger,
            ITokenService tokenService,
-           ICacheManager cacheManager)
+           ICacheManager cacheManager,
+           IEmailSender emailSender)
         {
             this.UserManager = userManager;
             this.SignInManager = signInManager;
@@ -50,6 +55,7 @@ namespace Roadie.Api.Controllers
             this.RoadieSettings = new RoadieSettings();
             configuration.GetSection("RoadieSettings").Bind(this.RoadieSettings);
             this.AdminService = adminService;
+            this.EmailSender = emailSender;
         }
 
         [HttpPost]
@@ -74,6 +80,12 @@ namespace Roadie.Api.Controllers
                     await UserManager.UpdateAsync(user);
                     var t = await this.TokenService.GenerateToken(user, this.UserManager);
                     this.Logger.LogInformation($"Successfully authenticated User [{ model.Username}]");
+                    if(!user.EmailConfirmed)
+                    {
+                        var code = await this.UserManager.GenerateEmailConfirmationTokenAsync(user);
+                        var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, Request.Scheme);
+                        await this.EmailSender.SendEmailAsync(user.Email, $"Confirm your { this.RoadieSettings.SiteName } email", $"Please confirm your { this.RoadieSettings.SiteName } account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    }
                     this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
                     var avatarUrl = $"{this.Request.Scheme}://{this.Request.Host}/images/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
                     return Ok(new 
@@ -138,6 +150,10 @@ namespace Roadie.Api.Controllers
                     {
                         await this.AdminService.DoInitialSetup(user, this.UserManager);
                     }
+                    var code = await this.UserManager.GenerateEmailConfirmationTokenAsync(user);
+                    var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, Request.Scheme);
+                    await this.EmailSender.SendEmailAsync(user.Email, $"Confirm your { this.RoadieSettings.SiteName } email", $"Please confirm your { this.RoadieSettings.SiteName } account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+
                     await SignInManager.SignInAsync(user, isPersistent: false);
                     var t = await this.TokenService.GenerateToken(user, this.UserManager);
                     this.Logger.LogInformation($"Successfully created and authenticated User [{ registerModel.Username}]");
@@ -162,7 +178,34 @@ namespace Roadie.Api.Controllers
             return BadRequest(ModelState);
         }
 
-        [HttpPost]
+        [HttpGet("confirmemail")]
+        public IActionResult ConfirmEmail(string userid, string code)
+        {
+            var user = this.UserManager.FindByIdAsync(userid).Result;
+            IdentityResult result = this.UserManager.ConfirmEmailAsync(user, code).Result;
+            if (result.Succeeded)
+            {
+                this.Logger.LogInformation("User [{0}] Confirmed Email Successfully", userid);
+                return Content($"Email for { this.RoadieSettings.SiteName } account confirmed successfully!");
+            }
+            else
+            {
+                return Content("Error while confirming your email!");
+            }
+        }
+
+        [HttpGet("sendpasswordresetemail")]
+        public async Task<IActionResult> SendPasswordResetEmail(string username, string callbackUrl)
+        {
+            var user = await UserManager.FindByNameAsync(username);
+            var token = await this.UserManager.GeneratePasswordResetTokenAsync(user);
+            callbackUrl = callbackUrl + "?username=" + username + "&token=" + token;
+            await this.EmailSender.SendEmailAsync(user.Email, $"Reset your { this.RoadieSettings.SiteName } password", $"A request has been made to reset your password for your { this.RoadieSettings.SiteName } account. To proceed <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>click here</a>.");
+            this.Logger.LogInformation("User [{0}] Email [{1}] Requested Password Reset Callback [{2}]", username, user.Email, callbackUrl);
+            return Ok();
+        }
+
+        [HttpPost("resetpassword")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel resetPasswordModel)
         {
             if (ModelState.IsValid)
@@ -179,7 +222,18 @@ namespace Roadie.Api.Controllers
                 {
                     this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
                     await SignInManager.SignInAsync(user, isPersistent: false);
-                    return Ok(this.TokenService.GenerateToken(user, this.UserManager));
+                    var avatarUrl = $"{this.Request.Scheme}://{this.Request.Host}/images/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
+                    var t = await this.TokenService.GenerateToken(user, this.UserManager);
+                    return Ok(new
+                    {
+                        Username = user.UserName,
+                        user.Email,
+                        user.LastLogin,
+                        avatarUrl,
+                        Token = t,
+                        user.Timeformat,
+                        user.Timezone
+                    });
                 }
                 else
                 {
