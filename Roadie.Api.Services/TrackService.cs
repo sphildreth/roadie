@@ -155,9 +155,10 @@ namespace Roadie.Api.Services
                 {
                     favoriteTrackIds = (from t in this.DbContext.Tracks
                                         join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
+                                        where ut.UserId == roadieUser.Id
                                         where ut.IsFavorite ?? false
                                         select t.Id
-                                         );
+                                        );
                 }
                 Dictionary<int, int> playListTrackPositions = new Dictionary<int, int>();
                 int[] playlistTrackIds = new int[0];
@@ -197,11 +198,32 @@ namespace Roadie.Api.Services
                                    ).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
                 }
                 int[] randomTrackIds = null;
-                if (doRandomize ?? false)
-                {
+                if (doRandomize ?? false)                {
+
                     request.Limit = roadieUser?.RandomReleaseLimit ?? 50;
-                    var sql = "SELECT t.* FROM `track` t WHERE t.Hash IS NOT NULL ORDER BY RAND() LIMIT {0}";
-                    randomTrackIds = this.DbContext.Tracks.FromSql(sql, request.LimitValue).Select(x => x.Id).ToArray();
+
+                    if (!request.FilterRatedOnly && !request.FilterFavoriteOnly)
+                    {
+                        var sql = "SELECT t.* " +
+                                  "FROM `track` t " +
+                                  "WHERE t.Hash IS NOT NULL " +
+                                  "ORDER BY RAND() LIMIT {0}";
+                        randomTrackIds = this.DbContext.Tracks.FromSql(sql, request.LimitValue).Select(x => x.Id).ToArray();
+                    }
+                    if(request.FilterRatedOnly && !request.FilterFavoriteOnly)
+                    {
+                        var sql = "SELECT t.* " +
+                                  "FROM `track` t " +
+                                  "WHERE t.Hash IS NOT NULL " +
+                                  "AND t.rating > 0 " +
+                                  "ORDER BY RAND() LIMIT {0}";
+                        randomTrackIds = this.DbContext.Tracks.FromSql(sql, request.LimitValue).Select(x => x.Id).ToArray();
+                    }
+                    if(request.FilterFavoriteOnly)
+                    {
+                        randomTrackIds = favoriteTrackIds.OrderBy(x => Guid.NewGuid()).ToArray();
+                    }
+
                     rowCount = this.DbContext.Tracks.Where(x => x.Hash != null).Count();
                 }
                 Guid?[] filterToTrackIds = null;
