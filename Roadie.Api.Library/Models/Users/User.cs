@@ -1,5 +1,6 @@
 ﻿using Mapster;
 using Newtonsoft.Json;
+using Roadie.Library.Models.Statistics;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,6 +10,8 @@ namespace Roadie.Library.Models.Users
     [Serializable]
     public class User
     {
+        public const string DefaultIncludes = "stats";
+
         public const string ActionKeyUserRated = "__userrated__";
 
         [MaxLength(100)]
@@ -86,6 +89,10 @@ namespace Roadie.Library.Models.Users
         [NotMapped]
         [AdaptIgnore]
         public string PasswordConfirmation { get; set; }
+
+        [NotMapped]
+        [AdaptIgnore]
+        public UserStatistics Statistics { get; set; }
 
         public override string ToString()
         {

@@ -7,9 +7,9 @@ namespace Roadie.Library.Models.Statistics
     [Serializable]
     public class UserStatistics
     {
-        public DataToken MostPlayedArtist { get; set; }
-        public DataToken MostPlayedRelease { get; set; }
-        public DataToken MostPlayedTrack { get; set; }
+        public ArtistList MostPlayedArtist { get; set; }
+        public Releases.ReleaseList MostPlayedRelease { get; set; }
+        public TrackList MostPlayedTrack { get; set; }
         public int? RatedArtists { get; set; }
         public int? DislikedArtists { get; set; }
         public int? FavoritedArtists { get; set; }

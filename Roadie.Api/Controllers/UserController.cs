@@ -11,6 +11,7 @@ using Roadie.Library.Models.Users;
 using System;
 using System.Net;
 using System.Threading.Tasks;
+using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
 {
@@ -35,12 +36,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(204)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> Get(Guid id)
+        public async Task<IActionResult> Get(Guid id, string inc = null)
         {
             var user = await this.CurrentUserModel();
             var result = await this.CacheManager.GetAsync($"urn:user_model_by_id:{ id }", async () =>
             {
-                return await this.UserService.ById(user, id);
+                return await this.UserService.ById(user, id, (inc ?? models.Users.User.DefaultIncludes).ToLower().Split(","));
             }, ControllerCacheRegionUrn);
             if (result == null || result.IsNotFoundResult)
             {

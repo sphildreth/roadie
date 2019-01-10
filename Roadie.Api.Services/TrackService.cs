@@ -183,6 +183,22 @@ namespace Roadie.Api.Services
                     request.Page = 1; // Set back to first or it skips already paged tracks for playlist
                     request.SkipValue = 0;
                 }
+
+                int[] collectionTrackIds = new int[0];
+                if(request.FilterToCollectionId.HasValue)
+                {
+                    request.Limit = roadieUser?.PlayerTrackLimit ?? 50;
+
+                    collectionTrackIds = (from cr in this.DbContext.CollectionReleases
+                                          join c in this.DbContext.Collections on cr.CollectionId equals c.Id
+                                          join r in this.DbContext.Releases on cr.ReleaseId equals r.Id
+                                          join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                          join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                          where c.RoadieId == request.FilterToCollectionId.Value
+                                          orderby cr.ListNumber, rm.MediaNumber, t.TrackNumber                                          
+                                          select t.Id).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                }
+
                 int[] topTrackids = new int[0];
                 if (request.FilterTopPlayedOnly)
                 {
@@ -264,6 +280,7 @@ namespace Roadie.Api.Services
                                    where (randomTrackIds == null || randomTrackIds.Contains(t.Id))
                                    where (request.FilterToArtistId == null || request.FilterToArtistId != null && ((t.TrackArtist != null && t.TrackArtist.RoadieId == request.FilterToArtistId) || r.Artist.RoadieId == request.FilterToArtistId))
                                    where (!request.IsHistoryRequest || t.PlayedCount > 0)
+                                   where (request.FilterToCollectionId == null || collectionTrackIds.Contains(t.Id))
                                    select new
                                    {
                                        ti = new

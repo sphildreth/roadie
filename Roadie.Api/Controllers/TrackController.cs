@@ -30,12 +30,6 @@ namespace Roadie.Api.Controllers
             this.TrackService = trackService;
         }
 
-        //[EnableQuery]
-        //public IActionResult Get()
-        //{
-        //    return Ok(this._RoadieDbContext.Tracks.ProjectToType<models.Track>());
-        //}
-
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]

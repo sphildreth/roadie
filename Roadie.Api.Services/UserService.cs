@@ -20,6 +20,7 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
+using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Services
 {
@@ -39,7 +40,7 @@ namespace Roadie.Api.Services
             this.UserManager = userManager;
         }
 
-        public async Task<OperationResult<User>> ById(User user, Guid id)
+        public async Task<OperationResult<User>> ById(User user, Guid id, IEnumerable<string> includes)
         {
             var timings = new Dictionary<string, long>();
             var tsw = new Stopwatch();
@@ -50,7 +51,7 @@ namespace Roadie.Api.Services
             var result = await this.CacheManager.GetAsync<OperationResult<User>>(cacheKey, async () =>
             {
                 tsw.Restart();
-                var rr = await this.UserByIdAction(id);
+                var rr = await this.UserByIdAction(id, includes);
                 tsw.Stop();
                 timings.Add("UserByIdAction", tsw.ElapsedMilliseconds);
                 return rr;
@@ -119,54 +120,8 @@ namespace Roadie.Api.Services
                     var userReleases = this.DbContext.UserReleases.Include(x => x.Release).Where(x => x.UserId == row.DatabaseId).ToArray();
                     var userTracks = this.DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == row.DatabaseId).ToArray();
 
-                    var mostPlayedArtist = (from a in this.DbContext.Artists
-                                            join r in this.DbContext.Releases on a.Id equals r.ArtistId
-                                            join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                            join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                            join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
-                                            where ut.UserId == row.DatabaseId
-                                            select new { a, ut.PlayedCount })
-                                             .GroupBy(a => a.a)
-                                             .Select(x => new DataToken
-                                             {
-                                                 Text = x.Key.Name,
-                                                 Value = x.Key.RoadieId.ToString(),
-                                                 Data = x.Sum(t => t.PlayedCount)
-                                             })
-                                             .OrderByDescending(x => x.Data)
-                                             .FirstOrDefault();
-
-                    var mostPlayedRelease = (from r in this.DbContext.Releases
-                                             join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                             join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                             join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
-                                             where ut.UserId == row.DatabaseId
-                                             select new { r, ut.PlayedCount })
-                                             .GroupBy(r => r.r)
-                                             .Select(x => new DataToken
-                                             {
-                                                 Text = x.Key.Title,
-                                                 Value = x.Key.RoadieId.ToString(),
-                                                 Data = x.Sum(t => t.PlayedCount)
-                                             })
-                                             .OrderByDescending(x => x.Data)
-                                             .FirstOrDefault();
-
-                    var mostPlayedTrack = userTracks
-                                          .OrderByDescending(x => x.PlayedCount)
-                                          .Select(x => new DataToken
-                                          {
-                                              Text = x.Track.Title,
-                                              Value = x.Track.RoadieId.ToString(),
-                                              Data = x.PlayedCount
-                                          })
-                                          .FirstOrDefault();
-
                     row.Statistics = new UserStatistics
                     {
-                        MostPlayedArtist = mostPlayedArtist,
-                        MostPlayedRelease = mostPlayedRelease,
-                        MostPlayedTrack = mostPlayedTrack,
                         RatedArtists = userArtists.Where(x => x.Rating > 0).Count(),
                         FavoritedArtists = userArtists.Where(x => x.IsFavorite ?? false).Count(),
                         DislikedArtists = userArtists.Where(x => x.IsDisliked ?? false).Count(),
@@ -566,17 +521,102 @@ namespace Roadie.Api.Services
             };
         }
 
-        private Task<OperationResult<User>> UserByIdAction(Guid id)
+        private Task<OperationResult<User>> UserByIdAction(Guid id, IEnumerable<string> includes)
         {
             var user = this.GetUser(id);
             if (user == null)
             {
                 return Task.FromResult(new OperationResult<User>(true, string.Format("User Not Found [{0}]", id)));
             }
+            var model = user.Adapt<User>();
+            if (includes != null && includes.Any())
+            {
+                if (includes.Contains("stats"))
+                {
+
+                    var userArtists = this.DbContext.UserArtists.Include(x => x.Artist).Where(x => x.UserId == user.Id).ToArray();
+                    var userReleases = this.DbContext.UserReleases.Include(x => x.Release).Where(x => x.UserId == user.Id).ToArray();
+                    var userTracks = this.DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == user.Id).ToArray();
+
+                    var mostPlayedArtist = (from a in this.DbContext.Artists
+                                            join r in this.DbContext.Releases on a.Id equals r.ArtistId
+                                            join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                            join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                            join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
+                                            where ut.UserId == user.Id
+                                            select new { a, ut.PlayedCount })
+                                             .GroupBy(a => a.a)
+                                             .Select(x => new {
+                                                 Artist = x.Key,
+                                                 Played = x.Sum(t => t.PlayedCount)
+                                             })
+                                             .OrderByDescending(x => x.Played)
+                                             .FirstOrDefault();
+
+                    var mostPlayedReleaseId = (from r in this.DbContext.Releases
+                                             join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                             join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                             join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
+                                             where ut.UserId == user.Id
+                                             select new { r, ut.PlayedCount })
+                                             .GroupBy(r => r.r)
+                                             .Select(x => new {
+                                                 Release = x.Key,
+                                                 Played = x.Sum(t => t.PlayedCount)
+                                             })
+                                             .OrderByDescending(x => x.Played)
+                                             .Select(x => x.Release.RoadieId)
+                                             .FirstOrDefault();
+
+                    var mostPlayedRelease = this.GetRelease(mostPlayedReleaseId);
+
+                    var mostPlayedTrackUserTrack = userTracks
+                                                   .OrderByDescending(x => x.PlayedCount)
+                                                   .FirstOrDefault();
+                    var mostPlayedTrack = this.DbContext.Tracks
+                                                        .Include(x => x.TrackArtist)
+                                                        .Include(x => x.ReleaseMedia)
+                                                        .Include("ReleaseMedia.Release")
+                                                        .Include("ReleaseMedia.Release.Artist")
+                                                        .FirstOrDefault(x => x.Id == mostPlayedTrackUserTrack.TrackId);
+
+                    model.Statistics = new UserStatistics
+                    {
+                        MostPlayedArtist = mostPlayedArtist == null ? null : models.ArtistList.FromDataArtist(mostPlayedArtist.Artist, this.MakeArtistThumbnailImage(mostPlayedArtist.Artist.RoadieId)),
+                        MostPlayedRelease = mostPlayedRelease == null ? null : models.Releases.ReleaseList.FromDataRelease(mostPlayedRelease, 
+                                                                                        mostPlayedRelease.Artist, 
+                                                                                        this.HttpContext.BaseUrl, 
+                                                                                        this.MakeArtistThumbnailImage(mostPlayedRelease.Artist.RoadieId), 
+                                                                                        this.MakeReleaseThumbnailImage(mostPlayedRelease.RoadieId)),
+                        MostPlayedTrack = mostPlayedTrack == null ? null : TrackList.FromDataTrack(this.MakeTrackPlayUrl(user, mostPlayedTrack.Id, mostPlayedTrack.RoadieId),
+                                                            mostPlayedTrack,
+                                                            mostPlayedTrack.ReleaseMedia.MediaNumber,
+                                                            mostPlayedTrack.ReleaseMedia.Release,
+                                                            mostPlayedTrack.ReleaseMedia.Release.Artist,
+                                                            mostPlayedTrack.TrackArtist,
+                                                            this.HttpContext.BaseUrl,
+                                                            this.MakeTrackThumbnailImage(mostPlayedTrack.RoadieId),
+                                                            this.MakeReleaseThumbnailImage(mostPlayedTrack.ReleaseMedia.Release.RoadieId),
+                                                            this.MakeArtistThumbnailImage(mostPlayedTrack.ReleaseMedia.Release.Artist.RoadieId),
+                                                            this.MakeArtistThumbnailImage(mostPlayedTrack.TrackArtist == null ? null : (Guid?)mostPlayedTrack.TrackArtist.RoadieId)),
+                        RatedArtists = userArtists.Where(x => x.Rating > 0).Count(),
+                        FavoritedArtists = userArtists.Where(x => x.IsFavorite ?? false).Count(),
+                        DislikedArtists = userArtists.Where(x => x.IsDisliked ?? false).Count(),
+                        RatedReleases = userReleases.Where(x => x.Rating > 0).Count(),
+                        FavoritedReleases = userReleases.Where(x => x.IsFavorite ?? false).Count(),
+                        DislikedReleases = userReleases.Where(x => x.IsDisliked ?? false).Count(),
+                        RatedTracks = userTracks.Where(x => x.Rating > 0).Count(),
+                        PlayedTracks = userTracks.Where(x => x.PlayedCount.HasValue).Select(x => x.PlayedCount).Sum(),
+                        FavoritedTracks = userTracks.Where(x => x.IsFavorite ?? false).Count(),
+                        DislikedTracks = userTracks.Where(x => x.IsDisliked ?? false).Count()
+                    };
+                }
+            }
+
             return Task.FromResult(new OperationResult<User>
             {
                 IsSuccess = true,
-                Data = user.Adapt<User>()
+                Data = model
             });
         }
     }

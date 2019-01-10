@@ -2,13 +2,14 @@
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Users;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Services
 {
     public interface IUserService
     {
-        Task<OperationResult<User>> ById(User user, Guid id);
+        Task<OperationResult<User>> ById(User user, Guid id, IEnumerable<string> includes);
 
         Task<PagedResult<UserList>> List(PagedRequest request);
 

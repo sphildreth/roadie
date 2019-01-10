@@ -1,7 +1,9 @@
 ﻿using Roadie.Library.Data;
 using Roadie.Library.Enums;
+using Roadie.Library.Models.Statistics;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
 namespace Roadie.Library.Identity
