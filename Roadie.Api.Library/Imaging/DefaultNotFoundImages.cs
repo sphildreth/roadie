@@ -16,6 +16,7 @@ namespace Roadie.Library.Imaging
         private Image _track;
         private Image _user;
 
+        private ILogger Logger { get; }
 
         public Image Artist
         {
@@ -76,9 +77,10 @@ namespace Roadie.Library.Imaging
 
         private IRoadieSettings Configuration { get; }
 
-        public DefaultNotFoundImages(IRoadieSettings configuration)
+        public DefaultNotFoundImages(ILogger<DefaultNotFoundImages> logger, IRoadieSettings configuration)
         {
             this.Configuration = configuration;
+            this.Logger = logger;
         }
 
         private static Image MakeImageFromFile(string filename)
@@ -102,7 +104,12 @@ namespace Roadie.Library.Imaging
             {
                 return null;
             }
-            return Path.Combine(this.Configuration.ContentPath, filename);
+            var path=  Path.Combine(this.Configuration.ContentPath, filename);
+            if(!File.Exists(path))
+            {
+                this.Logger.LogWarning("Unable To Find Path [{0}], ContentPath [{1}]", path, this.Configuration.ContentPath);   
+            }
+            return path;
         }
     }
 }
