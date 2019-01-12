@@ -8,6 +8,7 @@ using Roadie.Library.Caching;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Users;
+using Roadie.Library.Utility;
 using System;
 using System.Net;
 using System.Threading.Tasks;
@@ -23,13 +24,15 @@ namespace Roadie.Api.Controllers
     {
         private readonly ITokenService TokenService;
         private IUserService UserService { get; }
+        private IHttpContext RoadieHttpContext { get; }
 
-        public UserController(IUserService userService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, ITokenService tokenService, UserManager<ApplicationUser> userManager)
+        public UserController(IUserService userService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, ITokenService tokenService, UserManager<ApplicationUser> userManager, IHttpContext httpContext)
             : base(cacheManager, configuration, userManager)
         {
             this.Logger = logger.CreateLogger("RoadieApi.Controllers.UserController");
             this.UserService = userService;
             this.TokenService = tokenService;
+            this.RoadieHttpContext = httpContext;
         }
 
         [HttpGet("{id}")]
@@ -283,7 +286,7 @@ namespace Roadie.Api.Controllers
             var modelUser = await UserManager.FindByNameAsync(model.UserName);
             var t = await this.TokenService.GenerateToken(modelUser, this.UserManager);
             this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-            var avatarUrl = $"{this.Request.Scheme}://{this.Request.Host}/images/user/{ modelUser.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
+            var avatarUrl = $"{ this.RoadieHttpContext.ImageBaseUrl }/user/{ modelUser.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
             return Ok(new
             {
                 IsSuccess = true,

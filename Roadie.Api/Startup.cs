@@ -33,10 +33,14 @@ namespace Roadie.Api
         private readonly IConfiguration _configuration;
         private readonly ILoggerFactory _loggerFactory;
 
+        private ILogger Logger { get; }
+
         public Startup(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
             this._configuration = configuration;
             this._loggerFactory = loggerFactory;
+
+            this.Logger = this._loggerFactory.CreateLogger<Startup>();
 
             TypeAdapterConfig<Roadie.Library.Data.Image, Roadie.Library.Models.Image>
                 .NewConfig()
@@ -80,15 +84,6 @@ namespace Roadie.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddCors(options => options.AddPolicy("CORSPolicy", builder =>
-            {
-                builder
-                .WithOrigins("http://localhost:8080", "https://localhost:8080", "http://localhost:80", "https://localhost:80")
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
-            }));
-
             services.AddSingleton<ITokenService, TokenService>();
             services.AddSingleton<IHttpEncoder, HttpEncoder>();
             services.AddSingleton<IEmailSender, EmailSenderService>();
@@ -124,6 +119,17 @@ namespace Roadie.Api
             });
 
             services.Configure<IConfiguration>(this._configuration);
+            var corsOrigins = (this._configuration["CORSOrigins"] ?? "http://localhost:8080").Split('|');
+            this.Logger.LogDebug("Setting Up CORS Policy [{0}]", string.Join(", ", corsOrigins));
+
+            services.AddCors(options => options.AddPolicy("CORSPolicy", builder =>
+            {
+                builder
+                .WithOrigins(corsOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+            }));
 
             services.AddSingleton<IRoadieSettings, RoadieSettings>(ctx =>
             {
@@ -247,7 +253,8 @@ namespace Roadie.Api
             {
                 var actionContext = factory.GetService<IActionContextAccessor>()
                                            .ActionContext;
-                return new HttpContext(new UrlHelper(actionContext));
+                
+                return new HttpContext(factory.GetService<IRoadieSettings>(), new UrlHelper(actionContext));
             });
         }
 

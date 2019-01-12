@@ -17,6 +17,7 @@ using System.Net.Http;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
+using Roadie.Library.Utility;
 
 namespace Roadie.Api.Controllers
 {
@@ -35,6 +36,7 @@ namespace Roadie.Api.Controllers
         private ICacheManager CacheManager { get; }
         private IAdminService AdminService { get; }
         private IEmailSender EmailSender { get; }
+        private IHttpContext RoadieHttpContext { get; }
 
         public AccountController(
            IAdminService adminService,
@@ -44,7 +46,8 @@ namespace Roadie.Api.Controllers
            ILogger<AccountController> logger,
            ITokenService tokenService,
            ICacheManager cacheManager,
-           IEmailSender emailSender)
+           IEmailSender emailSender,
+           IHttpContext httpContext)
         {
             this.UserManager = userManager;
             this.SignInManager = signInManager;
@@ -57,6 +60,7 @@ namespace Roadie.Api.Controllers
             configuration.GetSection("RoadieSettings").Bind(this.RoadieSettings);
             this.AdminService = adminService;
             this.EmailSender = emailSender;
+            this.RoadieHttpContext = httpContext;
         }
 
         [HttpPost]
@@ -88,7 +92,7 @@ namespace Roadie.Api.Controllers
                         await this.EmailSender.SendEmailAsync(user.Email, $"Confirm your { this.RoadieSettings.SiteName } email", $"Please confirm your { this.RoadieSettings.SiteName } account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
                     }
                     this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-                    var avatarUrl = $"{this.Request.Scheme}://{this.Request.Host}/images/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
+                    var avatarUrl = $"{ this.RoadieHttpContext.ImageBaseUrl }/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
                     return Ok(new 
                     {
                         Username = user.UserName,
@@ -159,7 +163,7 @@ namespace Roadie.Api.Controllers
                     var t = await this.TokenService.GenerateToken(user, this.UserManager);
                     this.Logger.LogInformation($"Successfully created and authenticated User [{ registerModel.Username}]");
                     this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-                    var avatarUrl = $"{this.Request.Scheme}://{this.Request.Host}/images/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
+                    var avatarUrl = $"{ this.RoadieHttpContext.ImageBaseUrl }/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
                     return Ok(new
                     {
                         Username = user.UserName,
@@ -226,7 +230,7 @@ namespace Roadie.Api.Controllers
                 {
                     this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
                     await SignInManager.SignInAsync(user, isPersistent: false);
-                    var avatarUrl = $"{this.Request.Scheme}://{this.Request.Host}/images/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
+                    var avatarUrl = $"{ this.RoadieHttpContext.ImageBaseUrl }/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
                     var t = await this.TokenService.GenerateToken(user, this.UserManager);
                     return Ok(new
                     {

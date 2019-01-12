@@ -35,6 +35,7 @@ namespace Roadie.Library.Configuration
         ImageSize ThumbnailImageSize { get; set; }
         Dictionary<string, string> TrackPathReplace { get; set; }
         bool UseSSLBehindProxy { get; set; }
+        string BehindProxyHost { get; set; }
         string WebsocketAddress { get; set; }
     }
 }
