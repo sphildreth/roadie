@@ -684,13 +684,27 @@ namespace Roadie.Api.Services
             sw.Start();
 
             var errors = new List<Exception>();
-            var releaseToMerge = this.GetRelease(releaseToMergeId);
+            var releaseToMerge = this.DbContext.Releases
+                                    .Include(x => x.Artist)
+                                    .Include(x => x.Genres)
+                                    .Include("Genres.Genre")
+                                    .Include(x => x.Medias)
+                                    .Include("Medias.Tracks")
+                                    .Include("Medias.Tracks.TrackArtist")
+                                    .FirstOrDefault(x => x.RoadieId == releaseToMergeId);
             if (releaseToMerge == null)
             {
                 this.Logger.LogWarning("MergeReleases Unknown Release [{0}]", releaseToMergeId);
                 return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", releaseToMergeId));
             }
-            var releaseToMergeInfo = this.GetRelease(releaseToMergeIntoId);
+            var releaseToMergeInfo = this.DbContext.Releases
+                                    .Include(x => x.Artist)
+                                    .Include(x => x.Genres)
+                                    .Include("Genres.Genre")
+                                    .Include(x => x.Medias)
+                                    .Include("Medias.Tracks")
+                                    .Include("Medias.Tracks.TrackArtist")
+                                    .FirstOrDefault(x => x.RoadieId == releaseToMergeIntoId);
             if (releaseToMergeInfo == null)
             {
                 this.Logger.LogWarning("MergeReleases Unknown Release [{0}]", releaseToMergeIntoId);

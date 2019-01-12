@@ -165,7 +165,7 @@ namespace Roadie.Library.Factories
                 await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
                 sql = "UPDATE `image` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " + ArtistToMerge.Id + ";";
                 await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
-                sql = "UPDATE `userArtist` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " + ArtistToMerge.Id + ";";
+                sql = "UPDATE `userartist` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " + ArtistToMerge.Id + ";";
                 await this.DbContext.Database.ExecuteSqlCommandAsync(sql);
                 sql = "UPDATE `track` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " + ArtistToMerge.Id + ";";
                 await this.DbContext.Database.ExecuteSqlCommandAsync(sql);

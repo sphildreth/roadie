@@ -550,13 +550,19 @@ namespace Roadie.Api.Services
             sw.Start();
 
             var errors = new List<Exception>();
-            var artistToMerge = this.GetArtist(artistToMergeId);
+            var artistToMerge = this.DbContext.Artists
+                                    .Include(x => x.Genres)
+                                    .Include("Genres.Genre")
+                                    .FirstOrDefault(x => x.RoadieId == artistToMergeId);
             if (artistToMerge == null)
             {
                 this.Logger.LogWarning("MergeArtists Unknown Artist [{0}]", artistToMergeId);
                 return new OperationResult<bool>(true, string.Format("Artist Not Found [{0}]", artistToMergeId));
             }
-            var mergeIntoArtist = this.GetArtist(artistToMergeIntoId);
+            var mergeIntoArtist = this.DbContext.Artists
+                                    .Include(x => x.Genres)
+                                    .Include("Genres.Genre")
+                                    .FirstOrDefault(x => x.RoadieId == artistToMergeIntoId);
             if (mergeIntoArtist == null)
             {
                 this.Logger.LogWarning("MergeArtists Unknown Artist [{0}]", artistToMergeIntoId);
