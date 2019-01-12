@@ -20,5 +20,7 @@ namespace Roadie.Api.Services
         Task<OperationResult<bool>> UpdateArtist(User user, Artist artist);
 
         Task<OperationResult<Library.Models.Image>> UploadArtistImage(User user, Guid id, IFormFile file);
+
+        Task<OperationResult<bool>> MergeArtists(User user, Guid artistToMergeId, Guid artistToMergeIntoId);
     }
 }

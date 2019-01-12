@@ -396,16 +396,17 @@ namespace Roadie.Api.Services
             var newArtists = 0;
             var newReleases = 0;
             var newTracks = 0;
+            OperationResult<bool> result = null;
             foreach (var folder in Directory.EnumerateDirectories(d.FullName).ToArray())
             {
-                var result = await folderProcessor.Process(new DirectoryInfo(folder), isReadOnly);
-                if (result.AdditionalData != null)
-                {
-                    newArtists += SafeParser.ToNumber<int>(result.AdditionalData["newArtists"]);
-                    newReleases += SafeParser.ToNumber<int>(result.AdditionalData["newReleases"]);
-                    newTracks += SafeParser.ToNumber<int>(result.AdditionalData["newTracks"]);
-                }
+                result = await folderProcessor.Process(new DirectoryInfo(folder), isReadOnly);
                 processedFolders++;
+            }
+            if (result.AdditionalData != null)
+            {
+                newArtists = SafeParser.ToNumber<int>(result.AdditionalData["newArtists"]);
+                newReleases = SafeParser.ToNumber<int>(result.AdditionalData["newReleases"]);
+                newTracks = SafeParser.ToNumber<int>(result.AdditionalData["newTracks"]);
             }
             if (!isReadOnly)
             {

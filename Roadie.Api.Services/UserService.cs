@@ -20,6 +20,7 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
+
 using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Services
@@ -533,7 +534,6 @@ namespace Roadie.Api.Services
             {
                 if (includes.Contains("stats"))
                 {
-
                     var userArtists = this.DbContext.UserArtists.Include(x => x.Artist).Where(x => x.UserId == user.Id).ToArray();
                     var userReleases = this.DbContext.UserReleases.Include(x => x.Release).Where(x => x.UserId == user.Id).ToArray();
                     var userTracks = this.DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == user.Id).ToArray();
@@ -546,7 +546,8 @@ namespace Roadie.Api.Services
                                             where ut.UserId == user.Id
                                             select new { a, ut.PlayedCount })
                                              .GroupBy(a => a.a)
-                                             .Select(x => new {
+                                             .Select(x => new
+                                             {
                                                  Artist = x.Key,
                                                  Played = x.Sum(t => t.PlayedCount)
                                              })
@@ -554,13 +555,14 @@ namespace Roadie.Api.Services
                                              .FirstOrDefault();
 
                     var mostPlayedReleaseId = (from r in this.DbContext.Releases
-                                             join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                             join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                             join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
-                                             where ut.UserId == user.Id
-                                             select new { r, ut.PlayedCount })
+                                               join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                               join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                               join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
+                                               where ut.UserId == user.Id
+                                               select new { r, ut.PlayedCount })
                                              .GroupBy(r => r.r)
-                                             .Select(x => new {
+                                             .Select(x => new
+                                             {
                                                  Release = x.Key,
                                                  Played = x.Sum(t => t.PlayedCount)
                                              })
@@ -583,10 +585,10 @@ namespace Roadie.Api.Services
                     model.Statistics = new UserStatistics
                     {
                         MostPlayedArtist = mostPlayedArtist == null ? null : models.ArtistList.FromDataArtist(mostPlayedArtist.Artist, this.MakeArtistThumbnailImage(mostPlayedArtist.Artist.RoadieId)),
-                        MostPlayedRelease = mostPlayedRelease == null ? null : models.Releases.ReleaseList.FromDataRelease(mostPlayedRelease, 
-                                                                                        mostPlayedRelease.Artist, 
-                                                                                        this.HttpContext.BaseUrl, 
-                                                                                        this.MakeArtistThumbnailImage(mostPlayedRelease.Artist.RoadieId), 
+                        MostPlayedRelease = mostPlayedRelease == null ? null : models.Releases.ReleaseList.FromDataRelease(mostPlayedRelease,
+                                                                                        mostPlayedRelease.Artist,
+                                                                                        this.HttpContext.BaseUrl,
+                                                                                        this.MakeArtistThumbnailImage(mostPlayedRelease.Artist.RoadieId),
                                                                                         this.MakeReleaseThumbnailImage(mostPlayedRelease.RoadieId)),
                         MostPlayedTrack = mostPlayedTrack == null ? null : TrackList.FromDataTrack(this.MakeTrackPlayUrl(user, mostPlayedTrack.Id, mostPlayedTrack.RoadieId),
                                                             mostPlayedTrack,

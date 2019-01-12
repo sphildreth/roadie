@@ -544,6 +544,53 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<bool>> MergeArtists(User user, Guid artistToMergeId, Guid artistToMergeIntoId)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+            var artistToMerge = this.GetArtist(artistToMergeId);
+            if (artistToMerge == null)
+            {
+                this.Logger.LogWarning("MergeArtists Unknown Artist [{0}]", artistToMergeId);
+                return new OperationResult<bool>(true, string.Format("Artist Not Found [{0}]", artistToMergeId));
+            }
+            var mergeIntoArtist = this.GetArtist(artistToMergeIntoId);
+            if (mergeIntoArtist == null)
+            {
+                this.Logger.LogWarning("MergeArtists Unknown Artist [{0}]", artistToMergeIntoId);
+                return new OperationResult<bool>(true, string.Format("Artist Not Found [{0}]", artistToMergeIntoId));
+            }
+
+            try
+            {
+                var result = await this.ArtistFactory.MergeArtists(artistToMerge, mergeIntoArtist, true);
+                if (!result.IsSuccess)
+                {
+                    this.CacheManager.ClearRegion(artistToMerge.CacheRegion);
+                    this.CacheManager.ClearRegion(mergeIntoArtist.CacheRegion);
+                    this.Logger.LogInformation("MergeArtists `{0}` => `{1}`, By User `{2}`", artistToMerge, mergeIntoArtist, user);
+                }
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();            
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+
+        }
+
+
         public async Task<OperationResult<Library.Models.Image>> UploadArtistImage(User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];

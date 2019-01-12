@@ -68,9 +68,29 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("mergeArtists/{artistToMergeId}/{artistToMergeIntoId}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> MergeArtists(Guid artistToMergeId, Guid artistToMergeIntoId)
+        {
+            var result = await this.ArtistService.MergeArtists(await this.CurrentUserModel(), artistToMergeId, artistToMergeIntoId);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+
         [HttpPost("setImageByUrl/{id}/{imageUrl}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
         public async Task<IActionResult> SetArtistImageByUrl(Guid id, string imageUrl)
         {
             var result = await this.ArtistService.SetReleaseImageByUrl(await this.CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
@@ -88,6 +108,7 @@ namespace Roadie.Api.Controllers
         [HttpPost("uploadImage/{id}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
         public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
         {
             var result = await this.ArtistService.UploadArtistImage(await this.CurrentUserModel(), id, file);

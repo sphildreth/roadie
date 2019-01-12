@@ -50,6 +50,24 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("mergeReleases/{releaseToMergeId}/{releaseToMergeIntoId}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> MergeReleases(Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
+        {
+            var result = await this.ReleaseService.MergeReleases(await this.CurrentUserModel(), releaseToMergeId, releaseToMergeIntoId, addAsMedia);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
         [HttpPost("edit")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
@@ -98,6 +116,7 @@ namespace Roadie.Api.Controllers
         [HttpPost("setImageByUrl/{id}/{imageUrl}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
         public async Task<IActionResult> SetReleaseImageByUrl(Guid id, string imageUrl)
         {
             var result = await this.ReleaseService.SetReleaseImageByUrl(await this.CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
@@ -115,6 +134,7 @@ namespace Roadie.Api.Controllers
         [HttpPost("uploadImage/{id}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
         public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
         {
             var result = await this.ReleaseService.UploadReleaseImage(await this.CurrentUserModel(), id, file);

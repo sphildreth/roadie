@@ -678,6 +678,45 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<bool>> MergeReleases(User user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+            var releaseToMerge = this.GetRelease(releaseToMergeId);
+            if (releaseToMerge == null)
+            {
+                this.Logger.LogWarning("MergeReleases Unknown Release [{0}]", releaseToMergeId);
+                return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", releaseToMergeId));
+            }
+            var releaseToMergeInfo = this.GetRelease(releaseToMergeIntoId);
+            if (releaseToMergeInfo == null)
+            {
+                this.Logger.LogWarning("MergeReleases Unknown Release [{0}]", releaseToMergeIntoId);
+                return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", releaseToMergeIntoId));
+            }
+            try
+            {
+                await this.ReleaseFactory.MergeReleases(releaseToMerge, releaseToMergeInfo, addAsMedia);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+            this.Logger.LogInformation("MergeReleases Release `{0}` Merged Into Release `{1}`, By User `{2}`", releaseToMerge, releaseToMergeInfo, user);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+
         public async Task<OperationResult<Library.Models.Image>> UploadReleaseImage(User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];

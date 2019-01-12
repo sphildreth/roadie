@@ -22,5 +22,7 @@ namespace Roadie.Api.Services
         Task<OperationResult<bool>> UpdateRelease(User user, Release release);
 
         Task<OperationResult<Library.Models.Image>> UploadReleaseImage(User user, Guid id, IFormFile file);
+
+        Task<OperationResult<bool>> MergeReleases(User user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia);
     }
 }
