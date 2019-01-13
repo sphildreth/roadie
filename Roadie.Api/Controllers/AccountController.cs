@@ -87,9 +87,17 @@ namespace Roadie.Api.Controllers
                     this.Logger.LogInformation($"Successfully authenticated User [{ model.Username}]");
                     if(!user.EmailConfirmed)
                     {
-                        var code = await this.UserManager.GenerateEmailConfirmationTokenAsync(user);
-                        var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, Request.Scheme);
-                        await this.EmailSender.SendEmailAsync(user.Email, $"Confirm your { this.RoadieSettings.SiteName } email", $"Please confirm your { this.RoadieSettings.SiteName } account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                        try
+                        {
+                            var code = await this.UserManager.GenerateEmailConfirmationTokenAsync(user);
+                            var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, Request.Scheme);
+                            await this.EmailSender.SendEmailAsync(user.Email, $"Confirm your { this.RoadieSettings.SiteName } email", $"Please confirm your { this.RoadieSettings.SiteName } account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+
+                        }
+                        catch (Exception ex)
+                        {
+                            this.Logger.LogError(ex, "Error sending confirmation Email");
+                        }
                     }
                     this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
                     var avatarUrl = $"{ this.RoadieHttpContext.ImageBaseUrl }/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
@@ -106,7 +114,7 @@ namespace Roadie.Api.Controllers
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.LogError(ex, "Eror in CreateToken");
+                    this.Logger.LogError(ex, "Error in CreateToken");
                     return BadRequest();
                 }
             }

@@ -99,7 +99,8 @@ namespace Roadie.Library.SearchEngines.Imaging
             };
         }
 
-        #pragma warning disable CS1998
+#pragma warning disable CS1998
+
         public override async Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount)
         {
             var request = this.BuildRequest(query, resultsCount);
