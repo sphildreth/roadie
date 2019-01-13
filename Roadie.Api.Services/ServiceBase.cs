@@ -352,7 +352,15 @@ namespace Roadie.Api.Services
             }
             await this.DbContext.SaveChangesAsync();
 
-            artist.Rating = (short)this.DbContext.UserArtists.Where(x => x.ArtistId == artist.Id && x.Rating > 0).Average(x => (decimal)x.Rating);
+            var ratings = this.DbContext.UserArtists.Where(x => x.ArtistId == artist.Id && x.Rating > 0).Select(x => x.Rating);
+            if (ratings != null && ratings.Any())
+            {
+                artist.Rating = (short)ratings.Average(x => (decimal)x);
+            }
+            else
+            {
+                artist.Rating = 0;
+            }
             artist.LastUpdated = now;
             await this.DbContext.SaveChangesAsync();
 
@@ -401,7 +409,15 @@ namespace Roadie.Api.Services
             }
             await this.DbContext.SaveChangesAsync();
 
-            release.Rating = (short)this.DbContext.UserReleases.Where(x => x.ReleaseId == release.Id && x.Rating > 0).Average(x => (decimal)x.Rating);
+            var ratings = this.DbContext.UserReleases.Where(x => x.ReleaseId == release.Id && x.Rating > 0).Select(x => x.Rating);
+            if (ratings != null && ratings.Any())
+            {
+                release.Rating = (short)ratings.Average(x => (decimal)x);
+            }
+            else
+            {
+                release.Rating = 0;
+            }            
             release.LastUpdated = now;
             await this.DbContext.SaveChangesAsync();
 
@@ -449,7 +465,14 @@ namespace Roadie.Api.Services
             }
             await this.DbContext.SaveChangesAsync();
 
-            track.Rating = (short)this.DbContext.UserTracks.Where(x => x.TrackId == track.Id && x.Rating > 0).Average(x => (decimal)x.Rating);
+            var ratings = this.DbContext.UserTracks.Where(x => x.TrackId == track.Id && x.Rating > 0).Select(x => x.Rating);
+            if (ratings != null && ratings.Any())
+            {
+                track.Rating = (short)ratings.Average(x => (decimal)x);
+            } else
+            {
+                track.Rating = 0;
+            }
             track.LastUpdated = now;
             await this.DbContext.SaveChangesAsync();
 
