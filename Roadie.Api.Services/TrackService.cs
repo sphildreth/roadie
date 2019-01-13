@@ -185,7 +185,7 @@ namespace Roadie.Api.Services
                 }
 
                 int[] collectionTrackIds = new int[0];
-                if(request.FilterToCollectionId.HasValue)
+                if (request.FilterToCollectionId.HasValue)
                 {
                     request.Limit = roadieUser?.PlayerTrackLimit ?? 50;
 
@@ -195,7 +195,7 @@ namespace Roadie.Api.Services
                                           join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                           join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
                                           where c.RoadieId == request.FilterToCollectionId.Value
-                                          orderby cr.ListNumber, rm.MediaNumber, t.TrackNumber                                          
+                                          orderby cr.ListNumber, rm.MediaNumber, t.TrackNumber
                                           select t.Id).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
                 }
 
@@ -214,8 +214,8 @@ namespace Roadie.Api.Services
                                    ).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
                 }
                 int[] randomTrackIds = null;
-                if (doRandomize ?? false)                {
-
+                if (doRandomize ?? false)
+                {
                     request.Limit = roadieUser?.RandomReleaseLimit ?? 50;
 
                     if (!request.FilterRatedOnly && !request.FilterFavoriteOnly)
@@ -226,7 +226,7 @@ namespace Roadie.Api.Services
                                   "ORDER BY RAND() LIMIT {0}";
                         randomTrackIds = this.DbContext.Tracks.FromSql(sql, request.LimitValue).Select(x => x.Id).ToArray();
                     }
-                    if(request.FilterRatedOnly && !request.FilterFavoriteOnly)
+                    if (request.FilterRatedOnly && !request.FilterFavoriteOnly)
                     {
                         var sql = "SELECT t.* " +
                                   "FROM `track` t " +
@@ -235,7 +235,7 @@ namespace Roadie.Api.Services
                                   "ORDER BY RAND() LIMIT {0}";
                         randomTrackIds = this.DbContext.Tracks.FromSql(sql, request.LimitValue).Select(x => x.Id).ToArray();
                     }
-                    if(request.FilterFavoriteOnly)
+                    if (request.FilterFavoriteOnly)
                     {
                         randomTrackIds = favoriteTrackIds.OrderBy(x => Guid.NewGuid()).ToArray();
                     }
@@ -517,6 +517,23 @@ namespace Roadie.Api.Services
                     Message = "An Error has occured"
                 });
             }
+        }
+
+        /// <summary>
+        /// Fast as possible check if exists and return minimum information on Track
+        /// </summary>
+        public OperationResult<Track> StreamCheckAndInfo(User roadieUser, Guid id)
+        {
+            var track = this.DbContext.Tracks.FirstOrDefault(x => x.RoadieId == id);
+            if (track == null)
+            {
+                return new OperationResult<Track>(true, string.Format("Track Not Found [{0}]", id));
+            }
+            return new OperationResult<Track>()
+            {
+                Data = track.Adapt<Track>(),
+                IsSuccess = true
+            };
         }
 
         public async Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes)
