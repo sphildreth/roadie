@@ -6,6 +6,7 @@ using Roadie.Api.Hubs;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Enums;
@@ -24,6 +25,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+
 using data = Roadie.Library.Data;
 
 namespace Roadie.Api.Services
@@ -287,6 +289,127 @@ namespace Roadie.Api.Services
             {
                 IsSuccess = !errors.Any(),
                 AdditionalData = new Dictionary<string, object> { { "artistAverage", artist.Rating } },
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> ScanCollection(ApplicationUser user, Guid collectionId, bool isReadOnly = false, bool doPurgeFirst = true)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var result = new List<PositionAristRelease>();
+            var errors = new List<Exception>();
+            var collection = this.DbContext.Collections.FirstOrDefault(x => x.RoadieId == collectionId);
+            if (collection == null)
+            {
+                await this.LogAndPublish($"ScanCollection Unknown Collection [{ collectionId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Collection Not Found [{ collectionId }]");
+            }
+            try
+            {
+                if (doPurgeFirst)
+                {
+                    var crs = this.DbContext.CollectionReleases.Where(x => x.CollectionId == collection.Id).ToArray();
+                    this.DbContext.CollectionReleases.RemoveRange(crs);
+                    await this.DbContext.SaveChangesAsync();
+                }
+                var par = collection.PositionArtistReleases();
+                if (par != null)
+                {
+                    var now = DateTime.UtcNow;
+                    var modifiedDb = false;
+                    foreach (var csvRelease in par)
+                    {
+                        data.Release release = null;
+                        CollectionRelease isInCollection = null;
+                        OperationResult<data.Release> releaseResult = null;
+                        data.Artist artist = null;
+                        var artistResult = await this.ArtistLookupEngine.GetByName(new AudioMetaData { Artist = csvRelease.Artist });
+                        if (!artistResult.IsSuccess)
+                        {
+                            this.Logger.LogWarning("Unable To Find Artist [{0}]", csvRelease.Artist);
+                            csvRelease.Status = Library.Enums.Statuses.Missing;
+                        }
+                        else
+                        {
+                            artist = artistResult.Data;
+                        }
+                        if (artist != null)
+                        {
+                            releaseResult = await this.ReleaseLookupEngine.GetByName(artist, new AudioMetaData { Release = csvRelease.Release });
+                            if (!releaseResult.IsSuccess)
+                            {
+                                this.Logger.LogWarning("Unable To Find Release [{0}]", csvRelease.Release);
+                                csvRelease.Status = Library.Enums.Statuses.Missing;
+                            }
+                        }
+                        if (releaseResult != null)
+                        {
+                            release = releaseResult.Data;
+                        }
+                        if (artist != null && release != null)
+                        {
+                            isInCollection = this.DbContext.CollectionReleases.FirstOrDefault(x => x.CollectionId == collection.Id && x.ListNumber == csvRelease.Position && x.ReleaseId == release.Id);
+                            // Found in Database but not in collection add to Collection
+                            if (isInCollection == null)
+                            {
+                                this.DbContext.CollectionReleases.Add(new CollectionRelease
+                                {
+                                    CollectionId = collection.Id,
+                                    ReleaseId = release.Id,
+                                    ListNumber = csvRelease.Position,
+                                });
+                                modifiedDb = true;
+                            }
+                            // If Item in Collection is at different List number update CollectionRelease
+                            else if (isInCollection.ListNumber != csvRelease.Position)
+                            {
+                                isInCollection.LastUpdated = now;
+                                isInCollection.ListNumber = csvRelease.Position;
+                                modifiedDb = true;
+                            }
+                        }
+                        else
+                        {
+                            this.Logger.LogWarning("Unable To Find Artist Or Release For Collection Entry [{0}]", csvRelease.ToString());
+                            result.Add(csvRelease);
+                        }
+                    }
+                    if (modifiedDb)
+                    {
+                        collection.LastUpdated = now;
+                        var dto = new Library.Models.Collections.CollectionList
+                        {
+                            CollectionCount = collection.CollectionCount,
+                            CollectionFoundCount = (from cr in this.DbContext.CollectionReleases
+                                                    where cr.CollectionId == collection.Id
+                                                    select cr.CollectionId).Count()
+                        };
+                        if (dto.PercentComplete == 100)
+                        {
+                            // Lock so future scans dont happen, with DB RI when releases are deleted they are removed from collection
+                            collection.IsLocked = true;
+                            collection.Status = Statuses.Complete;
+                        }
+                        await this.DbContext.SaveChangesAsync();
+                        this.CacheManager.ClearRegion(collection.CacheRegion);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+            this.Logger.LogInformation(string.Format("RescanCollection `{0}`, By User `{1}`", collection, user));
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };

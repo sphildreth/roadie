@@ -112,27 +112,29 @@ namespace Roadie.Api.Services
             }
             try
             {
-                var user = this.GetUser(request.u);
+                var user = this.DbContext.Users
+                                    .FirstOrDefault(x => x.UserName == request.u);
                 if (user == null)
                 {
                     this.Logger.LogInformation($"Unknown User [{ request.u }]");
                     return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>(subsonic.ErrorCodes.WrongUsernameOrPassword, $"Unknown Username");
                 }
                 var password = request.Password;
-                var wasAuthenticatedAgainstPassword = false;
                 if (!string.IsNullOrEmpty(request.s))
                 {
-                    var token = HashHelper.MD5Hash((user.ApiToken ?? user.Email) + request.s);
-                    if (!token.Equals(request.t, StringComparison.OrdinalIgnoreCase))
+                    try
                     {
-                        user = null;
+                        var token = HashHelper.MD5Hash((user.ApiToken ?? user.Email) + request.s);
+                        if (!token.Equals(request.t, StringComparison.OrdinalIgnoreCase))
+                        {
+                            user = null;
+                        }
                     }
-                    else
+                    catch
                     {
-                        wasAuthenticatedAgainstPassword = true;
                     }
                 }
-                else if (user != null && !string.IsNullOrEmpty(user.PasswordHash) && !string.IsNullOrEmpty(password))
+                if (user != null && !string.IsNullOrEmpty(user.PasswordHash) && !string.IsNullOrEmpty(password))
                 {
                     try
                     {
@@ -141,24 +143,21 @@ namespace Roadie.Api.Services
                         {
                             user = null;
                         }
-                        else
-                        {
-                            wasAuthenticatedAgainstPassword = true;
-                        }
                     }
                     catch
                     {
                     }
                 }
-                if (wasAuthenticatedAgainstPassword)
+                if (user != null)
                 {
-                    // Since API dont update LastLogin which likely invalidates any browser logins
-                    user.LastApiAccess = DateTime.UtcNow;
+                    var now = DateTime.UtcNow;
+                    user.LastUpdated = now;
+                    user.LastApiAccess = now;
                     await this.DbContext.SaveChangesAsync();
                 }
                 if (user == null)
                 {
-                    this.Logger.LogInformation($"Unknown User [{ request.u }]");
+                    this.Logger.LogInformation($"Invalid Credentials given for User [{ request.u }]");
                     return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>(subsonic.ErrorCodes.WrongUsernameOrPassword, $"Unknown Username");
                 }
                 this.Logger.LogInformation($"Subsonic: Successfully Authenticated User [{ user.ToString() }] via Application [{ request.c }], Application Version [{ request.v }]");

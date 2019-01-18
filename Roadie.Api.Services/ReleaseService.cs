@@ -177,7 +177,7 @@ namespace Roadie.Api.Services
                                         join r in this.DbContext.Releases on cr.ReleaseId equals r.Id
                                         where c.RoadieId == request.FilterToCollectionId.Value
                                         orderby cr.ListNumber
-                                        select r.Id).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                                        select r.Id).ToArray();
             }
             int[] favoriteReleaseIds = new int[0];
             if (request.FilterFavoriteOnly)
@@ -334,10 +334,9 @@ namespace Roadie.Api.Services
                     var collectionReleases = (from c in this.DbContext.Collections
                                               join cr in this.DbContext.CollectionReleases on c.Id equals cr.CollectionId
                                               where c.RoadieId == request.FilterToCollectionId
-                                              where collectionReleaseIds.Contains(cr.ReleaseId)
-                                              orderby cr.ListNumber
                                               select cr);
-                    foreach (var par in collection.PositionArtistReleases().OrderBy(x => x.Index).Skip(request.SkipValue).Take(request.LimitValue))
+                    var pars = collection.PositionArtistReleases().ToArray();
+                    foreach (var par in pars)
                     {
                         var cr = collectionReleases.FirstOrDefault(x => x.ListNumber == par.Position);
                         // Release is known for Collection CSV, find newRow and update ListNumber
@@ -349,12 +348,6 @@ namespace Roadie.Api.Services
                                 if (!parRelease.ListNumber.HasValue)
                                 {
                                     parRelease.ListNumber = par.Position;
-                                }
-                                else
-                                {
-                                    var anotherInstanceOfReleaseInCollection = parRelease.ShallowCopy();
-                                    anotherInstanceOfReleaseInCollection.ListNumber = par.Position;
-                                    newRows.Add(anotherInstanceOfReleaseInCollection);
                                 }
                             }
                         }
@@ -379,7 +372,7 @@ namespace Roadie.Api.Services
                         }
                     }
                     // Resort the list for the collection by listNumber
-                    rows = newRows.OrderBy(x => x.ListNumber).ToArray();
+                    rows = newRows.OrderBy(x => x.ListNumber).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
                     rowCount = collection.CollectionCount;
                 }
 

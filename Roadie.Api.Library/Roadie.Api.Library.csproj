@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="12.1.1" />
+    <PackageReference Include="EFCore.BulkExtensions" Version="2.3.7" />
     <PackageReference Include="FluentFTP" Version="19.2.2" />
     <PackageReference Include="HtmlAgilityPack" Version="1.8.11" />
     <PackageReference Include="IdSharp.Common" Version="1.0.1" />

@@ -84,6 +84,18 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("scan/collection/{id}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ScanCollection(Guid id)
+        {
+            var result = await this.AdminService.ScanCollection(await this.UserManager.GetUserAsync(User), id);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
         [HttpPost("delete/release/{id}")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteRelease(Guid id, bool? doDeleteFiles)

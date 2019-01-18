@@ -114,5 +114,7 @@ namespace Roadie.Library.Data
         void UpdateRange(params object[] entities);
 
         void UpdateRange(IEnumerable<object> entities);
+
+
     }
 }
