@@ -104,6 +104,7 @@ namespace Roadie.Api.Controllers
                     return Ok(new 
                     {
                         Username = user.UserName,
+                        RecentLimit = user.RecentlyPlayedLimit,
                         user.Email,
                         user.LastLogin,
                         avatarUrl,
@@ -175,6 +176,7 @@ namespace Roadie.Api.Controllers
                     return Ok(new
                     {
                         Username = user.UserName,
+                        RecentLimit = user.RecentlyPlayedLimit,
                         user.Email,
                         user.LastLogin,
                         avatarUrl,
@@ -243,6 +245,7 @@ namespace Roadie.Api.Controllers
                     return Ok(new
                     {
                         Username = user.UserName,
+                        RecentLimit = user.RecentlyPlayedLimit,
                         user.Email,
                         user.LastLogin,
                         avatarUrl,
