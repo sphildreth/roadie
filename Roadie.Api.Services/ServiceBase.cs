@@ -845,6 +845,7 @@ namespace Roadie.Api.Services
 
                 var collectionsWithRelease = (from c in this.DbContext.Collections
                                               join cr in this.DbContext.CollectionReleases on c.Id equals cr.CollectionId
+                                              where c.CollectionType != Library.Enums.CollectionType.Chart
                                               where cr.ReleaseId == release.Id
                                               select new
                                               {
