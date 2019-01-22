@@ -254,6 +254,7 @@ namespace Roadie.Api.Services
                               LibraryStatus = r.LibraryStatus,
                               MediaCount = r.MediaCount,
                               Rating = r.Rating,
+                              Rank = r.Rank,
                               ReleaseDateDateTime = r.ReleaseDate,
                               ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ r.RoadieId}",
                               Status = r.Status,
@@ -470,6 +471,58 @@ namespace Roadie.Api.Services
             });
         }
 
+        public async Task<OperationResult<bool>> MergeReleases(User user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+            var releaseToMerge = this.DbContext.Releases
+                                    .Include(x => x.Artist)
+                                    .Include(x => x.Genres)
+                                    .Include("Genres.Genre")
+                                    .Include(x => x.Medias)
+                                    .Include("Medias.Tracks")
+                                    .Include("Medias.Tracks.TrackArtist")
+                                    .FirstOrDefault(x => x.RoadieId == releaseToMergeId);
+            if (releaseToMerge == null)
+            {
+                this.Logger.LogWarning("MergeReleases Unknown Release [{0}]", releaseToMergeId);
+                return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", releaseToMergeId));
+            }
+            var releaseToMergeInfo = this.DbContext.Releases
+                                    .Include(x => x.Artist)
+                                    .Include(x => x.Genres)
+                                    .Include("Genres.Genre")
+                                    .Include(x => x.Medias)
+                                    .Include("Medias.Tracks")
+                                    .Include("Medias.Tracks.TrackArtist")
+                                    .FirstOrDefault(x => x.RoadieId == releaseToMergeIntoId);
+            if (releaseToMergeInfo == null)
+            {
+                this.Logger.LogWarning("MergeReleases Unknown Release [{0}]", releaseToMergeIntoId);
+                return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", releaseToMergeIntoId));
+            }
+            try
+            {
+                await this.ReleaseFactory.MergeReleases(releaseToMerge, releaseToMergeInfo, addAsMedia);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+            this.Logger.LogInformation("MergeReleases Release `{0}` Merged Into Release `{1}`, By User `{2}`", releaseToMerge, releaseToMergeInfo, user);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
         public Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id)
         {
             var release = this.GetRelease(id);
@@ -670,59 +723,6 @@ namespace Roadie.Api.Services
                 Errors = errors
             };
         }
-
-        public async Task<OperationResult<bool>> MergeReleases(User user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-
-            var errors = new List<Exception>();
-            var releaseToMerge = this.DbContext.Releases
-                                    .Include(x => x.Artist)
-                                    .Include(x => x.Genres)
-                                    .Include("Genres.Genre")
-                                    .Include(x => x.Medias)
-                                    .Include("Medias.Tracks")
-                                    .Include("Medias.Tracks.TrackArtist")
-                                    .FirstOrDefault(x => x.RoadieId == releaseToMergeId);
-            if (releaseToMerge == null)
-            {
-                this.Logger.LogWarning("MergeReleases Unknown Release [{0}]", releaseToMergeId);
-                return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", releaseToMergeId));
-            }
-            var releaseToMergeInfo = this.DbContext.Releases
-                                    .Include(x => x.Artist)
-                                    .Include(x => x.Genres)
-                                    .Include("Genres.Genre")
-                                    .Include(x => x.Medias)
-                                    .Include("Medias.Tracks")
-                                    .Include("Medias.Tracks.TrackArtist")
-                                    .FirstOrDefault(x => x.RoadieId == releaseToMergeIntoId);
-            if (releaseToMergeInfo == null)
-            {
-                this.Logger.LogWarning("MergeReleases Unknown Release [{0}]", releaseToMergeIntoId);
-                return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", releaseToMergeIntoId));
-            }
-            try
-            {
-                await this.ReleaseFactory.MergeReleases(releaseToMerge, releaseToMergeInfo, addAsMedia);
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex);
-                errors.Add(ex);
-            }
-            sw.Stop();
-            this.Logger.LogInformation("MergeReleases Release `{0}` Merged Into Release `{1}`, By User `{2}`", releaseToMerge, releaseToMergeInfo, user);
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data = !errors.Any(),
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
 
         public async Task<OperationResult<Library.Models.Image>> UploadReleaseImage(User user, Guid id, IFormFile file)
         {

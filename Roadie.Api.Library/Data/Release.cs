@@ -110,6 +110,9 @@ namespace Roadie.Library.Data
         [MaxLength(65535)]
         public string URLs { get; set; }
 
+        [Column("rank")]
+        public decimal? Rank { get; set; }
+
         public Release()
         {
             this.Rating = 0;

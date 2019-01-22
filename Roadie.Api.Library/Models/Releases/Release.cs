@@ -53,6 +53,7 @@ namespace Roadie.Library.Models.Releases
         public string Profile { get; set; }
 
         public short? Rating { get; set; }
+        public decimal? Rank { get; set; }
 
         [Required]
         public DateTime ReleaseDate { get; set; }

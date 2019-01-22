@@ -420,7 +420,7 @@ namespace Roadie.Api.Services
             }            
             release.LastUpdated = now;
             await this.DbContext.SaveChangesAsync();
-
+            await this.UpdateReleaseRank(release.Id);
             this.CacheManager.ClearRegion(user.CacheRegion);
             this.CacheManager.ClearRegion(release.CacheRegion);
             this.CacheManager.ClearRegion(release.Artist.CacheRegion);
@@ -475,6 +475,7 @@ namespace Roadie.Api.Services
             }
             track.LastUpdated = now;
             await this.DbContext.SaveChangesAsync();
+            await this.UpdateReleaseRank(track.ReleaseMedia.Release.Id);
 
             this.CacheManager.ClearRegion(user.CacheRegion);
             this.CacheManager.ClearRegion(track.CacheRegion);
@@ -811,6 +812,11 @@ namespace Roadie.Api.Services
             var release = this.DbContext.Releases.FirstOrDefault(x => x.Id == releaseId);
             if (release != null)
             {
+                release.PlayedCount = (from t in this.DbContext.Tracks
+                                            join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                            where rm.ReleaseId == releaseId
+                                            where t.PlayedCount.HasValue
+                                            select t).Sum(x => x.PlayedCount);
                 release.Duration = (from t in this.DbContext.Tracks
                                     join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                     where rm.ReleaseId == releaseId
@@ -819,6 +825,46 @@ namespace Roadie.Api.Services
                 this.CacheManager.ClearRegion(release.CacheRegion);
             }
         }
+
+        /// <summary>
+        /// Update Relase Rank
+        /// Release Rank Calculation = Average of Track User Ratings + (User Rating of Release / Release Track Count) + Collection Rank Value
+        /// </summary>
+        protected async Task UpdateReleaseRank(int releaseId)
+        {
+            var release = this.DbContext.Releases.FirstOrDefault(x => x.Id == releaseId);
+            if (release != null)
+            {
+                var releaseTrackAverage = (from t in this.DbContext.Tracks
+                                        join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                        join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
+                                        where rm.ReleaseId == releaseId
+                                        select (double?)ut.Rating).ToArray().Average(x => x);
+
+                var releaseUserRatingRank = release.Rating > 0 ? (decimal?)release.Rating / (decimal?)release.TrackCount : 0;
+
+                var collectionsWithRelease = (from c in this.DbContext.Collections
+                                              join cr in this.DbContext.CollectionReleases on c.Id equals cr.CollectionId
+                                              where cr.ReleaseId == release.Id
+                                              select new
+                                              {
+                                                  c.CollectionCount,
+                                                  cr.ListNumber
+                                              });
+
+                decimal releaseCollectionRank = 0;
+                foreach (var collectionWithRelease in collectionsWithRelease)
+                {
+                    var rank = (decimal)((collectionWithRelease.CollectionCount * .01) - ((collectionWithRelease.ListNumber - 1) * .01));
+                    releaseCollectionRank += rank;
+                }
+                release.Rank = SafeParser.ToNumber<decimal>(releaseTrackAverage) + releaseUserRatingRank + releaseCollectionRank;
+
+                await this.DbContext.SaveChangesAsync();
+                this.CacheManager.ClearRegion(release.CacheRegion);
+            }
+        }
+
 
         private Image MakeImage(Guid id, string type, int? width, int? height, string caption = null, bool includeCachebuster = false)
         {

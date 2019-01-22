@@ -324,6 +324,7 @@ namespace Roadie.Api.Services
                                            LibraryStatus = r.LibraryStatus,
                                            MediaCount = r.MediaCount,
                                            Rating = r.Rating,
+                                           Rank = r.Rank,
                                            ReleaseDateDateTime = r.ReleaseDate,
                                            ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ r.RoadieId}",
                                            Status = r.Status,

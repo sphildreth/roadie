@@ -294,11 +294,39 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<bool>> ScanAllCollections(ApplicationUser user, bool isReadOnly = false, bool doPurgeFirst = true)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+
+            var collections = this.DbContext.Collections.Where(x => x.IsLocked ?? false == false).ToArray();
+            foreach(var collection in collections)
+            {
+                var result = await this.ScanCollection(user, collection.RoadieId, isReadOnly, doPurgeFirst);
+                if(!result.IsSuccess)
+                {
+                    errors.AddRange(result.Errors);
+                }
+            }
+            sw.Stop();
+            this.Logger.LogInformation(string.Format("ScanAllCollections, By User `{0}`", user));
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+
         public async Task<OperationResult<bool>> ScanCollection(ApplicationUser user, Guid collectionId, bool isReadOnly = false, bool doPurgeFirst = true)
         {
             var sw = new Stopwatch();
             sw.Start();
 
+            CollectionRelease[] crs = new CollectionRelease[0];
             var result = new List<PositionAristRelease>();
             var errors = new List<Exception>();
             var collection = this.DbContext.Collections.FirstOrDefault(x => x.RoadieId == collectionId);
@@ -311,7 +339,7 @@ namespace Roadie.Api.Services
             {
                 if (doPurgeFirst)
                 {
-                    var crs = this.DbContext.CollectionReleases.Where(x => x.CollectionId == collection.Id).ToArray();
+                    crs = this.DbContext.CollectionReleases.Where(x => x.CollectionId == collection.Id).ToArray();
                     this.DbContext.CollectionReleases.RemoveRange(crs);
                     await this.DbContext.SaveChangesAsync();
                 }
@@ -394,6 +422,12 @@ namespace Roadie.Api.Services
                             collection.Status = Statuses.Complete;
                         }
                         await this.DbContext.SaveChangesAsync();
+
+                        foreach (var cr in crs)
+                        {
+                            await this.UpdateReleaseRank(cr.ReleaseId);
+                        }
+
                         this.CacheManager.ClearRegion(collection.CacheRegion);
                     }
                 }
@@ -447,6 +481,7 @@ namespace Roadie.Api.Services
             try
             {
                 var result = await this.ReleaseFactory.ScanReleaseFolder(release.RoadieId, this.Configuration.LibraryFolder, isReadOnly, release);
+                await this.UpdateReleaseRank(release.Id);
                 this.CacheManager.ClearRegion(release.CacheRegion);
             }
             catch (Exception ex)

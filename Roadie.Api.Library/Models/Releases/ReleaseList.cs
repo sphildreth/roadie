@@ -19,6 +19,7 @@ namespace Roadie.Library.Models.Releases
         public LibraryStatus? LibraryStatus { get; set; }
         public IEnumerable<ReleaseMediaList> Media { get; set; }
         public short? Rating { get; set; }
+        public decimal? Rank { get; set; }
 
         public string ReleaseDate
         {
@@ -104,6 +105,7 @@ namespace Roadie.Library.Models.Releases
                 LibraryStatus = release.LibraryStatus,
                 MediaCount = release.MediaCount,
                 Rating = release.Rating,
+                Rank = release.Rank,
                 ReleaseDateDateTime = release.ReleaseDate,
                 ReleasePlayUrl = $"{ baseUrl }/play/release/{ release.RoadieId}",
                 Status = release.Status,

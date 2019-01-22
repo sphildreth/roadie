@@ -84,6 +84,18 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("scan/collection/rescanall")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ScanAllCollections()
+        {
+            var result = await this.AdminService.ScanAllCollections(await this.UserManager.GetUserAsync(User));
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
         [HttpPost("scan/collection/{id}")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanCollection(Guid id)
