@@ -284,6 +284,7 @@ namespace Roadie.Api.Services
                 TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
             });
             await this.DbContext.SaveChangesAsync();
+            await this.UpdateArtistRank(artist.Id, true);
             await this.LogAndPublish($"ScanArtist `{artist}`, By User `{user}`", LogLevel.Information);
             return new OperationResult<bool>
             {

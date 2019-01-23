@@ -87,6 +87,8 @@ namespace Roadie.Library.Models
 
         public short? Rating { get; set; }
 
+        public decimal? Rank { get; set; }
+
         [MaxLength(500)]
         public string RealName { get; set; }
 

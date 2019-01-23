@@ -62,6 +62,9 @@ namespace Roadie.Library.Data
         [Column("rating")]
         public short? Rating { get; set; }
 
+        [Column("rank")]
+        public decimal? Rank { get; set; }
+
         [Column("realName")]
         [MaxLength(500)]
         public string RealName { get; set; }

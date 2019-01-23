@@ -363,7 +363,7 @@ namespace Roadie.Api.Services
             }
             artist.LastUpdated = now;
             await this.DbContext.SaveChangesAsync();
-
+            await this.UpdateArtistRank(artist.Id);
             this.CacheManager.ClearRegion(user.CacheRegion);
             this.CacheManager.ClearRegion(artist.CacheRegion);
 
@@ -827,10 +827,75 @@ namespace Roadie.Api.Services
         }
 
         /// <summary>
+        /// Find all artists involved with release and update their rank
+        /// </summary>
+        protected async Task UpdateArtistsRankForRelease(data.Release release)
+        {
+            if(release != null)
+            {
+                var artistsForRelease = new List<int>
+                {
+                    release.ArtistId
+                };
+                var trackArtistsForRelease = (from t in this.DbContext.Tracks
+                                              join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                              where rm.ReleaseId == release.Id
+                                              where t.ArtistId.HasValue
+                                              select t.ArtistId.Value).ToArray();
+                artistsForRelease.AddRange(trackArtistsForRelease);
+                foreach(var artistId in artistsForRelease.Distinct())
+                {
+                    await this.UpdateArtistRank(artistId);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Update Artist Rank
+        /// Artist Rank is a sum of the artists release ranks + artist tracks rating + artist user rating
+        /// </summary>
+        protected async Task UpdateArtistRank(int artistId, bool updateReleaseRanks = false)
+        {
+            var artist = this.DbContext.Artists.FirstOrDefault(x => x.Id == artistId);
+            if (artist != null)
+            {
+                if(updateReleaseRanks)
+                {
+                    var artistReleaseIds = this.DbContext.Releases.Where(x => x.ArtistId == artistId).Select(x => x.Id).ToArray();
+                    foreach(var artistReleaseId in artistReleaseIds)
+                    {
+                        await this.UpdateReleaseRank(artistReleaseId, false);
+                    }
+                }
+
+                var artistTrackAverage = (from t in this.DbContext.Tracks
+                                          join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                          join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
+                                          where t.ArtistId == artist.Id
+                                          select (double?)ut.Rating).ToArray().Average(x => x) ?? 0;
+
+                var artistReleaseRatingSum = (from r in this.DbContext.Releases
+                                            join ur in this.DbContext.UserReleases on r.Id equals ur.ReleaseId
+                                            where r.ArtistId == artist.Id
+                                            select (double?)ur.Rating).ToArray().Average(x => x) ?? 0;
+
+                var artistReleaseRankSum = (from r in this.DbContext.Releases
+                                              where r.ArtistId == artist.Id
+                                              select r.Rank).ToArray().Average(x => x) ?? 0;
+
+                artist.Rank = SafeParser.ToNumber<decimal>(artistTrackAverage + artistReleaseRatingSum) + artistReleaseRankSum + artist.Rating;
+
+                await this.DbContext.SaveChangesAsync();
+                this.CacheManager.ClearRegion(artist.CacheRegion);
+                this.Logger.LogInformation("UpdatedArtistRank For Artist `{0}`", artist);
+            }
+        }
+
+        /// <summary>
         /// Update Relase Rank
         /// Release Rank Calculation = Average of Track User Ratings + (User Rating of Release / Release Track Count) + Collection Rank Value
         /// </summary>
-        protected async Task UpdateReleaseRank(int releaseId)
+        protected async Task UpdateReleaseRank(int releaseId, bool updateArtistRank = true)
         {
             var release = this.DbContext.Releases.FirstOrDefault(x => x.Id == releaseId);
             if (release != null)
@@ -863,6 +928,11 @@ namespace Roadie.Api.Services
 
                 await this.DbContext.SaveChangesAsync();
                 this.CacheManager.ClearRegion(release.CacheRegion);
+                this.Logger.LogInformation("UpdateReleaseRank For Release `{0}`", release);
+                if (updateArtistRank)
+                {
+                    await this.UpdateArtistsRankForRelease(release);
+                }
             }
         }
 

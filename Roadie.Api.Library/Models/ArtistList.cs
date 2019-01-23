@@ -10,6 +10,7 @@ namespace Roadie.Library.Models
     {
         public DataToken Artist { get; set; }
         public short? Rating { get; set; }
+        public decimal? Rank { get; set; }
         public UserArtist UserRating { get; set; }
         public int? ReleaseCount { get; set; }
         public int? TrackCount { get; set; }
@@ -30,6 +31,7 @@ namespace Roadie.Library.Models
                 },
                 Thumbnail = thumbnail, 
                 Rating = artist.Rating,
+                Rank = artist.Rank,
                 CreatedDate = artist.CreatedDate,
                 LastUpdated = artist.LastUpdated,
                 LastPlayed = artist.LastPlayed,
