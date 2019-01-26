@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Roadie.Library.Enums;
 using Roadie.Library.Models.Statistics;
 
 namespace Roadie.Library.Models.Collections
@@ -8,7 +9,7 @@ namespace Roadie.Library.Models.Collections
     [Serializable]
     public class Collection : EntityModelBase
     {
-        public const string DefaultIncludes = "stats";
+        public const string DefaultIncludes = "stats,list";
 
         public int CollectionCount { get; set; }
 
@@ -36,7 +37,7 @@ namespace Roadie.Library.Models.Collections
         {
             get
             {
-                if (this.CollectionCount == 0 || this.CollectionFoundCount == 0)
+                if (this.CollectionCount == 0 || (this.CollectionFoundCount ?? 0) == 0)
                 {
                     return 0;
                 }
@@ -48,7 +49,7 @@ namespace Roadie.Library.Models.Collections
         {
             get
             {
-                if(this.CollectionCount == this.CollectionFoundCount)
+                if (this.CollectionCount == 0 || (this.CollectionFoundCount ?? 0) == 0)
                 {
                     return null;
                 }
@@ -58,6 +59,9 @@ namespace Roadie.Library.Models.Collections
 
         public int? CollectionFoundCount { get; set; }
         public CollectionStatistics Statistics { get; set; }
+
+        // When populated a "data:image" base64 byte array of an image to use as new Thumbnail
+        public string NewThumbnailData { get; set; }
 
     }
 }

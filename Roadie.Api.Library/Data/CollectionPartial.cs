@@ -128,6 +128,17 @@ namespace Roadie.Library.Data
             }
             return this._positionAristReleases;
         }
+
+        public Collection()
+        {
+            ListInCSVFormat = "Position,Release,Artist";
+            CollectionType = Enums.CollectionType.Rank;
+        }
+
+        public override string ToString()
+        {
+            return $"Id [{ this.Id }], Name [{ this.Name }]";
+        }
     }
 
     [Serializable]

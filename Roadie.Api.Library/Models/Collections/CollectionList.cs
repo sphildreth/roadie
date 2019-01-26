@@ -27,6 +27,7 @@ namespace Roadie.Library.Models.Collections
                 return (int)Math.Floor((decimal)this.CollectionFoundCount / (decimal)this.CollectionCount * 100);
             }
         }
+        public bool? IsLocked { get; set; }
 
         public static CollectionList FromDataCollection(Data.Collection collection, int foundCount, Image collectionThumbnail)
         {
@@ -43,6 +44,7 @@ namespace Roadie.Library.Models.Collections
                 CollectionType = (collection.CollectionType ?? Roadie.Library.Enums.CollectionType.Unknown).ToString(),
                 CollectionFoundCount = foundCount,
                 CreatedDate = collection.CreatedDate,
+                IsLocked = collection.IsLocked,
                 LastUpdated = collection.LastUpdated,
                 Thumbnail = collectionThumbnail
             };

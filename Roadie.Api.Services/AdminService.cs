@@ -406,31 +406,27 @@ namespace Roadie.Api.Services
                             result.Add(csvRelease);
                         }
                     }
-                    if (modifiedDb)
+                    collection.LastUpdated = now;
+                    await this.DbContext.SaveChangesAsync();
+                    var dto = new Library.Models.Collections.CollectionList
                     {
-                        collection.LastUpdated = now;
-                        var dto = new Library.Models.Collections.CollectionList
-                        {
-                            CollectionCount = collection.CollectionCount,
-                            CollectionFoundCount = (from cr in this.DbContext.CollectionReleases
-                                                    where cr.CollectionId == collection.Id
-                                                    select cr.CollectionId).Count()
-                        };
-                        if (dto.PercentComplete == 100)
-                        {
-                            // Lock so future scans dont happen, with DB RI when releases are deleted they are removed from collection
-                            collection.IsLocked = true;
-                            collection.Status = Statuses.Complete;
-                        }
-                        await this.DbContext.SaveChangesAsync();
-
-                        foreach (var cr in crs)
-                        {
-                            await this.UpdateReleaseRank(cr.ReleaseId);
-                        }
-
-                        this.CacheManager.ClearRegion(collection.CacheRegion);
+                        CollectionCount = collection.CollectionCount,
+                        CollectionFoundCount = (from cr in this.DbContext.CollectionReleases
+                                                where cr.CollectionId == collection.Id
+                                                select cr.CollectionId).Count()
+                    };
+                    if (dto.PercentComplete == 100)
+                    {
+                        // Lock so future scans dont happen, with DB RI when releases are deleted they are removed from collection
+                        collection.IsLocked = true;
+                        collection.Status = Statuses.Complete;
                     }
+                    await this.DbContext.SaveChangesAsync();
+                    foreach (var cr in crs)
+                    {
+                        await this.UpdateReleaseRank(cr.ReleaseId);
+                    }
+                    this.CacheManager.ClearRegion(collection.CacheRegion);
                 }
             }
             catch (Exception ex)

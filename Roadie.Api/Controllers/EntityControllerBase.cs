@@ -61,7 +61,7 @@ namespace Roadie.Api.Controllers
 
             var result = user.Adapt<models.User>();
             result.IsAdmin = User.IsInRole("Admin");
-            result.IsEditor = User.IsInRole("Editor");
+            result.IsEditor = User.IsInRole("Editor") || result.IsAdmin;
             return result;
         }
 

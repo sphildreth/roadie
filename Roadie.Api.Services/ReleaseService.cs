@@ -916,6 +916,7 @@ namespace Roadie.Api.Services
                                                             where crc.CollectionId == releaseCollection.Collection.Id
                                                             select crc.Id).Count(),
                                     CreatedDate = releaseCollection.Collection.CreatedDate,
+                                    IsLocked = releaseCollection.Collection.IsLocked,
                                     LastUpdated = releaseCollection.Collection.LastUpdated,
                                     Thumbnail = MakeCollectionThumbnailImage(releaseCollection.Collection.RoadieId)
                                 },

@@ -44,8 +44,6 @@ namespace Roadie.Library.Models
 
         public DateTime? EndDate { get; set; }
 
-        [Key]
-        [Required]
         [AdaptMember("RoadieId")]
         public virtual Guid? Id { get; set; }
 

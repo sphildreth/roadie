@@ -936,6 +936,11 @@ namespace Roadie.Api.Services
             }
         }
 
+        protected Image MakeNewImage(string type)
+        {
+            return new Image($"{this.HttpContext.ImageBaseUrl }/{type}.jpg", null, null);
+        }
+
 
         private Image MakeImage(Guid id, string type, int? width, int? height, string caption = null, bool includeCachebuster = false)
         {

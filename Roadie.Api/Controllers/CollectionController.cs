@@ -46,6 +46,56 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpGet("add")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> Add()
+        {
+            var result = this.CollectionService.Add(await this.CurrentUserModel());
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("edit")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> Update(models.Collections.Collection collection)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var result = await this.CollectionService.UpdateCollection(await this.CurrentUserModel(), collection);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("delete/{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> DeleteCollection(Guid id)
+        {
+            var result = await this.CollectionService.DeleteCollection(await this.CurrentUserModel(), id);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+
         [HttpGet]
         [ProducesResponseType(200)]
         public async Task<IActionResult> List([FromQuery]PagedRequest request)
