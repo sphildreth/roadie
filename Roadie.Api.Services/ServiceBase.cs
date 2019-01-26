@@ -874,16 +874,16 @@ namespace Roadie.Api.Services
                                           where t.ArtistId == artist.Id
                                           select (double?)ut.Rating).ToArray().Average(x => x) ?? 0;
 
-                var artistReleaseRatingSum = (from r in this.DbContext.Releases
+                var artistReleaseRatingRating = (from r in this.DbContext.Releases
                                             join ur in this.DbContext.UserReleases on r.Id equals ur.ReleaseId
                                             where r.ArtistId == artist.Id
                                             select (double?)ur.Rating).ToArray().Average(x => x) ?? 0;
 
                 var artistReleaseRankSum = (from r in this.DbContext.Releases
                                               where r.ArtistId == artist.Id
-                                              select r.Rank).ToArray().Average(x => x) ?? 0;
+                                              select r.Rank).ToArray().Sum(x => x) ?? 0;
 
-                artist.Rank = SafeParser.ToNumber<decimal>(artistTrackAverage + artistReleaseRatingSum) + artistReleaseRankSum + artist.Rating;
+                artist.Rank = SafeParser.ToNumber<decimal>(artistTrackAverage + artistReleaseRatingRating) + artistReleaseRankSum + artist.Rating;
 
                 await this.DbContext.SaveChangesAsync();
                 this.CacheManager.ClearRegion(artist.CacheRegion);

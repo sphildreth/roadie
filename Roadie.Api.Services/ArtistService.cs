@@ -628,6 +628,7 @@ namespace Roadie.Api.Services
             }
             tsw.Restart();
             var result = artist.Adapt<Artist>();
+            result.BandStatus = result.BandStatus ?? BandStatus.Unknown.ToString();
             result.BeginDate = result.BeginDate == null || result.BeginDate == DateTime.MinValue ? null : result.BeginDate;
             result.EndDate = result.EndDate == null || result.EndDate == DateTime.MinValue ? null : result.EndDate;
             result.BirthDate = result.BirthDate == null || result.BirthDate == DateTime.MinValue ? null : result.BirthDate;
