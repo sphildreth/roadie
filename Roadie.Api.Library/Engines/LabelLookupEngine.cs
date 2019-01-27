@@ -64,14 +64,14 @@ namespace Roadie.Library.Engines
             };
         }
 
-        public async Task<OperationResult<Label>> GetByName(string LabelName, bool doFindIfNotInDatabase = false)
+        public async Task<OperationResult<Label>> GetByName(string labelName, bool doFindIfNotInDatabase = false)
         {
             try
             {
                 var sw = new Stopwatch();
                 sw.Start();
-                var cacheRegion = (new Label { Name = LabelName }).CacheRegion;
-                var cacheKey = string.Format("urn:Label_by_name:{0}", LabelName);
+                var cacheRegion = (new Label { Name = labelName }).CacheRegion;
+                var cacheKey = string.Format("urn:Label_by_name:{0}", labelName);
                 var resultInCache = this.CacheManager.Get<Label>(cacheKey, cacheRegion);
                 if (resultInCache != null)
                 {
@@ -83,31 +83,25 @@ namespace Roadie.Library.Engines
                         Data = resultInCache
                     };
                 }
-                var getParams = new List<object>();
-                var searchName = LabelName.NormalizeName().ToLower();
-                getParams.Add(new MySqlParameter("@isName", searchName));
-                getParams.Add(new MySqlParameter("@startAlt", string.Format("{0}|%", searchName)));
-                getParams.Add(new MySqlParameter("@inAlt", string.Format("%|{0}|%", searchName)));
-                getParams.Add(new MySqlParameter("@endAlt", string.Format("%|{0}", searchName)));
-                var Label = this.DbContext.Labels.FromSql(@"SELECT *
-                FROM `label`
-                WHERE LCASE(name) = @isName
-                OR LCASE(sortName) = @isName
-                OR LCASE(alternatenames) = @isName
-                OR alternatenames like @startAlt
-                OR alternatenames like @inAlt
-                OR alternatenames like @endAlt
-                LIMIT 1", getParams.ToArray()).FirstOrDefault();
+                var searchName = labelName.NormalizeName();
+                var specialSearchName = labelName.ToAlphanumericName();
+                var label = (from l in this.DbContext.Labels
+                             where (l.Name.Contains(searchName) ||
+                                   l.SortName.Contains(searchName) ||
+                                   l.AlternateNames.Contains(searchName) ||
+                                   l.AlternateNames.Contains(specialSearchName))
+                            select l
+                            ).FirstOrDefault();
                 sw.Stop();
-                if (Label == null || !Label.IsValid)
+                if (label == null || !label.IsValid)
                 {
-                    this.Logger.LogInformation("LabelFactory: Label Not Found By Name [{0}]", LabelName);
+                    this.Logger.LogInformation("LabelFactory: Label Not Found By Name [{0}]", labelName);
                     if (doFindIfNotInDatabase)
                     {
                         OperationResult<Label> LabelSearch = null;
                         try
                         {
-                            LabelSearch = await this.PerformMetaDataProvidersLabelSearch(LabelName);
+                            LabelSearch = await this.PerformMetaDataProvidersLabelSearch(labelName);
                         }
                         catch (Exception ex)
                         {
@@ -115,8 +109,8 @@ namespace Roadie.Library.Engines
                         }
                         if (LabelSearch.IsSuccess)
                         {
-                            Label = LabelSearch.Data;
-                            var addResult = await this.Add(Label);
+                            label = LabelSearch.Data;
+                            var addResult = await this.Add(label);
                             if (!addResult.IsSuccess)
                             {
                                 sw.Stop();
@@ -131,13 +125,13 @@ namespace Roadie.Library.Engines
                 }
                 else
                 {
-                    this.CacheManager.Add(cacheKey, Label);
+                    this.CacheManager.Add(cacheKey, label);
                 }
                 return new OperationResult<Label>
                 {
-                    IsSuccess = Label != null,
+                    IsSuccess = label != null,
                     OperationTime = sw.ElapsedMilliseconds,
-                    Data = Label
+                    Data = label
                 };
             }
             catch (Exception ex)

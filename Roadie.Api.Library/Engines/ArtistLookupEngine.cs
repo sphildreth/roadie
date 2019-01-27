@@ -702,31 +702,16 @@ namespace Roadie.Library.Engines
             }
             try
             {
-                var getParams = new List<object>();
-                var searchName = name.NormalizeName().ToLower();
-                var searchSortName = !string.IsNullOrEmpty(sortName) ? sortName.NormalizeName().ToLower() : searchName;
+                var searchName = name.NormalizeName();
                 var specialSearchName = name.ToAlphanumericName();
-                getParams.Add(new MySqlParameter("@isName", searchName));
-                getParams.Add(new MySqlParameter("@isSortName", searchSortName));
-                getParams.Add(new MySqlParameter("@startAlt", string.Format("{0}|%", searchName)));
-                getParams.Add(new MySqlParameter("@inAlt", string.Format("%|{0}|%", searchName)));
-                getParams.Add(new MySqlParameter("@endAlt", string.Format("%|{0}", searchName)));
-                getParams.Add(new MySqlParameter("@sstartAlt", string.Format("{0}|%", specialSearchName)));
-                getParams.Add(new MySqlParameter("@sinAlt", string.Format("%|{0}|%", specialSearchName)));
-                getParams.Add(new MySqlParameter("@sendAlt", string.Format("%|{0}", specialSearchName)));
-                return this.DbContext.Artists.FromSql(@"SELECT *
-                FROM `artist`
-                WHERE LCASE(name) = @isName
-                OR LCASE(sortName) = @isName
-                OR LCASE(sortName) = @isSortName
-                OR LCASE(alternatenames) = @isName
-                OR alternatenames like @startAlt
-                OR alternatenames like @sstartAlt
-                OR alternatenames like @inAlt
-                OR alternatenames like @sinAlt
-                OR (alternatenames like @endAlt
-                OR alternatenames like @sendAlt)
-                LIMIT 1", getParams.ToArray()).FirstOrDefault();
+                return (from a in this.DbContext.Artists
+                        where (a.Name.Contains(searchName) || 
+                               a.SortName.Contains(searchName) || 
+                               a.AlternateNames.Contains(searchName) || 
+                               a.AlternateNames.Contains(specialSearchName))
+                        select a
+                        ).FirstOrDefault();
+
             }
             catch (Exception ex)
             {

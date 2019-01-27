@@ -77,10 +77,12 @@ namespace Roadie.Api.Services
                 request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
                 request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
             }
+            var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue) ? request.FilterValue.ToAlphanumericName() : null;
             var result = (from l in this.DbContext.Labels
                           where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
                                     l.Name != null && l.Name.Contains(request.FilterValue) ||
-                                    l.AlternateNames != null && l.AlternateNames.Contains(request.FilterValue)
+                                    l.AlternateNames != null && l.AlternateNames.Contains(request.FilterValue) ||
+                                    l.AlternateNames != null && l.AlternateNames.Contains(normalizedFilterValue)
                           )))
                           select new LabelList
                           {

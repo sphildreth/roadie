@@ -79,14 +79,6 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
 
-            if (!string.IsNullOrEmpty(request.Sort))
-            {
-                request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
-                request.Sort = request.Sort.Replace("lastLogin", "lastUpdatedDateTime");
-                request.Sort = request.Sort.Replace("lastApiAccess", "lastApiAccessDateTime");
-                request.Sort = request.Sort.Replace("registeredOn", "registeredDateTime");
-            }
-
             var result = (from u in this.DbContext.Users
                           where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (u.UserName.Contains(request.FilterValue))))
                           select new UserList

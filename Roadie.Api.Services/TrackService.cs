@@ -262,6 +262,7 @@ namespace Roadie.Api.Services
                     }
                     filterToTrackIds = f.ToArray();
                 }
+                var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue) ? request.FilterValue.ToAlphanumericName() : null;
                 // Did this for performance against the Track table, with just * selcts the table scans are too much of a performance hit.
                 var resultQuery = (from t in this.DbContext.Tracks
                                    join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
@@ -273,7 +274,7 @@ namespace Roadie.Api.Services
                                    where (releaseId == null || (releaseId != null && r.RoadieId == releaseId))
                                    where (filterToTrackIds == null || filterToTrackIds.Contains(t.RoadieId))
                                    where (request.FilterMinimumRating == null || t.Rating >= request.FilterMinimumRating.Value)
-                                   where (request.FilterValue == "" || (t.Title.Contains(request.FilterValue) || t.AlternateNames.Contains(request.FilterValue)))
+                                   where (request.FilterValue == "" || (t.Title.Contains(request.FilterValue) || t.AlternateNames.Contains(request.FilterValue) || t.AlternateNames.Contains(normalizedFilterValue)))
                                    where (!request.FilterFavoriteOnly || favoriteTrackIds.Contains(t.Id))
                                    where (request.FilterToPlaylistId == null || playlistTrackIds.Contains(t.Id))
                                    where (!request.FilterTopPlayedOnly || topTrackids.Contains(t.Id))

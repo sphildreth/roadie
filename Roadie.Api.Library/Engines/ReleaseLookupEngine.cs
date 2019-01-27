@@ -95,29 +95,15 @@ namespace Roadie.Library.Engines
                         Data = resultInCache
                     };
                 }
-                var getParams = new List<object>();
                 var searchName = metaData.Release.NormalizeName().ToLower();
                 var specialSearchName = metaData.Release.ToAlphanumericName();
-                getParams.Add(new MySqlParameter("@artistId", artist.Id));
-                getParams.Add(new MySqlParameter("@isTitle", searchName));
-                getParams.Add(new MySqlParameter("@startAlt", string.Format("{0}|%", searchName)));
-                getParams.Add(new MySqlParameter("@inAlt", string.Format("%|{0}|%", searchName)));
-                getParams.Add(new MySqlParameter("@endAlt", string.Format("%|{0}", searchName)));
-                getParams.Add(new MySqlParameter("@sstartAlt", string.Format("{0}|%", specialSearchName)));
-                getParams.Add(new MySqlParameter("@sinAlt", string.Format("%|{0}|%", specialSearchName)));
-                getParams.Add(new MySqlParameter("@sendAlt", string.Format("%|{0}", specialSearchName)));
-                var release = this.DbContext.Releases.FromSql(@"SELECT *
-                FROM `release`
-                WHERE artistId = @artistId
-                AND (LCASE(title) = @isTitle
-                OR LCASE(alternatenames) = @isTitle
-                OR alternatenames like @startAlt
-                OR alternatenames like @sstartAlt
-                OR alternatenames like @inAlt
-                OR alternatenames like @sinAlt
-                OR alternatenames like @endAlt
-                OR alternatenames like @sendAlt)
-                LIMIT 1", getParams.ToArray()).FirstOrDefault();
+                var release = (from r in this.DbContext.Releases
+                               where (r.Title.Contains(searchName) ||
+                                      r.AlternateNames.Contains(searchName) ||
+                                      r.AlternateNames.Contains(specialSearchName))
+                               select r
+                               ).FirstOrDefault();
+
                 sw.Stop();
                 if (release == null || !release.IsValid)
                 {

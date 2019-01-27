@@ -348,7 +348,6 @@ namespace Roadie.Api.Services
                 if (par != null)
                 {
                     var now = DateTime.UtcNow;
-                    var modifiedDb = false;
                     foreach (var csvRelease in par)
                     {
                         data.Release release = null;
@@ -390,14 +389,12 @@ namespace Roadie.Api.Services
                                     ReleaseId = release.Id,
                                     ListNumber = csvRelease.Position,
                                 });
-                                modifiedDb = true;
                             }
                             // If Item in Collection is at different List number update CollectionRelease
                             else if (isInCollection.ListNumber != csvRelease.Position)
                             {
                                 isInCollection.LastUpdated = now;
                                 isInCollection.ListNumber = csvRelease.Position;
-                                modifiedDb = true;
                             }
                         }
                         else

@@ -222,6 +222,7 @@ namespace Roadie.Api.Services
             //
             // TODO list should honor disliked artist and albums for random
             //
+            var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue) ? request.FilterValue.ToAlphanumericName() : null;
             var result = (from r in this.DbContext.Releases
                           join a in this.DbContext.Artists on r.ArtistId equals a.Id
                           where (request.FilterMinimumRating == null || r.Rating >= request.FilterMinimumRating.Value)
@@ -231,7 +232,7 @@ namespace Roadie.Api.Services
                           where (!isFilteredToGenre || genreReleaseIds.Contains(r.Id))
                           where (request.FilterFromYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear)
                           where (request.FilterToYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear)
-                          where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || r.AlternateNames.Contains(request.FilterValue)))
+                          where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || r.AlternateNames.Contains(request.FilterValue) || r.AlternateNames.Contains(normalizedFilterValue)))
                           select new ReleaseList
                           {
                               DatabaseId = r.Id,

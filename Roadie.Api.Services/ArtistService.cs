@@ -183,11 +183,12 @@ namespace Roadie.Api.Services
                 request.Filter = null;
             }
             var onlyWithReleases = onlyIncludeWithReleases ?? true;
+            var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue) ? request.FilterValue.ToAlphanumericName() : null;
             var result = (from a in this.DbContext.Artists
                           where (!onlyWithReleases || a.ReleaseCount > 0)
                           where (request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId)
                           where (request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value)
-                          where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue)))
+                          where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue) || a.AlternateNames.Contains(normalizedFilterValue)))
                           where (!request.FilterFavoriteOnly || favoriteArtistIds.Contains(a.Id))
                           where (request.FilterToLabelId == null || labelArtistIds.Contains(a.Id))
                           where (!isFilteredToGenre || genreArtistIds.Contains(a.Id))
