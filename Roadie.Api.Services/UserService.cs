@@ -433,6 +433,7 @@ namespace Roadie.Api.Services
             user.RecentlyPlayedLimit = userBeingUpdatedModel.RecentlyPlayedLimit;
             user.Profile = userBeingUpdatedModel.Profile;
             user.DoUseHtmlPlayer = userBeingUpdatedModel.DoUseHtmlPlayer;
+            user.RemoveTrackFromQueAfterPlayed = userBeingUpdatedModel.RemoveTrackFromQueAfterPlayed;
             user.IsPrivate = userBeingUpdatedModel.IsPrivate;
             user.LastUpdated = DateTime.UtcNow;
             user.FtpUrl = userBeingUpdatedModel.FtpUrl;

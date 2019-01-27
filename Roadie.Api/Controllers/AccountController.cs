@@ -105,6 +105,7 @@ namespace Roadie.Api.Controllers
                     {
                         Username = user.UserName,
                         RecentLimit = user.RecentlyPlayedLimit,
+                        user.RemoveTrackFromQueAfterPlayed,
                         user.Email,
                         user.LastLogin,
                         avatarUrl,
@@ -177,6 +178,7 @@ namespace Roadie.Api.Controllers
                     {
                         Username = user.UserName,
                         RecentLimit = user.RecentlyPlayedLimit,
+                        user.RemoveTrackFromQueAfterPlayed,
                         user.Email,
                         user.LastLogin,
                         avatarUrl,
@@ -246,6 +248,7 @@ namespace Roadie.Api.Controllers
                     {
                         Username = user.UserName,
                         RecentLimit = user.RecentlyPlayedLimit,
+                        user.RemoveTrackFromQueAfterPlayed,
                         user.Email,
                         user.LastLogin,
                         avatarUrl,

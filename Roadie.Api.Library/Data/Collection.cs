@@ -16,7 +16,7 @@ namespace Roadie.Library.Data
         public CollectionType? CollectionType { get; set; }
 
         [Column("description")]
-        [MaxLength(1000)]
+        [MaxLength(4000)]
         public string Description { get; set; }
 
         [Column("edition")]

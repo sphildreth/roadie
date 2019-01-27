@@ -15,7 +15,7 @@ namespace Roadie.Library.Models.Collections
 
         public string CollectionType { get; set; }
 
-        [MaxLength(1000)]
+        [MaxLength(4000)]
         public string Description { get; set; }
 
         [MaxLength(200)]

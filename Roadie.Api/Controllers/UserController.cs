@@ -291,6 +291,7 @@ namespace Roadie.Api.Controllers
             {
                 IsSuccess = true,
                 Username = modelUser.UserName,
+                modelUser.RemoveTrackFromQueAfterPlayed,
                 modelUser.Email,
                 modelUser.LastLogin,
                 avatarUrl,

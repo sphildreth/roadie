@@ -52,6 +52,8 @@ namespace Roadie.Library.Models.Users
         public bool IsEditor { get; set; }
         public bool IsPrivate { get; set; }
 
+        public bool RemoveTrackFromQueAfterPlayed { get; set; }
+
         public short? PlayerTrackLimit { get; set; }
 
         [MaxLength(65535)]

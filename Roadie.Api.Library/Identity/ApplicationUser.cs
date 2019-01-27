@@ -68,6 +68,9 @@ namespace Roadie.Library.Identity
         [Column("isPrivate")]
         public bool? IsPrivate { get; set; }
 
+        [Column("removeTrackFromQueAfterPlayed")]
+        public bool? RemoveTrackFromQueAfterPlayed { get; set; }
+
         [Column("lastApiAccess")]
         public DateTime? LastApiAccess { get; set; }
 

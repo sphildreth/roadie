@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
@@ -16,6 +17,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using discogs = Roadie.Library.SearchEngines.MetaData.Discogs;
@@ -161,9 +163,9 @@ namespace Roadie.Library.Engines
             {
                 var sw = new Stopwatch();
                 sw.Start();
-                var ArtistName = metaData.Artist ?? metaData.TrackArtist;
-                var cacheRegion = (new Artist { Name = ArtistName }).CacheRegion;
-                var cacheKey = string.Format("urn:Artist_by_name:{0}", ArtistName);
+                var artistName = metaData.Artist ?? metaData.TrackArtist;
+                var cacheRegion = (new Artist { Name = artistName }).CacheRegion;
+                var cacheKey = string.Format("urn:artist_by_name:{0}", artistName);
                 var resultInCache = this.CacheManager.Get<Artist>(cacheKey, cacheRegion);
                 if (resultInCache != null)
                 {
@@ -175,47 +177,70 @@ namespace Roadie.Library.Engines
                         Data = resultInCache
                     };
                 }
-                var artist = this.DatabaseQueryForArtistName(ArtistName);
+                var artist = this.DatabaseQueryForArtistName(artistName);
                 sw.Stop();
                 if (artist == null || !artist.IsValid)
                 {
-                    this.Logger.LogInformation("ArtistLookupEngine: Artist Not Found By Name [{0}]", ArtistName);
+                    this.Logger.LogInformation("ArtistLookupEngine: Artist Not Found By Name [{0}]", artistName);
                     if (doFindIfNotInDatabase)
                     {
-                        OperationResult<Artist> ArtistSearch = null;
-                        try
+                        OperationResult<Artist> artistSearch = null;
+
+                        // See if roadie.json file exists in the metadata files folder, if so then use artist data from that
+                        var releaseRoadieDataFilename = Path.Combine(Path.GetDirectoryName(metaData.Filename), "roadie.artist.json");
+                        if(File.Exists(releaseRoadieDataFilename))
                         {
-                            ArtistSearch = await this.PerformMetaDataProvidersArtistSearch(metaData);
-                        }
-                        catch (Exception ex)
-                        {
-                            this.Logger.LogError(ex, ex.Serialize());
-                        }
-                        if (ArtistSearch.IsSuccess)
-                        {
-                            artist = ArtistSearch.Data;
-                            // See if Artist already exist with either Name or Sort Name
-                            var alreadyExists = this.DatabaseQueryForArtistName(ArtistSearch.Data.Name, ArtistSearch.Data.SortNameValue);
-                            if (alreadyExists == null || !alreadyExists.IsValid)
+                            artist = JsonConvert.DeserializeObject<Artist>(File.ReadAllText(releaseRoadieDataFilename));
+                            var addResult = await this.Add(artist);
+                            if (!addResult.IsSuccess)
                             {
-                                var addResult = await this.Add(artist);
-                                if (!addResult.IsSuccess)
+                                sw.Stop();
+                                this.Logger.LogWarning("Unable To Add Artist For Roadie Data File [{0}]", releaseRoadieDataFilename);
+                                return new OperationResult<Artist>
                                 {
-                                    sw.Stop();
-                                    this.Logger.LogWarning("Unable To Add Artist For MetaData [{0}]", metaData.ToString());
-                                    return new OperationResult<Artist>
-                                    {
-                                        OperationTime = sw.ElapsedMilliseconds,
-                                        Errors = addResult.Errors
-                                    };
-                                }
-                                artist = addResult.Data;
+                                    OperationTime = sw.ElapsedMilliseconds,
+                                    Errors = addResult.Errors
+                                };
                             }
-                            else
+                            artist = addResult.Data;
+                        }
+                        else
+                        {
+                            try
                             {
-                                artist = alreadyExists;
+                                artistSearch = await this.PerformMetaDataProvidersArtistSearch(metaData);
+                                if (artistSearch.IsSuccess)
+                                {
+                                    artist = artistSearch.Data;
+                                    // See if Artist already exist with either Name or Sort Name
+                                    var alreadyExists = this.DatabaseQueryForArtistName(artistSearch.Data.Name, artistSearch.Data.SortNameValue);
+                                    if (alreadyExists == null || !alreadyExists.IsValid)
+                                    {
+                                        var addResult = await this.Add(artist);
+                                        if (!addResult.IsSuccess)
+                                        {
+                                            sw.Stop();
+                                            this.Logger.LogWarning("Unable To Add Artist For MetaData [{0}]", metaData.ToString());
+                                            return new OperationResult<Artist>
+                                            {
+                                                OperationTime = sw.ElapsedMilliseconds,
+                                                Errors = addResult.Errors
+                                            };
+                                        }
+                                        artist = addResult.Data;
+                                    }
+                                    else
+                                    {
+                                        artist = alreadyExists;
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                this.Logger.LogError(ex, ex.Serialize());
                             }
                         }
+
                     }
                 }
                 if (artist != null && artist.IsValid)

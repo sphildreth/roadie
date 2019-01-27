@@ -417,9 +417,13 @@ namespace Roadie.Api.Services
                     };
                     if (dto.PercentComplete == 100)
                     {
-                        // Lock so future scans dont happen, with DB RI when releases are deleted they are removed from collection
+                        // Lock so future implicit scans dont happen, with DB RI when releases are deleted they are removed from collection
                         collection.IsLocked = true;
                         collection.Status = Statuses.Complete;
+                    }
+                    else
+                    {
+                        collection.Status = Statuses.Incomplete;
                     }
                     await this.DbContext.SaveChangesAsync();
                     foreach (var cr in crs)
