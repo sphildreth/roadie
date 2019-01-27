@@ -80,7 +80,6 @@ namespace Roadie.Api.Controllers
                     var user = await UserManager.FindByNameAsync(model.Username);
                     var now = DateTime.UtcNow;
                     user.LastLogin = now;
-                    user.LastApiAccess = now;
                     user.LastUpdated = now;
                     await UserManager.UpdateAsync(user);
                     var t = await this.TokenService.GenerateToken(user, this.UserManager);

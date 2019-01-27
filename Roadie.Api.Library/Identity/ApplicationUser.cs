@@ -71,6 +71,9 @@ namespace Roadie.Library.Identity
         [Column("removeTrackFromQueAfterPlayed")]
         public bool? RemoveTrackFromQueAfterPlayed { get; set; }
 
+        /// <summary>
+        /// This is the last time a user access Roadie via an API (ie Subsonic or Plex or Apache)
+        /// </summary>
         [Column("lastApiAccess")]
         public DateTime? LastApiAccess { get; set; }
 

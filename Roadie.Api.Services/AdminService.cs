@@ -304,10 +304,18 @@ namespace Roadie.Api.Services
             var collections = this.DbContext.Collections.Where(x => x.IsLocked ?? false == false).ToArray();
             foreach(var collection in collections)
             {
-                var result = await this.ScanCollection(user, collection.RoadieId, isReadOnly, doPurgeFirst);
-                if(!result.IsSuccess)
+                try
                 {
-                    errors.AddRange(result.Errors);
+                    var result = await this.ScanCollection(user, collection.RoadieId, isReadOnly, doPurgeFirst);
+                    if (!result.IsSuccess)
+                    {
+                        errors.AddRange(result.Errors);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.Logger.LogError(ex);
+                    errors.Add(ex);
                 }
             }
             sw.Stop();
