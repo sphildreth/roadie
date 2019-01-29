@@ -16,6 +16,8 @@ namespace Roadie.Library.Models.Users
 
         public DateTime? Registered { get; set; }
 
+        public DateTime? LastActivity { get; set; }
+
         public DateTime? LastLoginDate { get; set; }
 
         public DateTime? LastApiAccessDate { get; set; }

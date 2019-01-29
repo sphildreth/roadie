@@ -301,7 +301,7 @@ namespace Roadie.Api.Services
             sw.Start();
             var errors = new List<Exception>();
 
-            var collections = this.DbContext.Collections.Where(x => x.IsLocked ?? false == false).ToArray();
+            var collections = this.DbContext.Collections.Where(x => !x.IsLocked ?? false == false).ToArray();
             foreach(var collection in collections)
             {
                 try

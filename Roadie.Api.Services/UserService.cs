@@ -80,6 +80,9 @@ namespace Roadie.Api.Services
             sw.Start();
 
             var result = (from u in this.DbContext.Users
+                          let lastActivity = (from ut in this.DbContext.UserTracks
+                                              where ut.UserId == u.Id
+                                              select ut.LastPlayed).Max()
                           where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (u.UserName.Contains(request.FilterValue))))
                           select new UserList
                           {
@@ -97,7 +100,8 @@ namespace Roadie.Api.Services
                               LastUpdated = u.LastUpdated,
                               RegisteredDate = u.RegisteredOn,
                               LastLoginDate = u.LastLogin,
-                              LastApiAccessDate = u.LastApiAccess
+                              LastApiAccessDate = u.LastApiAccess,
+                              LastActivity = lastActivity
                           });
 
             UserList[] rows = null;
