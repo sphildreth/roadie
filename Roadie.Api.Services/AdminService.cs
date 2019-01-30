@@ -10,6 +10,7 @@ using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Enums;
+using Roadie.Library.Extensions;
 using Roadie.Library.Factories;
 using Roadie.Library.Identity;
 using Roadie.Library.MetaData.Audio;
@@ -357,58 +358,67 @@ namespace Roadie.Api.Services
                 {
                     var now = DateTime.UtcNow;
                     foreach (var csvRelease in par)
-                    {
-                        data.Release release = null;
-                        CollectionRelease isInCollection = null;
-                        OperationResult<data.Release> releaseResult = null;
+                    {                      
+
                         data.Artist artist = null;
-                        var artistResult = await this.ArtistLookupEngine.GetByName(new AudioMetaData { Artist = csvRelease.Artist });
-                        if (!artistResult.IsSuccess)
+                        data.Release release = null;
+
+                        var searchName = csvRelease.Artist.NormalizeName();
+                        var specialSearchName = csvRelease.Artist.ToAlphanumericName();
+
+                        var artistResults = (from a in this.DbContext.Artists
+                                            where (a.Name.Contains(searchName) ||
+                                                   a.SortName.Contains(searchName) ||
+                                                   a.AlternateNames.Contains(searchName) ||
+                                                   a.AlternateNames.Contains(specialSearchName))
+                                            select a).ToArray();
+                        if (!artistResults.Any())
                         {
-                            this.Logger.LogWarning("Unable To Find Artist [{0}]", csvRelease.Artist);
+                            this.Logger.LogWarning("Unable To Find Artist [{0}], SearchName [{1}]", csvRelease.Artist, searchName);
                             csvRelease.Status = Library.Enums.Statuses.Missing;
+                            continue;
                         }
-                        else
+                        foreach (var artistResult in artistResults)
                         {
-                            artist = artistResult.Data;
-                        }
-                        if (artist != null)
-                        {
-                            releaseResult = await this.ReleaseLookupEngine.GetByName(artist, new AudioMetaData { Release = csvRelease.Release });
-                            if (!releaseResult.IsSuccess)
+                            artist = artistResult;
+                            searchName = csvRelease.Release.NormalizeName().ToLower();
+                            specialSearchName = csvRelease.Release.ToAlphanumericName();
+                            release = (from r in this.DbContext.Releases
+                                           where (r.ArtistId == artist.Id)
+                                           where (r.Title.Contains(searchName) ||
+                                                   r.AlternateNames.Contains(searchName) ||
+                                                   r.AlternateNames.Contains(specialSearchName))
+                                           select r
+                                       ).FirstOrDefault();
+                            if(release != null)
                             {
-                                this.Logger.LogWarning("Unable To Find Release [{0}]", csvRelease.Release);
-                                csvRelease.Status = Library.Enums.Statuses.Missing;
+                                break;
                             }
                         }
-                        if (releaseResult != null)
+                        if (release == null)
                         {
-                            release = releaseResult.Data;
-                        }
-                        if (artist != null && release != null)
+                            this.Logger.LogWarning("Unable To Find Release [{0}], SearchName [{1}]", csvRelease.Release, searchName);
+                            csvRelease.Status = Library.Enums.Statuses.Missing;
+                            continue;
+                        }                        
+                        var isInCollection = this.DbContext.CollectionReleases.FirstOrDefault(x => x.CollectionId == collection.Id && 
+                                                                                                   x.ListNumber == csvRelease.Position &&                                                                                                    
+                                                                                                   x.ReleaseId == release.Id);
+                        // Found in Database but not in collection add to Collection
+                        if (isInCollection == null)
                         {
-                            isInCollection = this.DbContext.CollectionReleases.FirstOrDefault(x => x.CollectionId == collection.Id && x.ListNumber == csvRelease.Position && x.ReleaseId == release.Id);
-                            // Found in Database but not in collection add to Collection
-                            if (isInCollection == null)
+                            this.DbContext.CollectionReleases.Add(new CollectionRelease
                             {
-                                this.DbContext.CollectionReleases.Add(new CollectionRelease
-                                {
-                                    CollectionId = collection.Id,
-                                    ReleaseId = release.Id,
-                                    ListNumber = csvRelease.Position,
-                                });
-                            }
-                            // If Item in Collection is at different List number update CollectionRelease
-                            else if (isInCollection.ListNumber != csvRelease.Position)
-                            {
-                                isInCollection.LastUpdated = now;
-                                isInCollection.ListNumber = csvRelease.Position;
-                            }
+                                CollectionId = collection.Id,
+                                ReleaseId = release.Id,
+                                ListNumber = csvRelease.Position,
+                            });
                         }
-                        else
+                        // If Item in Collection is at different List number update CollectionRelease
+                        else if (isInCollection.ListNumber != csvRelease.Position)
                         {
-                            this.Logger.LogWarning("Unable To Find Artist Or Release For Collection Entry [{0}]", csvRelease.ToString());
-                            result.Add(csvRelease);
+                            isInCollection.LastUpdated = now;
+                            isInCollection.ListNumber = csvRelease.Position;
                         }
                     }
                     collection.LastUpdated = now;
