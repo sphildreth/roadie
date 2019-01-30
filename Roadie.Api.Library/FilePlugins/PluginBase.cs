@@ -9,6 +9,8 @@ using Roadie.Library.Utility;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Threading.Tasks;
 
 namespace Roadie.Library.FilePlugins
@@ -69,10 +71,10 @@ namespace Roadie.Library.FilePlugins
             if (!Directory.Exists(folder))
             {
                 Directory.CreateDirectory(folder);
-                Trace.WriteLine(string.Format("Created Directory [{0}]", folder));
                 return true;
             }
             return false;
+
         }
 
         public abstract Task<OperationResult<bool>> Process(string destinationRoot, FileInfo fileInfo, bool doJustInfo, int? submissionId);

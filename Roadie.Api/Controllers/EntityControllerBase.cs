@@ -53,12 +53,19 @@ namespace Roadie.Api.Controllers
                     }, ControllerCacheRegionUrn);                   
                 }
             }
+            if(this._currentUser == null)
+            {
+                throw new Exception("Access Denied");
+            }
             return this._currentUser;
         }
 
         protected models.User UserModelForUser(ApplicationUser user)
         {
-
+            if(user == null)
+            {
+                return null;
+            }
             var result = user.Adapt<models.User>();
             result.IsAdmin = User.IsInRole("Admin");
             result.IsEditor = User.IsInRole("Editor") || result.IsAdmin;

@@ -8,14 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="12.1.1" />
-    <PackageReference Include="EFCore.BulkExtensions" Version="2.3.7" />
-    <PackageReference Include="FluentFTP" Version="19.2.3" />
+    <PackageReference Include="CsvHelper" Version="12.1.2" />
+    <PackageReference Include="EFCore.BulkExtensions" Version="2.3.8" />
+    <PackageReference Include="FluentFTP" Version="19.2.4" />
     <PackageReference Include="HtmlAgilityPack" Version="1.8.14" />
     <PackageReference Include="IdSharp.Common" Version="1.0.1" />
     <PackageReference Include="IdSharp.Tagging" Version="1.0.0-rc3" />
     <PackageReference Include="Inflatable.Lastfm" Version="1.1.0.339" />
-    <PackageReference Include="Mapster" Version="3.2.0" />
+    <PackageReference Include="Mapster" Version="3.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.1" />
     <PackageReference Include="Microsoft.Extensions.Caching.Redis" Version="2.2.0" />
@@ -26,6 +26,7 @@
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0005" />
     <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-beta0005" />
     <PackageReference Include="SixLabors.Shapes" Version="1.0.0-beta0007" />
+    <PackageReference Include="System.IO.FileSystem.AccessControl" Version="4.5.0" />
     <PackageReference Include="System.Runtime.Caching" Version="4.5.0" />
   </ItemGroup>
 

@@ -98,6 +98,7 @@ namespace Roadie.Library.Engines
                 var searchName = metaData.Release.NormalizeName().ToLower();
                 var specialSearchName = metaData.Release.ToAlphanumericName();
                 var release = (from r in this.DbContext.Releases
+                               where (r.ArtistId == artist.Id)
                                where (r.Title.Contains(searchName) ||
                                       r.AlternateNames.Contains(searchName) ||
                                       r.AlternateNames.Contains(specialSearchName))

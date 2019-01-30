@@ -642,7 +642,8 @@ namespace Roadie.Library.Engines
             {
                 switch (result.ArtistType.ToLower().Replace('-', ' '))
                 {
-                    case "Artist":
+                    case "artist":
+                    case "artists":
                     case "one man band":
                     case "one woman band":
                     case "solo":

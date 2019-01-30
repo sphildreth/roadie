@@ -15,8 +15,7 @@ namespace Roadie.Library.Data
         public ApplicationUser User { get; set; }
 
         [Column("userId")]
-        [Required]
-        public int UserId { get; set; }
+        public int? UserId { get; set; }
 
         [NotMapped]
         public new bool? IsLocked { get; set; }
