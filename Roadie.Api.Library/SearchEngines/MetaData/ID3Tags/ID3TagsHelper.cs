@@ -124,12 +124,10 @@ namespace Roadie.Library.MetaData.ID3Tags
                         MimeType = x.MimeType,
                         Type = (AudioMetaDataImageType)x.PictureType
                     }).ToArray();
-                    result.Time = (int)audioFile.TotalSeconds > 0 ? ((decimal?)audioFile.TotalSeconds).ToTimeSpan() : null;
+                    result.Time = audioFile.TotalSeconds > 0 ? ((decimal?)audioFile.TotalSeconds).ToTimeSpan() : null;
                     result.Title = id3v2.Title.ToTitleCase(false);
-
-                    var trackparts = id3v2.TrackNumber?.Split('/');
-                    result.TrackNumber = SafeParser.ToNumber<short?>(trackparts[0]);
-                    result.TotalTrackNumbers = trackparts.Length > 1 ? SafeParser.ToNumber<short?>(trackparts[1]) : 0;
+                    result.TrackNumber = ID3TagsHelper.ParseTrackNumber(id3v2.TrackNumber);
+                    result.TotalTrackNumbers = ID3TagsHelper.ParseTotalTrackNumber(id3v2.TrackNumber);
                     var date = SafeParser.ToDateTime(id3v2.Year);
                     result.Year = date?.Year ?? SafeParser.ToNumber<int?>(id3v2.Year);
                     isSuccess = true;
@@ -146,11 +144,11 @@ namespace Roadie.Library.MetaData.ID3Tags
                         result.AudioBitrate = (int?)audioFile.Bitrate;
                         result.AudioChannels = audioFile.Channels;
                         result.AudioSampleRate = (int)audioFile.Bitrate;
-                        result.Time = (int)audioFile.TotalSeconds > 0 ? ((decimal?)audioFile.TotalSeconds).ToTimeSpan() : null;
+                        result.Time = audioFile.TotalSeconds > 0 ? ((decimal?)audioFile.TotalSeconds).ToTimeSpan() : null;
                         result.Title = id3v1.Title.ToTitleCase(false);
-
-                        result.TrackNumber = (short?)id3v1.TrackNumber;
-                        result.Year = SafeParser.ToNumber<int?>(id3v1.Year);
+                        result.TrackNumber = SafeParser.ToNumber<short?>(id3v1.TrackNumber);
+                        var date = SafeParser.ToDateTime(id3v1.Year);
+                        result.Year = date?.Year ?? SafeParser.ToNumber<int?>(id3v1.Year);
                         isSuccess = true;
                     }
                 }
@@ -167,6 +165,42 @@ namespace Roadie.Library.MetaData.ID3Tags
                 OperationTime = sw.ElapsedMilliseconds,
                 Data = result
             };
+        }
+
+        public static short? ParseTotalTrackNumber(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+            var trackparts = input.Split('/');
+            if(trackparts.Length < 2)
+            {
+                return null;
+            }
+            var r = trackparts[1];
+            r = r.ToUpper().Replace("A", "");
+            r = r.ToUpper().Replace("B", "");
+            r = r.ToUpper().Replace("C", "");
+            r = r.ToUpper().Replace("D", "");
+            r = r.ToUpper().Replace("E", "");
+            return SafeParser.ToNumber<short?>(r) ?? 0;
+        }
+
+        public static short? ParseTrackNumber(string input)
+        {
+            if(string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+            var trackparts = input.Split('/');
+            var r = trackparts[0];
+            r = r.ToUpper().Replace("A", "");
+            r = r.ToUpper().Replace("B", "");
+            r = r.ToUpper().Replace("C", "");
+            r = r.ToUpper().Replace("D", "");
+            r = r.ToUpper().Replace("E", "");
+            return SafeParser.ToNumber<short?>(r);
         }
 
         public static int? ParseDiscNumber(string input)

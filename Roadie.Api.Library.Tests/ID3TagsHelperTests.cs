@@ -53,6 +53,69 @@ namespace Roadie.Library.Tests
         [Theory]
         [InlineData("1")]
         [InlineData("01")]
+        [InlineData("1/2")]
+        [InlineData("A1")]
+        [InlineData("A1/2")]
+        public void ParseTrackNumberShouldBeOne(string trackNumber)
+        {
+            var dn = ID3TagsHelper.ParseTrackNumber(trackNumber);
+            Assert.NotNull(dn);
+            Assert.Equal(1, dn.Value);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("Z")]
+        [InlineData("-----")]
+        [InlineData("?")]
+        public void ParseTrackNumberShouldBeNull(string trackNumber)
+        {
+            var dn = ID3TagsHelper.ParseTrackNumber(trackNumber);
+            Assert.Null(dn);
+        }
+
+        [Theory]
+        [InlineData("2/5")]
+        [InlineData("02/05")]
+        [InlineData("A/5")]
+        [InlineData("B2/B5")]
+        public void ParseTotalTrackNumberShouldBeFive(string trackNumber)
+        {
+            var dn = ID3TagsHelper.ParseTotalTrackNumber(trackNumber);
+            Assert.NotNull(dn);
+            Assert.Equal(5, dn.Value);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("Z")]
+        [InlineData("-----")]
+        [InlineData("?")]
+        [InlineData("99")]
+        public void ParseTotalTrackNumberShouldBeNull(string trackNumber)
+        {
+            var dn = ID3TagsHelper.ParseTotalTrackNumber(trackNumber);
+            Assert.Null(dn);
+        }
+
+
+        [Theory]
+        [InlineData("2")]
+        [InlineData("02")]
+        [InlineData("2/2")]
+        [InlineData("B2")]
+        [InlineData("B2/2")]
+        public void ParseTrackNumberShouldBeTwo(string trackNumber)
+        {
+            var dn = ID3TagsHelper.ParseTrackNumber(trackNumber);
+            Assert.NotNull(dn);
+            Assert.Equal(2, dn.Value);
+        }
+
+
+        [Theory]
+        [InlineData("1")]
+        [InlineData("01")]
         [InlineData("001")]
         [InlineData("1/2")]
         [InlineData("01/02")]

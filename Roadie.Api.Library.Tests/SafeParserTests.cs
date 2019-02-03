@@ -82,6 +82,7 @@ namespace Roadie.Library.Tests
         [InlineData("1988/05")]
         [InlineData("1988/05/02")]
         [InlineData("88")]
+        [InlineData("1988-06-15T07:00:00Z")]
         public void Parse_Datetime_ShouldBe1988(string input)
         {
             var parsed = SafeParser.ToDateTime(input);
