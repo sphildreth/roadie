@@ -8,18 +8,27 @@ namespace Roadie.Library.Tests
 {
     public class SafeParserTests
     {
-        [Fact]
-        public void Parse_Int()
+        [Theory]
+        [InlineData("1")]
+        [InlineData("01")]
+        [InlineData("001")]
+        public void Parse_Int_ShouldBeOne(string input)
         {
-            var one = "1";
-            int n = 1;
-            var parsed = SafeParser.ToNumber<int>(one);
-            Assert.Equal(parsed, n);
+            var parsed = SafeParser.ToNumber<int>(input);
+            Assert.Equal(1, parsed);
+        }
 
-            var nothing = "";
-            parsed = SafeParser.ToNumber<int>(nothing);
+        [Theory]
+        [InlineData("")]
+        [InlineData("0")]
+        [InlineData("00")]
+        public void Parse_Int_ShouldBeZero(string input)
+        {
+            var parsed = SafeParser.ToNumber<int>(input);
             Assert.Equal(0, parsed);
         }
+
+
 
         [Fact]
         public void Parse_Larger_Int()
@@ -106,6 +115,35 @@ namespace Roadie.Library.Tests
             Assert.NotNull(parsed);
         }
 
+        [Theory]
+        [InlineData("true")]
+        [InlineData("True")]
+        [InlineData("TRUE")]
+        [InlineData("Y")]
+        [InlineData("Yes")]
+        [InlineData("YES")]
+        [InlineData("1")]
+        public void Parse_Boolean_ShouldBeTrue(string input)
+        {
+            var parsed = SafeParser.ToBoolean(input);
+            Assert.True(parsed);
+        }
 
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("BATMAN")]
+        [InlineData("false")]
+        [InlineData("False")]
+        [InlineData("FALSE")]
+        [InlineData("N")]
+        [InlineData("No")]
+        [InlineData("NO")]
+        [InlineData("0")]
+        public void Parse_Boolean_ShouldBeFalse(string input)
+        {
+            var parsed = SafeParser.ToBoolean(input);
+            Assert.False(parsed);
+        }
     }
 }
