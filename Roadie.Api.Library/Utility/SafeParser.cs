@@ -93,7 +93,7 @@ namespace Roadie.Library.Utility
                 {
                     i = Regex.Replace(i, @"(\\)", "/");
                     i = Regex.Replace(i, @"(\/+)", "/");
-                    i.Replace("-", "/");
+                    i = Regex.Replace(i, @"(-+)", "/");
                     var parts = i.Contains("/") ? i.Split('/').ToList() : new List<string> { i };
                     if(parts.Count == 2)
                     {
