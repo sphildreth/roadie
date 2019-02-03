@@ -856,38 +856,45 @@ namespace Roadie.Api.Services
         /// </summary>
         protected async Task UpdateArtistRank(int artistId, bool updateReleaseRanks = false)
         {
-            var artist = this.DbContext.Artists.FirstOrDefault(x => x.Id == artistId);
-            if (artist != null)
+            try
             {
-                if(updateReleaseRanks)
+                var artist = this.DbContext.Artists.FirstOrDefault(x => x.Id == artistId);
+                if (artist != null)
                 {
-                    var artistReleaseIds = this.DbContext.Releases.Where(x => x.ArtistId == artistId).Select(x => x.Id).ToArray();
-                    foreach(var artistReleaseId in artistReleaseIds)
+                    if (updateReleaseRanks)
                     {
-                        await this.UpdateReleaseRank(artistReleaseId, false);
+                        var artistReleaseIds = this.DbContext.Releases.Where(x => x.ArtistId == artistId).Select(x => x.Id).ToArray();
+                        foreach (var artistReleaseId in artistReleaseIds)
+                        {
+                            await this.UpdateReleaseRank(artistReleaseId, false);
+                        }
                     }
+
+                    var artistTrackAverage = (from t in this.DbContext.Tracks
+                                              join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                              join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
+                                              where t.ArtistId == artist.Id
+                                              select (double?)ut.Rating).ToArray().Average(x => x) ?? 0;
+
+                    var artistReleaseRatingRating = (from r in this.DbContext.Releases
+                                                     join ur in this.DbContext.UserReleases on r.Id equals ur.ReleaseId
+                                                     where r.ArtistId == artist.Id
+                                                     select (double?)ur.Rating).ToArray().Average(x => x) ?? 0;
+
+                    var artistReleaseRankSum = (from r in this.DbContext.Releases
+                                                where r.ArtistId == artist.Id
+                                                select r.Rank).ToArray().Sum(x => x) ?? 0;
+
+                    artist.Rank = SafeParser.ToNumber<decimal>(artistTrackAverage + artistReleaseRatingRating) + artistReleaseRankSum + artist.Rating;
+
+                    await this.DbContext.SaveChangesAsync();
+                    this.CacheManager.ClearRegion(artist.CacheRegion);
+                    this.Logger.LogInformation("UpdatedArtistRank For Artist `{0}`", artist);
                 }
-
-                var artistTrackAverage = (from t in this.DbContext.Tracks
-                                          join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                          join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
-                                          where t.ArtistId == artist.Id
-                                          select (double?)ut.Rating).ToArray().Average(x => x) ?? 0;
-
-                var artistReleaseRatingRating = (from r in this.DbContext.Releases
-                                            join ur in this.DbContext.UserReleases on r.Id equals ur.ReleaseId
-                                            where r.ArtistId == artist.Id
-                                            select (double?)ur.Rating).ToArray().Average(x => x) ?? 0;
-
-                var artistReleaseRankSum = (from r in this.DbContext.Releases
-                                              where r.ArtistId == artist.Id
-                                              select r.Rank).ToArray().Sum(x => x) ?? 0;
-
-                artist.Rank = SafeParser.ToNumber<decimal>(artistTrackAverage + artistReleaseRatingRating) + artistReleaseRankSum + artist.Rating;
-
-                await this.DbContext.SaveChangesAsync();
-                this.CacheManager.ClearRegion(artist.CacheRegion);
-                this.Logger.LogInformation("UpdatedArtistRank For Artist `{0}`", artist);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex, "Error in UpdateArtistRank ArtistId [{0}], UpdateReleaseRanks [{1}]", artistId, updateReleaseRanks);
             }
         }
 
@@ -897,42 +904,49 @@ namespace Roadie.Api.Services
         /// </summary>
         protected async Task UpdateReleaseRank(int releaseId, bool updateArtistRank = true)
         {
-            var release = this.DbContext.Releases.FirstOrDefault(x => x.Id == releaseId);
-            if (release != null)
+            try
             {
-                var releaseTrackAverage = (from t in this.DbContext.Tracks
-                                        join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                        join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
-                                        where rm.ReleaseId == releaseId
-                                        select (double?)ut.Rating).ToArray().Average(x => x);
-
-                var releaseUserRatingRank = release.Rating > 0 ? (decimal?)release.Rating / (decimal?)release.TrackCount : 0;
-
-                var collectionsWithRelease = (from c in this.DbContext.Collections
-                                              join cr in this.DbContext.CollectionReleases on c.Id equals cr.CollectionId
-                                              where c.CollectionType != Library.Enums.CollectionType.Chart
-                                              where cr.ReleaseId == release.Id
-                                              select new
-                                              {
-                                                  c.CollectionCount,
-                                                  cr.ListNumber
-                                              });
-
-                decimal releaseCollectionRank = 0;
-                foreach (var collectionWithRelease in collectionsWithRelease)
+                var release = this.DbContext.Releases.FirstOrDefault(x => x.Id == releaseId);
+                if (release != null)
                 {
-                    var rank = (decimal)((collectionWithRelease.CollectionCount * .01) - ((collectionWithRelease.ListNumber - 1) * .01));
-                    releaseCollectionRank += rank;
-                }
-                release.Rank = SafeParser.ToNumber<decimal>(releaseTrackAverage) + releaseUserRatingRank + releaseCollectionRank;
+                    var releaseTrackAverage = (from t in this.DbContext.Tracks
+                                               join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                               join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
+                                               where rm.ReleaseId == releaseId
+                                               select (double?)ut.Rating).ToArray().Average(x => x);
 
-                await this.DbContext.SaveChangesAsync();
-                this.CacheManager.ClearRegion(release.CacheRegion);
-                this.Logger.LogInformation("UpdateReleaseRank For Release `{0}`", release);
-                if (updateArtistRank)
-                {
-                    await this.UpdateArtistsRankForRelease(release);
+                    var releaseUserRatingRank = release.Rating > 0 ? (decimal?)release.Rating / (decimal?)release.TrackCount : 0;
+
+                    var collectionsWithRelease = (from c in this.DbContext.Collections
+                                                  join cr in this.DbContext.CollectionReleases on c.Id equals cr.CollectionId
+                                                  where c.CollectionType != Library.Enums.CollectionType.Chart
+                                                  where cr.ReleaseId == release.Id
+                                                  select new
+                                                  {
+                                                      c.CollectionCount,
+                                                      cr.ListNumber
+                                                  });
+
+                    decimal releaseCollectionRank = 0;
+                    foreach (var collectionWithRelease in collectionsWithRelease)
+                    {
+                        var rank = (decimal)((collectionWithRelease.CollectionCount * .01) - ((collectionWithRelease.ListNumber - 1) * .01));
+                        releaseCollectionRank += rank;
+                    }
+                    release.Rank = SafeParser.ToNumber<decimal>(releaseTrackAverage) + releaseUserRatingRank + releaseCollectionRank;
+
+                    await this.DbContext.SaveChangesAsync();
+                    this.CacheManager.ClearRegion(release.CacheRegion);
+                    this.Logger.LogInformation("UpdateReleaseRank For Release `{0}`", release);
+                    if (updateArtistRank)
+                    {
+                        await this.UpdateArtistsRankForRelease(release);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex, "Error UpdateReleaseRank RelaseId [{0}], UpdateArtistRank [{1}]", releaseId, updateArtistRank);
             }
         }
 

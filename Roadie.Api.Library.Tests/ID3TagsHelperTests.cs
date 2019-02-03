@@ -50,6 +50,65 @@ namespace Roadie.Library.Tests
             Console.WriteLine($"Log Level [{ e.Level }] Log Message [{ e.Message }] ");
         }
 
+        [Theory]
+        [InlineData("1")]
+        [InlineData("1/2")]
+        [InlineData("3/9")]
+        [InlineData(@"2\2")]
+        [InlineData("2:2")]
+        [InlineData("2,2")]
+        [InlineData("2|2")]
+        [InlineData("99/100")]
+        [InlineData("33")]
+        [InlineData("A")]
+        [InlineData("B")]
+        public void ParseDiscNumberGood(string discNumber)
+        {
+            var dn = ID3TagsHelper.ParseDiscNumber(discNumber);
+            Assert.NotNull(dn);
+            Assert.True(dn > 0);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" /2")]
+        [InlineData(null)]
+        [InlineData("BATMAN")]
+        [InlineData(".")]
+        [InlineData("#")]
+        public void ParseDiscNumberBad(string discNumber)
+        {
+            var dn = ID3TagsHelper.ParseDiscNumber(discNumber);
+            Assert.Null(dn);
+        }
+
+
+        [Fact]
+        public void ReadID3TagsMultipleMediasWithMax()
+        {
+            var file = new FileInfo(@"C:\roadie_dev_root\library\Dream Theater\[2016] The Astonishing\01 2285 Entr acte.mp3");
+            if (file.Exists)
+            {
+                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                Assert.True(tagLib.IsSuccess);
+                var metaData = tagLib.Data;
+                Assert.NotNull(metaData.Artist);
+                Assert.NotNull(metaData.Release);
+                Assert.NotNull(metaData.Title);
+                Assert.True(metaData.Year > 0);
+                Assert.Equal(2, metaData.Disk);
+                Assert.NotNull(metaData.TrackNumber);
+                Assert.True(metaData.TotalSeconds > 0);
+                Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
+            }
+            else
+            {
+                Console.WriteLine($"skipping { file}");
+                Assert.True(true);
+            }
+        }
+
         [Fact]
         public void ReadID3TagsFromFileWithTrackArtists()
         {

@@ -116,7 +116,7 @@ namespace Roadie.Library.MetaData.ID3Tags
                     result.AudioBitrate = (int?)audioFile.Bitrate;
                     result.AudioChannels = audioFile.Channels;
                     result.AudioSampleRate = (int)audioFile.Bitrate;
-                    result.Disk = SafeParser.ToNumber<int?>(id3v2.DiscNumber);
+                    result.Disk = ID3TagsHelper.ParseDiscNumber(id3v2.DiscNumber);
                     result.Images = id3v2.PictureList?.Select(x => new AudioMetaDataImage
                     {
                         Data = x.PictureData,
@@ -167,6 +167,41 @@ namespace Roadie.Library.MetaData.ID3Tags
                 OperationTime = sw.ElapsedMilliseconds,
                 Data = result
             };
+        }
+
+        public static int? ParseDiscNumber(string input)
+        {
+            var discNumber = SafeParser.ToNumber<int?>(input);
+            if(!discNumber.HasValue && !string.IsNullOrEmpty(input))
+            {
+                input = input.ToUpper().Replace("A", "1");
+                input = input.ToUpper().Replace("B", "2");
+                input = input.ToUpper().Replace("C", "3");
+                input = input.ToUpper().Replace("D", "4");
+                input = input.ToUpper().Replace("E", "5");
+                discNumber = SafeParser.ToNumber<int?>(input);
+                if (!discNumber.HasValue && input.Contains("/"))
+                {
+                    discNumber = SafeParser.ToNumber<int?>(input.Split("/")[0]);
+                }
+                if (!discNumber.HasValue && input.Contains("\\"))
+                {
+                    discNumber = SafeParser.ToNumber<int?>(input.Split("\\")[0]);
+                }
+                if (!discNumber.HasValue && input.Contains(":"))
+                {
+                    discNumber = SafeParser.ToNumber<int?>(input.Split(":")[0]);
+                }
+                if (!discNumber.HasValue && input.Contains(","))
+                {
+                    discNumber = SafeParser.ToNumber<int?>(input.Split(",")[0]);
+                }
+                if (!discNumber.HasValue && input.Contains("|"))
+                {
+                    discNumber = SafeParser.ToNumber<int?>(input.Split("|")[0]);
+                }
+            }
+            return discNumber;
         }
     }
 }
