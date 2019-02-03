@@ -86,6 +86,34 @@ namespace Roadie.Library.Tests
             Assert.Equal(5, dn.Value);
         }
 
+
+        [Theory]
+        [InlineData("1983")]
+        [InlineData("02/24/1983")]
+        [InlineData("1983/02/24")]
+        [InlineData("1983//1983")]
+        [InlineData("1983\\1983")]
+        [InlineData("83")]
+        public void ParseYearShouldBeNinteenEightyThree(string year)
+        {
+            var dn = ID3TagsHelper.ParseYear(year);
+            Assert.NotNull(dn);
+            Assert.Equal((short)1983, dn);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("-")]
+        [InlineData("199983")]
+        [InlineData("19983")]
+        [InlineData("321")]
+        public void ParseYearShouldBeBad(string year)
+        {
+            var dn = ID3TagsHelper.ParseYear(year);
+            Assert.Null(dn);
+        }
+
+
         [Theory]
         [InlineData("")]
         [InlineData("Z")]

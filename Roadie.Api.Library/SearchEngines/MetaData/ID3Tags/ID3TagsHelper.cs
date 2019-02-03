@@ -128,8 +128,7 @@ namespace Roadie.Library.MetaData.ID3Tags
                     result.Title = id3v2.Title.ToTitleCase(false);
                     result.TrackNumber = ID3TagsHelper.ParseTrackNumber(id3v2.TrackNumber);
                     result.TotalTrackNumbers = ID3TagsHelper.ParseTotalTrackNumber(id3v2.TrackNumber);
-                    var date = SafeParser.ToDateTime(id3v2.Year);
-                    result.Year = date?.Year ?? SafeParser.ToNumber<int?>(id3v2.Year);
+                    result.Year = ID3TagsHelper.ParseYear(id3v2.Year);
                     isSuccess = true;
                 }
 
@@ -165,6 +164,17 @@ namespace Roadie.Library.MetaData.ID3Tags
                 OperationTime = sw.ElapsedMilliseconds,
                 Data = result
             };
+        }
+
+        public static short? ParseYear(string input)
+        {
+            if(string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+            var date = SafeParser.ToDateTime(input);
+            short? year = (short?)date?.Year ?? SafeParser.ToNumber<short?>(input);
+            return year > 2200 || year < 1900 ? null : year;
         }
 
         public static short? ParseTotalTrackNumber(string input)
