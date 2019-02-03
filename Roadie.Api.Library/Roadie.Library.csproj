@@ -3,13 +3,13 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
-    <AssemblyName>Roadie.Api.Library</AssemblyName>
-    <RootNamespace>Roadie.Api.Library</RootNamespace>
+    <AssemblyName>Roadie.Library</AssemblyName>
+    <RootNamespace>Roadie.Library</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="12.1.2" />
-    <PackageReference Include="EFCore.BulkExtensions" Version="2.3.8" />
+    <PackageReference Include="EFCore.BulkExtensions" Version="2.3.9" />
     <PackageReference Include="FluentFTP" Version="19.2.4" />
     <PackageReference Include="HtmlAgilityPack" Version="1.8.14" />
     <PackageReference Include="IdSharp.Common" Version="1.0.1" />

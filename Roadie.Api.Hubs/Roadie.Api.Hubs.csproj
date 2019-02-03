@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Roadie.Api.Library\Roadie.Api.Library.csproj" />
+    <ProjectReference Include="..\Roadie.Api.Library\Roadie.Library.csproj" />
   </ItemGroup>
 
 </Project>

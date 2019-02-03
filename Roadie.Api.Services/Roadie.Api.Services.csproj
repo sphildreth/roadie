@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Roadie.Api.Hubs\Roadie.Api.Hubs.csproj" />
-    <ProjectReference Include="..\Roadie.Api.Library\Roadie.Api.Library.csproj" />
+    <ProjectReference Include="..\Roadie.Api.Library\Roadie.Library.csproj" />
   </ItemGroup>
 
   <ItemGroup>
