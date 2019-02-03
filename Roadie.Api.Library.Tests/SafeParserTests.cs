@@ -56,17 +56,38 @@ namespace Roadie.Library.Tests
         }
 
         [Theory]
-        [InlineData("02-22-88")]
+        [InlineData("02/22/1988")]
         [InlineData("02/22/88")]
-        [InlineData("2004")]
+        [InlineData("02-22-1988")]
+        [InlineData("02-22-88")]
+        [InlineData("04/1988")]
+        [InlineData("04//1988")]
+        [InlineData("04///1988")]
+        [InlineData("04-1988")]
+        [InlineData("04\\1988")]
+        [InlineData("04\\\\1988")]
+        [InlineData("1988")]
+        [InlineData("1988/05")]
+        [InlineData("1988/05/02")]
         [InlineData("88")]
-        [InlineData("04/2015")]
-        [InlineData("2015/05")]
-        public void Parse_Datetime(string input)
+        public void Parse_Datetime_ShouldBe1988(string input)
+        {
+            var parsed = SafeParser.ToDateTime(input);
+            Assert.NotNull(parsed);
+            Assert.Equal(1988, parsed.Value.Year);
+        }
+
+        [Theory]
+        [InlineData("2004//2004")]
+        [InlineData("2004////2004")]
+        [InlineData("2004\\2004")]
+        [InlineData("2004\\\\2004")]
+        public void Parse_Datetime_ShouldBe2004(string input)
         {
             var parsed = SafeParser.ToDateTime(input);
             Assert.NotNull(parsed);
         }
+
 
         [Theory]
         [InlineData("DEB4F298-5D22-4304-916E-F130B02864B7")]

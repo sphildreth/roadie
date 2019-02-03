@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Roadie.Library.Utility
 {
@@ -90,8 +91,17 @@ namespace Roadie.Library.Utility
                 var i = input as string ?? input.ToString();
                 if (!string.IsNullOrEmpty(i))
                 {
+                    i = Regex.Replace(i, @"(\\)", "/");
+                    i = Regex.Replace(i, @"(\/+)", "/");
                     i.Replace("-", "/");
                     var parts = i.Contains("/") ? i.Split('/').ToList() : new List<string> { i };
+                    if(parts.Count == 2)
+                    {
+                        if(parts[0] != null && parts[1] != null && parts[0] == parts[1])
+                        {
+                            parts = new List<string>(new string[2] { parts[0], "01" });
+                        }
+                    }
                     while (parts.Count() < 3)
                     {
                         parts.Insert(0, "01");
@@ -106,6 +116,7 @@ namespace Roadie.Library.Utility
                         tsRaw += part;
                     }
                     DateTime.TryParse(tsRaw, out dt);
+
                 }
                 try
                 {
