@@ -140,14 +140,10 @@ namespace Roadie.Api
                 settings.ContentPath = hostingEnvironment.WebRootPath;
                 settings.ConnectionString = this._configuration.GetConnectionString("RoadieDatabaseConnection");
 
+                // This is so 'User Secrets' can be used in Debugging
                 var integrationKeys = this._configuration.GetSection("IntegrationKeys")
                                                          .Get<IntegrationKey>();
-
-                if(integrationKeys == null)
-                {
-                    Console.WriteLine("Unable to find IntegrationKeys, Integrations will not have proper API keys setup.");
-                }
-                else if (integrationKeys != null)
+                if (integrationKeys != null)
                 {
                     settings.Integrations.ApiKeys = new System.Collections.Generic.List<ApiKey>
                 {

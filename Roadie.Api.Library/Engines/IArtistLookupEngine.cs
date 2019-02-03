@@ -20,5 +20,6 @@ namespace Roadie.Library.Engines
         Task<OperationResult<Artist>> Add(Artist artist);
         Task<OperationResult<Artist>> GetByName(AudioMetaData metaData, bool doFindIfNotInDatabase = false);
         Task<OperationResult<Artist>> PerformMetaDataProvidersArtistSearch(AudioMetaData metaData);
+        Artist DatabaseQueryForArtistName(string name, string sortName = null);
     }
 }

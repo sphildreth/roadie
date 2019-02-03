@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -31,6 +30,7 @@ namespace Roadie.Library.Engines
     public class ArtistLookupEngine : LookupEngineBase, IArtistLookupEngine
     {
         private List<int> _addedArtistIds = new List<int>();
+
         public IEnumerable<int> AddedArtistIds
         {
             get
@@ -38,18 +38,17 @@ namespace Roadie.Library.Engines
                 return this._addedArtistIds;
             }
         }
-        public IArtistSearchEngine ITunesArtistSearchEngine { get; }
+
         public IArtistSearchEngine DiscogsArtistSearchEngine { get; }
+        public IArtistSearchEngine ITunesArtistSearchEngine { get; }
         public IArtistSearchEngine LastFmArtistSearchEngine { get; }
         public IArtistSearchEngine MusicBrainzArtistSearchEngine { get; }
         public IArtistSearchEngine SpotifyArtistSearchEngine { get; }
         public IArtistSearchEngine WikipediaArtistSearchEngine { get; }
 
-
         public ArtistLookupEngine(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
             : base(configuration, httpEncoder, context, cacheManager, logger)
         {
-
             this.ITunesArtistSearchEngine = new ITunesSearchEngine(this.Configuration, this.CacheManager, this.Logger);
             this.MusicBrainzArtistSearchEngine = new musicbrainz.MusicBrainzProvider(this.Configuration, this.CacheManager, this.Logger);
             this.LastFmArtistSearchEngine = new lastfm.LastFmHelper(this.Configuration, this.CacheManager, this.Logger);
@@ -157,6 +156,46 @@ namespace Roadie.Library.Engines
             };
         }
 
+        public Artist DatabaseQueryForArtistName(string name, string sortName = null)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return null;
+            }
+            try
+            {
+                var searchName = name.NormalizeName();
+                var searchSortName = !string.IsNullOrEmpty(sortName) ? sortName.NormalizeName().ToLower() : searchName;
+                var specialSearchName = name.ToAlphanumericName();
+
+                var searchNameStart = $"{ searchName }|";
+                var searchNameIn = $"|{ searchName }|";
+                var searchNameEnd = $"|{ searchName }";
+
+                var specialSearchNameStart = $"{ specialSearchName }|";
+                var specialSearchNameIn = $"|{ specialSearchName }|";
+                var specialSearchNameEnd = $"|{ specialSearchName }";
+
+                return (from a in this.DbContext.Artists
+                        where (a.Name == searchName ||
+                               a.SortName == searchName ||
+                               a.SortName == searchSortName ||
+                               a.AlternateNames.StartsWith(searchNameStart) ||
+                               a.AlternateNames.Contains(searchNameIn) ||
+                               a.AlternateNames.EndsWith(searchNameEnd) ||
+                               a.AlternateNames.StartsWith(specialSearchNameStart) ||
+                               a.AlternateNames.Contains(specialSearchNameIn) ||
+                               a.AlternateNames.EndsWith(specialSearchNameEnd))
+                        select a
+                        ).FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex, ex.Serialize());
+            }
+            return null;
+        }
+
         public async Task<OperationResult<Artist>> GetByName(AudioMetaData metaData, bool doFindIfNotInDatabase = false)
         {
             try
@@ -188,7 +227,7 @@ namespace Roadie.Library.Engines
 
                         // See if roadie.json file exists in the metadata files folder, if so then use artist data from that
                         var releaseRoadieDataFilename = Path.Combine(Path.GetDirectoryName(metaData.Filename), "roadie.artist.json");
-                        if(File.Exists(releaseRoadieDataFilename))
+                        if (File.Exists(releaseRoadieDataFilename))
                         {
                             artist = JsonConvert.DeserializeObject<Artist>(File.ReadAllText(releaseRoadieDataFilename));
                             var addResult = await this.Add(artist);
@@ -240,7 +279,6 @@ namespace Roadie.Library.Engines
                                 this.Logger.LogError(ex, ex.Serialize());
                             }
                         }
-
                     }
                 }
                 if (artist != null && artist.IsValid)
@@ -693,32 +731,6 @@ namespace Roadie.Library.Engines
                 Errors = resultsExceptions,
                 OperationTime = sw.ElapsedMilliseconds
             };
-        }
-
-        private Artist DatabaseQueryForArtistName(string name, string sortName = null)
-        {
-            if (string.IsNullOrEmpty(name))
-            {
-                return null;
-            }
-            try
-            {
-                var searchName = name.NormalizeName();
-                var specialSearchName = name.ToAlphanumericName();
-                return (from a in this.DbContext.Artists
-                        where (a.Name.Contains(searchName) || 
-                               a.SortName.Contains(searchName) || 
-                               a.AlternateNames.Contains(searchName) || 
-                               a.AlternateNames.Contains(specialSearchName))
-                        select a
-                        ).FirstOrDefault();
-
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex, ex.Serialize());
-            }
-            return null;
         }
     }
 }

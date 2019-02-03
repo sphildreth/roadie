@@ -1,3 +1,4 @@
+using Roadie.Library.Enums;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -33,5 +34,10 @@ namespace Roadie.Library.Data
         public int? TrackCount { get; set; } 
 
         public List<ReleaseLabel> ReleaseLabels { get; set; }
+
+        public Label()
+        {
+            this.Status = Statuses.Ok;
+        }
     }
 }

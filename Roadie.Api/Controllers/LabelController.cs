@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -10,6 +11,7 @@ using Roadie.Library.Models.Pagination;
 using System;
 using System.Net;
 using System.Threading.Tasks;
+using System.Web;
 using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
@@ -53,6 +55,64 @@ namespace Roadie.Api.Controllers
             var result = await this.LabelService.List(roadieUser: await this.CurrentUserModel(),
                                                         request: request,
                                                         doRandomize: doRandomize);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("uploadImage/{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
+        {
+            var result = await this.LabelService.UploadLabelImage(await this.CurrentUserModel(), id, file);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("setImageByUrl/{id}/{imageUrl}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> SetLabelImageByUrl(Guid id, string imageUrl)
+        {
+            var result = await this.LabelService.SetLabelImageByUrl(await this.CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("edit")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> Update(models.Label label)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var result = await this.LabelService.UpdateLabel(await this.CurrentUserModel(), label);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

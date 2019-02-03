@@ -31,6 +31,9 @@ namespace Roadie.Library.Models
 
         public Image MediumThumbnail { get; set; }
 
+        // When populated a "data:image" base64 byte array of an image to use as new Thumbnail
+        public string NewThumbnailData { get; set; }
+
         public ReleaseGroupingStatistics Statistics { get; set; }
 
         public decimal? Duration { get; set; }

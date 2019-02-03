@@ -47,7 +47,7 @@ namespace Roadie.Library.Tests
         [Fact]
         public void Load_Root_Level_Configuration()
         {
-            var inboundFolder = @"Z:/incoming/";
+            var inboundFolder = @"C:\roadie_dev_root\inbound";
             var configInboundFolder = this.Settings.InboundFolder;
             Assert.Equal(inboundFolder, configInboundFolder);
         }

@@ -256,5 +256,22 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("search/label/{query}/{resultsCount:int?}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> SearchForLabelImage(string query, int? resultsCount)
+        {
+            var result = await this.ImageService.Search(query, resultsCount ?? 10);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
     }
 }
