@@ -52,7 +52,11 @@ namespace Roadie.Library.Tests
 
         [Theory]
         [InlineData("1")]
+        [InlineData("01")]
+        [InlineData("001")]
         [InlineData("1/2")]
+        [InlineData("01/02")]
+        [InlineData("001/002")]
         [InlineData("3/9")]
         [InlineData(@"2\2")]
         [InlineData("2:2")]
@@ -62,6 +66,8 @@ namespace Roadie.Library.Tests
         [InlineData("33")]
         [InlineData("A")]
         [InlineData("B")]
+        [InlineData("A/2")]
+        [InlineData("A/B")]
         public void ParseDiscNumberGood(string discNumber)
         {
             var dn = ID3TagsHelper.ParseDiscNumber(discNumber);
@@ -70,7 +76,7 @@ namespace Roadie.Library.Tests
         }
 
         [Theory]
-        [InlineData("")]
+        [InlineData("")]        
         [InlineData(" /2")]
         [InlineData(null)]
         [InlineData("BATMAN")]

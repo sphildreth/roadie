@@ -782,8 +782,7 @@ namespace Roadie.Api.Services
                                                  TrackCount = a.TrackCount,
                                                  SortName = a.SortName
                                              }).ToArray();
-
-                    result.AssociatedArtists = associatedArtists.Union(associatedWithArtists).OrderBy(x => x.SortName);
+                    result.AssociatedArtists = associatedArtists.Union(associatedWithArtists, new ArtistListComparer()).OrderBy(x => x.SortName);
                     result.AssociatedArtistsTokens = result.AssociatedArtists.Select(x => x.Artist).ToArray();
                     tsw.Stop();
                     timings.Add("associatedartists", tsw.ElapsedMilliseconds);

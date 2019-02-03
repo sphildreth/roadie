@@ -1,11 +1,13 @@
 ﻿using Roadie.Library.Models.Users;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace Roadie.Library.Models
 {
     [Serializable]
+    [DebuggerDisplay("Artist Id {Id}, Name {Artist.Text}")]
     public class ArtistList : EntityInfoModelBase
     {
         public DataToken Artist { get; set; }
@@ -40,6 +42,27 @@ namespace Roadie.Library.Models
                 TrackCount = artist.TrackCount,
                 SortName = artist.SortName
             };
+        }
+    }
+
+    public class ArtistListComparer : IEqualityComparer<ArtistList>
+    {
+        public bool Equals(ArtistList x, ArtistList y)
+        {
+            if (x == null && y == null)
+            {
+                return true;
+            }
+            else if ((x != null && y == null) || (x == null && y != null))
+            {
+                return false;
+            }
+            return x.DatabaseId.Equals(y.DatabaseId) && x.Id.Equals(y.Id);
+        }
+
+        public int GetHashCode(ArtistList item)
+        {
+            return item.Id.GetHashCode();
         }
     }
 }
