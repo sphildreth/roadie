@@ -397,6 +397,7 @@ namespace Roadie.Api.Services
                 var now = DateTime.UtcNow;
                 var originalArtistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
                 artist.AlternateNames = model.AlternateNamesList.ToDelimitedList();
+                artist.ArtistType = model.ArtistType;
                 artist.AmgId = model.AmgId;
                 artist.BeginDate = model.BeginDate;
                 artist.BioContext = model.BioContext;
