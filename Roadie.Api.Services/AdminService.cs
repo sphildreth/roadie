@@ -159,6 +159,63 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<bool>> DeleteTrack(ApplicationUser user, Guid trackId, bool? doDeleteFile)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+
+            var track = this.DbContext.Tracks.Include(x => x.ReleaseMedia)
+                                      .Include(x => x.ReleaseMedia.Release)
+                                      .Include(x => x.ReleaseMedia.Release.Artist)
+                                      .FirstOrDefault(x => x.RoadieId == trackId);
+            try
+            {
+                if (track == null)
+                {
+                    await this.LogAndPublish($"DeleteTrack Unknown Track [{ trackId}]", LogLevel.Warning);
+                    return new OperationResult<bool>(true, $"Track Not Found [{ trackId }]");
+                }
+                this.DbContext.Tracks.Remove(track);
+                await this.DbContext.SaveChangesAsync();
+                if (doDeleteFile ?? false)
+                {
+                    string trackPath = null;
+                    try
+                    {
+                        trackPath = track.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
+                        if (File.Exists(trackPath))
+                        {
+                            File.Delete(trackPath);
+                            this.Logger.LogWarning($"x For Track `{ track }`, Deleted File [{ trackPath }]");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Logger.LogError(ex, string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath, track.Id, ex.Serialize()));
+                    }
+                }
+                await this.ReleaseFactory.ScanReleaseFolder(track.ReleaseMedia.Release.RoadieId, this.Configuration.LibraryFolder, false, track.ReleaseMedia.Release);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                await this.LogAndPublish("Error deleting track.");
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"DeleteTrack `{ track }`, By User `{ user}`", LogLevel.Information);
+            this.CacheManager.Clear();
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
         public async Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles)
         {
             var sw = new Stopwatch();

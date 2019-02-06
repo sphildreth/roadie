@@ -14,6 +14,8 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles);
 
+        Task<OperationResult<bool>> DeleteTrack(ApplicationUser user, Guid trackId, bool? doDeleteFile);
+
         Task<OperationResult<bool>> DoInitialSetup(ApplicationUser user, UserManager<ApplicationUser> userManager);
 
         Task<OperationResult<bool>> ScanAllCollections(ApplicationUser user, bool isReadOnly = false, bool doPurgeFirst = true);
