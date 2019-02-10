@@ -5,6 +5,7 @@ using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Enums;
 using Roadie.Library.Identity;
 using Roadie.Library.Models;
 using Roadie.Library.Utility;
@@ -276,6 +277,15 @@ namespace Roadie.Api.Services
         protected Image MakeFullsizeImage(Guid id, string caption = null)
         {
             return new Image($"{this.HttpContext.ImageBaseUrl }/{id}", caption, $"{this.HttpContext.ImageBaseUrl }/{id}/{ this.Configuration.SmallImageSize.Width }/{ this.Configuration.SmallImageSize.Height }");
+        }
+
+        protected Image MakeFullsizeSecondaryImage(Guid id, ImageType type, int imageId, string caption = null)
+        {
+            if(type == ImageType.ArtistSecondary)
+            {
+                return new Image($"{this.HttpContext.ImageBaseUrl }/artist-secondary/{id}/{imageId}", caption, $"{this.HttpContext.ImageBaseUrl }/artist-secondary/{id}/{ imageId }/{ this.Configuration.SmallImageSize.Width }/{ this.Configuration.SmallImageSize.Height }");
+            }
+            return new Image($"{this.HttpContext.ImageBaseUrl }/release-secondary/{id}/{imageId}", caption, $"{this.HttpContext.ImageBaseUrl }/release-secondary/{id}/{ imageId }/{ this.Configuration.SmallImageSize.Width }/{ this.Configuration.SmallImageSize.Height }");
         }
 
         protected Image MakeImage(Guid id, int width = 200, int height = 200, string caption = null, bool includeCachebuster = false)

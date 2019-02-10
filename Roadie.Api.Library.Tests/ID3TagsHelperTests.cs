@@ -396,6 +396,34 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
+        public void Read_File_Test_Is_valid3()
+        {
+            var file = new FileInfo(@"C:\roadie_dev_root\inbound\Dreadful Fate - Vengeance (2018)\01-dreadful_fate-vengeance.mp3");
+            if (file.Exists)
+            {
+                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                Assert.True(tagLib.IsSuccess);
+                var metaData = tagLib.Data;
+                Assert.NotNull(metaData.Artist);
+                Assert.Null(metaData.TrackArtist);
+                Assert.False(metaData.TrackArtists.Any());
+                Assert.NotNull(metaData.Release);
+                Assert.NotNull(metaData.Title);
+                Assert.True(metaData.Year > 0);
+                Assert.NotNull(metaData.TrackNumber);
+                Assert.True(metaData.TotalSeconds > 0);
+                Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
+            }
+            else
+            {
+                Console.WriteLine($"skipping { file}");
+                Assert.True(true);
+            }
+        }
+
+
+        [Fact]
         public void ReadID3TagsFromFileWithTrackAndArtistTheSame()
         {
             var file = new FileInfo(@"Z:\library\Blind Melon\[1992] Blind Melon\01. Blind Melon - Soak The Sin.mp3");

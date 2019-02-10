@@ -27,8 +27,6 @@ namespace Roadie.Library.Factories
 
     public sealed class ReleaseFactory : FactoryBase, IReleaseFactory
     {
-        public const string CoverFilename = "cover.jpg";
-
         private List<int> _addedTrackIds = new List<int>();
 
         public IEnumerable<int> AddedTrackIds

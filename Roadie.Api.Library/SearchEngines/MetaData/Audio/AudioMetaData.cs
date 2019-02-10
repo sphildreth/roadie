@@ -288,13 +288,17 @@ namespace Roadie.Library.MetaData.Audio
                 }
                 if (!this._trackArtist.Contains(AudioMetaData.ArtistSplitCharacter.ToString()))
                 {
+                    if(string.IsNullOrEmpty(this.TrackArtist))
+                    {
+                        return new string[0];
+                    }
                     return new string[1] { this.TrackArtist };
                 }
                 if (!string.IsNullOrEmpty(this._artist) || !string.IsNullOrEmpty(this._trackArtist))
                 {
                     if (!this._artist.Equals(this._trackArtist, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this._trackArtist.Split(AudioMetaData.ArtistSplitCharacter).Select(x => x.ToTitleCase()).ToArray();
+                        return this._trackArtist.Split(AudioMetaData.ArtistSplitCharacter).Where(x => !string.IsNullOrEmpty(x)).Select(x => x.ToTitleCase()).ToArray();
                     }
                 }
                 return new string[0];
@@ -314,6 +318,9 @@ namespace Roadie.Library.MetaData.Audio
             }
         }
 
+        /// <summary>
+        /// TYER | TDRC | TORY | TDOR
+        /// </summary>
         public int? Year
         {
             get

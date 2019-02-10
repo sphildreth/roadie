@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
@@ -23,13 +24,7 @@ namespace Roadie.Library.FilePlugins
 
         public IAudioMetaDataHelper AudioMetaDataHelper { get; }
 
-        public override string[] HandlesTypes
-        {
-            get
-            {
-                return new string[1] { "audio/mpeg" };
-            }
-        }
+        public override string[] HandlesTypes => new string[1] { "audio/mpeg" };
 
         public Audio(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
@@ -108,39 +103,125 @@ namespace Roadie.Library.FilePlugins
                     return result;
                 }
 
-                PluginBase.CheckMakeFolder(artistFolder);
-                PluginBase.CheckMakeFolder(releaseFolder);
-
-                // See if folder has "cover" image if so then move to release folder for metadata
-                var imageFiles = ImageHelper.ImageFilesInFolder(fileInfo.DirectoryName);
-                if (imageFiles != null && imageFiles.Any())
+                if(PluginBase.CheckMakeFolder(artistFolder))
                 {
-                    foreach (var imageFile in imageFiles)
+                    this.Logger.LogTrace("Created ArtistFolder [{0}]", artistFolder);
+                }
+                if(PluginBase.CheckMakeFolder(releaseFolder))
+                {
+                    this.Logger.LogTrace("Created ReleaseFolder [{0}]", releaseFolder);
+                }
+
+                try
+                {
+                    // See if file folder parent folder (likely file is in release folder) has primary artist image if so then move to artist folder
+                    var artistImages = ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, Enums.ImageType.Artist);
+                    if (!artistImages.Any())
                     {
-                        var i = new FileInfo(imageFile);
-                        var iName = i.Name.ToLower().Trim();
-                        this.Logger.LogDebug("Found Image File [{0}] [{1}]", imageFile, iName);
-                        var isCoverArtType = iName.Contains("cover") || iName.Contains("folder") || iName.Contains("front") || iName.Contains("release") || iName.Contains("album");
-                        if (isCoverArtType)
+                        artistImages = ImageHelper.FindImageTypeInDirectory(fileInfo.Directory.Parent, Enums.ImageType.Artist);
+                    }
+                    if (artistImages.Any())
+                    {
+                        var artistImage = artistImages.First();
+                        var aristImageFilename = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
+                        if (aristImageFilename != artistImage.FullName)
                         {
-                            var coverFileName = Path.Combine(releaseFolder, Factories.ReleaseFactory.CoverFilename);
-                            if (coverFileName != i.FullName)
+                            // Read image and convert to jpeg
+                            var imageBytes = File.ReadAllBytes(artistImage.FullName);
+                            imageBytes = ImageHelper.ConvertToJpegFormat(imageBytes);
+
+                            // Move artist image to artist folder
+                            if (!doJustInfo)
+                            {
+                                File.WriteAllBytes(aristImageFilename, imageBytes);
+                                artistImage.Delete();
+                            }
+                            this.Logger.LogDebug("Found Artist Image File [{0}], Moved to artist folder.", artistImage.Name);
+                        }
+                    }
+
+                    // See if any secondary artist images if so then move to artist folder
+                    artistImages = ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, Enums.ImageType.ArtistSecondary);
+                    if (!artistImages.Any())
+                    {
+                        artistImages = ImageHelper.FindImageTypeInDirectory(fileInfo.Directory.Parent, Enums.ImageType.Artist);
+                    }
+                    if (artistImages.Any())
+                    {
+                        var looper = 0;
+                        foreach (var artistImage in artistImages)
+                        {
+                            looper++;
+                            var aristImageFilename = Path.Combine(artistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                            if (aristImageFilename != artistImage.FullName)
                             {
                                 // Read image and convert to jpeg
-                                var imageBytes = File.ReadAllBytes(i.FullName);
+                                var imageBytes = File.ReadAllBytes(artistImage.FullName);
+                                imageBytes = ImageHelper.ConvertToJpegFormat(imageBytes);
+
+                                // Move artist image to artist folder
+                                if (!doJustInfo)
+                                {
+                                    File.WriteAllBytes(aristImageFilename, imageBytes);
+                                    artistImage.Delete();
+                                }
+                                this.Logger.LogDebug("Found Artist Secondary Image File [{0}], Moved to artist folder [{1}].", artistImage.Name, aristImageFilename);
+                            }
+                        }
+                    }
+
+                    // See if file folder has release image if so then move to release folder
+                    var releaseImages = ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, Enums.ImageType.Release);
+                    if (releaseImages.Any())
+                    {
+                        var releaseImage = releaseImages.First();
+                        var coverFileName = Path.Combine(releaseFolder, ImageHelper.ReleaseCoverFilename);
+                        if (coverFileName != releaseImage.FullName)
+                        {
+                            // Read image and convert to jpeg
+                            var imageBytes = File.ReadAllBytes(releaseImage.FullName);
+                            imageBytes = ImageHelper.ConvertToJpegFormat(imageBytes);
+
+                            // Move cover to release folder
+                            if (!doJustInfo)
+                            {
+                                File.WriteAllBytes(coverFileName, imageBytes);
+                                releaseImage.Delete();
+                            }
+                            this.Logger.LogDebug("Found Release Image File [{0}], Moved to release folder", releaseImage.Name);
+                        }
+                    }
+
+                    // See if folder has secondary release image if so then move to release folder
+                    releaseImages = ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, Enums.ImageType.ReleaseSecondary);
+                    if (releaseImages.Any())
+                    {
+                        var looper = 0;
+                        foreach (var releaseImage in releaseImages)
+                        {
+                            looper++;
+                            var releaseImageFilename = Path.Combine(releaseFolder, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                            if (releaseImageFilename != releaseImage.FullName)
+                            {
+                                // Read image and convert to jpeg
+                                var imageBytes = File.ReadAllBytes(releaseImage.FullName);
                                 imageBytes = ImageHelper.ConvertToJpegFormat(imageBytes);
 
                                 // Move cover to release folder
                                 if (!doJustInfo)
                                 {
-                                    File.WriteAllBytes(coverFileName, imageBytes);
-                                    i.Delete();
+                                    File.WriteAllBytes(releaseImageFilename, imageBytes);
+                                    releaseImage.Delete();
                                 }
-                                this.Logger.LogDebug("Found Image File [{0}], Moved to release folder", i.Name);
-                                break;
+                                this.Logger.LogDebug("Found Release Image File [{0}], Moved to release folder [{1}]", releaseImage.Name, releaseImageFilename);
                             }
                         }
                     }
+
+                }
+                catch (Exception ex)
+                {
+                    this.Logger.LogError(ex, "Error with Managing Images For [{0}]", fileInfo.FullName);
                 }
 
                 var doesFileExistsForTrack = File.Exists(destinationName);
@@ -210,7 +291,7 @@ namespace Roadie.Library.FilePlugins
             }
 
             sw.Stop();
-            this.Logger.LogTrace("<< Audio: Process Complete. ElapsedTime [{0}]", sw.ElapsedMilliseconds);
+            this.Logger.LogTrace("<< Audio: Process Complete. Result `{0}`, ElapsedTime [{1}]", JsonConvert.SerializeObject(result), sw.ElapsedMilliseconds);
             return result;
         }
 

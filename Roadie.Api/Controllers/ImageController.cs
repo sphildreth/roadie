@@ -54,6 +54,27 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
+        [HttpGet("artist-secondary/{id}/{imageId}/{width:int?}/{height:int?}/{cacheBuster?}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> ArtistSecondaryImage(Guid id, int imageId, int? width, int? height)
+        {
+            var result = await this.ImageService.ArtistSecondaryImage(id, imageId, width ?? this.RoadieSettings.MaximumImageSize.Width, height ?? this.RoadieSettings.MaximumImageSize.Height);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return File(fileContents: result.Data.Bytes,
+                        contentType: result.ContentType,
+                        fileDownloadName: $"{ result.Data.Caption ?? id.ToString()}.jpg",
+                        lastModified: result.LastModified,
+                        entityTag: result.ETag);
+        }
+
 
         [HttpGet("collection/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]
@@ -176,6 +197,28 @@ namespace Roadie.Api.Controllers
                         lastModified: result.LastModified,
                         entityTag: result.ETag);
         }
+
+        [HttpGet("release-secondary/{id}/{imageId}/{width:int?}/{height:int?}/{cacheBuster?}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> ReleaseSecondaryImage(Guid id, int imageId, int? width, int? height)
+        {
+            var result = await this.ImageService.ReleaseSecondaryImage(id, imageId, width ?? this.RoadieSettings.MaximumImageSize.Width, height ?? this.RoadieSettings.MaximumImageSize.Height);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return File(fileContents: result.Data.Bytes,
+                        contentType: result.ContentType,
+                        fileDownloadName: $"{ result.Data.Caption ?? id.ToString()}.jpg",
+                        lastModified: result.LastModified,
+                        entityTag: result.ETag);
+        }
+
 
         [HttpGet("track/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]

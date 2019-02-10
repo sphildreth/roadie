@@ -59,6 +59,20 @@ namespace Roadie.Api.Services
                                                     etag: etag);
         }
 
+        public async Task<FileOperationResult<Image>> ArtistSecondaryImage(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return await this.GetImageFileOperation(type: $"ArtistSecondaryThumbnail-{imageId}",
+                                                    regionUrn: data.Release.CacheRegionUrn(id),
+                                                    id: id,
+                                                    width: width,
+                                                    height: height,
+                                                    action: async () =>
+                                                    {
+                                                        return await this.ArtistSecondaryImageAction(id, imageId, etag);
+                                                    },
+                                                    etag: etag);
+        }
+
         public async Task<FileOperationResult<Image>> ById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
         {
             return await this.GetImageFileOperation(type: "ImageById",
@@ -187,6 +201,20 @@ namespace Roadie.Api.Services
                                                     etag: etag);
         }
 
+        public async Task<FileOperationResult<Image>> ReleaseSecondaryImage(Guid id,int imageId, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return await this.GetImageFileOperation(type: $"ReleaseSecondaryThumbnail-{imageId}",
+                                                    regionUrn: data.Release.CacheRegionUrn(id),
+                                                    id: id,
+                                                    width: width,
+                                                    height: height,
+                                                    action: async () =>
+                                                    {
+                                                        return await this.ReleaseSecondaryImageAction(id, imageId, etag);
+                                                    },
+                                                    etag: etag);
+        }
+
         public async Task<OperationResult<IEnumerable<ImageSearchResult>>> Search(string query, int resultsCount = 10)
         {
             var sw = Stopwatch.StartNew();
@@ -269,10 +297,10 @@ namespace Roadie.Api.Services
                     }
                     else
                     {
-                        var artistImages = Directory.GetFiles(artistFolder, "artist*.*");
-                        if (artistImages.Any())
+                        var artistImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), Library.Enums.ImageType.Artist);
+                        if(artistImages.Any())
                         {
-                            imageBytes = File.ReadAllBytes(artistImages.First());
+                            imageBytes = File.ReadAllBytes(artistImages.First().FullName);
                         }
                     }
                 }
@@ -490,10 +518,10 @@ namespace Roadie.Api.Services
                         }
                         else
                         {
-                            var coverArtFiles = Directory.GetFiles(releaseFolder, "cover*.*");
-                            if (coverArtFiles.Any())
+                            var releaseCoverFiles = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder), Library.Enums.ImageType.Release);
+                            if(releaseCoverFiles.Any())
                             {
-                                imageBytes = File.ReadAllBytes(coverArtFiles.First());
+                                imageBytes = File.ReadAllBytes(releaseCoverFiles.First().FullName);
                             }
                         }
                     }
@@ -521,6 +549,110 @@ namespace Roadie.Api.Services
             }
             return Task.FromResult(new FileOperationResult<Image>(OperationMessages.ErrorOccured));
         }
+
+        private Task<FileOperationResult<Image>> ReleaseSecondaryImageAction(Guid id, int imageId, EntityTagHeaderValue etag = null)
+        {
+            try
+            {
+                var release = this.GetRelease(id);
+                if (release == null)
+                {
+                    return Task.FromResult(new FileOperationResult<Image>(true, string.Format("Release Not Found [{0}]", id)));
+                }
+                byte[] imageBytes = null;
+                string artistFolder = null;
+                string releaseFolder = null;
+                try
+                {
+                    // See if cover art file exists in release folder
+                    artistFolder = release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                    if (!Directory.Exists(artistFolder))
+                    {
+                        this.Logger.LogWarning($"Artist Folder [{ artistFolder }], Not Found For Artist `{ release.Artist.ToString() }`");
+                    }
+                    else
+                    {
+                        releaseFolder = release.ReleaseFileFolder(artistFolder);
+                        if (!Directory.Exists(releaseFolder))
+                        {
+                            this.Logger.LogWarning($"Release Folder [{ releaseFolder }], Not Found For Release `{ release.ToString() }`");
+                        }
+                        else
+                        {
+                            var releaseSecondaryImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder), Library.Enums.ImageType.ReleaseSecondary).ToArray();
+                            if(releaseSecondaryImages.Length >= imageId && releaseSecondaryImages[imageId] != null)
+                            {
+                                imageBytes = File.ReadAllBytes(releaseSecondaryImages[imageId].FullName);
+                            }                            
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.Logger.LogError(ex, $"Error Reading Release Folder [{ releaseFolder }] Artist Folder [{ artistFolder }] For Artist `{ release.Artist.Id }`");
+                }
+                var image = new data.Image
+                {
+                    Bytes = imageBytes,
+                    CreatedDate = release.CreatedDate,
+                    LastUpdated = release.LastUpdated
+                };
+                return Task.FromResult(GenerateFileOperationResult(id, image, etag));
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError($"Error fetching Release Thumbnail [{ id }]", ex);
+            }
+            return Task.FromResult(new FileOperationResult<Image>(OperationMessages.ErrorOccured));
+        }
+
+        private Task<FileOperationResult<Image>> ArtistSecondaryImageAction(Guid id, int imageId, EntityTagHeaderValue etag = null)
+        {
+            try
+            {
+                var artist = this.GetArtist(id);
+                if (artist == null)
+                {
+                    return Task.FromResult(new FileOperationResult<Image>(true, string.Format("Release Not Found [{0}]", id)));
+                }
+                byte[] imageBytes = null;
+                string artistFolder = null;
+                try
+                {
+                    // See if cover art file exists in release folder
+                    artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                    if (!Directory.Exists(artistFolder))
+                    {
+                        this.Logger.LogWarning($"Artist Folder [{ artistFolder }], Not Found For Artist `{ artist }`");
+                    }
+                    else
+                    {
+                        var artistSecondaryImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), Library.Enums.ImageType.ArtistSecondary).ToArray();
+                        if (artistSecondaryImages.Length >= imageId && artistSecondaryImages[imageId] != null)
+                        {
+                            imageBytes = File.ReadAllBytes(artistSecondaryImages[imageId].FullName);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.Logger.LogError(ex, $"Error Reading Artist Folder [{ artistFolder }] For Artist `{ artist }`");
+                }
+                var image = new data.Image
+                {
+                    Bytes = imageBytes,
+                    CreatedDate = artist.CreatedDate,
+                    LastUpdated = artist.LastUpdated
+                };
+                return Task.FromResult(GenerateFileOperationResult(id, image, etag));
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError($"Error fetching Release Thumbnail [{ id }]", ex);
+            }
+            return Task.FromResult(new FileOperationResult<Image>(OperationMessages.ErrorOccured));
+        }
+
 
         private async Task<FileOperationResult<Image>> TrackImageAction(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
         {

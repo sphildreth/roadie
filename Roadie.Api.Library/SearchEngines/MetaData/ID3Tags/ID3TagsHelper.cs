@@ -128,7 +128,8 @@ namespace Roadie.Library.MetaData.ID3Tags
                     result.Title = id3v2.Title.ToTitleCase(false);
                     result.TrackNumber = ID3TagsHelper.ParseTrackNumber(id3v2.TrackNumber);
                     result.TotalTrackNumbers = ID3TagsHelper.ParseTotalTrackNumber(id3v2.TrackNumber);
-                    result.Year = ID3TagsHelper.ParseYear(id3v2.Year);
+                    var year = id3v2.Year ?? id3v2.RecordingTimestamp ?? id3v2.ReleaseTimestamp ?? id3v2.OriginalReleaseTimestamp;
+                    result.Year = ID3TagsHelper.ParseYear(year);
                     isSuccess = true;
                 }
 

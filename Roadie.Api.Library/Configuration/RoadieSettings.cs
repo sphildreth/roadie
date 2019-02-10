@@ -31,6 +31,7 @@ namespace Roadie.Library.Configuration
         public string InboundFolder { get; set; }
         public Integrations Integrations { get; set; }
         public ImageSize LargeImageSize { get; set; }
+        public ImageSize MaximumImageSize { get; set; }
         public string LibraryFolder { get; set; }
         public string ListenAddress { get; set; }
         public ImageSize MediumImageSize { get; set; }
@@ -59,7 +60,7 @@ namespace Roadie.Library.Configuration
             this.SmallImageSize = new ImageSize { Width = 160, Height = 160 };
             this.MediumImageSize = new ImageSize { Width = 320, Height = 320 };
             this.LargeImageSize = new ImageSize { Width = 500, Height = 500 };
-
+            this.MaximumImageSize = new ImageSize { Width = 1024, Height = 1024 };
         }
     }
 }

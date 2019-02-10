@@ -1,4 +1,5 @@
-﻿using Roadie.Library.SearchEngines.Imaging;
+﻿using Roadie.Library.Enums;
+using Roadie.Library.SearchEngines.Imaging;
 using Roadie.Library.Utility;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
@@ -9,11 +10,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Roadie.Library.Imaging
 {
     public static class ImageHelper
     {
+        public static string ArtistImageFilename = "artist.jpg";
+        public static string ArtistSecondaryImageFilename = "artist {0}.jpg"; // Replace with counter of image
+        public static string ReleaseCoverFilename = "cover.jpg";
+        public static string ReleaseSecondaryImageFilename = "release {0}.jpg"; // Replace with counter of image
+        public static string LabelImageFilename = "label.jpg";
 
         public static byte[] ConvertToJpegFormat(byte[] imageBytes)
         {
@@ -52,7 +59,7 @@ namespace Roadie.Library.Imaging
 
         public static string[] ImageFilesInFolder(string folder)
         {
-            return ImageHelper.GetFiles(folder, ImageHelper.ImageExtensions());
+            return ImageHelper.GetFiles(folder, ImageHelper.ImageExtensions(), SearchOption.AllDirectories);
         }
 
         public static string[] ImageMimeTypes()
@@ -120,5 +127,106 @@ namespace Roadie.Library.Imaging
             return null;
         }
 
+        public static bool IsArtistImage(FileInfo fileinfo)
+        {
+            if (fileinfo == null)
+            {
+                return false;
+            }
+            return Regex.IsMatch(fileinfo.Name, @"(band|artist|group)\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+        }
+
+        public static bool IsArtistSecondaryImage(FileInfo fileinfo)
+        {
+            if (fileinfo == null)
+            {
+                return false;
+            }
+            return Regex.IsMatch(fileinfo.Name, @"(artist_logo|logo|(artist[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+        }
+
+        public static bool IsReleaseImage(FileInfo fileinfo, string releaseName = null)
+        {
+            if (fileinfo == null)
+            {
+                return false;
+            }
+            return Regex.IsMatch(fileinfo.Name, @"((f[-_\s]*[0-9]*)|cover|release|front)\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+        }
+
+        public static bool IsReleaseSecondaryImage(FileInfo fileinfo)
+        {
+            if (fileinfo == null)
+            {
+                return false;
+            }
+            return Regex.IsMatch(fileinfo.Name, @"((book[let]*[-_]*[0-9]*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|(cover[\s_-]+[0-9]+)|back|disc|inside|inlet|inlay|cd[0-9]*|inside|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+        }
+
+        public static bool IsLabelImage(FileInfo fileinfo)
+        {
+            if (fileinfo == null)
+            {
+                return false;
+            }
+            return Regex.IsMatch(fileinfo.Name, @"(label|recordlabel|record_label)\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+        }
+
+        public static IEnumerable<FileInfo> FindImageTypeInDirectory(DirectoryInfo directory, ImageType type)
+        {
+            var result = new List<FileInfo>();
+            if (directory == null || !directory.Exists)
+            {
+                return null;
+            }
+            var imageFilesInFolder = ImageFilesInFolder(directory.FullName);
+            if (imageFilesInFolder == null || !imageFilesInFolder.Any())
+            {
+                return null;
+            }
+            foreach(var imageFile in imageFilesInFolder)
+            {
+                var image = new FileInfo(imageFile);
+                switch (type)
+                {
+                    case ImageType.Artist:
+                        if(IsArtistImage(image))
+                        {
+                            result.Add(image);
+                        }
+                        break;
+
+                    case ImageType.ArtistSecondary:
+                        if (IsArtistSecondaryImage(image))
+                        {
+                            result.Add(image);
+                        }
+                        break;
+
+                    case ImageType.Release:
+                        if (IsReleaseImage(image))
+                        {
+                            result.Add(image);
+                        }
+                        break;
+
+                    case ImageType.ReleaseSecondary:
+                        if (IsReleaseSecondaryImage(image))
+                        {
+                            result.Add(image);
+                        }
+                        break;
+
+                    case ImageType.Label:
+                        if (IsLabelImage(image))
+                        {
+                            result.Add(image);
+                        }
+                        break;
+                }
+            }
+
+            return result.OrderBy(x => x.Name);
+        }
     }
 }

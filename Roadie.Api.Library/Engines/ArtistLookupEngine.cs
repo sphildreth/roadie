@@ -311,15 +311,15 @@ namespace Roadie.Library.Engines
                 Name = metaData.Artist.ToTitleCase(false)
             };
             var resultsExceptions = new List<Exception>();
-            var ArtistGenres = new List<string>();
-            var ArtistImageUrls = new List<string>();
-            var ArtistName = metaData.Artist;
+            var artistGenres = new List<string>();
+            var artistImageUrls = new List<string>();
+            var artistName = metaData.Artist;
 
             try
             {
                 if (this.ITunesArtistSearchEngine.IsEnabled)
                 {
-                    var iTunesResult = await this.ITunesArtistSearchEngine.PerformArtistSearch(ArtistName, 1);
+                    var iTunesResult = await this.ITunesArtistSearchEngine.PerformArtistSearch(artistName, 1);
                     if (iTunesResult.IsSuccess)
                     {
                         var i = iTunesResult.Data.First();
@@ -341,11 +341,11 @@ namespace Roadie.Library.Engines
                         }
                         if (i.ImageUrls != null)
                         {
-                            ArtistImageUrls.AddRange(i.ImageUrls);
+                            artistImageUrls.AddRange(i.ImageUrls);
                         }
                         if (i.ArtistGenres != null)
                         {
-                            ArtistGenres.AddRange(i.ArtistGenres);
+                            artistGenres.AddRange(i.ArtistGenres);
                         }
                         result.CopyTo(new Artist
                         {
@@ -396,11 +396,11 @@ namespace Roadie.Library.Engines
                         }
                         if (mb.ImageUrls != null)
                         {
-                            ArtistImageUrls.AddRange(mb.ImageUrls);
+                            artistImageUrls.AddRange(mb.ImageUrls);
                         }
                         if (mb.ArtistGenres != null)
                         {
-                            ArtistGenres.AddRange(mb.ArtistGenres);
+                            artistGenres.AddRange(mb.ArtistGenres);
                         }
                         if (!string.IsNullOrEmpty(mb.ArtistName) && !mb.ArtistName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
                         {
@@ -455,11 +455,11 @@ namespace Roadie.Library.Engines
                         }
                         if (l.ImageUrls != null)
                         {
-                            ArtistImageUrls.AddRange(l.ImageUrls);
+                            artistImageUrls.AddRange(l.ImageUrls);
                         }
                         if (l.ArtistGenres != null)
                         {
-                            ArtistGenres.AddRange(l.ArtistGenres);
+                            artistGenres.AddRange(l.ArtistGenres);
                         }
                         if (!string.IsNullOrEmpty(l.ArtistName) && !l.ArtistName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
                         {
@@ -506,11 +506,11 @@ namespace Roadie.Library.Engines
                         }
                         if (s.ImageUrls != null)
                         {
-                            ArtistImageUrls.AddRange(s.ImageUrls);
+                            artistImageUrls.AddRange(s.ImageUrls);
                         }
                         if (s.ArtistGenres != null)
                         {
-                            ArtistGenres.AddRange(s.ArtistGenres);
+                            artistGenres.AddRange(s.ArtistGenres);
                         }
                         if (!string.IsNullOrEmpty(s.ArtistName) && !s.ArtistName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
                         {
@@ -553,7 +553,7 @@ namespace Roadie.Library.Engines
                         }
                         if (d.ImageUrls != null)
                         {
-                            ArtistImageUrls.AddRange(d.ImageUrls);
+                            artistImageUrls.AddRange(d.ImageUrls);
                         }
                         if (d.AlternateNames != null)
                         {
@@ -629,9 +629,9 @@ namespace Roadie.Library.Engines
                 {
                     result.Tags = string.Join("|", result.Tags.ToListFromDelimited().Distinct().OrderBy(x => x));
                 }
-                if (ArtistGenres.Any())
+                if (artistGenres.Any())
                 {
-                    var genreInfos = (from ag in ArtistGenres
+                    var genreInfos = (from ag in artistGenres
                                       join g in this.DbContext.Genres on ag equals g.Name into gg
                                       from g in gg.DefaultIfEmpty()
                                       select new
@@ -651,10 +651,10 @@ namespace Roadie.Library.Engines
                         });
                     }
                 }
-                if (ArtistImageUrls.Any())
+                if (artistImageUrls.Any())
                 {
                     var imageBag = new ConcurrentBag<Image>();
-                    var i = ArtistImageUrls.Select(async url =>
+                    var i = artistImageUrls.Select(async url =>
                     {
                         imageBag.Add(await WebHelper.GetImageFromUrlAsync(url));
                     });

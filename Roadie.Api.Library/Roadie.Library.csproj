@@ -9,13 +9,13 @@
 
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="12.1.2" />
-    <PackageReference Include="EFCore.BulkExtensions" Version="2.3.9" />
-    <PackageReference Include="FluentFTP" Version="19.2.4" />
+    <PackageReference Include="EFCore.BulkExtensions" Version="2.4.0" />
+    <PackageReference Include="FluentFTP" Version="21.0.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.8.14" />
     <PackageReference Include="IdSharp.Common" Version="1.0.1" />
     <PackageReference Include="IdSharp.Tagging" Version="1.0.0-rc3" />
     <PackageReference Include="Inflatable.Lastfm" Version="1.1.0.339" />
-    <PackageReference Include="Mapster" Version="3.3.0" />
+    <PackageReference Include="Mapster" Version="3.3.1" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.1" />
     <PackageReference Include="Microsoft.Extensions.Caching.Redis" Version="2.2.0" />

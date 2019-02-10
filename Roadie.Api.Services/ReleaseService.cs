@@ -834,6 +834,13 @@ namespace Roadie.Api.Services
                     {
                         result.Images = releaseImages;
                     }
+                    var artistFolder = release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                    var releaseFolder = release.ReleaseFileFolder(artistFolder);
+                    var releaseImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder), ImageType.ReleaseSecondary);
+                    if(releaseImagesInFolder.Any())
+                    {
+                        result.Images = result.Images.Concat(releaseImagesInFolder.Select((x, i) => MakeFullsizeSecondaryImage(id, ImageType.ReleaseSecondary, i)));
+                    }
                 }
                 if (includes.Contains("playlists"))
                 {

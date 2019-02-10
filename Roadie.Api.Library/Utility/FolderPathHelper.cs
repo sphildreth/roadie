@@ -24,7 +24,8 @@ namespace Roadie.Library.Utility
 
             var artistFolder = artistSortName.ToTitleCase(false);
             destinationFolder = destinationFolder ?? configuration.LibraryFolder;
-            return Path.Combine(destinationFolder, artistFolder.ToFolderNameFriendly());
+            var directoryInfo = new DirectoryInfo(Path.Combine(destinationFolder, artistFolder.ToFolderNameFriendly()));
+            return directoryInfo.FullName;
         }
 
         /// <summary>
@@ -77,7 +78,8 @@ namespace Roadie.Library.Utility
             {
                 return null;
             }
-            return Path.Combine(destinationFolder, track.FilePath, track.FileName);
+            var directoryInfo = new DirectoryInfo(Path.Combine(destinationFolder, track.FilePath, track.FileName));
+            return directoryInfo.FullName;
         }
 
         /// <summary>
@@ -92,7 +94,8 @@ namespace Roadie.Library.Utility
             SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(releaseTitle), "Invalid Release Title");
             SimpleContract.Requires<ArgumentException>(releaseDate != DateTime.MinValue, "Invalid Release Date");
 
-            return Path.Combine(artistFolder, string.Format("{1}{0}", releaseTitle.ToTitleCase(false).ToFolderNameFriendly(), string.Format("[{0}] ", releaseDate.ToString("yyyy"))));
+            var directoryInfo = new DirectoryInfo(Path.Combine(artistFolder, string.Format("{1}{0}", releaseTitle.ToTitleCase(false).ToFolderNameFriendly(), string.Format("[{0}] ", releaseDate.ToString("yyyy")))));
+            return directoryInfo.FullName;
         }
 
         /// <summary>
@@ -195,8 +198,9 @@ namespace Roadie.Library.Utility
             var trackFileName = FolderPathHelper.TrackFileName(configuration, trackTitle, trackNumber, diskNumber, totalTrackNumber, fileExtension);
 
             var result = Path.Combine(artistFolder, releaseFolder, trackFileName);
-            Trace.WriteLine(string.Format("TrackPath [{0}] For ArtistName [{1}], ReleaseTitle [{2}], ReleaseDate [{3}], ReleaseYear [{4}], TrackNumber [{5}]", result, artistSortName, releaseTitle, releaseDate.ToString("s"), releaseDate.ToString("yyyy"), trackNumber));
-            return result;
+            var resultInfo = new DirectoryInfo(result);
+            Trace.WriteLine(string.Format("TrackPath [{0}] For ArtistName [{1}], ReleaseTitle [{2}], ReleaseDate [{3}], ReleaseYear [{4}], TrackNumber [{5}]", resultInfo.FullName, artistSortName, releaseTitle, releaseDate.ToString("s"), releaseDate.ToString("yyyy"), trackNumber));
+            return resultInfo.FullName;
         }
 
         /// <summary>

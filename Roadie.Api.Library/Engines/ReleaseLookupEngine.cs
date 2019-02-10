@@ -488,6 +488,7 @@ namespace Roadie.Library.Engines
                                 ReleaseDate = result.ReleaseDate ?? mb.ReleaseDate,
                                 AmgId = mb.AmgId,
                                 Profile = mb.Profile,
+                                TrackCount = mb.ReleaseMedia != null ? (short)mb.ReleaseMedia.Sum(x => x.TrackCount) : (short)0,
                                 MusicBrainzId = mb.MusicBrainzId,
                                 ITunesId = mb.iTunesId,
                                 Title = result.Title ?? mb.ReleaseTitle,
@@ -852,23 +853,14 @@ namespace Roadie.Library.Engines
             if (!string.IsNullOrEmpty(artistFolder))
             {
                 // If any file exist for cover that over-rides whatever if found in metadata providers.
-                var releaseFolder = result.ReleaseFileFolder(artistFolder);
-                if (Directory.Exists(releaseFolder))
+                var releaseFolder = new DirectoryInfo(result.ReleaseFileFolder(artistFolder));
+                if (releaseFolder.Exists)
                 {
-                    // See if there is a cover file ("cover.jpg") if so set thumbnail image to that
-                    var coverFileName = Path.Combine(releaseFolder, ReleaseFactory.CoverFilename);
-                    if(!File.Exists(coverFileName))
-                    {
-                        // See if any file exists in the release folder with "cover" in the name
-                        var coverFiles = Directory.GetFiles(releaseFolder, "*cover*.jpg", new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive });
-                        if(coverFiles != null && coverFiles.Any())
-                        {
-                            coverFileName = coverFiles.First();
-                        }
-                    }
-                    if (File.Exists(coverFileName))
+                    var cover = ImageHelper.FindImageTypeInDirectory(releaseFolder, ImageType.Release);
+                    if(cover.Any())
                     {
                         // Read image and convert to jpeg
+                        var coverFileName = cover.First().FullName;
                         result.Thumbnail = File.ReadAllBytes(coverFileName);
                         this.Logger.LogDebug("Using Release Cover File [{0}]", coverFileName);
                     }

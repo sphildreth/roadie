@@ -340,7 +340,7 @@ namespace Roadie.Api.Services
                     var imageFile = imageFiles.First();
                     var i = new FileInfo(imageFile);
                     var iName = i.Name.ToLower().Trim();
-                    var isArtistImage = iName.Contains("artist") || iName.Contains(artist.Name.ToLower());
+                    var isArtistImage = iName.Contains("artist");
                     if (isArtistImage)
                     {
                         // Read image and convert to jpeg
@@ -434,7 +434,7 @@ namespace Roadie.Api.Services
                     artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artistImage);
 
                     // Save unaltered image to cover file
-                    var artistImageName = Path.Combine(artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder), "artist.jpg");
+                    var artistImageName = Path.Combine(artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder), ImageHelper.ArtistImageFilename);
                     File.WriteAllBytes(artistImageName, artist.Thumbnail);
 
                     // Resize to store in database as thumbnail
@@ -730,6 +730,14 @@ namespace Roadie.Api.Services
                 {
                     tsw.Restart();
                     result.Images = this.DbContext.Images.Where(x => x.ArtistId == artist.Id).Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
+
+                    var artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                    var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.ArtistSecondary);
+                    if (artistImagesInFolder.Any())
+                    {
+                        result.Images = result.Images.Concat(artistImagesInFolder.Select((x, i) => MakeFullsizeSecondaryImage(id, ImageType.ArtistSecondary, i)));
+                    }
+
                     tsw.Stop();
                     timings.Add("images", tsw.ElapsedMilliseconds);
                 }
@@ -892,8 +900,8 @@ namespace Roadie.Api.Services
                     }
 
                     // Save unaltered image to artist file
-                    var coverFileName = Path.Combine(artistFolder, "artist.jpg");
-                    File.WriteAllBytes(coverFileName, artist.Thumbnail);
+                    var artistImage = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
+                    File.WriteAllBytes(artistImage, artist.Thumbnail);
 
                     // Resize to store in database as thumbnail
                     artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);

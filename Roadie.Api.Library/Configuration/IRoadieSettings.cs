@@ -16,6 +16,7 @@ namespace Roadie.Library.Configuration
         string InboundFolder { get; set; }
         Integrations Integrations { get; set; }
         ImageSize LargeImageSize { get; set; }
+        ImageSize MaximumImageSize { get; set; }
         string LibraryFolder { get; set; }
         string ListenAddress { get; set; }
         ImageSize MediumImageSize { get; set; }
