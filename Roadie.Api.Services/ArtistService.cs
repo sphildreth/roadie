@@ -334,7 +334,7 @@ namespace Roadie.Api.Services
                 }
 
                 // Always update artist image if artist image is found on an artist rescan
-                var imageFiles = ImageHelper.ImageFilesInFolder(artistFolder);
+                var imageFiles = ImageHelper.ImageFilesInFolder(artistFolder, SearchOption.AllDirectories);
                 if (imageFiles != null && imageFiles.Any())
                 {
                     var imageFile = imageFiles.First();
@@ -732,7 +732,7 @@ namespace Roadie.Api.Services
                     result.Images = this.DbContext.Images.Where(x => x.ArtistId == artist.Id).Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
 
                     var artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
-                    var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.ArtistSecondary);
+                    var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly);
                     if (artistImagesInFolder.Any())
                     {
                         result.Images = result.Images.Concat(artistImagesInFolder.Select((x, i) => MakeFullsizeSecondaryImage(id, ImageType.ArtistSecondary, i)));

@@ -322,7 +322,7 @@ namespace Roadie.Library.Factories
                 }
 
                 // Always update artist image if artist image is found on an artist rescan
-                var imageFiles = ImageHelper.ImageFilesInFolder(artistFolder);
+                var imageFiles = ImageHelper.ImageFilesInFolder(artistFolder, SearchOption.AllDirectories);
                 if (imageFiles != null && imageFiles.Any())
                 {
                     var imageFile = imageFiles.First();

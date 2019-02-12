@@ -780,7 +780,7 @@ namespace Roadie.Library.Factories
 
                 if (release.Thumbnail == null)
                 {
-                    var imageFiles = ImageHelper.ImageFilesInFolder(releasePath);
+                    var imageFiles = ImageHelper.ImageFilesInFolder(releasePath, SearchOption.AllDirectories);
                     if (imageFiles != null && imageFiles.Any())
                     {
                         foreach (var imageFile in imageFiles)

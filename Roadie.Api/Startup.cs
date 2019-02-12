@@ -96,6 +96,10 @@ namespace Roadie.Api
                 mySqlOptions =>
                 {
                     mySqlOptions.ServerVersion(new Version(5, 5), Pomelo.EntityFrameworkCore.MySql.Infrastructure.ServerType.MariaDb);
+                    mySqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 10,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorNumbersToAdd: null);
                 }
             ));
 
@@ -104,6 +108,10 @@ namespace Roadie.Api
                 mySqlOptions =>
                 {
                     mySqlOptions.ServerVersion(new Version(5, 5), Pomelo.EntityFrameworkCore.MySql.Infrastructure.ServerType.MariaDb);
+                    mySqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 10,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorNumbersToAdd: null);
                 }
             ));
 

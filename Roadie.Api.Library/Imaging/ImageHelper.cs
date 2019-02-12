@@ -57,9 +57,9 @@ namespace Roadie.Library.Imaging
             return new string[6] { "*.bmp", "*.jpeg", "*.jpe", "*.jpg", "*.png", "*.gif" };
         }
 
-        public static string[] ImageFilesInFolder(string folder)
+        public static string[] ImageFilesInFolder(string folder, SearchOption searchOption)
         {
-            return ImageHelper.GetFiles(folder, ImageHelper.ImageExtensions(), SearchOption.AllDirectories);
+            return ImageHelper.GetFiles(folder, ImageHelper.ImageExtensions(), searchOption);
         }
 
         public static string[] ImageMimeTypes()
@@ -172,17 +172,17 @@ namespace Roadie.Library.Imaging
             return Regex.IsMatch(fileinfo.Name, @"(label|recordlabel|record_label)\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
         }
 
-        public static IEnumerable<FileInfo> FindImageTypeInDirectory(DirectoryInfo directory, ImageType type)
+        public static IEnumerable<FileInfo> FindImageTypeInDirectory(DirectoryInfo directory, ImageType type, SearchOption folderSearchOptions = SearchOption.AllDirectories)
         {
             var result = new List<FileInfo>();
             if (directory == null || !directory.Exists)
             {
-                return null;
+                return result;
             }
-            var imageFilesInFolder = ImageFilesInFolder(directory.FullName);
+            var imageFilesInFolder = ImageFilesInFolder(directory.FullName, folderSearchOptions);
             if (imageFilesInFolder == null || !imageFilesInFolder.Any())
             {
-                return null;
+                return result;
             }
             foreach(var imageFile in imageFilesInFolder)
             {
