@@ -587,5 +587,31 @@ namespace Roadie.Library.Tests
             }
         }
 
+        [Fact]
+        public void ReadID3TagsFromFile6()
+        {
+            var file = new FileInfo(@"C:\roadie_dev_root\inbound\[2016] Invention Of Knowledge\01 Invention.mp3");
+            if (file.Exists)
+            {
+                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                Assert.True(tagLib.IsSuccess);
+                var metaData = tagLib.Data;
+                Assert.NotNull(metaData.Artist);
+                Assert.NotNull(metaData.Release);
+                Assert.NotNull(metaData.Title);
+                Assert.True(metaData.Year > 0);
+                Assert.NotNull(metaData.TrackNumber);
+                Assert.Equal(1, metaData.TrackNumber.Value);
+                Assert.True(metaData.TotalSeconds > 0);
+                Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
+            }
+            else
+            {
+                Console.WriteLine($"skipping { file}");
+                Assert.True(true);
+            }
+        }
+
     }
 }

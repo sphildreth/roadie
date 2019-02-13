@@ -327,7 +327,11 @@ namespace Roadie.Library.FilePlugins
                 return null;
             }
             this._releaseId = release.Data.RoadieId;
-            release.Data.ReleaseDate = SafeParser.ToDateTime(metaData.Year);
+            release.Data.ReleaseDate = SafeParser.ToDateTime(release.Data.ReleaseYear ?? metaData.Year);
+            if(release.Data.ReleaseYear.HasValue && release.Data.ReleaseYear != metaData.Year)
+            {
+                this.Logger.LogWarning($"Found Release `{ release.Data }` has different Release Year than MetaData Year `{ metaData }`");
+            }
             return release.Data.ReleaseFileFolder(artistFolder);
         }
     }
