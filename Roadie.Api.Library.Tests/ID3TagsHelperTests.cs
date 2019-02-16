@@ -179,6 +179,158 @@ namespace Roadie.Library.Tests
             Assert.Null(dn);
         }
 
+        [Fact]
+        public void ReadTotalTrackNumbersFromCue_Should_Be_Five()
+        {
+            var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\cues1";
+            var directory = new DirectoryInfo(cuesDir);
+            if(directory.Exists)
+            { 
+                foreach(var file in Directory.GetFiles(cuesDir))
+                {
+                    var t = ID3TagsHelper.DetermineTotalTrackNumbers(file);
+                    Assert.Equal(5, t.Value);
+                }    
+            }
+            else
+            {
+                Assert.True(true);
+            }
+        }
+
+        [Fact]
+        public void ReadTotalTrackNumbersFromCue_Should_Be_Eight()
+        {
+            var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\cues2";
+            var directory = new DirectoryInfo(cuesDir);
+            if (directory.Exists)
+            {
+                foreach (var file in Directory.GetFiles(cuesDir))
+                {
+                    var t = ID3TagsHelper.DetermineTotalTrackNumbers(file);
+                    Assert.Equal(8, t.Value);
+                }
+            }
+            else
+            {
+                Assert.True(true);
+            }
+        }
+
+        [Fact]
+        public void ReadTotalTrackNumbersFromCue_Should_Be_Six()
+        {
+            var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\cues3";
+            var directory = new DirectoryInfo(cuesDir);
+            if (directory.Exists)
+            {
+                foreach (var file in Directory.GetFiles(cuesDir))
+                {
+                    var t = ID3TagsHelper.DetermineTotalTrackNumbers(file);
+                    Assert.Equal(6, t.Value);
+                }
+            }
+            else
+            {
+                Assert.True(true);
+            }
+        }
+
+        [Fact]
+        public void ReadTotalTrackNumbersFromCue_Should_Be_Nine()
+        {
+            var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\cues4";
+            var directory = new DirectoryInfo(cuesDir);
+            if (directory.Exists)
+            {
+                foreach (var file in Directory.GetFiles(cuesDir))
+                {
+                    var t = ID3TagsHelper.DetermineTotalTrackNumbers(file);
+                    Assert.Equal(9, t.Value);
+                }
+            }
+            else
+            {
+                Assert.True(true);
+            }
+        }
+
+        [Fact]
+        public void ReadTotalTrackNumbersFromM3u_Should_Be_Eleven()
+        {
+            var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\m3u1";
+            var directory = new DirectoryInfo(cuesDir);
+            if (directory.Exists)
+            {
+                foreach (var file in Directory.GetFiles(cuesDir))
+                {
+                    var t = ID3TagsHelper.DetermineTotalTrackNumbers(file);
+                    Assert.Equal(11, t.Value);
+                }
+            }
+            else
+            {
+                Assert.True(true);
+            }
+        }
+
+        [Fact]
+        public void ReadTotalTrackNumbersFromM3u_Should_Be_Four()
+        {
+            var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\m3u2";
+            var directory = new DirectoryInfo(cuesDir);
+            if (directory.Exists)
+            {
+                foreach (var file in Directory.GetFiles(cuesDir))
+                {
+                    var t = ID3TagsHelper.DetermineTotalTrackNumbers(file);
+                    Assert.Equal(4, t.Value);
+                }
+            }
+            else
+            {
+                Assert.True(true);
+            }
+        }
+
+        [Fact]
+        public void ReadTotalTrackNumbersFromM3u_Should_Be_Eight()
+        {
+            var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\m3u3";
+            var directory = new DirectoryInfo(cuesDir);
+            if (directory.Exists)
+            {
+                foreach (var file in Directory.GetFiles(cuesDir))
+                {
+                    var t = ID3TagsHelper.DetermineTotalTrackNumbers(file);
+                    Assert.Equal(8, t.Value);
+                }
+            }
+            else
+            {
+                Assert.True(true);
+            }
+        }
+
+        [Fact]
+        public void ReadTotalTrackNumbersFromM3u_Should_Be_Fourteen()
+        {
+            var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\m3u4";
+            var directory = new DirectoryInfo(cuesDir);
+            if (directory.Exists)
+            {
+                foreach (var file in Directory.GetFiles(cuesDir))
+                {
+                    var t = ID3TagsHelper.DetermineTotalTrackNumbers(file);
+                    Assert.Equal(14, t.Value);
+                }
+            }
+            else
+            {
+                Assert.True(true);
+            }
+        }
+
 
         [Fact]
         public void ReadID3TagsMultipleMediasWithMax()
@@ -482,6 +634,40 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
+        public void Write_Tags()
+        {
+            var file = new FileInfo(@"C:\roadie_dev_root\inbound\temp\01. Re1nstall 0verture.mp3");
+            if (file.Exists)
+            {
+                short trackNumber = 15;
+                var numberOfTracks = 25;
+
+                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                Assert.True(tagLib.IsSuccess);
+                var metaData = tagLib.Data;
+                metaData.TrackNumber = trackNumber;
+                metaData.TotalTrackNumbers = numberOfTracks;
+                this.TagsHelper.WriteTags(metaData, file.FullName);
+
+                var tagLibAfterWrite = this.TagsHelper.MetaDataForFile(file.FullName);
+                Assert.True(tagLib.IsSuccess);
+                Assert.Equal(metaData.Artist, tagLibAfterWrite.Data.Artist);
+                Assert.Equal(metaData.Release, tagLibAfterWrite.Data.Release);
+                Assert.Equal(metaData.Title, tagLibAfterWrite.Data.Title);
+                Assert.Equal(trackNumber, tagLibAfterWrite.Data.TrackNumber);
+                Assert.Equal(numberOfTracks, tagLibAfterWrite.Data.TotalTrackNumbers);
+                
+
+
+            }
+            else
+            {
+                Console.WriteLine($"skipping { file}");
+                Assert.True(true);
+            }
+        }
+
+        [Fact]
         public void ReadID3TagsFromFile2()
         {
             var file = new FileInfo(@"Z:\library\Denver, John\[1972] Aerie\10 Readjustment Blues.mp3");
@@ -591,6 +777,84 @@ namespace Roadie.Library.Tests
         public void ReadID3TagsFromFile6()
         {
             var file = new FileInfo(@"C:\roadie_dev_root\inbound\[2016] Invention Of Knowledge\01 Invention.mp3");
+            if (file.Exists)
+            {
+                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                Assert.True(tagLib.IsSuccess);
+                var metaData = tagLib.Data;
+                Assert.NotNull(metaData.Artist);
+                Assert.NotNull(metaData.Release);
+                Assert.NotNull(metaData.Title);
+                Assert.True(metaData.Year > 0);
+                Assert.NotNull(metaData.TrackNumber);
+                Assert.Equal(1, metaData.TrackNumber.Value);
+                Assert.True(metaData.TotalSeconds > 0);
+                Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
+            }
+            else
+            {
+                Console.WriteLine($"skipping { file}");
+                Assert.True(true);
+            }
+        }
+
+        [Fact]
+        public void ReadID3TagsFromFile7()
+        {
+            var file = new FileInfo(@"C:\roadie_dev_root\1985 - Sacred Heart\Dio - Sacred Heart (1).mp3");
+            if (file.Exists)
+            {
+                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                Assert.True(tagLib.IsSuccess);
+                var metaData = tagLib.Data;
+                Assert.NotNull(metaData.Artist);
+                Assert.NotNull(metaData.Release);
+                Assert.NotNull(metaData.Title);
+                Assert.True(metaData.Year > 0);
+                Assert.NotNull(metaData.TrackNumber);
+                Assert.Equal(1, metaData.TrackNumber.Value);
+                Assert.True(metaData.TotalSeconds > 0);
+                Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
+            }
+            else
+            {
+                Console.WriteLine($"skipping { file}");
+                Assert.True(true);
+            }
+        }
+
+        [Fact]
+        public void ReadID3TagsFromFile8()
+        {
+            var file = new FileInfo(@"C:\roadie_dev_root\Grift\2017 Arvet\01 - Flyktfast.mp3");
+            if (file.Exists)
+            {
+                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                Assert.True(tagLib.IsSuccess);
+                var metaData = tagLib.Data;
+                Assert.NotNull(metaData.Artist);
+                Assert.NotNull(metaData.Release);
+                Assert.NotNull(metaData.Title);
+                Assert.True(metaData.Year > 0);
+                Assert.NotNull(metaData.TrackNumber);
+                Assert.Equal(1, metaData.TrackNumber.Value);
+                Assert.True(metaData.TotalSeconds > 0);
+                Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
+            }
+            else
+            {
+                Console.WriteLine($"skipping { file}");
+                Assert.True(true);
+            }
+        }
+
+        [Fact]
+        public void ReadID3TagsFromFile9()
+        {
+            var file = new FileInfo(@"C:\roadie_dev_root\Distorted Harmony -  A Way Out - 2018\kWlZr0N_o72dwo0_CD001_0001.mp3");
             if (file.Exists)
             {
                 var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);

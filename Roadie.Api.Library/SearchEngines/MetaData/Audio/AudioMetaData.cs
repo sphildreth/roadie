@@ -106,6 +106,10 @@ namespace Roadie.Library.MetaData.Audio
                 {
                     result |= AudioMetaDataWeights.TrackNumber;
                 }
+                if ((this.TotalTrackNumbers ?? 0) > 1)
+                {
+                    result |= AudioMetaDataWeights.TrackTotalNumber;
+                }
                 if (this.TotalSeconds > 1)
                 {
                     result |= AudioMetaDataWeights.Time;
@@ -137,9 +141,23 @@ namespace Roadie.Library.MetaData.Audio
         public int? Disk { get; set; }
 
         /// <summary>
+        /// TSST
+        /// </summary>
+        public string DiskSubTitle { get; set; }
+
+        /// <summary>
         /// Full filename to the file used to get this AudioMetaData
         /// </summary>
         public string Filename { get; set; }
+
+        private FileInfo _fileInfo = null;
+        public FileInfo FileInfo
+        {
+            get
+            {
+                return this._fileInfo ?? (this._fileInfo = new FileInfo(this.Filename));
+            }
+        }
 
         public ICollection<string> Genres { get; set; }
         public IEnumerable<AudioMetaDataImage> Images { get; set; }
@@ -228,6 +246,11 @@ namespace Roadie.Library.MetaData.Audio
             }
         }
 
+        /// <summary>
+        /// Total number of Discs for Media
+        /// </summary>
+        public int? TotalDiscCount { get; set; }
+
         public double TotalSeconds
         {
             get
@@ -288,7 +311,7 @@ namespace Roadie.Library.MetaData.Audio
                 }
                 if (!this._trackArtist.Contains(AudioMetaData.ArtistSplitCharacter.ToString()))
                 {
-                    if(string.IsNullOrEmpty(this.TrackArtist))
+                    if (string.IsNullOrEmpty(this.TrackArtist))
                     {
                         return new string[0];
                     }
@@ -375,16 +398,7 @@ namespace Roadie.Library.MetaData.Audio
 
         public override string ToString()
         {
-            return string.Format("IsValid: {0}{7}, ValidWeight {1}, Artist: {2}, Release: {3}, TrackNumber: {4}, Title: {5}, Year: {6}, Duration: {8}",
-                                  this.IsValid,
-                                  this.ValidWeight,
-                                  this.Artist,
-                                  this.Release,
-                                  this.TrackNumber,
-                                  this.Title,
-                                  this.Year,
-                                  this.IsSoundTrack ? " [SoundTrack ]" : string.Empty,
-                                  this.Time == null ? "-" : this.Time.Value.ToString());
+            return string.Format($"IsValid: {this.IsValid}{ (this.IsSoundTrack ? " [SoundTrack ]" : string.Empty)}, ValidWeight {this.ValidWeight}, Artist: {this.Artist}, Release: {this.Release}, TrackNumber: {this.TrackNumber}, TrackTotal: {this.TotalTrackNumbers}, Title: {this.Title}, Year: {this.Year}, Duration: {(this.Time == null ? "-" : this.Time.Value.ToString())}");
         }
     }
 }

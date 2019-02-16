@@ -43,9 +43,9 @@ namespace Roadie.Library.Extensions
             return input;
         }
 
-        public static string CleanString(this string input, IRoadieSettings settings)
+        public static string CleanString(this string input, IRoadieSettings settings, string removeStringsRegex = null)
         {
-            if (string.IsNullOrEmpty(input) || settings == null)
+            if (string.IsNullOrEmpty(input) || settings == null)    
             {
                 return input;
             }
@@ -55,14 +55,10 @@ namespace Roadie.Library.Extensions
                 result = result.Replace(kvp.Key, kvp.ReplaceWith, StringComparison.OrdinalIgnoreCase);
             }
             result = result.Trim().ToTitleCase(false);
-            var removeStringsRegex = settings.Processing.RemoveStringsRegex;
-            if (!string.IsNullOrEmpty(removeStringsRegex))
+            var rs = removeStringsRegex ?? settings.Processing.RemoveStringsRegex;
+            if (!string.IsNullOrEmpty(rs))
             {
-                var regexParts = removeStringsRegex.Split('|');
-                foreach (var regexPart in regexParts)
-                {
-                    result = Regex.Replace(result, regexPart, "");
-                }
+                result = Regex.Replace(result, rs, "", RegexOptions.IgnoreCase);
             }
             if (result.Length > 5)
             {

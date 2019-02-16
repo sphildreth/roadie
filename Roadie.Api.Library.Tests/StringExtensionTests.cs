@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Roadie.Library.Tests
@@ -143,11 +144,89 @@ namespace Roadie.Library.Tests
             t = "[1970] 022 # Plastic Ono Band";
             Assert.Equal("[1970] 022 Plastic Ono Band", t.CleanString(this.Configuration));
 
-            t = "11 Love_.Mp3".CleanString(this.Configuration);
-            Assert.Equal("11 Love.Mp3", t);
+        }
 
-            t = "Love_.Mp3".CleanString(this.Configuration);
+        [Fact]
+        public void CleanString_Track()
+        {
+
+            var t = "11 Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
             Assert.Equal("Love.Mp3", t);
+
+            t = "99 -Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
+            Assert.Equal("Love.Mp3", t);
+
+            t = "99_Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
+            Assert.Equal("Love.Mp3", t);
+
+            t = "99 _ Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
+            Assert.Equal("Love.Mp3", t);
+
+            t = "001 Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
+            Assert.Equal("Love.Mp3", t);
+
+            t = "01 - Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
+            Assert.Equal("Love.Mp3", t);
+
+            t = "01. Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
+            Assert.Equal("Love.Mp3", t);
+
+            t = "Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
+            Assert.Equal("Love.Mp3", t);
+
+        }
+
+        [Theory]
+        [InlineData("Angie (Limited)")]
+        [InlineData("Angie CD1")]
+        [InlineData("Angie CD2")]
+        [InlineData("Angie CD23")]
+        [InlineData("Angie - CD1")]
+        [InlineData("Angie (Limited Edition)")]
+        [InlineData("Angie (Deluxe)")]
+        [InlineData("Angie (Deluxe")]
+        [InlineData("Angie (Remastered Deluxe Edition)")]
+        [InlineData("Angie (Remastered Deluxe)")]
+        [InlineData("Angie ( Deluxe )")]
+        [InlineData("Angie (Deluxe Edition)")]
+        [InlineData("Angie (Deluxe Expanded Edition)")]
+        [InlineData("Angie (2CD Deluxe Edition)")]
+        [InlineData("Angie (3CD Deluxe Edition)")]
+        [InlineData("Angie [2008 Remastered Edition]")]
+        [InlineData("Angie (Bonus CD)")]
+        [InlineData("Angie (DELUXE)")]
+        [InlineData("Angie (2013, Deluxe Expanded Edition, Disc 1)")]
+        [InlineData("Angie (Deluxe Edition, CD1)")]
+        [InlineData("Angie (20Th Anniversary Deluxe Edition Remastered)")]
+        [InlineData("Angie (Japanese Edition)")]
+        [InlineData("Angie (Asian Edition)")]
+        [InlineData("Angie (2008 Remastered Edition Digipack)")]
+        [InlineData("Angie (Re Release 2003)")]
+        [InlineData("Angie [2006, Self Released]")]
+        [InlineData("Angie (2002 Expanded Edition)")]
+        [InlineData("Angie (Japan Ltd Dig")]
+        public void CleanString_Release_Should_Be_Angie(string input)
+        {
+            var r = @"(\\s*(-\\s)*((CD[0-9][0-9]*)))|((\\(|\\[)+([0-9]|,|self|bonus|released|th|anniversary|re|release|cd|disc|deluxe|digipack|vinyl|japanese|asian|remastered|limited|expanded|edition|\\s)+(]|\\)))";
+            var cleaned = input.CleanString(this.Configuration, r);
+            Assert.Equal("Angie", cleaned);
+        }
+
+
+        [Theory]
+        [InlineData("01 Batman Loves Robin")]
+        [InlineData("01  Batman Loves Robin")]
+        [InlineData("01 -Batman Loves Robin")]
+        [InlineData("01 - Batman Loves Robin")]
+        [InlineData("14 Batman Loves Robin")]
+        [InlineData("49 Batman Loves Robin")]
+        [InlineData("54  Batman Loves Robin")]
+        [InlineData("348 Batman Loves Robin")]
+        public void Test_Regex_String(string input)
+        {
+            var t1 = Regex.Replace(input, "^([0-9]+)(\\.|-|\\s)*", "");
+            Assert.NotNull(t1);
+            Assert.Equal("Batman Loves Robin", t1);
 
         }
 

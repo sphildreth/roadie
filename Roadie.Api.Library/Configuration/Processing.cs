@@ -21,12 +21,18 @@ namespace Roadie.Library.Configuration
         public int MaximumArtistImagesToAdd { get; set; }
         public int MaximumReleaseImagesToAdd { get; set; }
         public string RemoveStringsRegex { get; set; }
+        public string ArtistRemoveStringsRegex { get; set; }
+        public string ReleaseRemoveStringsRegex { get; set; }
+        public string TrackRemoveStringsRegex { get; set; }
+
         public List<ReplacementString> ReplaceStrings { get; set; }
         public string UnknownFolder { get; set; }
 
         public Processing()
         {
             this.ReplaceStrings = new List<ReplacementString>();
+            this.DoAudioCleanup = true;
+            this.DoClearComments = true;
         }
     }
 }

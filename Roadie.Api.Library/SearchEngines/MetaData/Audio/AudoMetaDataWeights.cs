@@ -9,9 +9,10 @@ namespace Roadie.Library.MetaData.Audio
         Year = 1,
         Time = 2,
         TrackNumber = 4,
-        Release = 8,
-        Title = 16,
-        Artist = 32
+        TrackTotalNumber = 8,
+        Release = 16,
+        Title = 32,
+        Artist = 64
     }
 
     //Artist + Release + TrackTitle 56
