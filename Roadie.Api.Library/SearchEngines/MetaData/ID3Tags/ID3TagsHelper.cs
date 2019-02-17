@@ -159,7 +159,10 @@ namespace Roadie.Library.MetaData.ID3Tags
                 result.AudioBitrate = (int?)theTrack.Bitrate;
                 result.AudioSampleRate = (int)theTrack.Bitrate;
                 result.Disk = theTrack.DiscNumber;
-                result.DiskSubTitle = theTrack.AdditionalFields["TSST"];
+                if (theTrack.AdditionalFields.ContainsKey("TSST"))
+                {
+                    result.DiskSubTitle = theTrack.AdditionalFields["TSST"];
+                }
                 result.Images = theTrack.EmbeddedPictures?.Select(x => new AudioMetaDataImage
                 {
                     Data = x.PictureData,
