@@ -28,6 +28,7 @@ namespace Roadie.Api.Services
     public class TrackService : ServiceBase, ITrackService
     {
         private IBookmarkService BookmarkService { get; } = null;
+        private IAdminService AdminService { get; }
 
         public TrackService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
@@ -35,10 +36,12 @@ namespace Roadie.Api.Services
                              data.IRoadieDbContext dbContext,
                              ICacheManager cacheManager,
                              ILogger<TrackService> logger,
-                             IBookmarkService bookmarkService)
+                             IBookmarkService bookmarkService,
+                             IAdminService adminService)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
             this.BookmarkService = bookmarkService;
+            this.AdminService = adminService;
         }
 
         public static long DetermineByteEndFromHeaders(IHeaderDictionary headers, long fileLength)
@@ -587,12 +590,28 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes)
+        public async Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes, User roadieUser)
         {
-            var track = this.GetTrack(trackId);
+            var track = this.DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
             if (track == null)
             {
-                return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Unable To Find Track [{ trackId }]");
+                // Not Found try recanning release 
+                var release = (from r in this.DbContext.Releases
+                               join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                               where rm.Id == track.ReleaseMediaId
+                               select r).FirstOrDefault();
+                if (!release.IsLocked ?? false)
+                {
+                    await this.AdminService.ScanRelease(new Library.Identity.ApplicationUser
+                    {
+                        Id = roadieUser.Id.Value
+                    }, release.RoadieId, false, true);
+                }
+                track = this.DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
+                if(track == null)
+                {
+                    return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Unable To Find Track [{ trackId }]");
+                }
             }
             if (!track.IsValid)
             {

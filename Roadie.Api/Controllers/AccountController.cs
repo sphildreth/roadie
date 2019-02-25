@@ -115,7 +115,7 @@ namespace Roadie.Api.Controllers
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.LogError(ex, "Error in CreateToken");
+                    this.Logger.LogError(ex, $"Error in CreateToken For User [{ model.Username }]");
                     return BadRequest();
                 }
             }

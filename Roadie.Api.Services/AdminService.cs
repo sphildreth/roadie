@@ -536,7 +536,7 @@ namespace Roadie.Api.Services
             return await this.ScanFolder(d, dest, user, isReadOnly);
         }
 
-        public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false)
+        public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -563,6 +563,7 @@ namespace Roadie.Api.Services
                 errors.Add(ex);
             }
             sw.Stop();
+            
             this.DbContext.ScanHistories.Add(new data.ScanHistory
             {
                 UserId = user.Id,
@@ -571,7 +572,7 @@ namespace Roadie.Api.Services
                 TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
             });
             await this.DbContext.SaveChangesAsync();
-            await this.LogAndPublish($"ScanRelease `{release}`, By User `{user}`", LogLevel.Information);
+            await this.LogAndPublish($"ScanRelease `{release}`, By User `{user}`, WasDoneForInvalidTrackPlay [{ wasDoneForInvalidTrackPlay }]", LogLevel.Information);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),

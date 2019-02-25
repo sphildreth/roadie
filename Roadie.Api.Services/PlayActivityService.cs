@@ -38,122 +38,131 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<PlayActivityList>> CreatePlayActivity(User roadieUser, TrackStreamInfo streamInfo)
         {
-            var sw = Stopwatch.StartNew();
-            var track = this.DbContext.Tracks
-                                     .Include(x => x.ReleaseMedia)
-                                     .Include(x => x.ReleaseMedia.Release)
-                                     .Include(x => x.ReleaseMedia.Release.Artist)
-                                     .Include(x => x.TrackArtist)
-                                    .FirstOrDefault(x => x.RoadieId == SafeParser.ToGuid(streamInfo.Track.Value));
-            if (track == null)
+            try
             {
-                return new OperationResult<PlayActivityList>($"CreatePlayActivity: Unable To Find Track [{ streamInfo.Track.Value }]");
-            }
-            if (!track.IsValid)
-            {
-                return new OperationResult<PlayActivityList>($"CreatePlayActivity: Invalid Track. Track Id [{streamInfo.Track.Value}], FilePath [{track.FilePath}], Filename [{track.FileName}]");
-            }
-            data.UserTrack userTrack = null;
-            var now = DateTime.UtcNow;
-            track.PlayedCount = (track.PlayedCount ?? 0) + 1;
-            track.LastPlayed = now;
-            var user = this.GetUser(roadieUser?.UserId);
-            if (user != null)
-            {
-                userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
-                if (userTrack == null)
+                var sw = Stopwatch.StartNew();
+                var track = this.DbContext.Tracks
+                                         .Include(x => x.ReleaseMedia)
+                                         .Include(x => x.ReleaseMedia.Release)
+                                         .Include(x => x.ReleaseMedia.Release.Artist)
+                                         .Include(x => x.TrackArtist)
+                                        .FirstOrDefault(x => x.RoadieId == SafeParser.ToGuid(streamInfo.Track.Value));
+                if (track == null)
                 {
-                    userTrack = new data.UserTrack(now)
+                    return new OperationResult<PlayActivityList>($"CreatePlayActivity: Unable To Find Track [{ streamInfo.Track.Value }]");
+                }
+                if (!track.IsValid)
+                {
+                    return new OperationResult<PlayActivityList>($"CreatePlayActivity: Invalid Track. Track Id [{streamInfo.Track.Value}], FilePath [{track.FilePath}], Filename [{track.FileName}]");
+                }
+                data.UserTrack userTrack = null;
+                var now = DateTime.UtcNow;
+                track.PlayedCount = (track.PlayedCount ?? 0) + 1;
+                track.LastPlayed = now;
+                var user = roadieUser != null ? this.DbContext.Users
+                                                     .Include(x => x.TrackRatings)
+                                                     .FirstOrDefault(x => x.RoadieId == roadieUser.UserId) : null;
+                if (user != null)
+                {
+                    userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
+                    if (userTrack == null)
                     {
-                        UserId = user.Id,
-                        TrackId = track.Id
-                    };
-                    this.DbContext.UserTracks.Add(userTrack);
+                        userTrack = new data.UserTrack(now)
+                        {
+                            UserId = user.Id,
+                            TrackId = track.Id
+                        };
+                        this.DbContext.UserTracks.Add(userTrack);
+                    }
+                    userTrack.LastPlayed = now;
+                    userTrack.PlayedCount = (userTrack.PlayedCount ?? 0) + 1;
+                    this.CacheManager.ClearRegion(user.CacheRegion);
                 }
-                userTrack.LastPlayed = now;
-                userTrack.PlayedCount++;
-                userTrack.PlayedCount = (userTrack.PlayedCount ?? 0) + 1;
-                this.CacheManager.ClearRegion(user.CacheRegion);
-            }
 
-            var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == track.ReleaseMedia.Release.RoadieId);
-            release.LastPlayed = now;
-            release.PlayedCount = (release.PlayedCount ?? 0) + 1;
+                var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == track.ReleaseMedia.Release.RoadieId);
+                release.LastPlayed = now;
+                release.PlayedCount = (release.PlayedCount ?? 0) + 1;
 
-            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == release.Artist.RoadieId);
-            artist.LastPlayed = now;
-            artist.PlayedCount = (artist.PlayedCount ?? 0) + 1;
+                var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == release.Artist.RoadieId);
+                artist.LastPlayed = now;
+                artist.PlayedCount = (artist.PlayedCount ?? 0) + 1;
 
-            data.Artist trackArtist = null;
-            if (track.ArtistId.HasValue)
-            {
-                trackArtist = this.DbContext.Artists.FirstOrDefault(x => x.Id == track.ArtistId);
-                trackArtist.LastPlayed = now;
-                trackArtist.PlayedCount = (trackArtist.PlayedCount ?? 0) + 1;
-                this.CacheManager.ClearRegion(trackArtist.CacheRegion);
-            }
-
-            this.CacheManager.ClearRegion(track.CacheRegion);
-            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
-            this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
-
-            var pl = new PlayActivityList
-            {
-                Artist = new DataToken
+                data.Artist trackArtist = null;
+                if (track.ArtistId.HasValue)
                 {
-                    Text = track.ReleaseMedia.Release.Artist.Name,
-                    Value = track.ReleaseMedia.Release.Artist.RoadieId.ToString()
-                },
-                TrackArtist = track.TrackArtist == null ? null : new DataToken
-                {
-                    Text = track.TrackArtist.Name,
-                    Value = track.TrackArtist.RoadieId.ToString()
-                },
-                Release = new DataToken
-                {
-                    Text = track.ReleaseMedia.Release.Title,
-                    Value = track.ReleaseMedia.Release.RoadieId.ToString()
-                },
-                Track = new DataToken
-                {
-                    Text = track.Title,
-                    Value = track.RoadieId.ToString()
-                },
-                User = new DataToken
-                {
-                    Text = roadieUser.UserName,
-                    Value = roadieUser.UserId.ToString()
-                },
-                PlayedDateDateTime = userTrack?.LastPlayed,
-                ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ track.ReleaseMedia.Release.RoadieId}",
-                Rating = track.Rating,
-                UserRating = userTrack?.Rating,
-                TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ track.RoadieId}.mp3",
-                ArtistThumbnail = this.MakeArtistThumbnailImage(track.TrackArtist != null ? track.TrackArtist.RoadieId : track.ReleaseMedia.Release.Artist.RoadieId),
-                ReleaseThumbnail = this.MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId),
-                UserThumbnail = this.MakeUserThumbnailImage(roadieUser.UserId)
-            };
-
-            if (!roadieUser.IsPrivate)
-            {
-                try
-                {
-                    await this.PlayActivityHub.Clients.All.SendAsync("SendActivity", pl);
+                    trackArtist = this.DbContext.Artists.FirstOrDefault(x => x.Id == track.ArtistId);
+                    trackArtist.LastPlayed = now;
+                    trackArtist.PlayedCount = (trackArtist.PlayedCount ?? 0) + 1;
+                    this.CacheManager.ClearRegion(trackArtist.CacheRegion);
                 }
-                catch (Exception ex)
-                {
-                    this.Logger.LogError(ex);
-                }
-            }
 
-            await this.DbContext.SaveChangesAsync();
-            sw.Stop();
-            return new OperationResult<PlayActivityList>
+                this.CacheManager.ClearRegion(track.CacheRegion);
+                this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
+                this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
+
+                var pl = new PlayActivityList
+                {
+                    Artist = new DataToken
+                    {
+                        Text = track.ReleaseMedia.Release.Artist.Name,
+                        Value = track.ReleaseMedia.Release.Artist.RoadieId.ToString()
+                    },
+                    TrackArtist = track.TrackArtist == null ? null : new DataToken
+                    {
+                        Text = track.TrackArtist.Name,
+                        Value = track.TrackArtist.RoadieId.ToString()
+                    },
+                    Release = new DataToken
+                    {
+                        Text = track.ReleaseMedia.Release.Title,
+                        Value = track.ReleaseMedia.Release.RoadieId.ToString()
+                    },
+                    Track = new DataToken
+                    {
+                        Text = track.Title,
+                        Value = track.RoadieId.ToString()
+                    },
+                    User = new DataToken
+                    {
+                        Text = roadieUser.UserName,
+                        Value = roadieUser.UserId.ToString()
+                    },
+                    PlayedDateDateTime = userTrack?.LastPlayed,
+                    ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ track.ReleaseMedia.Release.RoadieId}",
+                    Rating = track.Rating,
+                    UserRating = userTrack?.Rating,
+                    TrackPlayUrl = $"{ this.HttpContext.BaseUrl }/play/track/{ track.RoadieId}.mp3",
+                    ArtistThumbnail = this.MakeArtistThumbnailImage(track.TrackArtist != null ? track.TrackArtist.RoadieId : track.ReleaseMedia.Release.Artist.RoadieId),
+                    ReleaseThumbnail = this.MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId),
+                    UserThumbnail = this.MakeUserThumbnailImage(roadieUser.UserId)
+                };
+
+                if (!roadieUser.IsPrivate)
+                {
+                    try
+                    {
+                        await this.PlayActivityHub.Clients.All.SendAsync("SendActivity", pl);
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Logger.LogError(ex);
+                    }
+                }
+
+                await this.DbContext.SaveChangesAsync();
+                sw.Stop();
+                return new OperationResult<PlayActivityList>
+                {
+                    Data = pl,
+                    IsSuccess = userTrack != null,
+                    OperationTime = sw.ElapsedMilliseconds
+                };
+            }
+            catch (Exception ex)
             {
-                Data = pl,
-                IsSuccess = userTrack != null,
-                OperationTime = sw.ElapsedMilliseconds
-            };
+                this.Logger.LogError(ex, $"CreatePlayActivity RoadieUser `{ roadieUser }` StreamInfo `{ streamInfo }`");                
+            }
+            return new OperationResult<PlayActivityList>();
         }
 
         public Task<Library.Models.Pagination.PagedResult<PlayActivityList>> List(PagedRequest request, User roadieUser = null, DateTime? newerThan = null)

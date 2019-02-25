@@ -696,35 +696,43 @@ namespace Roadie.Api.Services
                 }
                 if (includes.Contains("stats"))
                 {
-                    tsw.Restart();
-                    var artistTracks = (from r in this.DbContext.Releases
-                                        join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                        join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                        where (r.ArtistId == artist.Id || t.ArtistId == artist.Id)
-                                        select new
-                                        {
-                                            t.Id,
-                                            size = t.FileSize,
-                                            time = t.Duration,
-                                            isMissing = t.Hash == null
-                                        });
-                    var validCartistTracks = artistTracks.Where(x => !x.isMissing);
-                    var trackTime = validCartistTracks.Sum(x => x.time);
-                    result.Statistics = new CollectionStatistics
+                    try
                     {
-                        FileSize = artistTracks.Sum(x => (long?)x.size).ToFileSize(),
-                        MissingTrackCount = artistTracks.Where(x => x.isMissing).Count(),
-                        ReleaseCount = artist.ReleaseCount,
-                        ReleaseMediaCount = (from r in this.DbContext.Releases
-                                             join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                             where r.ArtistId == artist.Id
-                                             select rm.Id).Count(),
-                        TrackTime = validCartistTracks.Any() ? new TimeInfo((decimal)trackTime).ToFullFormattedString() : "--:--",
-                        TrackCount = validCartistTracks.Count(),
-                        TrackPlayedCount = artist.PlayedCount
-                    };
-                    tsw.Stop();
-                    timings.Add("stats", tsw.ElapsedMilliseconds);
+                        tsw.Restart();
+                        var artistTracks = (from r in this.DbContext.Releases
+                                            join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                            join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                            where (r.ArtistId == artist.Id || t.ArtistId == artist.Id)
+                                            select new
+                                            {
+                                                t.Id,
+                                                size = t.FileSize,
+                                                time = t.Duration,
+                                                isMissing = t.Hash == null
+                                            });
+                        var validCartistTracks = artistTracks.Where(x => !x.isMissing);
+                        long? trackTime = validCartistTracks.Sum(x => (long?)x.time);
+                        result.Statistics = new CollectionStatistics
+                        {
+                            FileSize = artistTracks.Sum(x => (long?)x.size).ToFileSize(),
+                            MissingTrackCount = artistTracks.Where(x => x.isMissing).Count(),
+                            ReleaseCount = artist.ReleaseCount,
+                            ReleaseMediaCount = (from r in this.DbContext.Releases
+                                                 join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                                 where r.ArtistId == artist.Id
+                                                 select rm.Id).Count(),
+                            TrackTime = validCartistTracks.Any() ? new TimeInfo((decimal)trackTime).ToFullFormattedString() : "--:--",
+                            TrackCount = validCartistTracks.Count(),
+                            TrackPlayedCount = artist.PlayedCount
+                        };
+                        tsw.Stop();
+                        timings.Add("stats", tsw.ElapsedMilliseconds);
+
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Logger.LogError(ex, $"Error Getting Statistics for Artist `{ artist }`");
+                    }
                 }
                 if (includes.Contains("images"))
                 {

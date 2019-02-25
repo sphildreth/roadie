@@ -98,8 +98,9 @@ namespace Roadie.Api.Controllers
             tsw.Restart();
 
             var info = await trackService.TrackStreamInfo(id,
-                                                               Services.TrackService.DetermineByteStartFromHeaders(this.Request.Headers),
-                                                               Services.TrackService.DetermineByteEndFromHeaders(this.Request.Headers, track.Data.FileSize));
+                                                        TrackService.DetermineByteStartFromHeaders(this.Request.Headers),
+                                                        TrackService.DetermineByteEndFromHeaders(this.Request.Headers, track.Data.FileSize),
+                                                        user);
             if (!info?.IsSuccess ?? false || info?.Data == null)
             {
                 if (info?.Errors != null && (info?.Errors.Any() ?? false))

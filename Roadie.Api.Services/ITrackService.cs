@@ -16,6 +16,6 @@ namespace Roadie.Api.Services
 
         OperationResult<Track> StreamCheckAndInfo(User roadieUser, Guid id);
 
-        Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes);
+        Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes, User roadieUser);
     }
 }

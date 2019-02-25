@@ -813,7 +813,7 @@ namespace Roadie.Api.Services
                                              rm.Id,
                                              rm.MediaNumber
                                          });
-                    var releaseTime = releaseTracks?.Sum(x => x.time) ?? 0;
+                    long releaseTime = releaseTracks?.Sum(x => (long?)x.time) ?? 0;
                     var releaseStats = new ReleaseStatistics
                     {
                         MediaCount = release.MediaCount,

@@ -95,13 +95,29 @@ namespace Roadie.Library.Engines
                         Data = resultInCache
                     };
                 }
+
                 var searchName = metaData.Release.NormalizeName().ToLower();
                 var specialSearchName = metaData.Release.ToAlphanumericName();
+
+                var altStart = $"{ searchName }|";
+                var altIn = $"|{ searchName }|";
+                var altEnds = $"|{ searchName }";
+
+                var altStartSpecial = $"{ specialSearchName }|";
+                var altInSpecial = $"|{ specialSearchName }|";
+                var altEndsSpecial = $"|{ specialSearchName }";
+
                 var release = (from r in this.DbContext.Releases
                                where (r.ArtistId == artist.Id)
-                               where (r.Title.Contains(searchName) ||
-                                      r.AlternateNames.Contains(searchName) ||
-                                      r.AlternateNames.Contains(specialSearchName))
+                               where (r.Title.ToLower() == searchName ||
+                                      r.AlternateNames.ToLower() == searchName ||
+                                      r.AlternateNames.ToLower() == specialSearchName ||
+                                      r.AlternateNames.ToLower().Contains(altStart) ||
+                                      r.AlternateNames.ToLower().Contains(altIn) ||
+                                      r.AlternateNames.ToLower().Contains(altEnds) ||
+                                      r.AlternateNames.ToLower().Contains(altStartSpecial) ||
+                                      r.AlternateNames.ToLower().Contains(altInSpecial) ||
+                                      r.AlternateNames.ToLower().Contains(altEndsSpecial))                                      
                                select r
                                ).FirstOrDefault();
 
