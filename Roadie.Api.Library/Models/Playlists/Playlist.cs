@@ -30,6 +30,9 @@ namespace Roadie.Library.Models.Playlists
         public short? TrackCount { get; set; }
         public short? ReleaseCount { get; set; }
         public decimal? Duration { get; set; }
+
+        // When populated a "data:image" base64 byte array of an image to use as new Thumbnail
+        public string NewThumbnailData { get; set; }
         public string DurationTime
         {
             get

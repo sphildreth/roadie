@@ -22,5 +22,9 @@ namespace Roadie.Api.Services
         Task<PagedResult<PlaylistList>> List(PagedRequest request, User roadieUser = null);
 
         Task<OperationResult<bool>> ReorderPlaylist(data.Playlist playlist);
+
+        Task<OperationResult<bool>> UpdatePlaylist(User user, Playlist label);
+
+        Task<OperationResult<bool>> UpdatePlaylistTracks(User user, PlaylistTrackModifyRequest request);
     }
 }

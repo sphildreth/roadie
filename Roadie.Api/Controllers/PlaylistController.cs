@@ -96,5 +96,45 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("edit")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> Update(models.Playlists.Playlist playlist)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var result = await this.PlaylistService.UpdatePlaylist(await this.CurrentUserModel(), playlist);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("edittracks")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> UpdateTracks(models.Playlists.PlaylistTrackModifyRequest request)
+        {
+            var result = await this.PlaylistService.UpdatePlaylistTracks(await this.CurrentUserModel(), request);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+
+
     }
 }

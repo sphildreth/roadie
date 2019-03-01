@@ -37,6 +37,7 @@ namespace Roadie.Library.Data
         public RoadieDbContext(DbContextOptions<RoadieDbContext> options)
             : base(options)
         {
+            
         }
 
         protected override void OnModelCreating(ModelBuilder builder)

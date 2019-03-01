@@ -7,6 +7,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
+using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Playlists;
@@ -61,6 +62,113 @@ namespace Roadie.Api.Services
                 IsSuccess = true
             };
         }
+
+        public async Task<OperationResult<bool>> UpdatePlaylistTracks(User user, PlaylistTrackModifyRequest request)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var playlist = this.DbContext.Playlists.Include(x => x.Tracks).FirstOrDefault(x => x.RoadieId == request.Id);
+            if (playlist == null)
+            {
+                return new OperationResult<bool>(true, string.Format("Label Not Found [{0}]", request.Id));
+            }
+            try
+            {
+                var now = DateTime.UtcNow;
+
+                playlist.Tracks.Clear();
+
+                var tracks = (from t in this.DbContext.Tracks
+                              join plt in request.Tracks on t.RoadieId equals plt.Track.Id
+                              select t).ToArray();
+                foreach(var newPlaylistTrack in request.Tracks.OrderBy(x => x.ListNumber))
+                {
+                    var track = tracks.FirstOrDefault(x => x.RoadieId == newPlaylistTrack.Track.Id);
+                    playlist.Tracks.Add(new data.PlaylistTrack
+                    {
+                        ListNumber = newPlaylistTrack.ListNumber,
+                        PlayListId = playlist.Id,
+                        CreatedDate = now,
+                        TrackId = track.Id
+                    });
+                }
+                playlist.LastUpdated = now;
+                await this.DbContext.SaveChangesAsync();
+
+              //  await base.UpdatePlaylistCounts(playlist.Id, now);
+
+                this.Logger.LogInformation($"UpdatePlaylistTracks `{ playlist }` By User `{ user }`");
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> UpdatePlaylist(User user, Playlist model)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var playlist = this.DbContext.Playlists.FirstOrDefault(x => x.RoadieId == model.Id);
+            if (playlist == null)
+            {
+                return new OperationResult<bool>(true, string.Format("Label Not Found [{0}]", model.Id));
+            }
+            try
+            {
+                var now = DateTime.UtcNow;
+                playlist.AlternateNames = model.AlternateNamesList.ToDelimitedList();
+                playlist.Description = model.Description;
+                playlist.IsLocked = model.IsLocked;
+                playlist.IsPublic = model.IsPublic;
+                playlist.Name = model.Name;
+                playlist.Status = SafeParser.ToEnum<Statuses>(model.Status);
+                playlist.Tags = model.TagsList.ToDelimitedList();
+                playlist.URLs = model.URLsList.ToDelimitedList();
+
+                var playlistImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
+                if (playlistImage != null)
+                {
+                    // Ensure is jpeg first
+                    playlist.Thumbnail = ImageHelper.ConvertToJpegFormat(playlistImage);
+
+                    // Resize to store in database as thumbnail
+                    playlist.Thumbnail = ImageHelper.ResizeImage(playlist.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                }
+                playlist.LastUpdated = now;
+                await this.DbContext.SaveChangesAsync();
+
+                this.CacheManager.ClearRegion(playlist.CacheRegion);
+                this.Logger.LogInformation($"UpdatePlaylist `{ playlist }` By User `{ user }`");
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
 
         public async Task<OperationResult<bool>> AddTracksToPlaylist(data.Playlist playlist, IEnumerable<Guid> trackIds)
         {
@@ -152,7 +260,7 @@ namespace Roadie.Api.Services
             {
                 return new OperationResult<bool>(true, string.Format("Playlist Not Found [{0}]", id));
             }
-            if (!user.IsAdmin || user.Id != playlist.UserId)
+            if (!user.IsAdmin && user.Id != playlist.UserId)
             {
                 this.Logger.LogWarning("User `{0}` attempted to delete Playlist `{1}`", user, playlist);
                 return new OperationResult<bool>("Access Denied")
@@ -280,7 +388,7 @@ namespace Roadie.Api.Services
                                       join pltr in this.DbContext.PlaylistTracks on pl.Id equals pltr.PlayListId
                                       join t in this.DbContext.Tracks on pltr.TrackId equals t.Id
                                       where pl.Id == playlist.Id
-                                      select new { t, pltr });
+                                      select new { t, pltr }).ToArray();
 
                 if (includes.Contains("stats"))
                 {

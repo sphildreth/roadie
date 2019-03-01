@@ -9,5 +9,6 @@ namespace Roadie.Library.Models.Playlists
     {
         public TrackList Track { get; set; }
         public int ListNumber { get; set; }
+        public int? OldListNumber { get; set; }
     }
 }
