@@ -531,9 +531,9 @@ namespace Roadie.Api.Services
             {
                 if (includes.Contains("stats"))
                 {
-                    var userArtists = this.DbContext.UserArtists.Include(x => x.Artist).Where(x => x.UserId == user.Id).ToArray();
-                    var userReleases = this.DbContext.UserReleases.Include(x => x.Release).Where(x => x.UserId == user.Id).ToArray();
-                    var userTracks = this.DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == user.Id).ToArray();
+                    var userArtists = this.DbContext.UserArtists.Include(x => x.Artist).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserArtist[0];
+                    var userReleases = this.DbContext.UserReleases.Include(x => x.Release).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserRelease[0];
+                    var userTracks = this.DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserTrack[0];
 
                     var mostPlayedArtist = (from a in this.DbContext.Artists
                                             join r in this.DbContext.Releases on a.Id equals r.ArtistId
@@ -572,7 +572,7 @@ namespace Roadie.Api.Services
                     var mostPlayedTrackUserTrack = userTracks
                                                    .OrderByDescending(x => x.PlayedCount)
                                                    .FirstOrDefault();
-                    var mostPlayedTrack = this.DbContext.Tracks
+                    var mostPlayedTrack = mostPlayedTrackUserTrack == null ? null : this.DbContext.Tracks
                                                         .Include(x => x.TrackArtist)
                                                         .Include(x => x.ReleaseMedia)
                                                         .Include("ReleaseMedia.Release")
