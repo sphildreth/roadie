@@ -1,6 +1,3 @@
-# roadie-dotnetcore
-
-
 roadie-dotnetcore
 ======
 Powerful API Music Server.
