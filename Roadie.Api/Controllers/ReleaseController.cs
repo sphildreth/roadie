@@ -106,6 +106,10 @@ namespace Roadie.Api.Controllers
                 }
                 return Ok(result);
             }
+            catch(UnauthorizedAccessException)
+            {
+                return StatusCode((int)HttpStatusCode.Unauthorized);
+            }
             catch (Exception ex)
             {
                 this.Logger.LogError(ex);                

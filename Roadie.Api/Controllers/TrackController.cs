@@ -51,14 +51,26 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc, bool? doRandomize = false)
         {
-            var result = await this.TrackService.List(request: request, 
-                                                      doRandomize: doRandomize,
-                                                      roadieUser: await this.CurrentUserModel());
-            if (!result.IsSuccess)
+            try
             {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
+                var result = await this.TrackService.List(request: request,
+                                                  doRandomize: doRandomize,
+                                                  roadieUser: await this.CurrentUserModel());
+                if (!result.IsSuccess)
+                {
+                    return StatusCode((int)HttpStatusCode.InternalServerError);
+                }
+                return Ok(result);
             }
-            return Ok(result);
+            catch (UnauthorizedAccessException)
+            {
+                return StatusCode((int)HttpStatusCode.Unauthorized);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+            }
+            return StatusCode((int)HttpStatusCode.InternalServerError);
         }
     }
 }

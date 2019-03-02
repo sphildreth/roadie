@@ -7,6 +7,7 @@ using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
+using System;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -59,14 +60,26 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> List([FromQuery]PagedRequest request, bool? doRandomize = false)
         {
-            var result = await this.GenreService.List(roadieUser: await this.CurrentUserModel(),
-                                                      request: request,
-                                                      doRandomize: doRandomize);
-            if (!result.IsSuccess)
+            try
             {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
+                var result = await this.GenreService.List(roadieUser: await this.CurrentUserModel(),
+                                                  request: request,
+                                                  doRandomize: doRandomize);
+                if (!result.IsSuccess)
+                {
+                    return StatusCode((int)HttpStatusCode.InternalServerError);
+                }
+                return Ok(result);
             }
-            return Ok(result);
+            catch (UnauthorizedAccessException)
+            {
+                return StatusCode((int)HttpStatusCode.Unauthorized);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+            }
+            return StatusCode((int)HttpStatusCode.InternalServerError);
         }
     }
 }

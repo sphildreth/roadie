@@ -55,7 +55,7 @@ namespace Roadie.Api.Controllers
             }
             if(this._currentUser == null)
             {
-                throw new Exception("Access Denied");
+                throw new UnauthorizedAccessException("Access Denied");
             }
             return this._currentUser;
         }
