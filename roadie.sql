@@ -42,9 +42,9 @@ CREATE TABLE `artist` (
   `birthDate` date DEFAULT NULL,
   `beginDate` date DEFAULT NULL,
   `endDate` date DEFAULT NULL,
-  `artistType` enum('Character','Choir','Group','Meta','Orchestra','Other','Person') DEFAULT NULL,
+  `artistType` enum('Person','Group','Orchestra','Choir','Character','Meta','Other') DEFAULT NULL,
   `bioContext` text,
-  `bandStatus` enum('Active','On Hold','Split Up') DEFAULT NULL,
+  `bandStatus` enum('Active','On Hold','Split Up','Deceased') DEFAULT NULL,
   `discogsId` varchar(50) DEFAULT NULL,
   `tags` text,
   `alternateNames` text,
@@ -54,11 +54,12 @@ CREATE TABLE `artist` (
   `trackCount` int(11) DEFAULT NULL,
   `playedCount` int(11) DEFAULT NULL,
   `lastPlayed` datetime DEFAULT NULL,
+  `rank` decimal(9,2) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `ix_artist_name` (`name`),
   UNIQUE KEY `ix_artist_sortname` (`sortName`),
   KEY `ix_artist_roadieId` (`roadieId`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=37635 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -77,7 +78,7 @@ CREATE TABLE `artistAssociation` (
   KEY `idx_artistAssociation` (`artistId`,`associatedArtistId`),
   CONSTRAINT `artistAssociation_ibfk_1` FOREIGN KEY (`artistId`) REFERENCES `artist` (`id`) ON DELETE CASCADE,
   CONSTRAINT `artistAssociation_ibfk_2` FOREIGN KEY (`associatedArtistId`) REFERENCES `artist` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=190 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -97,7 +98,7 @@ CREATE TABLE `artistGenreTable` (
   KEY `ix_artistGenreTable_artistId` (`artistId`),
   CONSTRAINT `artistGenreTable_ibfk_1` FOREIGN KEY (`artistId`) REFERENCES `artist` (`id`) ON DELETE CASCADE,
   CONSTRAINT `artistGenreTable_ibfk_2` FOREIGN KEY (`genreId`) REFERENCES `genre` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=32445 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -124,7 +125,7 @@ CREATE TABLE `bookmark` (
   KEY `ix_bookmark_roadieId` (`roadieId`),
   KEY `ix_bookmark_userId` (`userId`),
   CONSTRAINT `bookmark_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=602 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -146,7 +147,7 @@ CREATE TABLE `chatMessage` (
   PRIMARY KEY (`id`),
   KEY `idx_user` (`userId`),
   CONSTRAINT `chatMessage_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=82 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -168,7 +169,7 @@ CREATE TABLE `collection` (
   `edition` varchar(200) DEFAULT NULL,
   `listInCSVFormat` varchar(200) DEFAULT NULL,
   `listInCSV` text,
-  `description` varchar(1000) DEFAULT NULL,
+  `description` varchar(4000) DEFAULT NULL,
   `thumbnail` blob,
   `urls` text,
   `maintainerId` int(11) DEFAULT NULL,
@@ -181,7 +182,7 @@ CREATE TABLE `collection` (
   KEY `maintainerId` (`maintainerId`),
   KEY `ix_collection_roadieId` (`roadieId`),
   CONSTRAINT `collection_ibfk_1` FOREIGN KEY (`maintainerId`) REFERENCES `user` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=96 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -207,7 +208,7 @@ CREATE TABLE `collectionrelease` (
   KEY `ix_collectionrelease_roadieId` (`roadieId`),
   CONSTRAINT `collectionrelease_ibfk_1` FOREIGN KEY (`releaseId`) REFERENCES `release` (`id`) ON DELETE CASCADE,
   CONSTRAINT `collectionrelease_ibfk_2` FOREIGN KEY (`collectionId`) REFERENCES `collection` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=94261 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -228,7 +229,7 @@ CREATE TABLE `genre` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `ix_genre_name` (`name`),
   KEY `ix_genre_roadieId` (`roadieId`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2232 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -257,7 +258,7 @@ CREATE TABLE `image` (
   KEY `ix_image_artistId` (`artistId`),
   CONSTRAINT `image_ibfk_1` FOREIGN KEY (`artistId`) REFERENCES `artist` (`id`) ON DELETE CASCADE,
   CONSTRAINT `image_ibfk_2` FOREIGN KEY (`releaseId`) REFERENCES `release` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=77949 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -292,7 +293,7 @@ CREATE TABLE `label` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `ix_label_name` (`name`),
   KEY `ix_label_roadieId` (`roadieId`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2690 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -325,7 +326,7 @@ CREATE TABLE `playlist` (
   KEY `ix_playlist_roadieId` (`roadieId`),
   KEY `ix_playlist_userId` (`userId`),
   CONSTRAINT `playlist_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -351,7 +352,7 @@ CREATE TABLE `playlisttrack` (
   KEY `ix_playlisttrack_roadieId` (`roadieId`),
   CONSTRAINT `playlisttrack_ibfk_1` FOREIGN KEY (`trackId`) REFERENCES `track` (`id`) ON DELETE CASCADE,
   CONSTRAINT `playlisttrack_ibfk_2` FOREIGN KEY (`playListId`) REFERENCES `playlist` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=1129 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -393,12 +394,13 @@ CREATE TABLE `release` (
   `lastPlayed` datetime DEFAULT NULL,
   `playedCount` int(11) DEFAULT NULL,
   `duration` int(11) DEFAULT NULL,
+  `rank` decimal(9,2) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_releaseArtistAndTitle` (`artistId`,`title`),
   KEY `ix_release_roadieId` (`roadieId`),
   KEY `ix_release_title` (`title`),
   CONSTRAINT `release_ibfk_1` FOREIGN KEY (`artistId`) REFERENCES `artist` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=30584 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -417,7 +419,7 @@ CREATE TABLE `releaseGenreTable` (
   KEY `idx_releaseGenreTableReleaseAndGenre` (`releaseId`,`genreId`),
   CONSTRAINT `releaseGenreTable_ibfk_1` FOREIGN KEY (`releaseId`) REFERENCES `release` (`id`) ON DELETE CASCADE,
   CONSTRAINT `releaseGenreTable_ibfk_2` FOREIGN KEY (`genreId`) REFERENCES `genre` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=36300 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -445,7 +447,7 @@ CREATE TABLE `releaselabel` (
   KEY `ix_releaselabel_roadieId` (`roadieId`),
   CONSTRAINT `releaselabel_ibfk_1` FOREIGN KEY (`releaseId`) REFERENCES `release` (`id`) ON DELETE CASCADE,
   CONSTRAINT `releaselabel_ibfk_2` FOREIGN KEY (`labelId`) REFERENCES `label` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=10975 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -470,7 +472,7 @@ CREATE TABLE `releasemedia` (
   KEY `ix_releasemedia_roadieId` (`roadieId`),
   KEY `releasemedia_releaseId_IDX` (`releaseId`,`releaseMediaNumber`) USING BTREE,
   CONSTRAINT `releasemedia_ibfk_1` FOREIGN KEY (`releaseId`) REFERENCES `release` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=29209 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -492,7 +494,7 @@ CREATE TABLE `request` (
   KEY `ix_request_roadieId` (`roadieId`),
   KEY `requestartist_ibfk_1` (`userId`),
   CONSTRAINT `requestartist_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=1129 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -519,7 +521,7 @@ CREATE TABLE `scanHistory` (
   KEY `ix_scanHistory_roadieId` (`roadieId`),
   KEY `rscanHistoryt_ibfk_1` (`userId`),
   CONSTRAINT `scanHistory_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=1545 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -541,7 +543,7 @@ CREATE TABLE `submission` (
   KEY `ix_submission_roadieId` (`roadieId`),
   KEY `submission_ibfk_1` (`userId`),
   CONSTRAINT `submission_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -587,7 +589,7 @@ CREATE TABLE `track` (
   KEY `track_artistId_IDX` (`artistId`) USING BTREE,
   KEY `track_releaseMediaId_IDX` (`releaseMediaId`) USING BTREE,
   CONSTRAINT `track_ibfk_1` FOREIGN KEY (`releaseMediaId`) REFERENCES `releasemedia` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=311762 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -655,11 +657,12 @@ CREATE TABLE `user` (
   `NormalizedUserName` varchar(20) DEFAULT NULL,
   `PhoneNumber` varchar(100) DEFAULT NULL,
   `PhoneNumberConfirmed` bit(1) DEFAULT NULL,
+  `removeTrackFromQueAfterPlayed` bit(1) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `ix_user_username` (`username`),
   KEY `ix_user_roadieId` (`roadieId`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -750,7 +753,7 @@ CREATE TABLE `userartist` (
   KEY `ix_userartist_roadieId` (`roadieId`),
   CONSTRAINT `userartist_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE,
   CONSTRAINT `userartist_ibfk_2` FOREIGN KEY (`artistId`) REFERENCES `artist` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=104 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -778,7 +781,7 @@ CREATE TABLE `userrelease` (
   KEY `ix_userrelease_roadieId` (`roadieId`),
   CONSTRAINT `userrelease_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE,
   CONSTRAINT `userrelease_ibfk_2` FOREIGN KEY (`releaseId`) REFERENCES `release` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=229 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -802,7 +805,7 @@ CREATE TABLE `userrole` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`),
   KEY `ix_userrole_roadieId` (`roadieId`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -821,7 +824,7 @@ CREATE TABLE `usersInRoles` (
   KEY `ix_usersInRoles_userId` (`userId`),
   CONSTRAINT `usersInRoles_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE,
   CONSTRAINT `usersInRoles_ibfk_2` FOREIGN KEY (`userRoleId`) REFERENCES `userrole` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -851,7 +854,7 @@ CREATE TABLE `usertrack` (
   KEY `ix_usertrack_roadieId` (`roadieId`),
   CONSTRAINT `usertrack_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE,
   CONSTRAINT `usertrack_ibfk_2` FOREIGN KEY (`trackId`) REFERENCES `track` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=28781 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -937,4 +940,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-12-13 15:50:02
+-- Dump completed on 2019-03-02 15:11:06
