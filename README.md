@@ -14,7 +14,7 @@ Support:
 
 Installation
 ------------
-Please see [the wiki](https://github.com/sphildreth/roadie-nancy/wiki)
+Please see [the wiki](https://github.com/sphildreth/roadie-dotnetcore/wiki)
 
 License
 -------
