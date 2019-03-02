@@ -629,9 +629,37 @@ namespace Roadie.Api.Services
             var trackFileInfo = new FileInfo(trackPath);
             if (!trackFileInfo.Exists)
             {
-                track.UpdateTrackMissingFile();
-                await this.DbContext.SaveChangesAsync();
-                return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: TrackId [{trackId}] Unable to Find Track [{trackFileInfo.FullName}]");
+                // Not Found try recanning release 
+                var release = (from r in this.DbContext.Releases
+                               join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                               where rm.Id == track.ReleaseMediaId
+                               select r).FirstOrDefault();
+                if (!release.IsLocked ?? false)
+                {
+                    await this.AdminService.ScanRelease(new Library.Identity.ApplicationUser
+                    {
+                        Id = roadieUser.Id.Value
+                    }, release.RoadieId, false, true);
+                }
+                track = this.DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
+                if (track == null)
+                {
+                    return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Unable To Find Track [{ trackId }]");
+                }
+                try
+                {
+                    trackPath = track.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
+                }
+                catch (Exception ex)
+                {
+                    return new OperationResult<TrackStreamInfo>(ex);
+                }
+                if (!trackFileInfo.Exists)
+                { 
+                    track.UpdateTrackMissingFile();
+                    await this.DbContext.SaveChangesAsync();
+                    return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: TrackId [{trackId}] Unable to Find Track [{trackFileInfo.FullName}]");
+                }
             }
             var contentDurationTimeSpan = TimeSpan.FromMilliseconds((double)(track.Duration ?? 0));
             var info = new TrackStreamInfo

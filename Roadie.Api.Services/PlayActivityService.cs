@@ -57,27 +57,35 @@ namespace Roadie.Api.Services
                 }
                 data.UserTrack userTrack = null;
                 var now = DateTime.UtcNow;
+
+                try
+                {
+                    var user = roadieUser != null ? this.DbContext.Users.FirstOrDefault(x => x.RoadieId == roadieUser.UserId) : null;
+                    if (user != null)
+                    {
+                        userTrack = this.DbContext.UserTracks.FirstOrDefault(x => x.UserId == user.Id && x.TrackId == track.Id);
+                        if (userTrack == null)
+                        {
+                            userTrack = new data.UserTrack(now)
+                            {
+                                UserId = user.Id,
+                                TrackId = track.Id
+                            };
+                            this.DbContext.UserTracks.Add(userTrack);
+                        }
+                        userTrack.LastPlayed = now;
+                        userTrack.PlayedCount = (userTrack.PlayedCount ?? 0) + 1;
+                        this.CacheManager.ClearRegion(user.CacheRegion);
+                        await this.DbContext.SaveChangesAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.Logger.LogError(ex, $"Error in CreatePlayActivity, Creating UserTrack: User `{ roadieUser}` TrackId [{ track.Id }");
+                }
+
                 track.PlayedCount = (track.PlayedCount ?? 0) + 1;
                 track.LastPlayed = now;
-                var user = roadieUser != null ? this.DbContext.Users
-                                                     .Include(x => x.TrackRatings)
-                                                     .FirstOrDefault(x => x.RoadieId == roadieUser.UserId) : null;
-                if (user != null)
-                {
-                    userTrack = user.TrackRatings.FirstOrDefault(x => x.TrackId == track.Id);
-                    if (userTrack == null)
-                    {
-                        userTrack = new data.UserTrack(now)
-                        {
-                            UserId = user.Id,
-                            TrackId = track.Id
-                        };
-                        this.DbContext.UserTracks.Add(userTrack);
-                    }
-                    userTrack.LastPlayed = now;
-                    userTrack.PlayedCount = (userTrack.PlayedCount ?? 0) + 1;
-                    this.CacheManager.ClearRegion(user.CacheRegion);
-                }
 
                 var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == track.ReleaseMedia.Release.RoadieId);
                 release.LastPlayed = now;

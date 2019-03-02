@@ -75,11 +75,11 @@ namespace Roadie.Api.Controllers
             var user = this.UserManager.Users.FirstOrDefault(x => x.Id == userId);
             if(user == null)
             {
-                return StatusCode((int)HttpStatusCode.Forbidden);
+                return StatusCode((int)HttpStatusCode.Unauthorized);
             }
             if(!ServiceBase.ConfirmTrackPlayToken(user, id, trackPlayToken))
             {
-                return StatusCode((int)HttpStatusCode.Forbidden);
+                return StatusCode((int)HttpStatusCode.Unauthorized);
             }
             return await base.StreamTrack(id, this.TrackService, this.PlayActivityService, this.UserModelForUser(user));
         }

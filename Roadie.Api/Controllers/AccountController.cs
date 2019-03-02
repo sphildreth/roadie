@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Models;
@@ -10,14 +10,11 @@ using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
+using Roadie.Library.Utility;
 using System;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.WebUtilities;
-using Roadie.Library.Utility;
 
 namespace Roadie.Api.Controllers
 {
@@ -31,12 +28,12 @@ namespace Roadie.Api.Controllers
         private readonly ILogger<AccountController> Logger;
         private readonly SignInManager<ApplicationUser> SignInManager;
         private readonly ITokenService TokenService;
-        private readonly UserManager<ApplicationUser> UserManager;        
-        private IRoadieSettings RoadieSettings { get; }
-        private ICacheManager CacheManager { get; }
+        private readonly UserManager<ApplicationUser> UserManager;
         private IAdminService AdminService { get; }
+        private ICacheManager CacheManager { get; }
         private IEmailSender EmailSender { get; }
         private IHttpContext RoadieHttpContext { get; }
+        private IRoadieSettings RoadieSettings { get; }
 
         public AccountController(
            IAdminService adminService,
@@ -63,6 +60,22 @@ namespace Roadie.Api.Controllers
             this.RoadieHttpContext = httpContext;
         }
 
+        [HttpGet("confirmemail")]
+        public IActionResult ConfirmEmail(string userid, string code)
+        {
+            var user = this.UserManager.FindByIdAsync(userid).Result;
+            IdentityResult result = this.UserManager.ConfirmEmailAsync(user, code).Result;
+            if (result.Succeeded)
+            {
+                this.Logger.LogInformation("User [{0}] Confirmed Email Successfully", userid);
+                return Content($"Email for { this.RoadieSettings.SiteName } account confirmed successfully!");
+            }
+            else
+            {
+                return Content("Error while confirming your email!");
+            }
+        }
+
         [HttpPost]
         [Route("token")]
         public async Task<IActionResult> CreateToken([FromBody]LoginModel model)
@@ -76,7 +89,7 @@ namespace Roadie.Api.Controllers
                     if (!loginResult.Succeeded)
                     {
                         return BadRequest();
-                    }                    
+                    }
                     var user = await UserManager.FindByNameAsync(model.Username);
                     var now = DateTime.UtcNow;
                     user.LastLogin = now;
@@ -84,14 +97,13 @@ namespace Roadie.Api.Controllers
                     await UserManager.UpdateAsync(user);
                     var t = await this.TokenService.GenerateToken(user, this.UserManager);
                     this.Logger.LogInformation($"Successfully authenticated User [{ model.Username}]");
-                    if(!user.EmailConfirmed)
+                    if (!user.EmailConfirmed)
                     {
                         try
                         {
                             var code = await this.UserManager.GenerateEmailConfirmationTokenAsync(user);
                             var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, Request.Scheme);
                             await this.EmailSender.SendEmailAsync(user.Email, $"Confirm your { this.RoadieSettings.SiteName } email", $"Please confirm your { this.RoadieSettings.SiteName } account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
                         }
                         catch (Exception ex)
                         {
@@ -100,7 +112,7 @@ namespace Roadie.Api.Controllers
                     }
                     this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
                     var avatarUrl = $"{ this.RoadieHttpContext.ImageBaseUrl }/user/{ user.RoadieId }/{ this.RoadieSettings.ThumbnailImageSize.Width }/{ this.RoadieSettings.ThumbnailImageSize.Height }";
-                    return Ok(new 
+                    return Ok(new
                     {
                         Username = user.UserName,
                         RecentLimit = user.RecentlyPlayedLimit,
@@ -149,10 +161,12 @@ namespace Roadie.Api.Controllers
         {
             if (ModelState.IsValid)
             {
+                var now = DateTime.UtcNow;
                 var user = new ApplicationUser
                 {
                     UserName = registerModel.Username,
-                    RegisteredOn = DateTime.UtcNow,
+                    RegisteredOn = now,
+                    LastLogin = now,
                     DoUseHtmlPlayer = true,
                     Email = registerModel.Email
                 };
@@ -160,14 +174,20 @@ namespace Roadie.Api.Controllers
                 var identityResult = await this.UserManager.CreateAsync(user, registerModel.Password);
                 if (identityResult.Succeeded)
                 {
-                    if(user.Id == 1)
+                    if (user.Id == 1)
                     {
                         await this.AdminService.DoInitialSetup(user, this.UserManager);
                     }
-                    var code = await this.UserManager.GenerateEmailConfirmationTokenAsync(user);
-                    var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, Request.Scheme);
-                    await this.EmailSender.SendEmailAsync(user.Email, $"Confirm your { this.RoadieSettings.SiteName } email", $"Please confirm your { this.RoadieSettings.SiteName } account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
+                    try
+                    {
+                        var code = await this.UserManager.GenerateEmailConfirmationTokenAsync(user);
+                        var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, Request.Scheme);
+                        await this.EmailSender.SendEmailAsync(user.Email, $"Confirm your { this.RoadieSettings.SiteName } email", $"Please confirm your { this.RoadieSettings.SiteName } account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Logger.LogError(ex, $"Error Sending Register Email to [{ registerModel.Email }]");
+                    }
                     await SignInManager.SignInAsync(user, isPersistent: false);
                     var t = await this.TokenService.GenerateToken(user, this.UserManager);
                     this.Logger.LogInformation($"Successfully created and authenticated User [{ registerModel.Username}]");
@@ -192,41 +212,6 @@ namespace Roadie.Api.Controllers
                 }
             }
             return BadRequest(ModelState);
-        }
-
-        [HttpGet("confirmemail")]
-        public IActionResult ConfirmEmail(string userid, string code)
-        {
-            var user = this.UserManager.FindByIdAsync(userid).Result;
-            IdentityResult result = this.UserManager.ConfirmEmailAsync(user, code).Result;
-            if (result.Succeeded)
-            {
-                this.Logger.LogInformation("User [{0}] Confirmed Email Successfully", userid);
-                return Content($"Email for { this.RoadieSettings.SiteName } account confirmed successfully!");
-            }
-            else
-            {
-                return Content("Error while confirming your email!");
-            }
-        }
-
-        [HttpGet("sendpasswordresetemail")]
-        public async Task<IActionResult> SendPasswordResetEmail(string username, string callbackUrl)
-        {
-            var user = await UserManager.FindByNameAsync(username);
-            var token = await this.UserManager.GeneratePasswordResetTokenAsync(user);
-            callbackUrl = callbackUrl + "?username=" + username + "&token=" + WebEncoders.Base64UrlEncode(System.Text.Encoding.ASCII.GetBytes(token));
-            try
-            {
-                await this.EmailSender.SendEmailAsync(user.Email, $"Reset your { this.RoadieSettings.SiteName } password", $"A request has been made to reset your password for your { this.RoadieSettings.SiteName } account. To proceed <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>click here</a>.");
-                this.Logger.LogInformation("User [{0}] Email [{1}] Requested Password Reset Callback [{2}]", username, user.Email, callbackUrl);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex);
-            }
-            return StatusCode(500);
         }
 
         [HttpPost("resetpassword")]
@@ -262,6 +247,25 @@ namespace Roadie.Api.Controllers
                 }
             }
             return BadRequest(ModelState);
+        }
+
+        [HttpGet("sendpasswordresetemail")]
+        public async Task<IActionResult> SendPasswordResetEmail(string username, string callbackUrl)
+        {
+            var user = await UserManager.FindByNameAsync(username);
+            var token = await this.UserManager.GeneratePasswordResetTokenAsync(user);
+            callbackUrl = callbackUrl + "?username=" + username + "&token=" + WebEncoders.Base64UrlEncode(System.Text.Encoding.ASCII.GetBytes(token));
+            try
+            {
+                await this.EmailSender.SendEmailAsync(user.Email, $"Reset your { this.RoadieSettings.SiteName } password", $"A request has been made to reset your password for your { this.RoadieSettings.SiteName } account. To proceed <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>click here</a>.");
+                this.Logger.LogInformation("User [{0}] Email [{1}] Requested Password Reset Callback [{2}]", username, user.Email, callbackUrl);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+            }
+            return StatusCode(500);
         }
     }
 }
