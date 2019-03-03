@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Hashids.net" Version="1.2.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.4.0" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.0.10" />
@@ -15,12 +16,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Roadie.Api.Hubs\Roadie.Api.Hubs.csproj" />
     <ProjectReference Include="..\Roadie.Api.Library\Roadie.Library.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Microsoft.AspNetCore.Identity.UI">
-      <HintPath>..\..\..\Program Files\dotnet\sdk\NuGetFallbackFolder\microsoft.aspnetcore.identity.ui\2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Identity.UI.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>
