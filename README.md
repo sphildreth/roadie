@@ -6,7 +6,10 @@ API server that works well with [roadie-vuejs](https://github.com/sphildreth/roa
 
 Built on:
 ---------
-* .Net Core
+* [.Net Core](https://docs.microsoft.com/en-us/dotnet/core/)
+* [EF Core](https://docs.microsoft.com/en-us/ef/core/)
+* [Cachemanager](http://cachemanager.michaco.net/)
+
 
 Support:
 ------------
