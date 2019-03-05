@@ -2,10 +2,3 @@ language: csharp
 mono: none
 dotnet: 2.2
 solution: Roadie.sln
-install:
- - nuget restore Roadie.sln
- - nuget install xunit.runners -Version 1.9.2 -OutputDirectory testrunner
-script:
- - dotnet restore
- - msbuild /p:Configuration=Release Roadie.sln
- - dotnet ./testrunner/xunit.runners.1.9.2/tools/xunit.console.clr4.exe ./Roadie.Api.Library.Tests/bin/Release/Roadie.Api.Library.Tests.dll
