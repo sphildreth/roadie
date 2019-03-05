@@ -1,9 +1,9 @@
-    :::::::..       ...       :::.   :::::::-.  :::.,::::::      :::.  ::::::::::. :::
-    ;;;;``;;;;   .;;;;;;;.    ;;`;;   ;;,   `';,;;;;;;;''''      ;;`;;  `;;;```.;;;;;;
-     [[[,/[[['  ,[[     \[[, ,[[ '[[, `[[     [[[[[ [[cccc      ,[[ '[[, `]]nnn]]' [[[
-     $$$$$$c    $$$,     $$$c$$$cc$$$c $$,    $$$$$ $$""""     c$$$cc$$$c $$$""    $$$
-     888b "88bo,"888,_ _,88P 888   888,888_,o8P'888 888oo,__    888   888,888o     888
-     MMMM   "W"   "YMMMMMP"  YMM   ""` MMMMP"`  MMM """"YUMMM   YMM   ""` YMMMb    MMM
+
+                               ____  _____    __    ____  ____  ____      __    ____  ____ 
+                              (  _ \(  _  )  /__\  (  _ \(_  _)( ___)    /__\  (  _ \(_  _)
+                               )   / )(_)(  /(__)\  )(_) )_)(_  )__)    /(__)\  )___/ _)(_ 
+                              (_)\_)(_____)(__)(__)(____/(____)(____)  (__)(__)(__)  (____)
+
  
 roadie-dotnetcore
 ======
@@ -13,7 +13,6 @@ API server that works well with [roadie-vuejs](https://github.com/sphildreth/roa
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://travis-ci.org/sphildreth/roadie-dotnetcore.svg?branch=master)](https://travis-ci.org/sphildreth/roadie-dotnetcore)
-[![Coverage Status](https://coveralls.io/repos/github/sphildreth/roadie-dotnetcore/badge.svg?branch=master)](https://coveralls.io/github/sphildreth/roadie-dotnetcore?branch=master)
 
 Built on:
 ---------
