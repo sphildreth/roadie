@@ -32,7 +32,15 @@ namespace Roadie.Api
                 Log.Fatal(":: Log Test: Fatal (Critial)");                                  // Microsoft.Extensions.Logging.LogLevel.Critical
                 Trace.WriteLine(":: Log Test: Trace WriteLine()");
 #endif
+                Console.WriteLine("");
+                Console.WriteLine(@" ____   __    __   ____  __  ____     __   ____  __  ");
+                Console.WriteLine(@"(  _ \ /  \  / _\ (    \(  )(  __)   / _\ (  _ \(  ) ");
+                Console.WriteLine(@" )   /(  O )/    \ ) D ( )(  ) _)   /    \ ) __/ )(  ");
+                Console.WriteLine(@"(__\_) \__/ \_/\_/(____/(__)(____)  \_/\_/(__)  (__) ");
+                Console.WriteLine("");
+
                 CreateWebHostBuilder(args).Build().Run();
+
             }
             catch (Exception ex)
             {

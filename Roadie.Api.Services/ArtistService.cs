@@ -219,7 +219,7 @@ namespace Roadie.Api.Services
             {
                 var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
                 request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
-                rows = result.OrderBy(x => Guid.NewGuid()).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                rows = result.OrderBy(x => x.RandomSortId).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }
             else
             {

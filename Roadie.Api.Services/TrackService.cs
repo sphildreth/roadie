@@ -281,10 +281,12 @@ namespace Roadie.Api.Services
                     }
                     if (request.FilterFavoriteOnly)
                     {
-                        randomTrackIds = favoriteTrackIds.OrderBy(x => Guid.NewGuid()).ToArray();
+                        rowCount = favoriteTrackIds.Count();
                     }
-
-                    rowCount = this.DbContext.Tracks.Where(x => x.Hash != null).Count();
+                    else
+                    {
+                        rowCount = this.DbContext.Tracks.Where(x => x.Hash != null).Count();
+                    }
                 }
                 Guid?[] filterToTrackIds = null;
                 if (request.FilterToTrackId.HasValue || request.FilterToTrackIds != null)
@@ -467,7 +469,14 @@ namespace Roadie.Api.Services
                 {
                     sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Release.Release.Text", "ASC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } }) : request.OrderValue(null);
                 }
-                rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                if(doRandomize ?? false)
+                {
+                    rows = result.OrderBy(x => x.RandomSortId).Take(request.LimitValue).ToArray();
+                }
+                else
+                {
+                    rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                }                
                 if (rows.Any() && roadieUser != null)
                 {
                     var rowIds = rows.Select(x => x.DatabaseId).ToArray();

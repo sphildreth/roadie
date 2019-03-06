@@ -6,6 +6,12 @@ namespace Roadie.Library.Extensions
 {
     public static class ListExt
     {
+        public static IEnumerable<T> Randomize<T>(this IEnumerable<T> source)
+        {
+            Random rnd = new Random();
+            return source.OrderBy<T, int>((item) => rnd.Next());
+        }
+
         public static void Shuffle<T>(this IList<T> list)
         {
             int n = list.Count;

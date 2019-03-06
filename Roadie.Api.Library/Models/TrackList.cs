@@ -5,12 +5,14 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Text;
 
 namespace Roadie.Library.Models
 {
     [Serializable]
+    [DebuggerDisplay("Trackid [{ Track.Value }], Track Name [{ Track.Text }}")]
     public class TrackList : EntityInfoModelBase
     {
         public int? MediaNumber { get; set; }
