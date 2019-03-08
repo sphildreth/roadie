@@ -20,6 +20,14 @@ namespace Roadie.Library.Models
         public Image Thumbnail { get; set; }
         public DateTime? LastPlayed { get; set; }
 
+        public bool IsValid
+        {
+            get
+            {
+                return this.Id != Guid.Empty;
+            }
+        }
+
         public static ArtistList FromDataArtist(Data.Artist artist, Image thumbnail)
         {
             return new ArtistList

@@ -69,6 +69,10 @@ namespace Roadie.Api.Services
                 {
                     case BookmarkType.Artist:
                         var artist = this.DbContext.Artists.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
+                        if(artist == null)
+                        {
+                            continue;
+                        }
                         row.Bookmark = new DataToken
                         {
                             Text = artist.Name,
@@ -81,6 +85,10 @@ namespace Roadie.Api.Services
 
                     case BookmarkType.Release:
                         var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.Id == row.BookmarkTargetId);
+                        if (release == null)
+                        {
+                            continue;
+                        }
                         row.Bookmark = new DataToken
                         {
                             Text = release.Title,
@@ -98,6 +106,10 @@ namespace Roadie.Api.Services
                                                   .Include(x => x.ReleaseMedia.Release.Artist)
                                                   .Include(x => x.TrackArtist)
                                                   .FirstOrDefault(x => x.Id == row.BookmarkTargetId);
+                        if (track == null)
+                        {
+                            continue;
+                        }
                         row.Bookmark = new DataToken
                         {
                             Text = track.Title,
@@ -123,6 +135,10 @@ namespace Roadie.Api.Services
                         var playlist = this.DbContext.Playlists
                                                      .Include(x => x.User)
                                                      .FirstOrDefault(x => x.Id == row.BookmarkTargetId);
+                        if (playlist == null)
+                        {
+                            continue;
+                        }
                         row.Bookmark = new DataToken
                         {
                             Text = playlist.Name,
@@ -135,6 +151,10 @@ namespace Roadie.Api.Services
 
                     case BookmarkType.Collection:
                         var collection = this.DbContext.Collections.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
+                        if (collection == null)
+                        {
+                            continue;
+                        }
                         row.Bookmark = new DataToken
                         {
                             Text = collection.Name,
@@ -149,6 +169,10 @@ namespace Roadie.Api.Services
 
                     case BookmarkType.Label:
                         var label = this.DbContext.Labels.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
+                        if (label == null)
+                        {
+                            continue;
+                        }
                         row.Bookmark = new DataToken
                         {
                             Text = label.Name,
