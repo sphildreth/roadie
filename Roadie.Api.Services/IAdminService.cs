@@ -2,6 +2,7 @@
 using Roadie.Library;
 using Roadie.Library.Identity;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Services
@@ -29,5 +30,7 @@ namespace Roadie.Api.Services
         Task<OperationResult<bool>> ScanLibraryFolder(ApplicationUser user, bool isReadOnly = false);
 
         Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
+
+        Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleases(ApplicationUser user);
     }
 }

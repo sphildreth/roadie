@@ -108,6 +108,19 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("missingcollectionreleases")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> MissingCollectionReleases()
+        {
+            var result = await this.AdminService.MissingCollectionReleases(await this.UserManager.GetUserAsync(User));
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+
         [HttpPost("delete/release/{id}")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteRelease(Guid id, bool? doDeleteFiles)

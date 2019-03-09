@@ -262,236 +262,246 @@ namespace Roadie.Library.Factories
             SimpleContract.Requires<ArgumentNullException>(releaseToMergeInto != null, "Invalid Release");
             SimpleContract.Requires<ArgumentNullException>(releaseToMerge.Artist != null, "Invalid Artist");
             SimpleContract.Requires<ArgumentNullException>(releaseToMergeInto.Artist != null, "Invalid Artist");
-
             var result = false;
-
+            var resultErrors = new List<Exception>();
             var sw = new Stopwatch();
             sw.Start();
 
-            var mergedFilesToDelete = new List<string>();
-            var mergedTracksToMove = new List<Data.Track>();
-
-            releaseToMergeInto.MediaCount = releaseToMergeInto.MediaCount ?? 0;
-
-            var now = DateTime.UtcNow;
-            var releaseToMergeReleaseMedia = this.DbContext.ReleaseMedias.Where(x => x.ReleaseId == releaseToMerge.Id).ToList();
-            var releaseToMergeIntoReleaseMedia = this.DbContext.ReleaseMedias.Where(x => x.ReleaseId == releaseToMergeInto.Id).ToList();
-            var releaseToMergeIntoLastMediaNumber = releaseToMergeIntoReleaseMedia.Max(x => x.MediaNumber);
-
-            // Add new ReleaseMedia
-            if (addAsMedia || !releaseToMergeIntoReleaseMedia.Any())
+            try
             {
-                foreach (var rm in releaseToMergeReleaseMedia)
+
+                var mergedFilesToDelete = new List<string>();
+                var mergedTracksToMove = new List<Data.Track>();
+
+                releaseToMergeInto.MediaCount = releaseToMergeInto.MediaCount ?? 0;
+
+                var now = DateTime.UtcNow;
+                var releaseToMergeReleaseMedia = this.DbContext.ReleaseMedias.Where(x => x.ReleaseId == releaseToMerge.Id).ToList();
+                var releaseToMergeIntoReleaseMedia = this.DbContext.ReleaseMedias.Where(x => x.ReleaseId == releaseToMergeInto.Id).ToList();
+                var releaseToMergeIntoLastMediaNumber = releaseToMergeIntoReleaseMedia.Max(x => x.MediaNumber);
+
+                // Add new ReleaseMedia
+                if (addAsMedia || !releaseToMergeIntoReleaseMedia.Any())
                 {
-                    releaseToMergeIntoLastMediaNumber++;
-                    rm.ReleaseId = releaseToMergeInto.Id;
-                    rm.MediaNumber = releaseToMergeIntoLastMediaNumber;
-                    rm.LastUpdated = now;
-                    releaseToMergeInto.MediaCount++;
-                    releaseToMergeInto.TrackCount += rm.TrackCount;
-                }
-            }
-            // Merge into existing ReleaseMedia
-            else
-            {
-                // See if each media exists and merge details of each including tracks
-                foreach (var rm in releaseToMergeReleaseMedia)
-                {
-                    var existingReleaseMedia = releaseToMergeIntoReleaseMedia.FirstOrDefault(x => x.MediaNumber == rm.MediaNumber);
-                    var mergeTracks = this.DbContext.Tracks.Where(x => x.ReleaseMediaId == rm.Id).ToArray();
-                    if (existingReleaseMedia == null)
+                    foreach (var rm in releaseToMergeReleaseMedia)
                     {
                         releaseToMergeIntoLastMediaNumber++;
-                        // Doesnt exist in release being merged to add
                         rm.ReleaseId = releaseToMergeInto.Id;
                         rm.MediaNumber = releaseToMergeIntoLastMediaNumber;
                         rm.LastUpdated = now;
                         releaseToMergeInto.MediaCount++;
                         releaseToMergeInto.TrackCount += rm.TrackCount;
-                        mergedTracksToMove.AddRange(mergeTracks);
                     }
-                    else
+                }
+                // Merge into existing ReleaseMedia
+                else
+                {
+                    // See if each media exists and merge details of each including tracks
+                    foreach (var rm in releaseToMergeReleaseMedia)
                     {
-                        // ReleaseMedia Does exist merge tracks and details
-
-                        var mergeIntoTracks = this.DbContext.Tracks.Where(x => x.ReleaseMediaId == existingReleaseMedia.Id).ToArray();
-                        foreach (var mergeTrack in mergeTracks)
+                        var existingReleaseMedia = releaseToMergeIntoReleaseMedia.FirstOrDefault(x => x.MediaNumber == rm.MediaNumber);
+                        var mergeTracks = this.DbContext.Tracks.Where(x => x.ReleaseMediaId == rm.Id).ToArray();
+                        if (existingReleaseMedia == null)
                         {
-                            var existingTrack = mergeIntoTracks.FirstOrDefault(x => x.TrackNumber == mergeTrack.TrackNumber);
-                            if (existingTrack == null)
+                            releaseToMergeIntoLastMediaNumber++;
+                            // Doesnt exist in release being merged to add
+                            rm.ReleaseId = releaseToMergeInto.Id;
+                            rm.MediaNumber = releaseToMergeIntoLastMediaNumber;
+                            rm.LastUpdated = now;
+                            releaseToMergeInto.MediaCount++;
+                            releaseToMergeInto.TrackCount += rm.TrackCount;
+                            mergedTracksToMove.AddRange(mergeTracks);
+                        }
+                        else
+                        {
+                            // ReleaseMedia Does exist merge tracks and details
+
+                            var mergeIntoTracks = this.DbContext.Tracks.Where(x => x.ReleaseMediaId == existingReleaseMedia.Id).ToArray();
+                            foreach (var mergeTrack in mergeTracks)
                             {
-                                // Track does not exist, update to existing ReleaseMedia and update ReleaseToMergeInfo counts
-                                mergeTrack.LastUpdated = now;
-                                mergeTrack.ReleaseMediaId = existingReleaseMedia.Id;
-                                existingReleaseMedia.TrackCount++;
-                                existingReleaseMedia.LastUpdated = now;
-                                releaseToMergeInto.TrackCount++;
-                            }
-                            else
-                            {
-                                // Track does exist merge two tracks together
-                                existingTrack.MusicBrainzId = existingTrack.MusicBrainzId ?? mergeTrack.MusicBrainzId;
-                                existingTrack.SpotifyId = existingTrack.SpotifyId ?? mergeTrack.SpotifyId;
-                                existingTrack.AmgId = existingTrack.AmgId ?? mergeTrack.AmgId;
-                                existingTrack.ISRC = existingTrack.ISRC ?? mergeTrack.ISRC;
-                                existingTrack.AmgId = existingTrack.AmgId ?? mergeTrack.AmgId;
-                                existingTrack.LastFMId = existingTrack.LastFMId ?? mergeTrack.LastFMId;
-                                existingTrack.PartTitles = existingTrack.PartTitles ?? mergeTrack.PartTitles;
-                                existingTrack.PlayedCount = (existingTrack.PlayedCount ?? 0) + (mergeTrack.PlayedCount ?? 0);
-                                if (mergeTrack.LastPlayed.HasValue && existingTrack.LastPlayed.HasValue && mergeTrack.LastPlayed > existingTrack.LastPlayed)
+                                var existingTrack = mergeIntoTracks.FirstOrDefault(x => x.TrackNumber == mergeTrack.TrackNumber);
+                                if (existingTrack == null)
                                 {
-                                    existingTrack.LastPlayed = mergeTrack.LastPlayed;
+                                    // Track does not exist, update to existing ReleaseMedia and update ReleaseToMergeInfo counts
+                                    mergeTrack.LastUpdated = now;
+                                    mergeTrack.ReleaseMediaId = existingReleaseMedia.Id;
+                                    existingReleaseMedia.TrackCount++;
+                                    existingReleaseMedia.LastUpdated = now;
+                                    releaseToMergeInto.TrackCount++;
                                 }
-                                existingTrack.Thumbnail = existingTrack.Thumbnail ?? mergeTrack.Thumbnail;
-                                existingTrack.MusicBrainzId = existingTrack.MusicBrainzId ?? mergeTrack.MusicBrainzId;
-                                existingTrack.Tags = existingTrack.Tags.AddToDelimitedList(mergeTrack.Tags.ToListFromDelimited());
-                                if (!mergeTrack.Title.Equals(existingTrack.Title, StringComparison.OrdinalIgnoreCase))
+                                else
                                 {
-                                    existingTrack.AlternateNames = existingTrack.AlternateNames.AddToDelimitedList(new string[] { mergeTrack.Title, mergeTrack.Title.ToAlphanumericName() });
-                                }
-                                existingTrack.AlternateNames = existingTrack.AlternateNames.AddToDelimitedList(mergeTrack.AlternateNames.ToListFromDelimited());
-                                existingTrack.LastUpdated = now;
-                                var mergedTrackFileName = mergeTrack.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
-                                var trackFileName = existingTrack.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
-                                if (!trackFileName.Equals(mergedTrackFileName, StringComparison.Ordinal) && File.Exists(trackFileName))
-                                {
-                                    mergedFilesToDelete.Add(mergedTrackFileName);
+                                    // Track does exist merge two tracks together
+                                    existingTrack.MusicBrainzId = existingTrack.MusicBrainzId ?? mergeTrack.MusicBrainzId;
+                                    existingTrack.SpotifyId = existingTrack.SpotifyId ?? mergeTrack.SpotifyId;
+                                    existingTrack.AmgId = existingTrack.AmgId ?? mergeTrack.AmgId;
+                                    existingTrack.ISRC = existingTrack.ISRC ?? mergeTrack.ISRC;
+                                    existingTrack.AmgId = existingTrack.AmgId ?? mergeTrack.AmgId;
+                                    existingTrack.LastFMId = existingTrack.LastFMId ?? mergeTrack.LastFMId;
+                                    existingTrack.PartTitles = existingTrack.PartTitles ?? mergeTrack.PartTitles;
+                                    existingTrack.PlayedCount = (existingTrack.PlayedCount ?? 0) + (mergeTrack.PlayedCount ?? 0);
+                                    if (mergeTrack.LastPlayed.HasValue && existingTrack.LastPlayed.HasValue && mergeTrack.LastPlayed > existingTrack.LastPlayed)
+                                    {
+                                        existingTrack.LastPlayed = mergeTrack.LastPlayed;
+                                    }
+                                    existingTrack.Thumbnail = existingTrack.Thumbnail ?? mergeTrack.Thumbnail;
+                                    existingTrack.MusicBrainzId = existingTrack.MusicBrainzId ?? mergeTrack.MusicBrainzId;
+                                    existingTrack.Tags = existingTrack.Tags.AddToDelimitedList(mergeTrack.Tags.ToListFromDelimited());
+                                    if (!mergeTrack.Title.Equals(existingTrack.Title, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        existingTrack.AlternateNames = existingTrack.AlternateNames.AddToDelimitedList(new string[] { mergeTrack.Title, mergeTrack.Title.ToAlphanumericName() });
+                                    }
+                                    existingTrack.AlternateNames = existingTrack.AlternateNames.AddToDelimitedList(mergeTrack.AlternateNames.ToListFromDelimited());
+                                    existingTrack.LastUpdated = now;
+                                    var mergedTrackFileName = mergeTrack.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
+                                    var trackFileName = existingTrack.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
+                                    if (!trackFileName.Equals(mergedTrackFileName, StringComparison.Ordinal) && File.Exists(trackFileName))
+                                    {
+                                        mergedFilesToDelete.Add(mergedTrackFileName);
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            var destinationRoot = this.Configuration.LibraryFolder;
-            var releaseToMergeFolder = releaseToMerge.ReleaseFileFolder(releaseToMerge.Artist.ArtistFileFolder(this.Configuration, destinationRoot));
-            var releaseToMergeIntoArtistFolder = releaseToMergeInto.Artist.ArtistFileFolder(this.Configuration, destinationRoot);
-            var releaseToMergeIntoDirectory = new DirectoryInfo(releaseToMergeInto.ReleaseFileFolder(releaseToMergeIntoArtistFolder));
+                var destinationRoot = this.Configuration.LibraryFolder;
+                var releaseToMergeFolder = releaseToMerge.ReleaseFileFolder(releaseToMerge.Artist.ArtistFileFolder(this.Configuration, destinationRoot));
+                var releaseToMergeIntoArtistFolder = releaseToMergeInto.Artist.ArtistFileFolder(this.Configuration, destinationRoot);
+                var releaseToMergeIntoDirectory = new DirectoryInfo(releaseToMergeInto.ReleaseFileFolder(releaseToMergeIntoArtistFolder));
 
-            // Move tracks for releaseToMergeInto into correct folders
-            if (mergedTracksToMove.Any())
-            {
-                foreach (var track in mergedTracksToMove)
+                // Move tracks for releaseToMergeInto into correct folders
+                if (mergedTracksToMove.Any())
                 {
-                    var oldTrackPath = track.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
-                    var newTrackPath = FolderPathHelper.TrackFullPath(this.Configuration, releaseToMerge.Artist, releaseToMerge, track);
-                    var trackFile = new FileInfo(oldTrackPath);
-                    if (!newTrackPath.ToLower().Equals(oldTrackPath.ToLower()))
+                    foreach (var track in mergedTracksToMove)
                     {
-                        var audioMetaData = await this.AudioMetaDataHelper.GetInfo(trackFile, false);
-                        track.FilePath = FolderPathHelper.TrackPath(this.Configuration, releaseToMergeInto.Artist, releaseToMergeInto, track);
-                        track.Hash = HashHelper.CreateMD5(releaseToMergeInto.ArtistId.ToString() + trackFile.LastWriteTimeUtc.GetHashCode().ToString() + audioMetaData.GetHashCode().ToString());
-                        track.LastUpdated = now;
-                        File.Move(oldTrackPath, newTrackPath);
-                    }
-                }
-            }
-
-            // Cleanup folders
-            FolderProcessor.DeleteEmptyFolders(new DirectoryInfo(releaseToMergeIntoArtistFolder), this.Logger);
-
-            // Now Merge release details
-            releaseToMergeInto.AlternateNames = releaseToMergeInto.AlternateNames.AddToDelimitedList(new string[] { releaseToMerge.Title, releaseToMerge.Title.ToAlphanumericName() });
-            releaseToMergeInto.AlternateNames = releaseToMergeInto.AlternateNames.AddToDelimitedList(releaseToMerge.AlternateNames.ToListFromDelimited());
-            releaseToMergeInto.Tags = releaseToMergeInto.Tags.AddToDelimitedList(releaseToMerge.Tags.ToListFromDelimited());
-            releaseToMergeInto.URLs.AddToDelimitedList(releaseToMerge.URLs.ToListFromDelimited());
-            releaseToMergeInto.MusicBrainzId = releaseToMergeInto.MusicBrainzId ?? releaseToMerge.MusicBrainzId;
-            releaseToMergeInto.Profile = releaseToMergeInto.Profile ?? releaseToMerge.Profile;
-            releaseToMergeInto.ReleaseDate = releaseToMergeInto.ReleaseDate ?? releaseToMerge.ReleaseDate;
-            releaseToMergeInto.MusicBrainzId = releaseToMergeInto.MusicBrainzId ?? releaseToMerge.MusicBrainzId;
-            releaseToMergeInto.DiscogsId = releaseToMergeInto.DiscogsId ?? releaseToMerge.DiscogsId;
-            releaseToMergeInto.ITunesId = releaseToMergeInto.ITunesId ?? releaseToMerge.ITunesId;
-            releaseToMergeInto.AmgId = releaseToMergeInto.AmgId ?? releaseToMerge.AmgId;
-            releaseToMergeInto.LastFMId = releaseToMergeInto.LastFMId ?? releaseToMerge.LastFMId;
-            releaseToMergeInto.LastFMSummary = releaseToMergeInto.LastFMSummary ?? releaseToMerge.LastFMSummary;
-            releaseToMergeInto.SpotifyId = releaseToMergeInto.SpotifyId ?? releaseToMerge.SpotifyId;
-            releaseToMergeInto.Thumbnail = releaseToMergeInto.Thumbnail ?? releaseToMerge.Thumbnail;
-            if (releaseToMergeInto.ReleaseType == ReleaseType.Unknown && releaseToMerge.ReleaseType != ReleaseType.Unknown)
-            {
-                releaseToMergeInto.ReleaseType = releaseToMerge.ReleaseType;
-            }
-            releaseToMergeInto.LastUpdated = now;
-            await this.DbContext.SaveChangesAsync();
-
-            // Update any collection pointers for release to be merged
-            var collectionRecords = this.DbContext.CollectionReleases.Where(x => x.ReleaseId == releaseToMerge.Id);
-            if (collectionRecords != null && collectionRecords.Any())
-            {
-                foreach (var cr in collectionRecords)
-                {
-                    cr.ReleaseId = releaseToMergeInto.Id;
-                    cr.LastUpdated = now;
-                }
-                await this.DbContext.SaveChangesAsync();
-            }
-
-            // Update any existing playlist for release to be merged
-            var playListTrackInfos = (from pl in this.DbContext.PlaylistTracks
-                                      join t in this.DbContext.Tracks on pl.TrackId equals t.Id
-                                      join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                      where rm.ReleaseId == releaseToMerge.Id
-                                      select new
-                                      {
-                                          track = t,
-                                          rm = rm,
-                                          pl = pl
-                                      }).ToArray();
-            if (playListTrackInfos != null && playListTrackInfos.Any())
-            {
-                foreach (var playListTrackInfo in playListTrackInfos)
-                {
-                    var matchingTrack = (from t in this.DbContext.Tracks
-                                         join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                         where rm.ReleaseId == releaseToMergeInto.Id
-                                         where rm.MediaNumber == playListTrackInfo.rm.MediaNumber
-                                         where t.TrackNumber == playListTrackInfo.track.TrackNumber
-                                         select t).FirstOrDefault();
-                    if (matchingTrack != null)
-                    {
-                        playListTrackInfo.pl.TrackId = matchingTrack.Id;
-                        playListTrackInfo.pl.LastUpdated = now;
-                    }
-                }
-                await this.DbContext.SaveChangesAsync();
-            }
-
-            await this.Delete(releaseToMerge);
-
-            // Delete any files flagged to be deleted (duplicate as track already exists on merged to release)
-            if (mergedFilesToDelete.Any())
-            {
-                foreach (var mergedFileToDelete in mergedFilesToDelete)
-                {
-                    try
-                    {
-                        if (File.Exists(mergedFileToDelete))
+                        var oldTrackPath = track.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
+                        var newTrackPath = FolderPathHelper.TrackFullPath(this.Configuration, releaseToMerge.Artist, releaseToMerge, track);
+                        var trackFile = new FileInfo(oldTrackPath);
+                        if (!newTrackPath.ToLower().Equals(oldTrackPath.ToLower()))
                         {
-                            File.Delete(mergedFileToDelete);
-                            this.Logger.LogWarning("x Deleted Merged File [{0}]", mergedFileToDelete);
+                            var audioMetaData = await this.AudioMetaDataHelper.GetInfo(trackFile, false);
+                            track.FilePath = FolderPathHelper.TrackPath(this.Configuration, releaseToMergeInto.Artist, releaseToMergeInto, track);
+                            track.Hash = HashHelper.CreateMD5(releaseToMergeInto.ArtistId.ToString() + trackFile.LastWriteTimeUtc.GetHashCode().ToString() + audioMetaData.GetHashCode().ToString());
+                            track.LastUpdated = now;
+                            File.Move(oldTrackPath, newTrackPath);
                         }
                     }
-                    catch
+                }
+
+                // Cleanup folders
+                FolderProcessor.DeleteEmptyFolders(new DirectoryInfo(releaseToMergeIntoArtistFolder), this.Logger);
+
+                // Now Merge release details
+                releaseToMergeInto.AlternateNames = releaseToMergeInto.AlternateNames.AddToDelimitedList(new string[] { releaseToMerge.Title, releaseToMerge.Title.ToAlphanumericName() });
+                releaseToMergeInto.AlternateNames = releaseToMergeInto.AlternateNames.AddToDelimitedList(releaseToMerge.AlternateNames.ToListFromDelimited());
+                releaseToMergeInto.Tags = releaseToMergeInto.Tags.AddToDelimitedList(releaseToMerge.Tags.ToListFromDelimited());
+                releaseToMergeInto.URLs.AddToDelimitedList(releaseToMerge.URLs.ToListFromDelimited());
+                releaseToMergeInto.MusicBrainzId = releaseToMergeInto.MusicBrainzId ?? releaseToMerge.MusicBrainzId;
+                releaseToMergeInto.Profile = releaseToMergeInto.Profile ?? releaseToMerge.Profile;
+                releaseToMergeInto.ReleaseDate = releaseToMergeInto.ReleaseDate ?? releaseToMerge.ReleaseDate;
+                releaseToMergeInto.MusicBrainzId = releaseToMergeInto.MusicBrainzId ?? releaseToMerge.MusicBrainzId;
+                releaseToMergeInto.DiscogsId = releaseToMergeInto.DiscogsId ?? releaseToMerge.DiscogsId;
+                releaseToMergeInto.ITunesId = releaseToMergeInto.ITunesId ?? releaseToMerge.ITunesId;
+                releaseToMergeInto.AmgId = releaseToMergeInto.AmgId ?? releaseToMerge.AmgId;
+                releaseToMergeInto.LastFMId = releaseToMergeInto.LastFMId ?? releaseToMerge.LastFMId;
+                releaseToMergeInto.LastFMSummary = releaseToMergeInto.LastFMSummary ?? releaseToMerge.LastFMSummary;
+                releaseToMergeInto.SpotifyId = releaseToMergeInto.SpotifyId ?? releaseToMerge.SpotifyId;
+                releaseToMergeInto.Thumbnail = releaseToMergeInto.Thumbnail ?? releaseToMerge.Thumbnail;
+                if (releaseToMergeInto.ReleaseType == ReleaseType.Unknown && releaseToMerge.ReleaseType != ReleaseType.Unknown)
+                {
+                    releaseToMergeInto.ReleaseType = releaseToMerge.ReleaseType;
+                }
+                releaseToMergeInto.LastUpdated = now;
+                await this.DbContext.SaveChangesAsync();
+
+                // Update any collection pointers for release to be merged
+                var collectionRecords = this.DbContext.CollectionReleases.Where(x => x.ReleaseId == releaseToMerge.Id);
+                if (collectionRecords != null && collectionRecords.Any())
+                {
+                    foreach (var cr in collectionRecords)
                     {
+                        cr.ReleaseId = releaseToMergeInto.Id;
+                        cr.LastUpdated = now;
+                    }
+                    await this.DbContext.SaveChangesAsync();
+                }
+
+                // Update any existing playlist for release to be merged
+                var playListTrackInfos = (from pl in this.DbContext.PlaylistTracks
+                                          join t in this.DbContext.Tracks on pl.TrackId equals t.Id
+                                          join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                          where rm.ReleaseId == releaseToMerge.Id
+                                          select new
+                                          {
+                                              track = t,
+                                              rm = rm,
+                                              pl = pl
+                                          }).ToArray();
+                if (playListTrackInfos != null && playListTrackInfos.Any())
+                {
+                    foreach (var playListTrackInfo in playListTrackInfos)
+                    {
+                        var matchingTrack = (from t in this.DbContext.Tracks
+                                             join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                             where rm.ReleaseId == releaseToMergeInto.Id
+                                             where rm.MediaNumber == playListTrackInfo.rm.MediaNumber
+                                             where t.TrackNumber == playListTrackInfo.track.TrackNumber
+                                             select t).FirstOrDefault();
+                        if (matchingTrack != null)
+                        {
+                            playListTrackInfo.pl.TrackId = matchingTrack.Id;
+                            playListTrackInfo.pl.LastUpdated = now;
+                        }
+                    }
+                    await this.DbContext.SaveChangesAsync();
+                }
+
+                await this.Delete(releaseToMerge);
+
+                // Delete any files flagged to be deleted (duplicate as track already exists on merged to release)
+                if (mergedFilesToDelete.Any())
+                {
+                    foreach (var mergedFileToDelete in mergedFilesToDelete)
+                    {
+                        try
+                        {
+                            if (File.Exists(mergedFileToDelete))
+                            {
+                                File.Delete(mergedFileToDelete);
+                                this.Logger.LogWarning("x Deleted Merged File [{0}]", mergedFileToDelete);
+                            }
+                        }
+                        catch
+                        {
+                        }
                     }
                 }
-            }
 
-            // Clear cache regions for manipulated records
-            this.CacheManager.ClearRegion(releaseToMergeInto.CacheRegion);
-            if (releaseToMergeInto.Artist != null)
-            {
-                this.CacheManager.ClearRegion(releaseToMergeInto.Artist.CacheRegion);
-            }
-            if (releaseToMerge.Artist != null)
-            {
-                this.CacheManager.ClearRegion(releaseToMerge.Artist.CacheRegion);
-            }
+                // Clear cache regions for manipulated records
+                this.CacheManager.ClearRegion(releaseToMergeInto.CacheRegion);
+                if (releaseToMergeInto.Artist != null)
+                {
+                    this.CacheManager.ClearRegion(releaseToMergeInto.Artist.CacheRegion);
+                }
+                if (releaseToMerge.Artist != null)
+                {
+                    this.CacheManager.ClearRegion(releaseToMerge.Artist.CacheRegion);
+                }
 
-            sw.Stop();
+                sw.Stop();
+                result = true;
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex, $"MergeReleases ReleaseToMerge `{ releaseToMerge }`, ReleaseToMergeInto `{ releaseToMergeInto }`, addAsMedia [{ addAsMedia }]");
+                resultErrors.Add(ex);
+            }
             return new OperationResult<bool>
             {
                 Data = result,
                 IsSuccess = result,
+                Errors = resultErrors,
                 OperationTime = sw.ElapsedMilliseconds
             };
         }

@@ -20,6 +20,8 @@ namespace Roadie.Library.Models
         public Image Thumbnail { get; set; }
         public DateTime? LastPlayed { get; set; }
 
+        public IEnumerable<string> MissingReleasesForCollection { get; set; }
+
         public bool IsValid
         {
             get

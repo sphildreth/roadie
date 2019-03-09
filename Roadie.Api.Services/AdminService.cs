@@ -18,6 +18,7 @@ using Roadie.Library.MetaData.FileName;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.MetaData.MusicBrainz;
+using Roadie.Library.Models;
 using Roadie.Library.Processors;
 using Roadie.Library.Utility;
 using System;
@@ -359,7 +360,7 @@ namespace Roadie.Api.Services
             sw.Start();
             var errors = new List<Exception>();
 
-            var collections = this.DbContext.Collections.Where(x => !x.IsLocked ?? false == false).ToArray();
+            var collections = this.DbContext.Collections.Where(x => x.Status != Statuses.Complete).ToArray();
             foreach(var collection in collections)
             {
                 try
@@ -387,6 +388,52 @@ namespace Roadie.Api.Services
             };
         }
 
+        public Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleases(ApplicationUser user)
+        {
+            var sw = Stopwatch.StartNew();
+            sw.Start();
+            var missingData = new Dictionary<string, List<string>>();
+
+            foreach (var collection in this.DbContext.Collections.Where(x => x.Status != Statuses.Complete))
+            {
+                var collectionReleases = (from cr in this.DbContext.CollectionReleases
+                                          where cr.CollectionId == collection.Id
+                                          select cr);
+                PositionAristRelease[] pars = null;
+
+                try
+                {
+                    pars = collection.PositionArtistReleases().ToArray();
+                }
+                catch (Exception ex)
+                {
+                    missingData.Add($"CSV Error [{ collection.Name }]", new List<string>{ ex.Message });
+                    continue;
+                }
+                foreach (var par in pars)
+                {
+                    var cr = collectionReleases.FirstOrDefault(x => x.ListNumber == par.Position);
+                    if (cr == null)
+                    {
+                        // If artist is already in result then add missing album to artist, if not then add artist then add missing album
+                        if(!missingData.ContainsKey(par.Artist))
+                        {
+                            missingData.Add(par.Artist, new List<string>());
+                        }
+                        var r = $"[{ collection.Name }]:[{ par.Release }]";
+                        missingData[par.Artist].Add(r);
+                    }
+                }
+            }
+            sw.Stop();
+            return Task.FromResult(new OperationResult<Dictionary<string, List<string>>>
+            {
+                Data = missingData.OrderBy(x => x.Value.Count()).ToDictionary(x => x.Key, x => x.Value), 
+                IsSuccess = true,
+                OperationTime = sw.ElapsedMilliseconds
+            });
+
+        }
 
         public async Task<OperationResult<bool>> ScanCollection(ApplicationUser user, Guid collectionId, bool isReadOnly = false, bool doPurgeFirst = true)
         {

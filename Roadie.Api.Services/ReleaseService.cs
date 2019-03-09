@@ -341,7 +341,7 @@ namespace Roadie.Api.Services
                     foreach (var par in pars)
                     {
                         var cr = collectionReleases.FirstOrDefault(x => x.ListNumber == par.Position);
-                        // Release is known for Collection CSV, find newRow and update ListNumber
+                        // Release is known for Collection CSV
                         if (cr != null)
                         {
                             var parRelease = rows.FirstOrDefault(x => x.DatabaseId == cr.ReleaseId);
