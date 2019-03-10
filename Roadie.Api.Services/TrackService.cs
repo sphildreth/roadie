@@ -309,6 +309,19 @@ namespace Roadie.Api.Services
                     filterToTrackIds = f.ToArray();
                 }
                 var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue) ? request.FilterValue.ToAlphanumericName() : null;
+
+                var isEqualFilter = false;
+                if (!string.IsNullOrEmpty(request.FilterValue))
+                {
+                    var filter = request.FilterValue;
+                    // if filter string is wrapped in quotes then is an exact not like search, e.g. "Diana Ross" should not return "Diana Ross & The Supremes"
+                    if (filter.StartsWith('"') && filter.EndsWith('"'))
+                    {
+                        isEqualFilter = true;
+                        request.Filter = filter.Substring(1, filter.Length - 2);
+                    }
+                }
+
                 // Did this for performance against the Track table, with just * selcts the table scans are too much of a performance hit.
                 var resultQuery = (from t in this.DbContext.Tracks
                                    join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
@@ -320,11 +333,14 @@ namespace Roadie.Api.Services
                                    where (releaseId == null || (releaseId != null && r.RoadieId == releaseId))
                                    where (filterToTrackIds == null || filterToTrackIds.Contains(t.RoadieId))
                                    where (request.FilterMinimumRating == null || t.Rating >= request.FilterMinimumRating.Value)
-                                   where (request.FilterValue == "" || 
-                                         (t.Title.Contains(request.FilterValue) || 
-                                          t.AlternateNames.Contains(request.FilterValue) || 
-                                          t.AlternateNames.Contains(normalizedFilterValue)) ||
-                                          t.PartTitles.Contains(request.FilterValue))
+                                   where (request.FilterValue == "" || (t.Title.Contains(request.FilterValue) || 
+                                                                        t.AlternateNames.Contains(request.FilterValue) || 
+                                                                        t.AlternateNames.Contains(normalizedFilterValue)) ||
+                                                                        t.PartTitles.Contains(request.FilterValue))
+                                   where (!isEqualFilter || (t.Title.Equals(request.FilterValue) ||
+                                                            t.AlternateNames.Equals(request.FilterValue) ||
+                                                            t.AlternateNames.Equals(normalizedFilterValue)) ||
+                                                            t.PartTitles.Equals(request.FilterValue))
                                    where (!request.FilterFavoriteOnly || favoriteTrackIds.Contains(t.Id))
                                    where (request.FilterToPlaylistId == null || playlistTrackIds.Contains(t.Id))
                                    where (!request.FilterTopPlayedOnly || topTrackids.Contains(t.Id))

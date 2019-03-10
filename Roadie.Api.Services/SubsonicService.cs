@@ -925,7 +925,7 @@ namespace Roadie.Api.Services
                 }
                 directory.id = subsonic.Request.ArtistIdIdentifier + artist.RoadieId.ToString();
                 directory.name = artist.Name;
-                var artistRating = user?.ArtistRatings?.FirstOrDefault(x => x.ArtistId == artist.Id);
+                var artistRating = user == null ? null : this.DbContext.UserArtists.FirstOrDefault(x => x.UserId == user.Id && x.ArtistId == artist.Id);
                 if (artistRating?.IsFavorite ?? false)
                 {
                     directory.starred = (artistRating.LastUpdated ?? artistRating.CreatedDate);
@@ -964,7 +964,7 @@ namespace Roadie.Api.Services
                 }
                 directory.id = subsonic.Request.ReleaseIdIdentifier + release.RoadieId.ToString();
                 directory.name = release.Title;
-                var releaseRating = user?.ReleaseRatings?.FirstOrDefault(x => x.ReleaseId == release.Id);
+                var releaseRating = user == null ? null : this.DbContext.UserReleases.FirstOrDefault(x =>x.UserId == user.Id && x.ReleaseId == release.Id);
                 directory.averageRating = release.Rating ?? 0;
                 directory.parent = subsonic.Request.ArtistIdIdentifier + release.Artist.RoadieId.ToString();
                 if (releaseRating?.IsFavorite ?? false)

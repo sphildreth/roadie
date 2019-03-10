@@ -11,6 +11,7 @@ using Roadie.Library.Models;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
@@ -232,8 +233,7 @@ namespace Roadie.Api.Services
             }
             var userByUsername = this.CacheManager.Get(ApplicationUser.CacheUrnByUsername(username), () =>
             {
-                return this.DbContext.Users
-                                    .FirstOrDefault(x => x.UserName == username);
+                return this.DbContext.Users.FirstOrDefault(x => x.UserName == username);
             }, null);
             return this.GetUser(userByUsername?.RoadieId);
         }
@@ -247,9 +247,6 @@ namespace Roadie.Api.Services
             return this.CacheManager.Get(ApplicationUser.CacheUrn(id.Value), () =>
             {
                 return this.DbContext.Users
-                                    .Include(x => x.ArtistRatings)
-                                    .Include(x => x.ReleaseRatings)
-                                    .Include(x => x.TrackRatings)
                                     .Include(x => x.UserRoles)
                                     .Include("UserRoles.Role")
                                     .Include("UserRoles.Role.RoleClaims")
@@ -446,6 +443,8 @@ namespace Roadie.Api.Services
 
         protected async Task<OperationResult<short>> SetTrackRating(Guid trackId, ApplicationUser user, short rating)
         {
+            var sw = Stopwatch.StartNew();
+            
             var track = this.DbContext.Tracks
                                      .Include(x => x.ReleaseMedia)
                                      .Include(x => x.ReleaseMedia.Release)
@@ -491,13 +490,17 @@ namespace Roadie.Api.Services
             this.CacheManager.ClearRegion(track.CacheRegion);
             this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
             this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
+            if(track.TrackArtist != null)
+            {
+                this.CacheManager.ClearRegion(track.TrackArtist.CacheRegion);
+            }
 
-            track = this.GetTrack(trackId);
-
+            sw.Stop();
             return new OperationResult<short>
             {
                 IsSuccess = true,
-                Data = track.Rating
+                Data = track.Rating,
+                OperationTime = sw.ElapsedMilliseconds
             };
         }
 

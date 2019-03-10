@@ -222,6 +222,19 @@ namespace Roadie.Api.Services
             //
             // TODO list should honor disliked artist and albums for random
             //
+
+            var isEqualFilter = false;
+            if (!string.IsNullOrEmpty(request.FilterValue))
+            {
+                var filter = request.FilterValue;
+                // if filter string is wrapped in quotes then is an exact not like search, e.g. "Diana Ross" should not return "Diana Ross & The Supremes"
+                if (filter.StartsWith('"') && filter.EndsWith('"'))
+                {
+                    isEqualFilter = true;
+                    request.Filter = filter.Substring(1, filter.Length - 2);
+                }
+            }
+
             var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue) ? request.FilterValue.ToAlphanumericName() : null;
             var result = (from r in this.DbContext.Releases
                           join a in this.DbContext.Artists on r.ArtistId equals a.Id
@@ -232,7 +245,12 @@ namespace Roadie.Api.Services
                           where (!isFilteredToGenre || genreReleaseIds.Contains(r.Id))
                           where (request.FilterFromYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear)
                           where (request.FilterToYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear)
-                          where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || r.AlternateNames.Contains(request.FilterValue) || r.AlternateNames.Contains(normalizedFilterValue)))
+                          where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || 
+                                                               r.AlternateNames.Contains(request.FilterValue) || 
+                                                               r.AlternateNames.Contains(normalizedFilterValue)))
+                          where (!isEqualFilter || (r.Title.Equals(request.FilterValue) ||
+                                                    r.AlternateNames.Equals(request.FilterValue) ||
+                                                    r.AlternateNames.Equals(normalizedFilterValue)))
                           select new ReleaseList
                           {
                               DatabaseId = r.Id,

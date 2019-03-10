@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -363,12 +364,24 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating)
         {
+            var timings = new Dictionary<string, long>();
+            var sw = Stopwatch.StartNew();            
             var user = this.GetUser(roadieUser.UserId);
+            sw.Stop();
+            timings.Add("GetUser", sw.ElapsedMilliseconds);
+
             if (user == null)
             {
                 return new OperationResult<short>(true, $"Invalid User [{ roadieUser }]");
             }
-            return await base.SetTrackRating(trackId, user, rating);
+            sw.Start();
+            var result = await base.SetTrackRating(trackId, user, rating);
+            sw.Stop();
+            timings.Add("SetTrackRating", sw.ElapsedMilliseconds);
+
+            result.AdditionalData.Add("Timing", sw.ElapsedMilliseconds);
+            this.Logger.LogInformation($"User `{ roadieUser }` set rating [{ rating }] on TrackId [{ trackId }]. Result [{ JsonConvert.SerializeObject(result) }]");
+            return result;
         }
 
         public async Task<OperationResult<bool>> UpdateProfile(User userPerformingUpdate, User userBeingUpdatedModel)

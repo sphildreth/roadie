@@ -183,12 +183,30 @@ namespace Roadie.Api.Services
                 request.Filter = null;
             }
             var onlyWithReleases = onlyIncludeWithReleases ?? true;
+            var isEqualFilter = false;
+            if(!string.IsNullOrEmpty(request.FilterValue))
+            {
+                var filter = request.FilterValue;
+                // if filter string is wrapped in quotes then is an exact not like search, e.g. "Diana Ross" should not return "Diana Ross & The Supremes"
+                if (filter.StartsWith('"') && filter.EndsWith('"'))
+                {
+                    isEqualFilter = true;
+                    request.Filter = filter.Substring(1, filter.Length - 2);
+                }
+            }
             var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue) ? request.FilterValue.ToAlphanumericName() : null;
             var result = (from a in this.DbContext.Artists
                           where (!onlyWithReleases || a.ReleaseCount > 0)
                           where (request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId)
                           where (request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value)
-                          where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue) || a.AlternateNames.Contains(normalizedFilterValue)))
+                          where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || 
+                                                               a.SortName.Contains(request.FilterValue) || 
+                                                               a.AlternateNames.Contains(request.FilterValue) || 
+                                                               a.AlternateNames.Contains(normalizedFilterValue)))
+                          where (!isEqualFilter || (a.Name.Equals(request.FilterValue) ||
+                                                    a.SortName.Equals(request.FilterValue) ||
+                                                    a.AlternateNames.Equals(request.FilterValue) ||
+                                                    a.AlternateNames.Equals(normalizedFilterValue)))
                           where (!request.FilterFavoriteOnly || favoriteArtistIds.Contains(a.Id))
                           where (request.FilterToLabelId == null || labelArtistIds.Contains(a.Id))
                           where (!isFilteredToGenre || genreArtistIds.Contains(a.Id))
