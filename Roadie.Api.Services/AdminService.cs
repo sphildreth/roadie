@@ -558,7 +558,7 @@ namespace Roadie.Api.Services
                 errors.Add(ex);
             }
             sw.Stop();
-            this.Logger.LogInformation(string.Format("RescanCollection `{0}`, By User `{1}`", collection, user));
+            this.Logger.LogInformation(string.Format("RescanCollection `{0}`, By User `{1}`, ElapsedTime [{2}]", collection, user, sw.ElapsedMilliseconds));
 
             return new OperationResult<bool>
             {
