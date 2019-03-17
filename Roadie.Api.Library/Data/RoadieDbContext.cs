@@ -45,6 +45,15 @@ namespace Roadie.Library.Data
             base.OnModelCreating(builder);
 
             //builder
+            //    .Entity<ScanHistory>()
+            //    .Property(e => e.Status)
+            //    .HasConversion(
+            //        v => v.ToString(),
+            //        v => string.IsNullOrEmpty(v) ? Statuses.Ok : (Statuses)Enum.Parse(typeof(Statuses), v))
+            //    .HasDefaultValue(Statuses.Ok);
+
+
+            //builder
             //    .Entity<Artist>()
             //    .Property(e => e.Status)
             //    .HasConversion(

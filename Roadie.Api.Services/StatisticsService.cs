@@ -32,10 +32,12 @@ namespace Roadie.Api.Services
             LibraryStats result = null;
             var sw = new Stopwatch();
             sw.Start();
-            using (var conn = new MySqlConnection(this.Configuration.ConnectionString))
+            try
             {
-                conn.Open();
-                var sql = @"SELECT rm.releaseMediaCount AS releaseMediaCount, COUNT(r.roadieId) AS releaseCount,
+                using (var conn = new MySqlConnection(this.Configuration.ConnectionString))
+                {
+                    conn.Open();
+                    var sql = @"SELECT rm.releaseMediaCount AS releaseMediaCount, COUNT(r.roadieId) AS releaseCount,
                                 ts.trackCount, ts.trackDuration as TotalTrackDuration, ts.trackSize as TotalTrackSize, ac.artistCount, lc.labelCount, pc.playedCount, uc.userCount, cc.collectionCount, pl.playlistCount
                             FROM `release` r
                             INNER JOIN (
@@ -66,53 +68,59 @@ namespace Roadie.Api.Services
                             INNER JOIN (
 	                            SELECT COUNT(1) as playlistCount
 	                            FROM `playlist`) pl;";
-                using (var cmd = new MySqlCommand(sql, conn))
-                {
-                    try
+                    using (var cmd = new MySqlCommand(sql, conn))
                     {
-                        using (var rdr = await cmd.ExecuteReaderAsync())
+                        try
                         {
-                            if (rdr.HasRows)
+                            using (var rdr = await cmd.ExecuteReaderAsync())
                             {
-                                while (rdr.Read())
+                                if (rdr.HasRows)
                                 {
-                                    result = new LibraryStats
+                                    while (rdr.Read())
                                     {
-                                        UserCount = SafeParser.ToNumber<int?>(rdr["UserCount"]),
-                                        CollectionCount = SafeParser.ToNumber<int?>(rdr["CollectionCount"]),
-                                        PlaylistCount = SafeParser.ToNumber<int?>(rdr["PlaylistCount"]),
-                                        ArtistCount = SafeParser.ToNumber<int?>(rdr["ArtistCount"]),
-                                        LabelCount = SafeParser.ToNumber<int?>(rdr["LabelCount"]),
-                                        ReleaseCount = SafeParser.ToNumber<int?>(rdr["ReleaseCount"]),
-                                        ReleaseMediaCount = SafeParser.ToNumber<int?>(rdr["ReleaseMediaCount"]),
-                                        PlayedCount = SafeParser.ToNumber<int?>(rdr["PlayedCount"]),
-                                        TrackCount = SafeParser.ToNumber<int?>(rdr["TrackCount"]),
-                                        TotalTrackDuration = SafeParser.ToNumber<long?>(rdr["TotalTrackDuration"]),
-                                        TotalTrackSize = SafeParser.ToNumber<long?>(rdr["TotalTrackSize"])
-                                    };
+                                        result = new LibraryStats
+                                        {
+                                            UserCount = SafeParser.ToNumber<int?>(rdr["UserCount"]),
+                                            CollectionCount = SafeParser.ToNumber<int?>(rdr["CollectionCount"]),
+                                            PlaylistCount = SafeParser.ToNumber<int?>(rdr["PlaylistCount"]),
+                                            ArtistCount = SafeParser.ToNumber<int?>(rdr["ArtistCount"]),
+                                            LabelCount = SafeParser.ToNumber<int?>(rdr["LabelCount"]),
+                                            ReleaseCount = SafeParser.ToNumber<int?>(rdr["ReleaseCount"]),
+                                            ReleaseMediaCount = SafeParser.ToNumber<int?>(rdr["ReleaseMediaCount"]),
+                                            PlayedCount = SafeParser.ToNumber<int?>(rdr["PlayedCount"]),
+                                            TrackCount = SafeParser.ToNumber<int?>(rdr["TrackCount"]),
+                                            TotalTrackDuration = SafeParser.ToNumber<long?>(rdr["TotalTrackDuration"]),
+                                            TotalTrackSize = SafeParser.ToNumber<long?>(rdr["TotalTrackSize"])
+                                        };
+                                    }
                                 }
                             }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        this.Logger.LogError(ex);
-                    }
-                    finally
-                    {
-                        conn.Close();
+                        catch (Exception ex)
+                        {
+                            this.Logger.LogError(ex);
+                        }
+                        finally
+                        {
+                            conn.Close();
+                        }
                     }
                 }
+                var lastScan = this.DbContext.ScanHistories.OrderByDescending(x => x.CreatedDate).FirstOrDefault();
+                if (lastScan != null)
+                {
+                    result.LastScan = lastScan.CreatedDate;
+                }
+                sw.Stop();
+
             }
-            var lastScan = this.DbContext.ScanHistories.OrderByDescending(x => x.CreatedDate).FirstOrDefault();
-            if (lastScan != null)
+            catch (Exception ex)
             {
-                result.LastScan = lastScan.CreatedDate;
+                this.Logger.LogError(ex);
             }
-            sw.Stop();
             return new OperationResult<LibraryStats>
             {
-                IsSuccess = true,
+                IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds,
                 Data = result
             };
