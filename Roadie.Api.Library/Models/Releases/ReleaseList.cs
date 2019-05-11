@@ -80,12 +80,9 @@ namespace Roadie.Library.Models.Releases
         {
             get
             {
-                var shouldBeMediaCount = this.MediaCount ?? 0;
-                var hasMediaCount = this.Media == null || !this.Media.Any() ? 0 : this.Media.Count();
                 var artistName = this.Artist?.Text;
                 var releaseName = this.Release?.Text;
                 return this.Id != Guid.Empty &&
-                       shouldBeMediaCount == hasMediaCount &&
                        !string.IsNullOrEmpty(artistName) &&
                        !string.IsNullOrEmpty(releaseName);
             }
