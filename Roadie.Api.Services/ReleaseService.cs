@@ -425,53 +425,34 @@ namespace Roadie.Api.Services
             {
                 if (includes.Contains("tracks"))
                 {
-                    var releaseIds = rows.Select(x => x.Id).ToArray();
-                    var artistTracks = (from r in this.DbContext.Releases
-                                        join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                        join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                        join a in this.DbContext.Artists on r.ArtistId equals a.Id
-                                        where (releaseIds.Contains(r.RoadieId))
-                                        orderby r.Id, rm.MediaNumber, t.TrackNumber
-                                        select new
-                                        {
-                                            t,
-                                            releaseMedia = rm,
-                                            release = r
-                                        });
-                    var releaseTrackIds = artistTracks.Select(x => x.t.Id).ToList();
-                    var artistUserTracks = (from ut in this.DbContext.UserTracks
-                                            where ut.UserId == roadieUser.Id
-                                            where (from x in releaseTrackIds select x).Contains(ut.TrackId)
-                                            select ut).ToArray();
-                    var user = this.GetUser(roadieUser.UserId);
                     foreach (var release in rows)
                     {
-                        var releaseMedias = new List<ReleaseMediaList>();
-                        foreach (var releaseMedia in artistTracks.Where(x => x.release.RoadieId == release.Id).Select(x => x.releaseMedia).Distinct().ToArray())
+                        release.Media = this.DbContext.ReleaseMedias
+                                            .Include(x => x.Tracks)
+                                            .Where(x => x.ReleaseId == release.DatabaseId)
+                                            .ProjectToType<ReleaseMediaList>()
+                                            .OrderBy(x => x.MediaNumber)
+                                            .ToArray();
+
+                        var userRatingsForRelease = (from ut in this.DbContext.UserTracks
+                                                     join t in this.DbContext.Tracks on ut.TrackId equals t.Id
+                                                     join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                                     where rm.ReleaseId == release.DatabaseId
+                                                     where ut.UserId == roadieUser.Id
+                                                     select new { trackId = t.RoadieId, ut }).ToArray();
+                        foreach (var userRatingForRelease in userRatingsForRelease)
                         {
-                            var rm = releaseMedia.Adapt<ReleaseMediaList>();
-                            var rmTracks = new List<TrackList>();
-                            foreach (var track in artistTracks.Where(x => x.t.ReleaseMediaId == releaseMedia.Id).OrderBy(x => x.t.TrackNumber).ToArray())
+                            var mediaTrack = release.Media.SelectMany(x => x.Tracks).FirstOrDefault(x => x.Id == userRatingForRelease.trackId);
+                            if (mediaTrack != null)
                             {
-                                var t = track.t.Adapt<TrackList>();
-                                t.CssClass = string.IsNullOrEmpty(track.t.Hash) ? "Missing" : "Ok";
-                                t.TrackPlayUrl = this.MakeTrackPlayUrl(user, track.t.Id, track.t.RoadieId);
-                                var userRating = artistUserTracks.FirstOrDefault(x => x.TrackId == track.t.Id);
-                                if (userRating != null)
+                                mediaTrack.UserRating = new UserTrack
                                 {
-                                    t.UserRating = new UserTrack
-                                    {
-                                        Rating = userRating.Rating,
-                                        IsFavorite = userRating.IsFavorite ?? false,
-                                        IsDisliked = userRating.IsDisliked ?? false
-                                    };
-                                }
-                                rmTracks.Add(t);
+                                    Rating = userRatingForRelease.ut.Rating,
+                                    IsFavorite = userRatingForRelease.ut.IsFavorite ?? false,
+                                    IsDisliked = userRatingForRelease.ut.IsDisliked ?? false
+                                };
                             }
-                            rm.Tracks = rmTracks;
-                            releaseMedias.Add(rm);
                         }
-                        release.Media = releaseMedias.OrderBy(x => x.MediaNumber).ToArray();
                     }
                 }
             }

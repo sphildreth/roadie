@@ -379,37 +379,45 @@ namespace Roadie.Api.Services
 
         private async Task<FileOperationResult<Image>> GetImageFileOperation(string type, string regionUrn, Guid id, int? width, int? height, Func<Task<FileOperationResult<Image>>> action, EntityTagHeaderValue etag = null)
         {
-            var sw = Stopwatch.StartNew();
-            var result = (await this.CacheManager.GetAsync($"urn:{ type }_by_id_operation:{id}", action, regionUrn)).Adapt<FileOperationResult<Image>>();
-            if (!result.IsSuccess)
+            try
             {
-                return new FileOperationResult<Image>(result.IsNotFoundResult, result.Messages);
-            }
-            if (result.ETag == etag)
-            {
-                return new FileOperationResult<Image>(OperationMessages.NotModified);
-            }
-            if ((width.HasValue || height.HasValue) && result?.Data?.Bytes != null)
-            {
-                result.Data.Bytes = ImageHelper.ResizeImage(result?.Data?.Bytes, width.Value, height.Value);
-                result.ETag = EtagHelper.GenerateETag(this.HttpEncoder, result.Data.Bytes);
-                result.LastModified = DateTime.UtcNow;
-                if (width.Value != this.Configuration.ThumbnailImageSize.Width || height.Value != this.Configuration.ThumbnailImageSize.Height)
+                var sw = Stopwatch.StartNew();
+                var result = (await this.CacheManager.GetAsync($"urn:{ type }_by_id_operation:{id}", action, regionUrn)).Adapt<FileOperationResult<Image>>();
+                if (!result.IsSuccess)
                 {
-                    this.Logger.LogTrace($"{ type }: Resized [{ id }], Width [{ width.Value }], Height [{ height.Value }]");
+                    return new FileOperationResult<Image>(result.IsNotFoundResult, result.Messages);
                 }
+                if (result.ETag == etag)
+                {
+                    return new FileOperationResult<Image>(OperationMessages.NotModified);
+                }
+                if ((width.HasValue || height.HasValue) && result?.Data?.Bytes != null)
+                {
+                    result.Data.Bytes = ImageHelper.ResizeImage(result?.Data?.Bytes, width.Value, height.Value);
+                    result.ETag = EtagHelper.GenerateETag(this.HttpEncoder, result.Data.Bytes);
+                    result.LastModified = DateTime.UtcNow;
+                    if (width.Value != this.Configuration.ThumbnailImageSize.Width || height.Value != this.Configuration.ThumbnailImageSize.Height)
+                    {
+                        this.Logger.LogTrace($"{ type }: Resized [{ id }], Width [{ width.Value }], Height [{ height.Value }]");
+                    }
+                }
+                sw.Stop();
+                return new FileOperationResult<Image>(result.Messages)
+                {
+                    Data = result.Data,
+                    ETag = result.ETag,
+                    LastModified = result.LastModified,
+                    ContentType = result.ContentType,
+                    Errors = result?.Errors,
+                    IsSuccess = result?.IsSuccess ?? false,
+                    OperationTime = sw.ElapsedMilliseconds
+                };
             }
-            sw.Stop();
-            return new FileOperationResult<Image>(result.Messages)
+            catch (Exception ex)
             {
-                Data = result.Data,
-                ETag = result.ETag,
-                LastModified = result.LastModified,
-                ContentType = result.ContentType,
-                Errors = result?.Errors,
-                IsSuccess = result?.IsSuccess ?? false,
-                OperationTime = sw.ElapsedMilliseconds
-            };
+                this.Logger.LogError(ex, $"GetImageFileOperation Error, Type [{ type }], id [{id}]");
+            }
+            return new FileOperationResult<Image>("System Error");
         }
 
         private Task<FileOperationResult<Image>> ImageByIdAction(Guid id, EntityTagHeaderValue etag = null)
@@ -662,6 +670,12 @@ namespace Roadie.Api.Services
                 if (track == null)
                 {
                     return new FileOperationResult<Image>(true, string.Format("Track Not Found [{0}]", id));
+                }
+                var imageBytes = track.Thumbnail;
+                var trackThumbnailImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(track.PathToTrackThumbnail(this.Configuration, this.Configuration.LibraryFolder)), Library.Enums.ImageType.Track, SearchOption.TopDirectoryOnly);
+                if (trackThumbnailImages.Any())
+                {
+                    imageBytes = File.ReadAllBytes(trackThumbnailImages.First().FullName);
                 }
                 var image = new data.Image
                 {

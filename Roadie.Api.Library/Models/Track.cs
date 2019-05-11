@@ -49,6 +49,9 @@ namespace Roadie.Library.Models
         [MaxLength(100)]
         public string MusicBrainzId { get; set; }
 
+        // When populated a "data:image" base64 byte array of an image to use as new Thumbnail
+        public string NewThumbnailData { get; set; }
+
         [MaxLength(65535)]
         [JsonIgnore]
         [IgnoreDataMember]
@@ -65,7 +68,7 @@ namespace Roadie.Library.Models
                     {
                         return null;
                     }
-                    return this.PartTitles.Split('|');
+                    return this.PartTitles.Replace("|", "\n").Split("\n");
                 }
                 return this._partTitles;
             }

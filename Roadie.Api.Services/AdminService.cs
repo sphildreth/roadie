@@ -191,6 +191,12 @@ namespace Roadie.Api.Services
                             File.Delete(trackPath);
                             this.Logger.LogWarning($"x For Track `{ track }`, Deleted File [{ trackPath }]");
                         }
+                        var trackThumbnailName = track.PathToTrackThumbnail(this.Configuration, this.Configuration.LibraryFolder);
+                        if (File.Exists(trackThumbnailName))
+                        {
+                            File.Delete(trackThumbnailName);
+                            this.Logger.LogWarning($"x For Track `{ track }`, Deleted Thumbnail File [{ trackThumbnailName }]");
+                        }
                     }
                     catch (Exception ex)
                     {

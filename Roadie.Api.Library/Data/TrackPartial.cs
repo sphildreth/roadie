@@ -68,6 +68,15 @@ namespace Roadie.Library.Data
             return FolderPathHelper.PathForTrack(configuration, this, libraryFolder);
         }
 
+        /// <summary>
+        /// Returns a full file path to the current track thumbnail (if any)
+        /// </summary>
+        public string PathToTrackThumbnail(IRoadieSettings configuration, string libraryFolder)
+        {
+            return FolderPathHelper.PathForTrackThumbnail(configuration, this, libraryFolder);
+        }
+
+
         public override string ToString()
         {
             return string.Format("Id [{0}], TrackNumber [{1}], Title [{2}]", this.Id, this.TrackNumber, this.Title);

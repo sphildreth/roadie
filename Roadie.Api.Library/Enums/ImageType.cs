@@ -11,6 +11,7 @@ namespace Roadie.Library.Enums
         ArtistSecondary,
         Release,
         ReleaseSecondary,
-        Label 
+        Label,
+        Track
     }
 }

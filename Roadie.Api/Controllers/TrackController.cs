@@ -47,6 +47,28 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("edit")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> Update(Track track)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var result = await this.TrackService.UpdateTrack(await this.CurrentUserModel(), track);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
         [HttpGet]
         [ProducesResponseType(200)]
         public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc, bool? doRandomize = false)

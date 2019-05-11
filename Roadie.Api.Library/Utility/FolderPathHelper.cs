@@ -83,6 +83,24 @@ namespace Roadie.Library.Utility
         }
 
         /// <summary>
+        /// For a given Track database record determine the full path to the thumbnail using the given destination folder
+        /// </summary>
+        /// <param name="track">Populate track database record</param>
+        /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
+        public static string PathForTrackThumbnail(IRoadieSettings configuration, Data.Track track, string destinationFolder = null)
+        {
+            destinationFolder = destinationFolder ?? configuration.LibraryFolder;
+            if (string.IsNullOrEmpty(track.FilePath) || string.IsNullOrEmpty(track.FileName))
+            {
+                return null;
+            }
+            var fileName = Path.ChangeExtension(track.FileName, ".jpg");
+            var directoryInfo = new DirectoryInfo(Path.Combine(destinationFolder, track.FilePath, fileName));
+            return directoryInfo.FullName;
+        }
+
+
+        /// <summary>
         /// Full path to Release folder using given full Artist folder
         /// </summary>
         /// <param name="artistFolder">Full path to Artist folder</param>

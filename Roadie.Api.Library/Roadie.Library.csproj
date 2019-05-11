@@ -9,20 +9,20 @@
 
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="12.1.2" />
-    <PackageReference Include="EFCore.BulkExtensions" Version="2.4.3" />
-    <PackageReference Include="FluentFTP" Version="23.1.0" />
+    <PackageReference Include="EFCore.BulkExtensions" Version="2.4.6" />
+    <PackageReference Include="FluentFTP" Version="24.0.0" />
     <PackageReference Include="Hashids.net" Version="1.2.2" />
-    <PackageReference Include="HtmlAgilityPack" Version="1.9.2" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.4" />
     <PackageReference Include="IdSharp.Common" Version="1.0.1" />
     <PackageReference Include="IdSharp.Tagging" Version="1.0.0-rc3" />
     <PackageReference Include="Inflatable.Lastfm" Version="1.1.0.339" />
-    <PackageReference Include="Mapster" Version="3.3.2" />
+    <PackageReference Include="Mapster" Version="4.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="2.2.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.4" />
     <PackageReference Include="Microsoft.Extensions.Caching.Redis" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="MimeMapping" Version="1.0.1.12" />
-    <PackageReference Include="NodaTime" Version="2.4.4" />
+    <PackageReference Include="NodaTime" Version="2.4.5" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="2.2.0" />
     <PackageReference Include="RestSharp" Version="106.6.9" />
     <PackageReference Include="SixLabors.Core" Version="1.0.0-beta0006" />
@@ -32,7 +32,7 @@
     <PackageReference Include="System.Drawing.Common" Version="4.5.1" />
     <PackageReference Include="System.IO.FileSystem.AccessControl" Version="4.5.0" />
     <PackageReference Include="System.Runtime.Caching" Version="4.5.0" />
-    <PackageReference Include="z440.atl.core" Version="2.6.0" />
+    <PackageReference Include="z440.atl.core" Version="2.9.0" />
     <PackageReference Include="zlib.net-mutliplatform" Version="1.0.4" />
   </ItemGroup>
 

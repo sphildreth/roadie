@@ -9,6 +9,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
+using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
@@ -597,6 +598,73 @@ namespace Roadie.Api.Services
                 });
             }
         }
+
+        public async Task<OperationResult<bool>> UpdateTrack(User user, Track model)
+        {
+            var didChangeTrack = false;
+            var didChangeThumbnail = false;
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var track = this.DbContext.Tracks
+                                      .Include(x => x.ReleaseMedia)
+                                      .Include(x => x.ReleaseMedia.Release)
+                                      .Include(x => x.ReleaseMedia.Release.Artist)
+                                      .FirstOrDefault(x => x.RoadieId == model.Id);
+            if (track == null)
+            {
+                return new OperationResult<bool>(true, string.Format("Track Not Found [{0}]", model.Id));
+            }
+            try
+            {
+                var now = DateTime.UtcNow;
+                track.IsLocked = model.IsLocked;
+                track.Status = SafeParser.ToEnum<Statuses>(model.Status);
+                track.Title = model.Title;
+                track.AlternateNames = model.AlternateNamesList.ToDelimitedList();
+                track.Rating = model.Rating;
+                track.AmgId = model.AmgId;
+                track.LastFMId = model.LastFMId;
+                track.MusicBrainzId = model.MusicBrainzId;
+                track.SpotifyId = model.SpotifyId;
+                track.Tags = model.TagsList.ToDelimitedList();
+                track.PartTitles = model.PartTitlesList == null || !model.PartTitlesList.Any() ? null : string.Join("\n", model.PartTitlesList);
+
+                var trackImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
+                if (trackImage != null)
+                {
+                    // Ensure is jpeg first
+                    track.Thumbnail = ImageHelper.ConvertToJpegFormat(trackImage);
+
+                    // Save unaltered image to cover file
+                    var trackThumbnailName = track.PathToTrackThumbnail(this.Configuration, this.Configuration.LibraryFolder);
+                    File.WriteAllBytes(trackThumbnailName, track.Thumbnail);
+
+                    // Resize to store in database as thumbnail
+                    track.Thumbnail = ImageHelper.ResizeImage(track.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                    didChangeThumbnail = true;
+                }
+                track.LastUpdated = now;
+                await this.DbContext.SaveChangesAsync();
+                this.CacheManager.ClearRegion(track.CacheRegion);
+                this.Logger.LogInformation($"UpdateTrack `{ track }` By User `{ user }`: Edited Track [{ didChangeTrack }], Uploaded new image [{ didChangeThumbnail }]");
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
 
         /// <summary>
         /// Fast as possible check if exists and return minimum information on Track

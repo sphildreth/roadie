@@ -14,6 +14,8 @@ namespace Roadie.Api.Services
 
         Task<Library.Models.Pagination.PagedResult<TrackList>> List(PagedRequest request, User roadieUser, bool? doRandomize = false, Guid? releaseId = null);
 
+        Task<OperationResult<bool>> UpdateTrack(User user, Track track);
+
         OperationResult<Track> StreamCheckAndInfo(User roadieUser, Guid id);
 
         Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes, User roadieUser);
