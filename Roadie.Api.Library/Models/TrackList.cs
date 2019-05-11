@@ -12,9 +12,27 @@ using System.Text;
 namespace Roadie.Library.Models
 {
     [Serializable]
-    [DebuggerDisplay("Trackid [{ Track.Value }], Track Name [{ Track.Text }}")]
+    [DebuggerDisplay("Trackid [{ TrackId }], Track Name [{ TrackName }}")]
     public class TrackList : EntityInfoModelBase
     {
+        [JsonIgnore]
+        public string TrackId
+        {
+            get
+            {
+                return this.Track?.Value;
+            }
+        }
+
+        [JsonIgnore]
+        public string TrackName
+        {
+            get
+            {
+                return this.Track?.Text;
+            }
+        }
+
         public int? MediaNumber { get; set; }
         public int? TrackNumber { get; set; }
         public DataToken Track { get; set; }

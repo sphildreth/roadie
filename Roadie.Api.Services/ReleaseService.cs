@@ -430,6 +430,8 @@ namespace Roadie.Api.Services
                         release.Media = this.DbContext.ReleaseMedias
                                             .Include(x => x.Tracks)
                                             .Where(x => x.ReleaseId == release.DatabaseId)
+                                            .ToArray()
+                                            .AsQueryable()
                                             .ProjectToType<ReleaseMediaList>()
                                             .OrderBy(x => x.MediaNumber)
                                             .ToArray();
@@ -442,7 +444,7 @@ namespace Roadie.Api.Services
                                                      select new { trackId = t.RoadieId, ut }).ToArray();
                         foreach (var userRatingForRelease in userRatingsForRelease)
                         {
-                            var mediaTrack = release.Media.SelectMany(x => x.Tracks).FirstOrDefault(x => x.Id == userRatingForRelease.trackId);
+                            var mediaTrack = release.Media?.SelectMany(x => x.Tracks).FirstOrDefault(x => x.Id == userRatingForRelease.trackId);
                             if (mediaTrack != null)
                             {
                                 mediaTrack.UserRating = new UserTrack

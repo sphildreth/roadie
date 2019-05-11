@@ -6,11 +6,14 @@ using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 namespace Roadie.Library.Models.Releases
 {
     [Serializable]
+    [DebuggerDisplay("DatabaseId [{ DatabaseId }] Name [{ ReleaseName }] IsValid [{ IsValid }]")]
     public class ReleaseList : EntityInfoModelBase
     {
         public DataToken Release { get; set; }
@@ -20,6 +23,16 @@ namespace Roadie.Library.Models.Releases
         public IEnumerable<ReleaseMediaList> Media { get; set; }
         public short? Rating { get; set; }
         public decimal? Rank { get; set; }
+
+        [JsonIgnore]
+        [AdaptIgnore]
+        public string ReleaseName
+        {
+            get
+            {
+                return this.Release?.Text;
+            }
+        }
 
         public string ReleaseDate
         {
@@ -67,7 +80,14 @@ namespace Roadie.Library.Models.Releases
         {
             get
             {
-                return this.Id != Guid.Empty;
+                var shouldBeMediaCount = this.MediaCount ?? 0;
+                var hasMediaCount = this.Media == null || !this.Media.Any() ? 0 : this.Media.Count();
+                var artistName = this.Artist?.Text;
+                var releaseName = this.Release?.Text;
+                return this.Id != Guid.Empty &&
+                       shouldBeMediaCount == hasMediaCount &&
+                       !string.IsNullOrEmpty(artistName) &&
+                       !string.IsNullOrEmpty(releaseName);
             }
         }
 
