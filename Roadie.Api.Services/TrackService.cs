@@ -630,6 +630,23 @@ namespace Roadie.Api.Services
                 track.Tags = model.TagsList.ToDelimitedList();
                 track.PartTitles = model.PartTitlesList == null || !model.PartTitlesList.Any() ? null : string.Join("\n", model.PartTitlesList);
 
+                if (model.TrackArtistToken != null)
+                {
+                    var artistId = SafeParser.ToGuid(model.TrackArtistToken.Value);
+                    if (artistId.HasValue)
+                    {
+                        var artist = this.GetArtist(artistId.Value);
+                        if (artist != null)
+                        {
+                            track.ArtistId = artist.Id;
+                        }
+                    }
+                }
+                else
+                {
+                    track.ArtistId = null;
+                }
+
                 var trackImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (trackImage != null)
                 {
@@ -833,6 +850,7 @@ namespace Roadie.Api.Services
                 else
                 {
                     result.TrackArtist = ArtistList.FromDataArtist(trackArtist, this.MakeArtistThumbnailImage(trackArtist.RoadieId));
+                    result.TrackArtistToken = result.TrackArtist.Artist;
                     result.TrackArtistThumbnail = this.MakeArtistThumbnailImage(trackArtist.RoadieId);
                 }
             }

@@ -103,6 +103,8 @@ namespace Roadie.Library.Models
         /// </summary>
         public ArtistList TrackArtist { get; set; }
 
+        public DataToken TrackArtistToken { get; set; }
+
         public Image TrackArtistThumbnail { get; set; }
 
         [Required]
