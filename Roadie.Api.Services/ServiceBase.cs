@@ -887,12 +887,12 @@ namespace Roadie.Api.Services
                                               join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                               join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
                                               where t.ArtistId == artist.Id
-                                              select (double?)ut.Rating).ToArray().Average(x => x) ?? 0;
+                                              select ut.Rating).Select(x => (decimal?)x).Average();
 
                     var artistReleaseRatingRating = (from r in this.DbContext.Releases
                                                      join ur in this.DbContext.UserReleases on r.Id equals ur.ReleaseId
                                                      where r.ArtistId == artist.Id
-                                                     select (double?)ur.Rating).ToArray().Average(x => x) ?? 0;
+                                                     select ur.Rating).Select(x => (decimal?)x).Average();
 
                     var artistReleaseRankSum = (from r in this.DbContext.Releases
                                                 where r.ArtistId == artist.Id
@@ -922,11 +922,11 @@ namespace Roadie.Api.Services
                 var release = this.DbContext.Releases.FirstOrDefault(x => x.Id == releaseId);
                 if (release != null)
                 {
-                    var releaseTrackAverage = (from t in this.DbContext.Tracks
+                    var releaseTrackAverage = (from ut in this.DbContext.UserTracks
+                                               join t in this.DbContext.Tracks on ut.TrackId equals t.Id
                                                join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                               join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
                                                where rm.ReleaseId == releaseId
-                                               select (double?)ut.Rating).ToArray().Average(x => x);
+                                               select ut.Rating).Select(x => (decimal?)x).Average();
 
                     var releaseUserRatingRank = release.Rating > 0 ? (decimal?)release.Rating / (decimal?)release.TrackCount : 0;
 
