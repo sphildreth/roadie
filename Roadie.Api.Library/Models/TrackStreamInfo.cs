@@ -39,7 +39,7 @@ namespace Roadie.Library.Models
 
         public override string ToString()
         {
-            return $"TrackId [{ this.Track }], Begin [{ this.BeginBytes }], End [{ this.EndBytes }]";
+            return $"TrackId [{ this.Track }], ContentRange [{ this.ContentRange }], Begin [{ this.BeginBytes }], End [{ this.EndBytes }]";
         }
     }
 }

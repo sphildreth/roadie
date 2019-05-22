@@ -4,6 +4,7 @@ using Roadie.Library.Enums;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -111,7 +112,16 @@ namespace Roadie.Library.Data
                 using (var sr = new StringReader(this.ListInCSV))
                 {
                     var index = 0;
-                    var csv = new CsvReader(sr, new CsvHelper.Configuration.Configuration { MissingFieldFound = null, HasHeaderRecord = false });
+                    var configuration = new CsvHelper.Configuration.Configuration
+                    {
+                        MissingFieldFound = null,
+                        HasHeaderRecord = false
+                    };
+                    configuration.BadDataFound = context =>
+                    {
+                        Trace.WriteLine($"PositionArtistReleases: Bad data found on row '{context.RawRow}'");
+                    };
+                    var csv = new CsvReader(sr, configuration);
                     while (csv.Read())
                     {
                         index++;

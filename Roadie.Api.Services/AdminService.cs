@@ -685,6 +685,8 @@ namespace Roadie.Api.Services
             foreach (var folder in Directory.EnumerateDirectories(d.FullName).ToArray())
             {
                 result = await folderProcessor.Process(new DirectoryInfo(folder), isReadOnly);
+                // Between folders flush cache, the caching for folder processing was intended for caching artist metadata lookups. Most of the time artists are in the same folder.
+                this.CacheManager.Clear();
                 processedFolders++;
             }
             if (result.AdditionalData != null)

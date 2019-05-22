@@ -119,6 +119,7 @@ namespace Roadie.Api.Controllers
             tsw.Restart();
             Response.Headers.Add("Content-Disposition", info.Data.ContentDisposition);
             Response.Headers.Add("X-Content-Duration", info.Data.ContentDuration);
+            Response.Headers.Add("Content-Duration", info.Data.ContentDuration);
             if (!info.Data.IsFullRequest)
             {
                 Response.Headers.Add("Accept-Ranges", info.Data.AcceptRanges);
