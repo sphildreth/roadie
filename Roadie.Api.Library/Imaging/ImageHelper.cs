@@ -101,7 +101,10 @@ namespace Roadie.Library.Imaging
                     IImageFormat imageFormat = null;
                     using (Image<Rgba32> image = Image.Load(imageBytes, out imageFormat))
                     {
-                        image.Mutate(ctx => ctx.Resize(width, height));
+                        if (image.Width > width || image.Height > height)
+                        {
+                            image.Mutate(ctx => ctx.Resize(width, height));
+                        }
                         image.Save(outStream, imageFormat);
                     }
                     return outStream.ToArray();
@@ -228,5 +231,6 @@ namespace Roadie.Library.Imaging
 
             return result.OrderBy(x => x.Name);
         }
+
     }
 }

@@ -13,6 +13,7 @@ using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.Factories;
 using Roadie.Library.Identity;
+using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.MetaData.FileName;
 using Roadie.Library.MetaData.ID3Tags;
@@ -86,6 +87,45 @@ namespace Roadie.Api.Services
                                                                MessageLogger, this.ArtistLookupEngine, this.ImageFactory, this.FileNameHelper, this.ID3TagsHelper);
             this.ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, context, cacheManager, MessageLogger, this.ArtistLookupEngine, this.LabelFactory, this.AudioMetaDataHelper, this.ReleaseLookupEngine);
             this.ArtistFactory = new ArtistFactory(configuration, httpEncoder, context, cacheManager, MessageLogger, this.ArtistLookupEngine, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
+        }
+
+        public async Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
+            if (artist == null)
+            {
+                await this.LogAndPublish($"DeleteArtistSecondaryImage Unknown Artist [{ artistId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Artist Not Found [{ artistId }]");
+            }
+            try
+            {
+                var artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly);
+                var artistImageFilename = artistImagesInFolder.Skip(index).FirstOrDefault();
+                if (artistImageFilename.Exists)
+                {
+                    artistImageFilename.Delete();
+                }
+                this.CacheManager.ClearRegion(artist.CacheRegion);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                await this.LogAndPublish("Error deleting artist secondary image.");
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"DeleteArtistSecondaryImage `{ artist }` Index [{ index }], By User `{user }`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
         }
 
         public async Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId)

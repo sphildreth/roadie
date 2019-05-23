@@ -452,12 +452,36 @@ namespace Roadie.Api.Services
                     artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artistImage);
 
                     // Save unaltered image to cover file
-                    var artistImageName = Path.Combine(artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder), ImageHelper.ArtistImageFilename);
+                    var artistImageName = Path.Combine(newArtistFolder, ImageHelper.ArtistImageFilename);
                     File.WriteAllBytes(artistImageName, artist.Thumbnail);
 
                     // Resize to store in database as thumbnail
                     artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
                     didChangeThumbnail = true;
+                }
+
+                if(model.NewSecondaryImagesData != null && model.NewSecondaryImagesData.Any())
+                {
+                    // Additional images to add to artist
+                    var looper = 0;
+                    foreach (var newSecondaryImageData in model.NewSecondaryImagesData)
+                    {
+                        var artistSecondaryImage = ImageHelper.ImageDataFromUrl(newSecondaryImageData);
+                        if (artistSecondaryImage != null)
+                        {
+                            // Ensure is jpeg first
+                            artistSecondaryImage = ImageHelper.ConvertToJpegFormat(artistSecondaryImage);
+
+                            var aristImageFilename = Path.Combine(newArtistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                            while(File.Exists(aristImageFilename))
+                            {
+                                looper++;
+                                aristImageFilename = Path.Combine(newArtistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                            }
+                            File.WriteAllBytes(aristImageFilename, artistSecondaryImage);
+                        }
+                        looper++;
+                    }
                 }
 
                 if (model.Genres != null && model.Genres.Any())

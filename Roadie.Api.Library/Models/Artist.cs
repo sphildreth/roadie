@@ -79,8 +79,15 @@ namespace Roadie.Library.Models
         [MaxLength(250)]
         public string Name { get; set; }
 
-        // When populated a "data:image" base64 byte array of an image to use as new Thumbnail
+        /// <summary>
+        /// When populated a "data:image" base64 byte array of an image to use as new Thumbnail.
+        /// </summary>
         public string NewThumbnailData { get; set; }
+
+        /// <summary>
+        /// When populated a "data:image" base64 byte array of an image to use as secondary Artist images.
+        /// </summary>
+        public List<string> NewSecondaryImagesData { get; set; }
 
         [MaxLength(65535)]
         public string Profile { get; set; }

@@ -152,8 +152,8 @@ namespace Roadie.Library.FilePlugins
                         foreach (var artistImage in artistImages)
                         {
                             looper++;
-                            var aristImageFilename = Path.Combine(artistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
-                            if (aristImageFilename != artistImage.FullName)
+                            var artistImageFilename = Path.Combine(artistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                            if (artistImageFilename != artistImage.FullName)
                             {
                                 // Read image and convert to jpeg
                                 var imageBytes = File.ReadAllBytes(artistImage.FullName);
@@ -162,10 +162,15 @@ namespace Roadie.Library.FilePlugins
                                 // Move artist image to artist folder
                                 if (!doJustInfo)
                                 {
-                                    File.WriteAllBytes(aristImageFilename, imageBytes);
+                                    while (File.Exists(artistImageFilename))
+                                    {
+                                        looper++;
+                                        artistImageFilename = Path.Combine(artistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                                    }
+                                    File.WriteAllBytes(artistImageFilename, imageBytes);
                                     artistImage.Delete();
                                 }
-                                this.Logger.LogDebug("Found Artist Secondary Image File [{0}], Moved to artist folder [{1}].", artistImage.Name, aristImageFilename);
+                                this.Logger.LogDebug("Found Artist Secondary Image File [{0}], Moved to artist folder [{1}].", artistImage.Name, artistImageFilename);
                             }
                         }
                     }

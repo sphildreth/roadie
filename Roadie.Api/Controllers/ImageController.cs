@@ -97,7 +97,7 @@ namespace Roadie.Api.Controllers
                         entityTag: result.ETag);
         }
 
-        [HttpPost("{id}")]
+        [HttpPost("delete/{id}")]
         [Authorize(Policy = "Editor")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> Delete(Guid id)
