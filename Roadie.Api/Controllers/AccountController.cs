@@ -24,6 +24,8 @@ namespace Roadie.Api.Controllers
     [AllowAnonymous]
     public class AccountController : ControllerBase
     {
+        private string _baseUrl = null;
+
         private readonly IConfiguration Configuration;
         private readonly ILogger<AccountController> Logger;
         private readonly SignInManager<ApplicationUser> SignInManager;
@@ -34,6 +36,28 @@ namespace Roadie.Api.Controllers
         private IEmailSender EmailSender { get; }
         private IHttpContext RoadieHttpContext { get; }
         private IRoadieSettings RoadieSettings { get; }
+
+        private string BaseUrl
+        {
+            get
+            {
+                if (this._baseUrl == null)
+                {
+                    var scheme = Request.Scheme;
+                    if (this.RoadieSettings.UseSSLBehindProxy)
+                    {
+                        scheme = "https";
+                    }
+                    var host = Request.Host;
+                    if (!string.IsNullOrEmpty(this.RoadieSettings.BehindProxyHost))
+                    {
+                        host = new Microsoft.AspNetCore.Http.HostString(this.RoadieSettings.BehindProxyHost);
+                    }
+                    this._baseUrl = $"{ scheme }://{ host }";
+                }
+                return this._baseUrl;
+            }
+        }
 
         public AccountController(
            IAdminService adminService,
@@ -102,7 +126,7 @@ namespace Roadie.Api.Controllers
                         try
                         {
                             var code = await this.UserManager.GenerateEmailConfirmationTokenAsync(user);
-                            var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, Request.Scheme);
+                            var callbackUrl = $"{ this.BaseUrl}/auth/confirmemail?userId={ user.Id}&code={ code }";
                             await this.EmailSender.SendEmailAsync(user.Email, $"Confirm your { this.RoadieSettings.SiteName } email", $"Please confirm your { this.RoadieSettings.SiteName } account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
                         }
                         catch (Exception ex)
@@ -181,7 +205,7 @@ namespace Roadie.Api.Controllers
                     try
                     {
                         var code = await this.UserManager.GenerateEmailConfirmationTokenAsync(user);
-                        var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, Request.Scheme);
+                        var callbackUrl = $"{ this.BaseUrl}/auth/confirmemail?userId={ user.Id}&code={ code }";
                         await this.EmailSender.SendEmailAsync(user.Email, $"Confirm your { this.RoadieSettings.SiteName } email", $"Please confirm your { this.RoadieSettings.SiteName } account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
                     }
                     catch (Exception ex)
@@ -253,6 +277,11 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> SendPasswordResetEmail(string username, string callbackUrl)
         {
             var user = await UserManager.FindByNameAsync(username);
+            if(user == null)
+            {
+                this.Logger.LogError($"Unable to find user by username [{ username }]");
+                return StatusCode(500);
+            }
             var token = await this.UserManager.GeneratePasswordResetTokenAsync(user);
             callbackUrl = callbackUrl + "?username=" + username + "&token=" + WebEncoders.Base64UrlEncode(System.Text.Encoding.ASCII.GetBytes(token));
             try

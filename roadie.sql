@@ -1,13 +1,13 @@
--- MySQL dump 10.14  Distrib 5.5.60-MariaDB, for Linux (x86_64)
+-- MySQL dump 10.17  Distrib 10.3.15-MariaDB, for Linux (x86_64)
 --
 -- Host: localhost    Database: roadie
 -- ------------------------------------------------------
--- Server version	5.5.60-MariaDB
+-- Server version	10.3.15-MariaDB-log
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8 */;
+/*!40101 SET NAMES utf8mb4 */;
 /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
 /*!40103 SET TIME_ZONE='+00:00' */;
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
@@ -37,19 +37,19 @@ CREATE TABLE `artist` (
   `iTunesId` varchar(100) DEFAULT NULL,
   `amgId` varchar(100) DEFAULT NULL,
   `spotifyId` varchar(100) DEFAULT NULL,
-  `thumbnail` blob,
-  `profile` text,
+  `thumbnail` blob DEFAULT NULL,
+  `profile` text DEFAULT NULL,
   `birthDate` date DEFAULT NULL,
   `beginDate` date DEFAULT NULL,
   `endDate` date DEFAULT NULL,
   `artistType` enum('Person','Group','Orchestra','Choir','Character','Meta','Other') DEFAULT NULL,
-  `bioContext` text,
+  `bioContext` text DEFAULT NULL,
   `bandStatus` enum('Active','On Hold','Split Up','Deceased') DEFAULT NULL,
   `discogsId` varchar(50) DEFAULT NULL,
-  `tags` text,
-  `alternateNames` text,
-  `urls` text,
-  `isniList` text,
+  `tags` text DEFAULT NULL,
+  `alternateNames` text DEFAULT NULL,
+  `urls` text DEFAULT NULL,
+  `isniList` text DEFAULT NULL,
   `releaseCount` int(11) DEFAULT NULL,
   `trackCount` int(11) DEFAULT NULL,
   `playedCount` int(11) DEFAULT NULL,
@@ -168,15 +168,15 @@ CREATE TABLE `collection` (
   `sortName` varchar(100) DEFAULT NULL,
   `edition` varchar(200) DEFAULT NULL,
   `listInCSVFormat` varchar(200) DEFAULT NULL,
-  `listInCSV` text,
+  `listInCSV` text DEFAULT NULL,
   `description` varchar(4000) DEFAULT NULL,
-  `thumbnail` blob,
-  `urls` text,
+  `thumbnail` blob DEFAULT NULL,
+  `urls` text DEFAULT NULL,
   `maintainerId` int(11) DEFAULT NULL,
   `collectionType` enum('Collection','Chart','Rank','Unknown') DEFAULT NULL,
   `collectionCount` int(11) DEFAULT NULL,
-  `tags` text,
-  `alternateNames` text,
+  `tags` text DEFAULT NULL,
+  `alternateNames` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `ix_collection_name` (`name`),
   KEY `maintainerId` (`maintainerId`),
@@ -246,7 +246,7 @@ CREATE TABLE `image` (
   `roadieId` varchar(36) DEFAULT NULL,
   `createdDate` datetime DEFAULT NULL,
   `lastUpdated` datetime DEFAULT NULL,
-  `image` mediumblob,
+  `image` mediumblob DEFAULT NULL,
   `url` varchar(500) DEFAULT NULL,
   `caption` varchar(100) DEFAULT NULL,
   `signature` varchar(50) DEFAULT NULL,
@@ -281,11 +281,11 @@ CREATE TABLE `label` (
   `beginDate` date DEFAULT NULL,
   `endDate` date DEFAULT NULL,
   `imageUrl` varchar(500) DEFAULT NULL,
-  `tags` text,
-  `alternateNames` text,
-  `urls` text,
-  `thumbnail` blob,
-  `profile` text,
+  `tags` text DEFAULT NULL,
+  `alternateNames` text DEFAULT NULL,
+  `urls` text DEFAULT NULL,
+  `thumbnail` blob DEFAULT NULL,
+  `profile` text DEFAULT NULL,
   `discogsId` varchar(50) DEFAULT NULL,
   `artistCount` int(11) DEFAULT NULL,
   `releaseCount` int(11) DEFAULT NULL,
@@ -313,11 +313,11 @@ CREATE TABLE `playlist` (
   `isPublic` tinyint(1) DEFAULT NULL,
   `name` varchar(100) NOT NULL,
   `description` varchar(1000) DEFAULT NULL,
-  `thumbnail` blob,
-  `urls` text,
-  `tags` text,
+  `thumbnail` blob DEFAULT NULL,
+  `urls` text DEFAULT NULL,
+  `tags` text DEFAULT NULL,
   `userId` int(11) DEFAULT NULL,
-  `alternateNames` text,
+  `alternateNames` text DEFAULT NULL,
   `trackCount` smallint(6) DEFAULT NULL,
   `duration` int(11) DEFAULT NULL,
   `releaseCount` int(11) DEFAULT NULL,
@@ -372,24 +372,24 @@ CREATE TABLE `release` (
   `lastUpdated` datetime DEFAULT NULL,
   `isVirtual` tinyint(1) DEFAULT NULL,
   `title` varchar(250) NOT NULL,
-  `alternateNames` text,
+  `alternateNames` text DEFAULT NULL,
   `releaseDate` date DEFAULT NULL,
   `rating` smallint(6) NOT NULL,
   `trackCount` smallint(6) NOT NULL,
   `mediaCount` smallint(6) DEFAULT NULL,
-  `thumbnail` blob,
-  `profile` text,
+  `thumbnail` blob DEFAULT NULL,
+  `profile` text DEFAULT NULL,
   `discogsId` varchar(50) DEFAULT NULL,
   `releaseType` enum('Release','EP','Single','Unknown') DEFAULT NULL,
   `libraryStatus` enum('Complete','Incomplete','Missing','Wishlist') DEFAULT NULL,
   `iTunesId` varchar(100) DEFAULT NULL,
   `amgId` varchar(100) DEFAULT NULL,
   `lastFMId` varchar(100) DEFAULT NULL,
-  `lastFMSummary` text,
+  `lastFMSummary` text DEFAULT NULL,
   `musicBrainzId` varchar(100) DEFAULT NULL,
   `spotifyId` varchar(100) DEFAULT NULL,
-  `tags` text,
-  `urls` text,
+  `tags` text DEFAULT NULL,
+  `urls` text DEFAULT NULL,
   `artistId` int(11) DEFAULT NULL,
   `lastPlayed` datetime DEFAULT NULL,
   `playedCount` int(11) DEFAULT NULL,
@@ -566,21 +566,21 @@ CREATE TABLE `track` (
   `hash` varchar(32) DEFAULT NULL,
   `playedCount` int(11) DEFAULT NULL,
   `lastPlayed` datetime DEFAULT NULL,
-  `partTitles` text,
+  `partTitles` text DEFAULT NULL,
   `rating` smallint(6) NOT NULL,
   `musicBrainzId` varchar(100) DEFAULT NULL,
   `lastFMId` varchar(50) DEFAULT NULL,
   `amgId` varchar(100) DEFAULT NULL,
   `spotifyId` varchar(100) DEFAULT NULL,
   `title` varchar(250) NOT NULL,
-  `alternateNames` text,
+  `alternateNames` text DEFAULT NULL,
   `trackNumber` smallint(6) NOT NULL,
   `duration` int(11) DEFAULT NULL,
-  `tags` text,
+  `tags` text DEFAULT NULL,
   `releaseMediaId` int(11) DEFAULT NULL,
   `artistId` int(11) DEFAULT NULL,
   `isrc` varchar(15) DEFAULT NULL,
-  `thumbnail` blob,
+  `thumbnail` blob DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_track_unique_to_eleasemedia` (`releaseMediaId`,`trackNumber`),
   UNIQUE KEY `track_hash_IDX` (`hash`) USING BTREE,
@@ -633,15 +633,15 @@ CREATE TABLE `user` (
   `registeredOn` datetime DEFAULT NULL,
   `lastLogin` datetime DEFAULT NULL,
   `isActive` tinyint(1) DEFAULT NULL,
-  `avatar` blob,
+  `avatar` blob DEFAULT NULL,
   `doUseHtmlPlayer` tinyint(1) DEFAULT NULL,
   `timezone` varchar(50) DEFAULT NULL,
-  `playerTrackLimit` smallint(6) DEFAULT '50',
-  `profile` text,
+  `playerTrackLimit` smallint(6) DEFAULT 50,
+  `profile` text DEFAULT NULL,
   `timeformat` varchar(50) DEFAULT 'YYYY-MM-DD HH:mm:ss',
   `isPrivate` tinyint(1) DEFAULT NULL,
-  `recentlyPlayedLimit` smallint(6) DEFAULT '50',
-  `randomReleaseLimit` smallint(6) DEFAULT '12',
+  `recentlyPlayedLimit` smallint(6) DEFAULT 50,
+  `randomReleaseLimit` smallint(6) DEFAULT 12,
   `ftpUrl` varchar(250) DEFAULT NULL,
   `ftpDirectory` varchar(500) DEFAULT NULL,
   `ftpUsername` varchar(50) DEFAULT NULL,
@@ -926,7 +926,7 @@ SET character_set_client = @saved_cs_client;
 /*!50001 SET collation_connection      = utf8_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`roadie`@`%` SQL SECURITY DEFINER */
-/*!50001 VIEW `vTrackList` AS select `t`.`id` AS `trackId`,`t`.`roadieId` AS `trackRoadieId`,`t`.`createdDate` AS `trackCreatedDate`,`t`.`lastUpdated` AS `trackLastUpdated`,`t`.`duration` AS `trackDuration`,`t`.`fileSize` AS `trackFileSize`,`t`.`playedCount` AS `trackPlayedCount`,`t`.`rating` AS `trackRating`,`t`.`title` AS `trackTitle`,`rm`.`releaseMediaNumber` AS `releaseMediaNumber`,`r`.`id` AS `releaseId`,`r`.`roadieId` AS `releaseRoadieId`,`r`.`title` AS `releaseTitle`,`r`.`createdDate` AS `releaseCreatedDate`,`r`.`lastUpdated` AS `releaseLastUpdated`,`r`.`libraryStatus` AS `releaseLibraryStatus`,`r`.`rating` AS `releaseRating`,`r`.`releaseDate` AS `releaseDate`,`r`.`status` AS `releaseStatus`,`r`.`trackCount` AS `releaseTrackCount`,`r`.`playedCount` AS `releasePlayedCount`,`ra`.`id` AS `artistId`,`ra`.`roadieId` AS `artistRoadieId`,`ra`.`name` AS `artistName`,`ra`.`rating` AS `artistRating`,`ra`.`createdDate` AS `artistCreatedDate`,`ra`.`lastUpdated` AS `artistLastUpdated`,`ra`.`lastPlayed` AS `artistLastPlayed`,`ra`.`playedCount` AS `artistPlayedCount`,`ra`.`releaseCount` AS `artistReleaseCount`,`ra`.`trackCount` AS `artistTrackCount`,`ra`.`sortName` AS `artistSortName`,`ta`.`id` AS `trackArtistId`,`ta`.`roadieId` AS `trackArtistRoadieId`,`ta`.`name` AS `trackArtistName`,`ta`.`rating` AS `trackArtistRating`,`ta`.`createdDate` AS `trackArtistCreatedDate`,`ta`.`lastUpdated` AS `trackArtistLastUpdated`,`ta`.`lastPlayed` AS `trackArtistLastPlayed`,`ta`.`playedCount` AS `trackArtistPlayedCount`,`ta`.`releaseCount` AS `trackArtistReleaseCount`,`ta`.`trackCount` AS `trackArtistTrackCount`,`ta`.`sortName` AS `trackArtistSortName` from ((((`track` `t` join `releasemedia` `rm` on((`t`.`releaseMediaId` = `rm`.`id`))) join `release` `r` on((`rm`.`releaseId` = `r`.`id`))) join `artist` `ra` on((`r`.`artistId` = `ra`.`id`))) left join `artist` `ta` on((`t`.`artistId` = `ta`.`id`))) where (`t`.`hash` is not null) */;
+/*!50001 VIEW `vTrackList` AS select `t`.`id` AS `trackId`,`t`.`roadieId` AS `trackRoadieId`,`t`.`createdDate` AS `trackCreatedDate`,`t`.`lastUpdated` AS `trackLastUpdated`,`t`.`duration` AS `trackDuration`,`t`.`fileSize` AS `trackFileSize`,`t`.`playedCount` AS `trackPlayedCount`,`t`.`rating` AS `trackRating`,`t`.`title` AS `trackTitle`,`rm`.`releaseMediaNumber` AS `releaseMediaNumber`,`r`.`id` AS `releaseId`,`r`.`roadieId` AS `releaseRoadieId`,`r`.`title` AS `releaseTitle`,`r`.`createdDate` AS `releaseCreatedDate`,`r`.`lastUpdated` AS `releaseLastUpdated`,`r`.`libraryStatus` AS `releaseLibraryStatus`,`r`.`rating` AS `releaseRating`,`r`.`releaseDate` AS `releaseDate`,`r`.`status` AS `releaseStatus`,`r`.`trackCount` AS `releaseTrackCount`,`r`.`playedCount` AS `releasePlayedCount`,`ra`.`id` AS `artistId`,`ra`.`roadieId` AS `artistRoadieId`,`ra`.`name` AS `artistName`,`ra`.`rating` AS `artistRating`,`ra`.`createdDate` AS `artistCreatedDate`,`ra`.`lastUpdated` AS `artistLastUpdated`,`ra`.`lastPlayed` AS `artistLastPlayed`,`ra`.`playedCount` AS `artistPlayedCount`,`ra`.`releaseCount` AS `artistReleaseCount`,`ra`.`trackCount` AS `artistTrackCount`,`ra`.`sortName` AS `artistSortName`,`ta`.`id` AS `trackArtistId`,`ta`.`roadieId` AS `trackArtistRoadieId`,`ta`.`name` AS `trackArtistName`,`ta`.`rating` AS `trackArtistRating`,`ta`.`createdDate` AS `trackArtistCreatedDate`,`ta`.`lastUpdated` AS `trackArtistLastUpdated`,`ta`.`lastPlayed` AS `trackArtistLastPlayed`,`ta`.`playedCount` AS `trackArtistPlayedCount`,`ta`.`releaseCount` AS `trackArtistReleaseCount`,`ta`.`trackCount` AS `trackArtistTrackCount`,`ta`.`sortName` AS `trackArtistSortName` from ((((`track` `t` join `releasemedia` `rm` on(`t`.`releaseMediaId` = `rm`.`id`)) join `release` `r` on(`rm`.`releaseId` = `r`.`id`)) join `artist` `ra` on(`r`.`artistId` = `ra`.`id`)) left join `artist` `ta` on(`t`.`artistId` = `ta`.`id`)) where `t`.`hash` is not null */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
@@ -940,4 +940,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2019-03-02 15:11:06
+-- Dump completed on 2019-05-25 18:53:16
