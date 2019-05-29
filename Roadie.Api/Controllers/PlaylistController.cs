@@ -6,11 +6,9 @@ using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Identity;
-using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Playlists;
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using models = Roadie.Library.Models;
@@ -30,36 +28,6 @@ namespace Roadie.Api.Controllers
         {
             this.Logger = logger.CreateLogger("RoadieApi.Controllers.PlaylistController");
             this.PlaylistService = playlistService;
-        }
-
-        [HttpGet("{id}")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
-        public async Task<IActionResult> Get(Guid id, string inc = null)
-        {
-            var result = await this.PlaylistService.ById(await this.CurrentUserModel(), id, (inc ?? models.Playlists.Playlist.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
-        [HttpGet]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc)
-        {
-            var result = await this.PlaylistService.List(roadieUser: await this.CurrentUserModel(),
-                                                        request: request);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
         }
 
         [HttpPost("add")]
@@ -85,10 +53,40 @@ namespace Roadie.Api.Controllers
             {
                 return NotFound();
             }
-            if(result != null && result.IsAccessDeniedResult)
+            if (result != null && result.IsAccessDeniedResult)
             {
                 return StatusCode((int)HttpStatusCode.Forbidden);
             }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpGet("{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> Get(Guid id, string inc = null)
+        {
+            var result = await this.PlaylistService.ById(await this.CurrentUserModel(), id, (inc ?? models.Playlists.Playlist.DefaultIncludes).ToLower().Split(","));
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpGet]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc)
+        {
+            var result = await this.PlaylistService.List(roadieUser: await this.CurrentUserModel(),
+                                                        request: request);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
@@ -133,8 +131,5 @@ namespace Roadie.Api.Controllers
             }
             return Ok(result);
         }
-
-
-
     }
 }

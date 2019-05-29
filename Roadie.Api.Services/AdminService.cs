@@ -19,7 +19,6 @@ using Roadie.Library.MetaData.FileName;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.MetaData.MusicBrainz;
-using Roadie.Library.Models;
 using Roadie.Library.Processors;
 using Roadie.Library.Utility;
 using System;
@@ -87,45 +86,6 @@ namespace Roadie.Api.Services
                                                                MessageLogger, this.ArtistLookupEngine, this.ImageFactory, this.FileNameHelper, this.ID3TagsHelper);
             this.ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, context, cacheManager, MessageLogger, this.ArtistLookupEngine, this.LabelFactory, this.AudioMetaDataHelper, this.ReleaseLookupEngine);
             this.ArtistFactory = new ArtistFactory(configuration, httpEncoder, context, cacheManager, MessageLogger, this.ArtistLookupEngine, this.ReleaseFactory, this.ImageFactory, this.ReleaseLookupEngine, this.AudioMetaDataHelper);
-        }
-
-        public async Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
-            if (artist == null)
-            {
-                await this.LogAndPublish($"DeleteArtistSecondaryImage Unknown Artist [{ artistId}]", LogLevel.Warning);
-                return new OperationResult<bool>(true, $"Artist Not Found [{ artistId }]");
-            }
-            try
-            {
-                var artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
-                var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly);
-                var artistImageFilename = artistImagesInFolder.Skip(index).FirstOrDefault();
-                if (artistImageFilename.Exists)
-                {
-                    artistImageFilename.Delete();
-                }
-                this.CacheManager.ClearRegion(artist.CacheRegion);
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex);
-                await this.LogAndPublish("Error deleting artist secondary image.");
-                errors.Add(ex);
-            }
-            sw.Stop();
-            await this.LogAndPublish($"DeleteArtistSecondaryImage `{ artist }` Index [{ index }], By User `{user }`", LogLevel.Information);
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data = true,
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
         }
 
         public async Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId)
@@ -200,6 +160,80 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
+            if (artist == null)
+            {
+                await this.LogAndPublish($"DeleteArtistSecondaryImage Unknown Artist [{ artistId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Artist Not Found [{ artistId }]");
+            }
+            try
+            {
+                var artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly);
+                var artistImageFilename = artistImagesInFolder.Skip(index).FirstOrDefault();
+                if (artistImageFilename.Exists)
+                {
+                    artistImageFilename.Delete();
+                }
+                this.CacheManager.ClearRegion(artist.CacheRegion);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                await this.LogAndPublish("Error deleting artist secondary image.");
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"DeleteArtistSecondaryImage `{ artist }` Index [{ index }], By User `{user }`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+
+            var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == releaseId);
+            try
+            {
+                if (release == null)
+                {
+                    await this.LogAndPublish($"DeleteRelease Unknown Release [{ releaseId}]", LogLevel.Warning);
+                    return new OperationResult<bool>(true, $"Release Not Found [{ releaseId }]");
+                }
+                await this.ReleaseFactory.Delete(release, doDeleteFiles ?? false);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                await this.LogAndPublish("Error deleting release.");
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"DeleteRelease `{ release }`, By User `{ user}`", LogLevel.Information);
+            this.CacheManager.Clear();
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
         public async Task<OperationResult<bool>> DeleteTrack(ApplicationUser user, Guid trackId, bool? doDeleteFile)
         {
             var sw = new Stopwatch();
@@ -263,31 +297,39 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles)
+        public async Task<OperationResult<bool>> DeleteUser(ApplicationUser applicationUser, Guid userId)
         {
             var sw = new Stopwatch();
             sw.Start();
 
             var errors = new List<Exception>();
-
-            var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == releaseId);
+            var user = this.DbContext.Users.FirstOrDefault(x => x.RoadieId == userId);
+            if (user.Id == applicationUser.Id)
+            {
+                var ex = new Exception("User cannot self.");
+                this.Logger.LogError(ex);
+                await this.LogAndPublish("Error deleting user.");
+                errors.Add(ex);
+            }
             try
             {
-                if (release == null)
+                if (user == null)
                 {
-                    await this.LogAndPublish($"DeleteRelease Unknown Release [{ releaseId}]", LogLevel.Warning);
-                    return new OperationResult<bool>(true, $"Release Not Found [{ releaseId }]");
+                    await this.LogAndPublish($"DeleteUser Unknown User [{ userId}]", LogLevel.Warning);
+                    return new OperationResult<bool>(true, $"User Not Found [{ userId }]");
                 }
-                await this.ReleaseFactory.Delete(release, doDeleteFiles ?? false);
+                this.DbContext.Users.Remove(user);
+                await this.DbContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
                 this.Logger.LogError(ex);
-                await this.LogAndPublish("Error deleting release.");
+                await this.LogAndPublish("Error deleting user.");
                 errors.Add(ex);
             }
+
             sw.Stop();
-            await this.LogAndPublish($"DeleteRelease `{ release }`, By User `{ user}`", LogLevel.Information);
+            await this.LogAndPublish($"DeleteUser `{ user }`, By User `{ user}`", LogLevel.Information);
             this.CacheManager.Clear();
             return new OperationResult<bool>
             {
@@ -357,6 +399,86 @@ namespace Roadie.Api.Services
             };
         }
 
+        public Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleases(ApplicationUser user)
+        {
+            var sw = Stopwatch.StartNew();
+            sw.Start();
+            var missingData = new Dictionary<string, List<string>>();
+
+            foreach (var collection in this.DbContext.Collections.Where(x => x.Status != Statuses.Complete))
+            {
+                var collectionReleases = (from cr in this.DbContext.CollectionReleases
+                                          where cr.CollectionId == collection.Id
+                                          select cr);
+                PositionAristRelease[] pars = null;
+
+                try
+                {
+                    pars = collection.PositionArtistReleases().ToArray();
+                }
+                catch (Exception ex)
+                {
+                    missingData.Add($"CSV Error [{ collection.Name }]", new List<string> { ex.Message });
+                    continue;
+                }
+                foreach (var par in pars)
+                {
+                    var cr = collectionReleases.FirstOrDefault(x => x.ListNumber == par.Position);
+                    if (cr == null)
+                    {
+                        // If artist is already in result then add missing album to artist, if not then add artist then add missing album
+                        if (!missingData.ContainsKey(par.Artist))
+                        {
+                            missingData.Add(par.Artist, new List<string>());
+                        }
+                        var r = $"[{ collection.Name }]:[{ par.Release }]";
+                        missingData[par.Artist].Add(r);
+                    }
+                }
+            }
+            sw.Stop();
+            return Task.FromResult(new OperationResult<Dictionary<string, List<string>>>
+            {
+                Data = missingData.OrderBy(x => x.Value.Count()).ToDictionary(x => x.Key, x => x.Value),
+                IsSuccess = true,
+                OperationTime = sw.ElapsedMilliseconds
+            });
+        }
+
+        public async Task<OperationResult<bool>> ScanAllCollections(ApplicationUser user, bool isReadOnly = false, bool doPurgeFirst = true)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+
+            var collections = this.DbContext.Collections.Where(x => x.Status != Statuses.Complete).ToArray();
+            foreach (var collection in collections)
+            {
+                try
+                {
+                    var result = await this.ScanCollection(user, collection.RoadieId, isReadOnly, doPurgeFirst);
+                    if (!result.IsSuccess)
+                    {
+                        errors.AddRange(result.Errors);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.Logger.LogError(ex);
+                    errors.Add(ex);
+                }
+            }
+            sw.Stop();
+            this.Logger.LogInformation(string.Format("ScanAllCollections, By User `{0}`", user));
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
         public async Task<OperationResult<bool>> ScanArtist(ApplicationUser user, Guid artistId, bool isReadOnly = false)
         {
             var sw = new Stopwatch();
@@ -400,87 +522,6 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> ScanAllCollections(ApplicationUser user, bool isReadOnly = false, bool doPurgeFirst = true)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-
-            var collections = this.DbContext.Collections.Where(x => x.Status != Statuses.Complete).ToArray();
-            foreach(var collection in collections)
-            {
-                try
-                {
-                    var result = await this.ScanCollection(user, collection.RoadieId, isReadOnly, doPurgeFirst);
-                    if (!result.IsSuccess)
-                    {
-                        errors.AddRange(result.Errors);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    this.Logger.LogError(ex);
-                    errors.Add(ex);
-                }
-            }
-            sw.Stop();
-            this.Logger.LogInformation(string.Format("ScanAllCollections, By User `{0}`", user));
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data = true,
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-        public Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleases(ApplicationUser user)
-        {
-            var sw = Stopwatch.StartNew();
-            sw.Start();
-            var missingData = new Dictionary<string, List<string>>();
-
-            foreach (var collection in this.DbContext.Collections.Where(x => x.Status != Statuses.Complete))
-            {
-                var collectionReleases = (from cr in this.DbContext.CollectionReleases
-                                          where cr.CollectionId == collection.Id
-                                          select cr);
-                PositionAristRelease[] pars = null;
-
-                try
-                {
-                    pars = collection.PositionArtistReleases().ToArray();
-                }
-                catch (Exception ex)
-                {
-                    missingData.Add($"CSV Error [{ collection.Name }]", new List<string>{ ex.Message });
-                    continue;
-                }
-                foreach (var par in pars)
-                {
-                    var cr = collectionReleases.FirstOrDefault(x => x.ListNumber == par.Position);
-                    if (cr == null)
-                    {
-                        // If artist is already in result then add missing album to artist, if not then add artist then add missing album
-                        if(!missingData.ContainsKey(par.Artist))
-                        {
-                            missingData.Add(par.Artist, new List<string>());
-                        }
-                        var r = $"[{ collection.Name }]:[{ par.Release }]";
-                        missingData[par.Artist].Add(r);
-                    }
-                }
-            }
-            sw.Stop();
-            return Task.FromResult(new OperationResult<Dictionary<string, List<string>>>
-            {
-                Data = missingData.OrderBy(x => x.Value.Count()).ToDictionary(x => x.Key, x => x.Value), 
-                IsSuccess = true,
-                OperationTime = sw.ElapsedMilliseconds
-            });
-
-        }
-
         public async Task<OperationResult<bool>> ScanCollection(ApplicationUser user, Guid collectionId, bool isReadOnly = false, bool doPurgeFirst = true)
         {
             var sw = new Stopwatch();
@@ -508,8 +549,7 @@ namespace Roadie.Api.Services
                 {
                     var now = DateTime.UtcNow;
                     foreach (var csvRelease in par)
-                    {                      
-
+                    {
                         data.Artist artist = null;
                         data.Release release = null;
 
@@ -517,11 +557,11 @@ namespace Roadie.Api.Services
                         var specialSearchName = csvRelease.Artist.ToAlphanumericName();
 
                         var artistResults = (from a in this.DbContext.Artists
-                                            where (a.Name.Contains(searchName) ||
-                                                   a.SortName.Contains(searchName) ||
-                                                   a.AlternateNames.Contains(searchName) ||
-                                                   a.AlternateNames.Contains(specialSearchName))
-                                            select a).ToArray();
+                                             where (a.Name.Contains(searchName) ||
+                                                    a.SortName.Contains(searchName) ||
+                                                    a.AlternateNames.Contains(searchName) ||
+                                                    a.AlternateNames.Contains(specialSearchName))
+                                             select a).ToArray();
                         if (!artistResults.Any())
                         {
                             this.Logger.LogWarning("Unable To Find Artist [{0}], SearchName [{1}]", csvRelease.Artist, searchName);
@@ -534,13 +574,13 @@ namespace Roadie.Api.Services
                             searchName = csvRelease.Release.NormalizeName().ToLower();
                             specialSearchName = csvRelease.Release.ToAlphanumericName();
                             release = (from r in this.DbContext.Releases
-                                           where (r.ArtistId == artist.Id)
-                                           where (r.Title.Contains(searchName) ||
-                                                   r.AlternateNames.Contains(searchName) ||
-                                                   r.AlternateNames.Contains(specialSearchName))
-                                           select r
+                                       where (r.ArtistId == artist.Id)
+                                       where (r.Title.Contains(searchName) ||
+                                               r.AlternateNames.Contains(searchName) ||
+                                               r.AlternateNames.Contains(specialSearchName))
+                                       select r
                                        ).FirstOrDefault();
-                            if(release != null)
+                            if (release != null)
                             {
                                 break;
                             }
@@ -550,9 +590,9 @@ namespace Roadie.Api.Services
                             this.Logger.LogWarning("Unable To Find Release [{0}], SearchName [{1}]", csvRelease.Release, searchName);
                             csvRelease.Status = Library.Enums.Statuses.Missing;
                             continue;
-                        }                        
-                        var isInCollection = this.DbContext.CollectionReleases.FirstOrDefault(x => x.CollectionId == collection.Id && 
-                                                                                                   x.ListNumber == csvRelease.Position &&                                                                                                    
+                        }
+                        var isInCollection = this.DbContext.CollectionReleases.FirstOrDefault(x => x.CollectionId == collection.Id &&
+                                                                                                   x.ListNumber == csvRelease.Position &&
                                                                                                    x.ReleaseId == release.Id);
                         // Found in Database but not in collection add to Collection
                         if (isInCollection == null)
@@ -656,7 +696,7 @@ namespace Roadie.Api.Services
                 errors.Add(ex);
             }
             sw.Stop();
-            
+
             this.DbContext.ScanHistories.Add(new data.ScanHistory
             {
                 UserId = user.Id,

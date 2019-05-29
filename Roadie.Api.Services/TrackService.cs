@@ -28,8 +28,8 @@ namespace Roadie.Api.Services
 {
     public class TrackService : ServiceBase, ITrackService
     {
-        private IBookmarkService BookmarkService { get; } = null;
         private IAdminService AdminService { get; }
+        private IBookmarkService BookmarkService { get; } = null;
 
         public TrackService(IRoadieSettings configuration,
                              IHttpEncoder httpEncoder,
@@ -226,13 +226,13 @@ namespace Roadie.Api.Services
                     if (!request.FilterRatedOnly && !request.FilterFavoriteOnly)
                     {
                         var sql = @"SELECT t.id
-                                        FROM `track` t 
+                                        FROM `track` t
                                         JOIN `releasemedia` rm on (t.releaseMediaId = rm.id)
-                                        WHERE t.Hash IS NOT NULL 
+                                        WHERE t.Hash IS NOT NULL
                                         AND t.id NOT IN (SELECT ut.trackId
                                                            FROM `usertrack` ut
                                                            WHERE ut.userId = {0}
-                                                           AND ut.isDisliked = 1)                  
+                                                           AND ut.isDisliked = 1)
                                         AND rm.releaseId in (select distinct r.id
                                             FROM `release` r
                                             WHERE r.id NOT IN (SELECT ur.releaseId
@@ -240,28 +240,28 @@ namespace Roadie.Api.Services
                                                                WHERE ur.userId = {0}
                                                                AND ur.isDisliked = 1)
                                             AND r.artistId IN (select DISTINCT a.id
-                                                                 FROM `artist` a 
+                                                                 FROM `artist` a
                                                                  WHERE a.id NOT IN (select ua.artistId
-							                                        FROM `userartist` ua 
+							                                        FROM `userartist` ua
 							                                        where ua.userId = {0}
 							                                        AND ua.isDisliked = 1)
                                                                  ORDER BY RAND())
                                             ORDER BY RAND())
-                                        ORDER BY RAND()	
+                                        ORDER BY RAND()
                                         LIMIT {1}";
                         randomTrackIds = this.DbContext.Tracks.FromSql(sql, userId, request.Limit).Select(x => x.Id).ToArray();
                     }
                     if (request.FilterRatedOnly && !request.FilterFavoriteOnly)
                     {
                         var sql = @"SELECT t.id
-                                        FROM `track` t 
+                                        FROM `track` t
                                         JOIN `releasemedia` rm on (t.releaseMediaId = rm.id)
-                                        WHERE t.Hash IS NOT NULL 
+                                        WHERE t.Hash IS NOT NULL
                                         AND t.rating > 0
                                         AND t.id NOT IN (SELECT ut.trackId
                                                            FROM `usertrack` ut
                                                            WHERE ut.userId = {0}
-                                                           AND ut.isDisliked = 1)                  
+                                                           AND ut.isDisliked = 1)
                                         AND rm.releaseId in (select distinct r.id
                                             FROM `release` r
                                             WHERE r.id NOT IN (SELECT ur.releaseId
@@ -269,14 +269,14 @@ namespace Roadie.Api.Services
                                                                WHERE ur.userId = {0}
                                                                AND ur.isDisliked = 1)
                                             AND r.artistId IN (select DISTINCT a.id
-                                                                 FROM `artist` a 
+                                                                 FROM `artist` a
                                                                  WHERE a.id NOT IN (select ua.artistId
-							                                        FROM `userartist` ua 
+							                                        FROM `userartist` ua
 							                                        where ua.userId = {0}
 							                                        AND ua.isDisliked = 1)
                                                                  ORDER BY RAND())
                                             ORDER BY RAND())
-                                        ORDER BY RAND()	
+                                        ORDER BY RAND()
                                         LIMIT {1}";
                         randomTrackIds = this.DbContext.Tracks.FromSql(sql, userId, request.LimitValue).Select(x => x.Id).ToArray();
                     }
@@ -334,8 +334,8 @@ namespace Roadie.Api.Services
                                    where (releaseId == null || (releaseId != null && r.RoadieId == releaseId))
                                    where (filterToTrackIds == null || filterToTrackIds.Contains(t.RoadieId))
                                    where (request.FilterMinimumRating == null || t.Rating >= request.FilterMinimumRating.Value)
-                                   where (request.FilterValue == "" || (t.Title.Contains(request.FilterValue) || 
-                                                                        t.AlternateNames.Contains(request.FilterValue) || 
+                                   where (request.FilterValue == "" || (t.Title.Contains(request.FilterValue) ||
+                                                                        t.AlternateNames.Contains(request.FilterValue) ||
                                                                         t.AlternateNames.Contains(normalizedFilterValue)) ||
                                                                         t.PartTitles.Contains(request.FilterValue))
                                    where (!isEqualFilter || (t.Title.Equals(request.FilterValue) ||
@@ -486,14 +486,14 @@ namespace Roadie.Api.Services
                 {
                     sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Release.Release.Text", "ASC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } }) : request.OrderValue(null);
                 }
-                if(doRandomize ?? false)
+                if (doRandomize ?? false)
                 {
                     rows = result.OrderBy(x => x.RandomSortId).Take(request.LimitValue).ToArray();
                 }
                 else
                 {
                     rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
-                }                
+                }
                 if (rows.Any() && roadieUser != null)
                 {
                     var rowIds = rows.Select(x => x.DatabaseId).ToArray();
@@ -599,6 +599,140 @@ namespace Roadie.Api.Services
             }
         }
 
+        /// <summary>
+        /// Fast as possible check if exists and return minimum information on Track
+        /// </summary>
+        public OperationResult<Track> StreamCheckAndInfo(User roadieUser, Guid id)
+        {
+            var track = this.DbContext.Tracks.FirstOrDefault(x => x.RoadieId == id);
+            if (track == null)
+            {
+                return new OperationResult<Track>(true, string.Format("Track Not Found [{0}]", id));
+            }
+            return new OperationResult<Track>()
+            {
+                Data = track.Adapt<Track>(),
+                IsSuccess = true
+            };
+        }
+
+        public async Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes, User roadieUser)
+        {
+            var track = this.DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
+            if (track == null)
+            {
+                // Not Found try recanning release
+                var release = (from r in this.DbContext.Releases
+                               join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                               where rm.Id == track.ReleaseMediaId
+                               select r).FirstOrDefault();
+                if (!release.IsLocked ?? false)
+                {
+                    await this.AdminService.ScanRelease(new Library.Identity.ApplicationUser
+                    {
+                        Id = roadieUser.Id.Value
+                    }, release.RoadieId, false, true);
+                }
+                track = this.DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
+                if (track == null)
+                {
+                    return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Unable To Find Track [{ trackId }]");
+                }
+            }
+            if (!track.IsValid)
+            {
+                return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Invalid Track. Track Id [{trackId}], FilePath [{track.FilePath}], Filename [{track.FileName}]");
+            }
+            string trackPath = null;
+            try
+            {
+                trackPath = track.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
+            }
+            catch (Exception ex)
+            {
+                return new OperationResult<TrackStreamInfo>(ex);
+            }
+            var trackFileInfo = new FileInfo(trackPath);
+            if (!trackFileInfo.Exists)
+            {
+                // Not Found try recanning release
+                var release = (from r in this.DbContext.Releases
+                               join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                               where rm.Id == track.ReleaseMediaId
+                               select r).FirstOrDefault();
+                if (!release.IsLocked ?? false)
+                {
+                    await this.AdminService.ScanRelease(new Library.Identity.ApplicationUser
+                    {
+                        Id = roadieUser.Id.Value
+                    }, release.RoadieId, false, true);
+                }
+                track = this.DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
+                if (track == null)
+                {
+                    return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Unable To Find Track [{ trackId }]");
+                }
+                try
+                {
+                    trackPath = track.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
+                }
+                catch (Exception ex)
+                {
+                    return new OperationResult<TrackStreamInfo>(ex);
+                }
+                if (!trackFileInfo.Exists)
+                {
+                    track.UpdateTrackMissingFile();
+                    await this.DbContext.SaveChangesAsync();
+                    return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: TrackId [{trackId}] Unable to Find Track [{trackFileInfo.FullName}]");
+                }
+            }
+            var contentDurationTimeSpan = TimeSpan.FromMilliseconds((double)(track.Duration ?? 0));
+            var info = new TrackStreamInfo
+            {
+                FileName = this.HttpEncoder.UrlEncode(track.FileName).ToContentDispositionFriendly(),
+                ContentDisposition = $"attachment; filename=\"{ this.HttpEncoder.UrlEncode(track.FileName).ToContentDispositionFriendly() }\"",
+                ContentDuration = contentDurationTimeSpan.TotalSeconds.ToString(),
+            };
+            var cacheTimeout = 86400; // 24 hours
+            var contentLength = (endBytes - beginBytes) + 1;
+            info.Track = new DataToken
+            {
+                Text = track.Title,
+                Value = track.RoadieId.ToString()
+            };
+            info.BeginBytes = beginBytes;
+            info.EndBytes = endBytes;
+            info.ContentRange = $"bytes {beginBytes}-{endBytes}/{contentLength}";
+            info.ContentLength = contentLength.ToString();
+            info.IsFullRequest = beginBytes == 0 && endBytes == (trackFileInfo.Length - 1);
+            info.IsEndRangeRequest = beginBytes > 0 && endBytes != (trackFileInfo.Length - 1);
+            info.LastModified = (track.LastUpdated ?? track.CreatedDate).ToString("R");
+            info.Etag = track.Etag;
+            info.CacheControl = $"public, max-age={ cacheTimeout.ToString() } ";
+            info.Expires = DateTime.UtcNow.AddMinutes(cacheTimeout).ToString("R");
+            int bytesToRead = (int)(endBytes - beginBytes) + 1;
+            byte[] trackBytes = new byte[bytesToRead];
+            using (var fs = trackFileInfo.OpenRead())
+            {
+                try
+                {
+                    fs.Seek(beginBytes, SeekOrigin.Begin);
+                    var r = fs.Read(trackBytes, 0, bytesToRead);
+                }
+                catch (Exception ex)
+                {
+                    return new OperationResult<TrackStreamInfo>(ex);
+                }
+            }
+            info.Bytes = trackBytes;
+            return new OperationResult<TrackStreamInfo>
+            {
+                IsSuccess = true,
+                Data = info
+            };
+        }
+
         public async Task<OperationResult<bool>> UpdateTrack(User user, Track model)
         {
             var didChangeTrack = false;
@@ -679,141 +813,6 @@ namespace Roadie.Api.Services
                 Data = !errors.Any(),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
-            };
-        }
-
-
-        /// <summary>
-        /// Fast as possible check if exists and return minimum information on Track
-        /// </summary>
-        public OperationResult<Track> StreamCheckAndInfo(User roadieUser, Guid id)
-        {
-            var track = this.DbContext.Tracks.FirstOrDefault(x => x.RoadieId == id);
-            if (track == null)
-            {
-                return new OperationResult<Track>(true, string.Format("Track Not Found [{0}]", id));
-            }
-            return new OperationResult<Track>()
-            {
-                Data = track.Adapt<Track>(),
-                IsSuccess = true
-            };
-        }
-
-        public async Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes, User roadieUser)
-        {
-            var track = this.DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
-            if (track == null)
-            {
-                // Not Found try recanning release 
-                var release = (from r in this.DbContext.Releases
-                               join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                               where rm.Id == track.ReleaseMediaId
-                               select r).FirstOrDefault();
-                if (!release.IsLocked ?? false)
-                {
-                    await this.AdminService.ScanRelease(new Library.Identity.ApplicationUser
-                    {
-                        Id = roadieUser.Id.Value
-                    }, release.RoadieId, false, true);
-                }
-                track = this.DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
-                if(track == null)
-                {
-                    return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Unable To Find Track [{ trackId }]");
-                }
-            }
-            if (!track.IsValid)
-            {
-                return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Invalid Track. Track Id [{trackId}], FilePath [{track.FilePath}], Filename [{track.FileName}]");
-            }
-            string trackPath = null;
-            try
-            {
-                trackPath = track.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
-            }
-            catch (Exception ex)
-            {
-                return new OperationResult<TrackStreamInfo>(ex);
-            }
-            var trackFileInfo = new FileInfo(trackPath);
-            if (!trackFileInfo.Exists)
-            {
-                // Not Found try recanning release 
-                var release = (from r in this.DbContext.Releases
-                               join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                               where rm.Id == track.ReleaseMediaId
-                               select r).FirstOrDefault();
-                if (!release.IsLocked ?? false)
-                {
-                    await this.AdminService.ScanRelease(new Library.Identity.ApplicationUser
-                    {
-                        Id = roadieUser.Id.Value
-                    }, release.RoadieId, false, true);
-                }
-                track = this.DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
-                if (track == null)
-                {
-                    return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Unable To Find Track [{ trackId }]");
-                }
-                try
-                {
-                    trackPath = track.PathToTrack(this.Configuration, this.Configuration.LibraryFolder);
-                }
-                catch (Exception ex)
-                {
-                    return new OperationResult<TrackStreamInfo>(ex);
-                }
-                if (!trackFileInfo.Exists)
-                { 
-                    track.UpdateTrackMissingFile();
-                    await this.DbContext.SaveChangesAsync();
-                    return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: TrackId [{trackId}] Unable to Find Track [{trackFileInfo.FullName}]");
-                }
-            }
-            var contentDurationTimeSpan = TimeSpan.FromMilliseconds((double)(track.Duration ?? 0));
-            var info = new TrackStreamInfo
-            {
-                FileName = this.HttpEncoder.UrlEncode(track.FileName).ToContentDispositionFriendly(),
-                ContentDisposition = $"attachment; filename=\"{ this.HttpEncoder.UrlEncode(track.FileName).ToContentDispositionFriendly() }\"",
-                ContentDuration = contentDurationTimeSpan.TotalSeconds.ToString(),
-            };
-            var cacheTimeout = 86400; // 24 hours
-            var contentLength = (endBytes - beginBytes) + 1;
-            info.Track = new DataToken
-            {
-                Text = track.Title,
-                Value = track.RoadieId.ToString()
-            };
-            info.BeginBytes = beginBytes;
-            info.EndBytes = endBytes;
-            info.ContentRange = $"bytes {beginBytes}-{endBytes}/{contentLength}";
-            info.ContentLength = contentLength.ToString();
-            info.IsFullRequest = beginBytes == 0 && endBytes == (trackFileInfo.Length - 1);
-            info.IsEndRangeRequest = beginBytes > 0 && endBytes != (trackFileInfo.Length - 1);
-            info.LastModified = (track.LastUpdated ?? track.CreatedDate).ToString("R");
-            info.Etag = track.Etag;
-            info.CacheControl = $"public, max-age={ cacheTimeout.ToString() } ";
-            info.Expires = DateTime.UtcNow.AddMinutes(cacheTimeout).ToString("R");
-            int bytesToRead = (int)(endBytes - beginBytes) + 1;
-            byte[] trackBytes = new byte[bytesToRead];
-            using (var fs = trackFileInfo.OpenRead())
-            {
-                try
-                {
-                    fs.Seek(beginBytes, SeekOrigin.Begin);
-                    var r = fs.Read(trackBytes, 0, bytesToRead);
-                }
-                catch (Exception ex)
-                {
-                    return new OperationResult<TrackStreamInfo>(ex);
-                }
-            }
-            info.Bytes = trackBytes;
-            return new OperationResult<TrackStreamInfo>
-            {
-                IsSuccess = true,
-                Data = info
             };
         }
 

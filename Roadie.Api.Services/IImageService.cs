@@ -11,6 +11,7 @@ namespace Roadie.Api.Services
     public interface IImageService
     {
         Task<FileOperationResult<Library.Models.Image>> ArtistImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+
         Task<FileOperationResult<Library.Models.Image>> ArtistSecondaryImage(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null);
 
         Task<FileOperationResult<Library.Models.Image>> ById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
@@ -26,6 +27,7 @@ namespace Roadie.Api.Services
         Task<FileOperationResult<Library.Models.Image>> PlaylistImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
         Task<FileOperationResult<Library.Models.Image>> ReleaseImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+
         Task<FileOperationResult<Library.Models.Image>> ReleaseSecondaryImage(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null);
 
         Task<OperationResult<IEnumerable<ImageSearchResult>>> Search(string query, int resultsCount = 10);

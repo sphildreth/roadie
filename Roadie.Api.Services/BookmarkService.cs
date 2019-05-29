@@ -69,7 +69,7 @@ namespace Roadie.Api.Services
                 {
                     case BookmarkType.Artist:
                         var artist = this.DbContext.Artists.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
-                        if(artist == null)
+                        if (artist == null)
                         {
                             continue;
                         }

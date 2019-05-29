@@ -74,24 +74,6 @@ namespace Roadie.Api.Controllers
             return StatusCode((int)HttpStatusCode.InternalServerError);
         }
 
-        [HttpPost("uploadImage/{id}")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
-        [Authorize(Policy = "Editor")]
-        public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
-        {
-            var result = await this.LabelService.UploadLabelImage(await this.CurrentUserModel(), id, file);
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
         [HttpPost("setImageByUrl/{id}/{imageUrl}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
@@ -121,6 +103,24 @@ namespace Roadie.Api.Controllers
                 return BadRequest(ModelState);
             }
             var result = await this.LabelService.UpdateLabel(await this.CurrentUserModel(), label);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("uploadImage/{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
+        {
+            var result = await this.LabelService.UploadLabelImage(await this.CurrentUserModel(), id, file);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();

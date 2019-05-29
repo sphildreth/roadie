@@ -12,12 +12,12 @@ namespace Roadie.Api.Services
     {
         OperationResult<Collection> Add(User roadieUser);
 
-        Task<OperationResult<bool>> UpdateCollection(User roadieUser, Collection collection);
+        Task<OperationResult<Collection>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null);
 
         Task<OperationResult<bool>> DeleteCollection(User user, Guid id);
 
-        Task<OperationResult<Collection>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null);
-
         Task<PagedResult<CollectionList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null, Guid? artistId = null);
+
+        Task<OperationResult<bool>> UpdateCollection(User roadieUser, Collection collection);
     }
 }

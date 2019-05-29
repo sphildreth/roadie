@@ -201,7 +201,7 @@ namespace Roadie.Api.Services
                                                     etag: etag);
         }
 
-        public async Task<FileOperationResult<Image>> ReleaseSecondaryImage(Guid id,int imageId, int? width, int? height, EntityTagHeaderValue etag = null)
+        public async Task<FileOperationResult<Image>> ReleaseSecondaryImage(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null)
         {
             return await this.GetImageFileOperation(type: $"ReleaseSecondaryThumbnail-{imageId}",
                                                     regionUrn: data.Release.CacheRegionUrn(id),
@@ -298,7 +298,7 @@ namespace Roadie.Api.Services
                     else
                     {
                         var artistImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), Library.Enums.ImageType.Artist);
-                        if(artistImages.Any())
+                        if (artistImages.Any())
                         {
                             imageBytes = File.ReadAllBytes(artistImages.First().FullName);
                         }
@@ -324,6 +324,53 @@ namespace Roadie.Api.Services
             catch (Exception ex)
             {
                 this.Logger.LogError($"Error fetching Artist Thumbnail [{ id }]", ex);
+            }
+            return Task.FromResult(new FileOperationResult<Image>(OperationMessages.ErrorOccured));
+        }
+
+        private Task<FileOperationResult<Image>> ArtistSecondaryImageAction(Guid id, int imageId, EntityTagHeaderValue etag = null)
+        {
+            try
+            {
+                var artist = this.GetArtist(id);
+                if (artist == null)
+                {
+                    return Task.FromResult(new FileOperationResult<Image>(true, string.Format("Release Not Found [{0}]", id)));
+                }
+                byte[] imageBytes = null;
+                string artistFolder = null;
+                try
+                {
+                    // See if cover art file exists in release folder
+                    artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                    if (!Directory.Exists(artistFolder))
+                    {
+                        this.Logger.LogWarning($"Artist Folder [{ artistFolder }], Not Found For Artist `{ artist }`");
+                    }
+                    else
+                    {
+                        var artistSecondaryImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), Library.Enums.ImageType.ArtistSecondary).ToArray();
+                        if (artistSecondaryImages.Length >= imageId && artistSecondaryImages[imageId] != null)
+                        {
+                            imageBytes = File.ReadAllBytes(artistSecondaryImages[imageId].FullName);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.Logger.LogError(ex, $"Error Reading Artist Folder [{ artistFolder }] For Artist `{ artist }`");
+                }
+                var image = new data.Image
+                {
+                    Bytes = imageBytes,
+                    CreatedDate = artist.CreatedDate,
+                    LastUpdated = artist.LastUpdated
+                };
+                return Task.FromResult(GenerateFileOperationResult(id, image, etag));
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError($"Error fetching Release Thumbnail [{ id }]", ex);
             }
             return Task.FromResult(new FileOperationResult<Image>(OperationMessages.ErrorOccured));
         }
@@ -527,7 +574,7 @@ namespace Roadie.Api.Services
                         else
                         {
                             var releaseCoverFiles = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder), Library.Enums.ImageType.Release);
-                            if(releaseCoverFiles.Any())
+                            if (releaseCoverFiles.Any())
                             {
                                 imageBytes = File.ReadAllBytes(releaseCoverFiles.First().FullName);
                             }
@@ -588,10 +635,10 @@ namespace Roadie.Api.Services
                         else
                         {
                             var releaseSecondaryImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder), Library.Enums.ImageType.ReleaseSecondary).ToArray();
-                            if(releaseSecondaryImages.Length >= imageId && releaseSecondaryImages[imageId] != null)
+                            if (releaseSecondaryImages.Length >= imageId && releaseSecondaryImages[imageId] != null)
                             {
                                 imageBytes = File.ReadAllBytes(releaseSecondaryImages[imageId].FullName);
-                            }                            
+                            }
                         }
                     }
                 }
@@ -613,54 +660,6 @@ namespace Roadie.Api.Services
             }
             return Task.FromResult(new FileOperationResult<Image>(OperationMessages.ErrorOccured));
         }
-
-        private Task<FileOperationResult<Image>> ArtistSecondaryImageAction(Guid id, int imageId, EntityTagHeaderValue etag = null)
-        {
-            try
-            {
-                var artist = this.GetArtist(id);
-                if (artist == null)
-                {
-                    return Task.FromResult(new FileOperationResult<Image>(true, string.Format("Release Not Found [{0}]", id)));
-                }
-                byte[] imageBytes = null;
-                string artistFolder = null;
-                try
-                {
-                    // See if cover art file exists in release folder
-                    artistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
-                    if (!Directory.Exists(artistFolder))
-                    {
-                        this.Logger.LogWarning($"Artist Folder [{ artistFolder }], Not Found For Artist `{ artist }`");
-                    }
-                    else
-                    {
-                        var artistSecondaryImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), Library.Enums.ImageType.ArtistSecondary).ToArray();
-                        if (artistSecondaryImages.Length >= imageId && artistSecondaryImages[imageId] != null)
-                        {
-                            imageBytes = File.ReadAllBytes(artistSecondaryImages[imageId].FullName);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    this.Logger.LogError(ex, $"Error Reading Artist Folder [{ artistFolder }] For Artist `{ artist }`");
-                }
-                var image = new data.Image
-                {
-                    Bytes = imageBytes,
-                    CreatedDate = artist.CreatedDate,
-                    LastUpdated = artist.LastUpdated
-                };
-                return Task.FromResult(GenerateFileOperationResult(id, image, etag));
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError($"Error fetching Release Thumbnail [{ id }]", ex);
-            }
-            return Task.FromResult(new FileOperationResult<Image>(OperationMessages.ErrorOccured));
-        }
-
 
         private async Task<FileOperationResult<Image>> TrackImageAction(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
         {

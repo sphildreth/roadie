@@ -24,18 +24,13 @@ namespace Roadie.Api.Controllers
     [AllowAnonymous]
     public class AccountController : ControllerBase
     {
-        private string _baseUrl = null;
-
         private readonly IConfiguration Configuration;
         private readonly ILogger<AccountController> Logger;
         private readonly SignInManager<ApplicationUser> SignInManager;
         private readonly ITokenService TokenService;
         private readonly UserManager<ApplicationUser> UserManager;
+        private string _baseUrl = null;
         private IAdminService AdminService { get; }
-        private ICacheManager CacheManager { get; }
-        private IEmailSender EmailSender { get; }
-        private IHttpContext RoadieHttpContext { get; }
-        private IRoadieSettings RoadieSettings { get; }
 
         private string BaseUrl
         {
@@ -58,6 +53,11 @@ namespace Roadie.Api.Controllers
                 return this._baseUrl;
             }
         }
+
+        private ICacheManager CacheManager { get; }
+        private IEmailSender EmailSender { get; }
+        private IHttpContext RoadieHttpContext { get; }
+        private IRoadieSettings RoadieSettings { get; }
 
         public AccountController(
            IAdminService adminService,
@@ -277,7 +277,7 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> SendPasswordResetEmail(string username, string callbackUrl)
         {
             var user = await UserManager.FindByNameAsync(username);
-            if(user == null)
+            if (user == null)
             {
                 this.Logger.LogError($"Unable to find user by username [{ username }]");
                 return StatusCode(500);

@@ -25,9 +25,9 @@ namespace Roadie.Api.Controllers
         public const string ControllerCacheRegionUrn = "urn:controller_cache";
 
         private models.User _currentUser = null;
-        protected ILogger Logger { get; set; }
         protected ICacheManager CacheManager { get; }
         protected IConfiguration Configuration { get; }
+        protected ILogger Logger { get; set; }
         protected IRoadieSettings RoadieSettings { get; }
         protected UserManager<ApplicationUser> UserManager { get; }
 
@@ -50,26 +50,14 @@ namespace Roadie.Api.Controllers
                     this._currentUser = await this.CacheManager.GetAsync($"urn:controller_user:{ this.User.Identity.Name }", async () =>
                     {
                         return this.UserModelForUser(await this.UserManager.GetUserAsync(User));
-                    }, ControllerCacheRegionUrn);                   
+                    }, ControllerCacheRegionUrn);
                 }
             }
-            if(this._currentUser == null)
+            if (this._currentUser == null)
             {
                 throw new UnauthorizedAccessException("Access Denied");
             }
             return this._currentUser;
-        }
-
-        protected models.User UserModelForUser(ApplicationUser user)
-        {
-            if(user == null)
-            {
-                return null;
-            }
-            var result = user.Adapt<models.User>();
-            result.IsAdmin = User.IsInRole("Admin");
-            result.IsEditor = User.IsInRole("Editor") || result.IsAdmin;
-            return result;
         }
 
         protected async Task<IActionResult> StreamTrack(Guid id, ITrackService trackService, IPlayActivityService playActivityService, models.User currentUser = null)
@@ -81,7 +69,7 @@ namespace Roadie.Api.Controllers
             tsw.Restart();
             var user = currentUser ?? await this.CurrentUserModel();
             var track = trackService.StreamCheckAndInfo(user, id);
-            if (track == null || ( track?.IsNotFoundResult ?? false))
+            if (track == null || (track?.IsNotFoundResult ?? false))
             {
                 if (track?.Errors != null && (track?.Errors.Any() ?? false))
                 {
@@ -140,8 +128,18 @@ namespace Roadie.Api.Controllers
             sw.Stop();
             this.Logger.LogInformation($"StreamTrack ElapsedTime [{ sw.ElapsedMilliseconds }], Timings [{ JsonConvert.SerializeObject(timings) }] PlayActivity `{ playListUser?.Data.ToString() }`, StreamInfo `{ info?.Data.ToString() }`");
             return new EmptyResult();
-
         }
 
+        protected models.User UserModelForUser(ApplicationUser user)
+        {
+            if (user == null)
+            {
+                return null;
+            }
+            var result = user.Adapt<models.User>();
+            result.IsAdmin = User.IsInRole("Admin");
+            result.IsEditor = User.IsInRole("Editor") || result.IsAdmin;
+            return result;
+        }
     }
 }

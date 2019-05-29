@@ -98,7 +98,6 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-
         [HttpPost("setImageByUrl/{id}/{imageUrl}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
@@ -106,24 +105,6 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> SetArtistImageByUrl(Guid id, string imageUrl)
         {
             var result = await this.ArtistService.SetReleaseImageByUrl(await this.CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
-        [HttpPost("uploadImage/{id}")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
-        [Authorize(Policy = "Editor")]
-        public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
-        {
-            var result = await this.ArtistService.UploadArtistImage(await this.CurrentUserModel(), id, file);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
@@ -157,6 +138,22 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-
+        [HttpPost("uploadImage/{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
+        {
+            var result = await this.ArtistService.UploadArtistImage(await this.CurrentUserModel(), id, file);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
     }
 }

@@ -43,6 +43,20 @@ namespace Roadie.Api.Controllers
             this.PlayActivityService = playActivityService;
         }
 
+        [HttpGet("addChatMessage.view")]
+        [HttpPost("addChatMessage.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> AddChatMessage(SubsonicRequest request)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.AddChatMessage(request, this.SubsonicUser);
+            return this.BuildResponse(request, result);
+        }
+
         [HttpGet("createBookmark.view")]
         [HttpPost("createBookmark.view")]
         [ProducesResponseType(200)]
@@ -276,6 +290,20 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result, "bookmarks");
         }
 
+        [HttpGet("getChatMessages.view")]
+        [HttpPost("getChatMessages.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetChatMessages(SubsonicRequest request, long? since)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.GetChatMessages(request, this.SubsonicUser, since);
+            return this.BuildResponse(request, result, "chatMessages");
+        }
+
         [HttpGet("getCoverArt.view")]
         [HttpPost("getCoverArt.view")]
         [ProducesResponseType(200)]
@@ -402,20 +430,6 @@ namespace Roadie.Api.Controllers
             }
             var result = await this.SubsonicService.GetPlaylists(request, this.SubsonicUser, username);
             return this.BuildResponse(request, result, "playlists");
-        }
-
-        [HttpGet("savePlayQueue.view")]
-        [HttpPost("savePlayQueue.view")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> SavePlayQueue(SubsonicRequest request, string username, string current, long? position)
-        {
-            var authResult = await this.AuthenticateUser(request);
-            if (authResult != null)
-            {
-                return authResult;
-            }
-            var result = await this.SubsonicService.SavePlayQueue(request, this.SubsonicUser, current, position);
-            return this.BuildResponse(request, result);
         }
 
         [HttpGet("getPlayQueue.view")]
@@ -562,34 +576,6 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result, "topSongs");
         }
 
-        [HttpGet("getChatMessages.view")]
-        [HttpPost("getChatMessages.view")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> GetChatMessages(SubsonicRequest request, long? since)
-        {
-            var authResult = await this.AuthenticateUser(request);
-            if (authResult != null)
-            {
-                return authResult;
-            }
-            var result = await this.SubsonicService.GetChatMessages(request, this.SubsonicUser, since);
-            return this.BuildResponse(request, result, "chatMessages");
-        }
-
-        [HttpGet("addChatMessage.view")]
-        [HttpPost("addChatMessage.view")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> AddChatMessage(SubsonicRequest request)
-        {
-            var authResult = await this.AuthenticateUser(request);
-            if (authResult != null)
-            {
-                return authResult;
-            }
-            var result = await this.SubsonicService.AddChatMessage(request, this.SubsonicUser);
-            return this.BuildResponse(request, result);
-        }
-
         [HttpGet("getUser.view")]
         [HttpPost("getUser.view")]
         [ProducesResponseType(200)]
@@ -629,6 +615,20 @@ namespace Roadie.Api.Controllers
                 return this.BuildResponse(request, result);
             }
             return Content("<subsonic-response xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://subsonic.org/restapi\" status=\"ok\" version=\"1.16.0\" />", "application/xml");
+        }
+
+        [HttpGet("savePlayQueue.view")]
+        [HttpPost("savePlayQueue.view")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SavePlayQueue(SubsonicRequest request, string username, string current, long? position)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var result = await this.SubsonicService.SavePlayQueue(request, this.SubsonicUser, current, position);
+            return this.BuildResponse(request, result);
         }
 
         /// <summary>

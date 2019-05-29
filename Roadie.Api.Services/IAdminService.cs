@@ -11,15 +11,19 @@ namespace Roadie.Api.Services
     {
         Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId);
 
-        Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index);
-
         Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId, bool doDeleteFiles = false);
+
+        Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index);
 
         Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles);
 
         Task<OperationResult<bool>> DeleteTrack(ApplicationUser user, Guid trackId, bool? doDeleteFile);
 
+        Task<OperationResult<bool>> DeleteUser(ApplicationUser applicationUser, Guid id);
+
         Task<OperationResult<bool>> DoInitialSetup(ApplicationUser user, UserManager<ApplicationUser> userManager);
+
+        Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleases(ApplicationUser user);
 
         Task<OperationResult<bool>> ScanAllCollections(ApplicationUser user, bool isReadOnly = false, bool doPurgeFirst = true);
 
@@ -32,7 +36,5 @@ namespace Roadie.Api.Services
         Task<OperationResult<bool>> ScanLibraryFolder(ApplicationUser user, bool isReadOnly = false);
 
         Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
-
-        Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleases(ApplicationUser user);
     }
 }

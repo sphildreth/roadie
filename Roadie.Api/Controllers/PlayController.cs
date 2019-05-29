@@ -8,7 +8,6 @@ using Roadie.Library.Caching;
 using Roadie.Library.Identity;
 using Roadie.Library.Utility;
 using System;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -73,11 +72,11 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> StreamTrack(int userId, string trackPlayToken, Guid id)
         {
             var user = this.UserManager.Users.FirstOrDefault(x => x.Id == userId);
-            if(user == null)
+            if (user == null)
             {
                 return StatusCode((int)HttpStatusCode.Unauthorized);
             }
-            if(!ServiceBase.ConfirmTrackPlayToken(user, id, trackPlayToken))
+            if (!ServiceBase.ConfirmTrackPlayToken(user, id, trackPlayToken))
             {
                 return StatusCode((int)HttpStatusCode.Unauthorized);
             }

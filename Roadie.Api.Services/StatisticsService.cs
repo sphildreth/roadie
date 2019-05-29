@@ -112,7 +112,6 @@ namespace Roadie.Api.Services
                     result.LastScan = lastScan.CreatedDate;
                 }
                 sw.Stop();
-
             }
             catch (Exception ex)
             {

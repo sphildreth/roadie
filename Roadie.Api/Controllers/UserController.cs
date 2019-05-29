@@ -23,8 +23,8 @@ namespace Roadie.Api.Controllers
     public class UserController : EntityControllerBase
     {
         private readonly ITokenService TokenService;
-        private IUserService UserService { get; }
         private IHttpContext RoadieHttpContext { get; }
+        private IUserService UserService { get; }
 
         public UserController(IUserService userService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, ITokenService tokenService, UserManager<ApplicationUser> userManager, IHttpContext httpContext)
             : base(cacheManager, configuration, userManager)

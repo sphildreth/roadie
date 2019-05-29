@@ -15,6 +15,8 @@ namespace Roadie.Api.Services
 
         Task<PagedResult<ReleaseList>> List(User user, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null);
 
+        Task<OperationResult<bool>> MergeReleases(User user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia);
+
         Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id);
 
         Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl);
@@ -22,7 +24,5 @@ namespace Roadie.Api.Services
         Task<OperationResult<bool>> UpdateRelease(User user, Release release);
 
         Task<OperationResult<Library.Models.Image>> UploadReleaseImage(User user, Guid id, IFormFile file);
-
-        Task<OperationResult<bool>> MergeReleases(User user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia);
     }
 }

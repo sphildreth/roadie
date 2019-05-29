@@ -964,7 +964,7 @@ namespace Roadie.Api.Services
                 }
                 directory.id = subsonic.Request.ReleaseIdIdentifier + release.RoadieId.ToString();
                 directory.name = release.Title;
-                var releaseRating = user == null ? null : this.DbContext.UserReleases.FirstOrDefault(x =>x.UserId == user.Id && x.ReleaseId == release.Id);
+                var releaseRating = user == null ? null : this.DbContext.UserReleases.FirstOrDefault(x => x.UserId == user.Id && x.ReleaseId == release.Id);
                 directory.averageRating = release.Rating ?? 0;
                 directory.parent = subsonic.Request.ArtistIdIdentifier + release.Artist.RoadieId.ToString();
                 if (releaseRating?.IsFavorite ?? false)

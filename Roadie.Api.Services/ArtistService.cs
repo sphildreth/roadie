@@ -184,7 +184,7 @@ namespace Roadie.Api.Services
             }
             var onlyWithReleases = onlyIncludeWithReleases ?? true;
             var isEqualFilter = false;
-            if(!string.IsNullOrEmpty(request.FilterValue))
+            if (!string.IsNullOrEmpty(request.FilterValue))
             {
                 var filter = request.FilterValue;
                 // if filter string is wrapped in quotes then is an exact not like search, e.g. "Diana Ross" should not return "Diana Ross & The Supremes"
@@ -199,9 +199,9 @@ namespace Roadie.Api.Services
                           where (!onlyWithReleases || a.ReleaseCount > 0)
                           where (request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId)
                           where (request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value)
-                          where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) || 
-                                                               a.SortName.Contains(request.FilterValue) || 
-                                                               a.AlternateNames.Contains(request.FilterValue) || 
+                          where (request.FilterValue == "" || (a.Name.Contains(request.FilterValue) ||
+                                                               a.SortName.Contains(request.FilterValue) ||
+                                                               a.AlternateNames.Contains(request.FilterValue) ||
                                                                a.AlternateNames.Contains(normalizedFilterValue)))
                           where (!isEqualFilter || (a.Name.Equals(request.FilterValue) ||
                                                     a.SortName.Equals(request.FilterValue) ||
@@ -276,7 +276,7 @@ namespace Roadie.Api.Services
                 }
             }
             sw.Stop();
-            if(!string.IsNullOrEmpty(request.Filter) && rowCount == 0)
+            if (!string.IsNullOrEmpty(request.Filter) && rowCount == 0)
             {
                 // Create request for no artist found
                 var req = new data.Request
@@ -294,6 +294,57 @@ namespace Roadie.Api.Services
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
+            };
+        }
+
+        public async Task<OperationResult<bool>> MergeArtists(User user, Guid artistToMergeId, Guid artistToMergeIntoId)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+            var artistToMerge = this.DbContext.Artists
+                                    .Include(x => x.Genres)
+                                    .Include("Genres.Genre")
+                                    .FirstOrDefault(x => x.RoadieId == artistToMergeId);
+            if (artistToMerge == null)
+            {
+                this.Logger.LogWarning("MergeArtists Unknown Artist [{0}]", artistToMergeId);
+                return new OperationResult<bool>(true, string.Format("Artist Not Found [{0}]", artistToMergeId));
+            }
+            var mergeIntoArtist = this.DbContext.Artists
+                                    .Include(x => x.Genres)
+                                    .Include("Genres.Genre")
+                                    .FirstOrDefault(x => x.RoadieId == artistToMergeIntoId);
+            if (mergeIntoArtist == null)
+            {
+                this.Logger.LogWarning("MergeArtists Unknown Artist [{0}]", artistToMergeIntoId);
+                return new OperationResult<bool>(true, string.Format("Artist Not Found [{0}]", artistToMergeIntoId));
+            }
+
+            try
+            {
+                var result = await this.ArtistFactory.MergeArtists(artistToMerge, mergeIntoArtist, true);
+                if (!result.IsSuccess)
+                {
+                    this.CacheManager.ClearRegion(artistToMerge.CacheRegion);
+                    this.CacheManager.ClearRegion(mergeIntoArtist.CacheRegion);
+                    this.Logger.LogInformation("MergeArtists `{0}` => `{1}`, By User `{2}`", artistToMerge, mergeIntoArtist, user);
+                }
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
             };
         }
 
@@ -460,7 +511,7 @@ namespace Roadie.Api.Services
                     didChangeThumbnail = true;
                 }
 
-                if(model.NewSecondaryImagesData != null && model.NewSecondaryImagesData.Any())
+                if (model.NewSecondaryImagesData != null && model.NewSecondaryImagesData.Any())
                 {
                     // Additional images to add to artist
                     var looper = 0;
@@ -473,7 +524,7 @@ namespace Roadie.Api.Services
                             artistSecondaryImage = ImageHelper.ConvertToJpegFormat(artistSecondaryImage);
 
                             var aristImageFilename = Path.Combine(newArtistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
-                            while(File.Exists(aristImageFilename))
+                            while (File.Exists(aristImageFilename))
                             {
                                 looper++;
                                 aristImageFilename = Path.Combine(newArtistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
@@ -600,59 +651,6 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> MergeArtists(User user, Guid artistToMergeId, Guid artistToMergeIntoId)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-
-            var errors = new List<Exception>();
-            var artistToMerge = this.DbContext.Artists
-                                    .Include(x => x.Genres)
-                                    .Include("Genres.Genre")
-                                    .FirstOrDefault(x => x.RoadieId == artistToMergeId);
-            if (artistToMerge == null)
-            {
-                this.Logger.LogWarning("MergeArtists Unknown Artist [{0}]", artistToMergeId);
-                return new OperationResult<bool>(true, string.Format("Artist Not Found [{0}]", artistToMergeId));
-            }
-            var mergeIntoArtist = this.DbContext.Artists
-                                    .Include(x => x.Genres)
-                                    .Include("Genres.Genre")
-                                    .FirstOrDefault(x => x.RoadieId == artistToMergeIntoId);
-            if (mergeIntoArtist == null)
-            {
-                this.Logger.LogWarning("MergeArtists Unknown Artist [{0}]", artistToMergeIntoId);
-                return new OperationResult<bool>(true, string.Format("Artist Not Found [{0}]", artistToMergeIntoId));
-            }
-
-            try
-            {
-                var result = await this.ArtistFactory.MergeArtists(artistToMerge, mergeIntoArtist, true);
-                if (!result.IsSuccess)
-                {
-                    this.CacheManager.ClearRegion(artistToMerge.CacheRegion);
-                    this.CacheManager.ClearRegion(mergeIntoArtist.CacheRegion);
-                    this.Logger.LogInformation("MergeArtists `{0}` => `{1}`, By User `{2}`", artistToMerge, mergeIntoArtist, user);
-                }
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex);
-                errors.Add(ex);
-            }
-            sw.Stop();            
-
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data = !errors.Any(),
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-
-        }
-
-
         public async Task<OperationResult<Library.Models.Image>> UploadArtistImage(User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
@@ -769,7 +767,6 @@ namespace Roadie.Api.Services
                         };
                         tsw.Stop();
                         timings.Add("stats", tsw.ElapsedMilliseconds);
-
                     }
                     catch (Exception ex)
                     {

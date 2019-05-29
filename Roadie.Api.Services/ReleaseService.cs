@@ -245,8 +245,8 @@ namespace Roadie.Api.Services
                           where (!isFilteredToGenre || genreReleaseIds.Contains(r.Id))
                           where (request.FilterFromYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear)
                           where (request.FilterToYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear)
-                          where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) || 
-                                                               r.AlternateNames.Contains(request.FilterValue) || 
+                          where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) ||
+                                                               r.AlternateNames.Contains(request.FilterValue) ||
                                                                r.AlternateNames.Contains(normalizedFilterValue)))
                           where (!isEqualFilter || (r.Title.Equals(request.FilterValue) ||
                                                     r.AlternateNames.Equals(request.FilterValue) ||
@@ -838,7 +838,7 @@ namespace Roadie.Api.Services
                     var artistFolder = release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
                     var releaseFolder = release.ReleaseFileFolder(artistFolder);
                     var releaseImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder), ImageType.ReleaseSecondary, SearchOption.TopDirectoryOnly);
-                    if(releaseImagesInFolder.Any())
+                    if (releaseImagesInFolder.Any())
                     {
                         result.Images = result.Images.Concat(releaseImagesInFolder.Select((x, i) => MakeFullsizeSecondaryImage(id, ImageType.ReleaseSecondary, i)));
                     }

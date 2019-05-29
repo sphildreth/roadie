@@ -17,7 +17,7 @@ namespace Roadie.Api.Services
                 scheme = "https";
             }
             var host = urlHelper.ActionContext.HttpContext.Request.Host;
-            if(!string.IsNullOrEmpty(configuration.BehindProxyHost))
+            if (!string.IsNullOrEmpty(configuration.BehindProxyHost))
             {
                 host = new Microsoft.AspNetCore.Http.HostString(configuration.BehindProxyHost);
             }

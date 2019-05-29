@@ -365,7 +365,7 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating)
         {
             var timings = new Dictionary<string, long>();
-            var sw = Stopwatch.StartNew();            
+            var sw = Stopwatch.StartNew();
             var user = this.GetUser(roadieUser.UserId);
             sw.Stop();
             timings.Add("GetUser", sw.ElapsedMilliseconds);

@@ -278,7 +278,7 @@ namespace Roadie.Api.Services
 
         protected Image MakeFullsizeSecondaryImage(Guid id, ImageType type, int imageId, string caption = null)
         {
-            if(type == ImageType.ArtistSecondary)
+            if (type == ImageType.ArtistSecondary)
             {
                 return new Image($"{this.HttpContext.ImageBaseUrl }/artist-secondary/{id}/{imageId}", caption, $"{this.HttpContext.ImageBaseUrl }/artist-secondary/{id}/{ imageId }/{ this.Configuration.SmallImageSize.Width }/{ this.Configuration.SmallImageSize.Height }");
             }
@@ -303,6 +303,11 @@ namespace Roadie.Api.Services
         protected string MakeLastFmUrl(string artistName, string releaseTitle)
         {
             return "http://www.last.fm/music/" + this.HttpEncoder.UrlEncode($"{ artistName }/{ releaseTitle }");
+        }
+
+        protected Image MakeNewImage(string type)
+        {
+            return new Image($"{this.HttpContext.ImageBaseUrl }/{type}.jpg", null, null);
         }
 
         protected Image MakePlaylistThumbnailImage(Guid id)
@@ -424,7 +429,7 @@ namespace Roadie.Api.Services
             else
             {
                 release.Rating = 0;
-            }            
+            }
             release.LastUpdated = now;
             await this.DbContext.SaveChangesAsync();
             await this.UpdateReleaseRank(release.Id);
@@ -444,7 +449,7 @@ namespace Roadie.Api.Services
         protected async Task<OperationResult<short>> SetTrackRating(Guid trackId, ApplicationUser user, short rating)
         {
             var sw = Stopwatch.StartNew();
-            
+
             var track = this.DbContext.Tracks
                                      .Include(x => x.ReleaseMedia)
                                      .Include(x => x.ReleaseMedia.Release)
@@ -478,7 +483,8 @@ namespace Roadie.Api.Services
             if (ratings != null && ratings.Any())
             {
                 track.Rating = (short)ratings.Average(x => (decimal)x);
-            } else
+            }
+            else
             {
                 track.Rating = 0;
             }
@@ -490,7 +496,7 @@ namespace Roadie.Api.Services
             this.CacheManager.ClearRegion(track.CacheRegion);
             this.CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
             this.CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
-            if(track.TrackArtist != null)
+            if (track.TrackArtist != null)
             {
                 this.CacheManager.ClearRegion(track.TrackArtist.CacheRegion);
             }
@@ -779,6 +785,78 @@ namespace Roadie.Api.Services
             }
         }
 
+        /// <summary>
+        /// Update Artist Rank
+        /// Artist Rank is a sum of the artists release ranks + artist tracks rating + artist user rating
+        /// </summary>
+        protected async Task UpdateArtistRank(int artistId, bool updateReleaseRanks = false)
+        {
+            try
+            {
+                var artist = this.DbContext.Artists.FirstOrDefault(x => x.Id == artistId);
+                if (artist != null)
+                {
+                    if (updateReleaseRanks)
+                    {
+                        var artistReleaseIds = this.DbContext.Releases.Where(x => x.ArtistId == artistId).Select(x => x.Id).ToArray();
+                        foreach (var artistReleaseId in artistReleaseIds)
+                        {
+                            await this.UpdateReleaseRank(artistReleaseId, false);
+                        }
+                    }
+
+                    var artistTrackAverage = (from t in this.DbContext.Tracks
+                                              join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                              join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
+                                              where t.ArtistId == artist.Id
+                                              select ut.Rating).Select(x => (decimal?)x).Average();
+
+                    var artistReleaseRatingRating = (from r in this.DbContext.Releases
+                                                     join ur in this.DbContext.UserReleases on r.Id equals ur.ReleaseId
+                                                     where r.ArtistId == artist.Id
+                                                     select ur.Rating).Select(x => (decimal?)x).Average();
+
+                    var artistReleaseRankSum = (from r in this.DbContext.Releases
+                                                where r.ArtistId == artist.Id
+                                                select r.Rank).ToArray().Sum(x => x) ?? 0;
+
+                    artist.Rank = SafeParser.ToNumber<decimal>(artistTrackAverage + artistReleaseRatingRating) + artistReleaseRankSum + artist.Rating;
+
+                    await this.DbContext.SaveChangesAsync();
+                    this.CacheManager.ClearRegion(artist.CacheRegion);
+                    this.Logger.LogInformation("UpdatedArtistRank For Artist `{0}`", artist);
+                }
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex, "Error in UpdateArtistRank ArtistId [{0}], UpdateReleaseRanks [{1}]", artistId, updateReleaseRanks);
+            }
+        }
+
+        /// <summary>
+        /// Find all artists involved with release and update their rank
+        /// </summary>
+        protected async Task UpdateArtistsRankForRelease(data.Release release)
+        {
+            if (release != null)
+            {
+                var artistsForRelease = new List<int>
+                {
+                    release.ArtistId
+                };
+                var trackArtistsForRelease = (from t in this.DbContext.Tracks
+                                              join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                              where rm.ReleaseId == release.Id
+                                              where t.ArtistId.HasValue
+                                              select t.ArtistId.Value).ToArray();
+                artistsForRelease.AddRange(trackArtistsForRelease);
+                foreach (var artistId in artistsForRelease.Distinct())
+                {
+                    await this.UpdateArtistRank(artistId);
+                }
+            }
+        }
+
         protected async Task UpdateLabelCounts(int labelId, DateTime now)
         {
             var label = this.DbContext.Labels.FirstOrDefault(x => x.Id == labelId);
@@ -826,88 +904,16 @@ namespace Roadie.Api.Services
             if (release != null)
             {
                 release.PlayedCount = (from t in this.DbContext.Tracks
-                                            join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                            where rm.ReleaseId == releaseId
-                                            where t.PlayedCount.HasValue
-                                            select t).Sum(x => x.PlayedCount);
+                                       join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                       where rm.ReleaseId == releaseId
+                                       where t.PlayedCount.HasValue
+                                       select t).Sum(x => x.PlayedCount);
                 release.Duration = (from t in this.DbContext.Tracks
                                     join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                     where rm.ReleaseId == releaseId
                                     select t).Sum(x => x.Duration);
                 await this.DbContext.SaveChangesAsync();
                 this.CacheManager.ClearRegion(release.CacheRegion);
-            }
-        }
-
-        /// <summary>
-        /// Find all artists involved with release and update their rank
-        /// </summary>
-        protected async Task UpdateArtistsRankForRelease(data.Release release)
-        {
-            if(release != null)
-            {
-                var artistsForRelease = new List<int>
-                {
-                    release.ArtistId
-                };
-                var trackArtistsForRelease = (from t in this.DbContext.Tracks
-                                              join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                              where rm.ReleaseId == release.Id
-                                              where t.ArtistId.HasValue
-                                              select t.ArtistId.Value).ToArray();
-                artistsForRelease.AddRange(trackArtistsForRelease);
-                foreach(var artistId in artistsForRelease.Distinct())
-                {
-                    await this.UpdateArtistRank(artistId);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Update Artist Rank
-        /// Artist Rank is a sum of the artists release ranks + artist tracks rating + artist user rating
-        /// </summary>
-        protected async Task UpdateArtistRank(int artistId, bool updateReleaseRanks = false)
-        {
-            try
-            {
-                var artist = this.DbContext.Artists.FirstOrDefault(x => x.Id == artistId);
-                if (artist != null)
-                {
-                    if (updateReleaseRanks)
-                    {
-                        var artistReleaseIds = this.DbContext.Releases.Where(x => x.ArtistId == artistId).Select(x => x.Id).ToArray();
-                        foreach (var artistReleaseId in artistReleaseIds)
-                        {
-                            await this.UpdateReleaseRank(artistReleaseId, false);
-                        }
-                    }
-
-                    var artistTrackAverage = (from t in this.DbContext.Tracks
-                                              join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                              join ut in this.DbContext.UserTracks on t.Id equals ut.TrackId
-                                              where t.ArtistId == artist.Id
-                                              select ut.Rating).Select(x => (decimal?)x).Average();
-
-                    var artistReleaseRatingRating = (from r in this.DbContext.Releases
-                                                     join ur in this.DbContext.UserReleases on r.Id equals ur.ReleaseId
-                                                     where r.ArtistId == artist.Id
-                                                     select ur.Rating).Select(x => (decimal?)x).Average();
-
-                    var artistReleaseRankSum = (from r in this.DbContext.Releases
-                                                where r.ArtistId == artist.Id
-                                                select r.Rank).ToArray().Sum(x => x) ?? 0;
-
-                    artist.Rank = SafeParser.ToNumber<decimal>(artistTrackAverage + artistReleaseRatingRating) + artistReleaseRankSum + artist.Rating;
-
-                    await this.DbContext.SaveChangesAsync();
-                    this.CacheManager.ClearRegion(artist.CacheRegion);
-                    this.Logger.LogInformation("UpdatedArtistRank For Artist `{0}`", artist);
-                }
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex, "Error in UpdateArtistRank ArtistId [{0}], UpdateReleaseRanks [{1}]", artistId, updateReleaseRanks);
             }
         }
 
@@ -962,12 +968,6 @@ namespace Roadie.Api.Services
                 this.Logger.LogError(ex, "Error UpdateReleaseRank RelaseId [{0}], UpdateArtistRank [{1}]", releaseId, updateArtistRank);
             }
         }
-
-        protected Image MakeNewImage(string type)
-        {
-            return new Image($"{this.HttpContext.ImageBaseUrl }/{type}.jpg", null, null);
-        }
-
 
         private Image MakeImage(Guid id, string type, int? width, int? height, string caption = null, bool includeCachebuster = false)
         {

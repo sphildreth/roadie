@@ -16,7 +16,6 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
@@ -74,6 +73,120 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<Collection>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
+        {
+            var sw = Stopwatch.StartNew();
+            sw.Start();
+
+            var cacheKey = string.Format("urn:collection_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
+            var result = await this.CacheManager.GetAsync<OperationResult<Collection>>(cacheKey, async () =>
+            {
+                return await this.CollectionByIdAction(id, includes);
+            }, data.Artist.CacheRegionUrn(id));
+            sw.Stop();
+            if (result?.Data != null && roadieUser != null)
+            {
+                var userBookmarkResult = await this.BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Collection);
+                if (userBookmarkResult.IsSuccess)
+                {
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
+                }
+            }
+            return new OperationResult<Collection>(result.Messages)
+            {
+                Data = result?.Data,
+                IsNotFoundResult = result?.IsNotFoundResult ?? false,
+                Errors = result?.Errors,
+                IsSuccess = result?.IsSuccess ?? false,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<OperationResult<bool>> DeleteCollection(User user, Guid id)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var collection = this.DbContext.Collections.FirstOrDefault(x => x.RoadieId == id);
+            if (collection == null)
+            {
+                return new OperationResult<bool>(true, $"Collection Not Found [{ id }]");
+            }
+            if (!user.IsEditor)
+            {
+                this.Logger.LogWarning($"DeleteCollection: Access Denied: `{ collection }`, By User `{user }`");
+                return new OperationResult<bool>("Access Denied");
+            }
+            try
+            {
+                this.DbContext.Collections.Remove(collection);
+                await this.DbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+            this.Logger.LogInformation($"DeleteCollection `{ collection }`, By User `{user }`");
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public Task<Library.Models.Pagination.PagedResult<CollectionList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null, Guid? artistId = null)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            IQueryable<data.Collection> collections = null;
+            if (artistId.HasValue)
+            {
+                var sql = @"select DISTINCT c.*
+                            from `collectionrelease` cr
+                            join `collection` c on c.id = cr.collectionId
+                            join `release` r on r.id = cr.releaseId
+                            join `artist` a on r.artistId = a.id
+                            where a.roadieId = {0}";
+
+                collections = this.DbContext.Collections.FromSql(sql, artistId);
+            }
+            else if (releaseId.HasValue)
+            {
+                var sql = @"select DISTINCT c.*
+                            from `collectionrelease` cr
+                            join `collection` c on c.id = cr.collectionId
+                            join `release` r on r.id = cr.releaseId
+                            where r.roadieId = {0}";
+
+                collections = this.DbContext.Collections.FromSql(sql, releaseId);
+            }
+            else
+            {
+                collections = this.DbContext.Collections;
+            }
+            var result = (from c in collections
+                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && c.Name.Contains(request.Filter)))
+                          select CollectionList.FromDataCollection(c, (from crc in this.DbContext.CollectionReleases
+                                                                       where crc.CollectionId == c.Id
+                                                                       select crc.Id).Count(), this.MakeCollectionThumbnailImage(c.RoadieId)));
+            var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } }) : request.OrderValue(null);
+            var rowCount = result.Count();
+            var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            sw.Stop();
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<CollectionList>
+            {
+                TotalCount = rowCount,
+                CurrentPage = request.PageValue,
+                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
+                OperationTime = sw.ElapsedMilliseconds,
+                Rows = rows
+            });
+        }
+
         /// <summary>
         /// Updates (or Adds) Collection
         /// </summary>
@@ -88,7 +201,7 @@ namespace Roadie.Api.Services
 
             data.Collection collection = new data.Collection();
 
-            if(!isNew)
+            if (!isNew)
             {
                 collection = this.DbContext.Collections.FirstOrDefault(x => x.RoadieId == model.Id);
                 if (collection == null)
@@ -145,121 +258,6 @@ namespace Roadie.Api.Services
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };
-        }
-
-        public async Task<OperationResult<bool>> DeleteCollection(User user, Guid id)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-            var collection = this.DbContext.Collections.FirstOrDefault(x => x.RoadieId == id);
-            if (collection == null)
-            {
-                return new OperationResult<bool>(true, $"Collection Not Found [{ id }]");
-            }
-            if(!user.IsEditor)
-            {
-                this.Logger.LogWarning($"DeleteCollection: Access Denied: `{ collection }`, By User `{user }`");
-                return new OperationResult<bool>("Access Denied");
-            }
-            try
-            {
-                this.DbContext.Collections.Remove(collection);
-                await this.DbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex);
-                errors.Add(ex);
-            }
-            sw.Stop();
-            this.Logger.LogInformation($"DeleteCollection `{ collection }`, By User `{user }`");
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data = true,
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-
-        public async Task<OperationResult<Collection>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
-        {
-            var sw = Stopwatch.StartNew();
-            sw.Start();
-
-            var cacheKey = string.Format("urn:collection_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
-            var result = await this.CacheManager.GetAsync<OperationResult<Collection>>(cacheKey, async () =>
-            {
-                return await this.CollectionByIdAction(id, includes);
-            }, data.Artist.CacheRegionUrn(id));
-            sw.Stop();
-            if (result?.Data != null && roadieUser != null)
-            {
-                var userBookmarkResult = await this.BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Collection);
-                if (userBookmarkResult.IsSuccess)
-                {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
-                }
-            }
-            return new OperationResult<Collection>(result.Messages)
-            {
-                Data = result?.Data,
-                IsNotFoundResult = result?.IsNotFoundResult ?? false,
-                Errors = result?.Errors,
-                IsSuccess = result?.IsSuccess ?? false,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-        }
-
-        public Task<Library.Models.Pagination.PagedResult<CollectionList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null, Guid? artistId = null)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            IQueryable<data.Collection> collections = null;
-            if (artistId.HasValue)
-            {
-                var sql = @"select DISTINCT c.*
-                            from `collectionrelease` cr
-                            join `collection` c on c.id = cr.collectionId
-                            join `release` r on r.id = cr.releaseId
-                            join `artist` a on r.artistId = a.id
-                            where a.roadieId = {0}";
-
-                collections = this.DbContext.Collections.FromSql(sql, artistId);
-            }
-            else if (releaseId.HasValue)
-            {
-                var sql = @"select DISTINCT c.*
-                            from `collectionrelease` cr
-                            join `collection` c on c.id = cr.collectionId
-                            join `release` r on r.id = cr.releaseId
-                            where r.roadieId = {0}";
-
-                collections = this.DbContext.Collections.FromSql(sql, releaseId);
-            }
-            else
-            {
-                collections = this.DbContext.Collections;
-            }
-            var result = (from c in collections
-                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && c.Name.Contains(request.Filter)))
-                          select CollectionList.FromDataCollection(c, (from crc in this.DbContext.CollectionReleases
-                                                                       where crc.CollectionId == c.Id
-                                                                       select crc.Id).Count(), this.MakeCollectionThumbnailImage(c.RoadieId)));
-            var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } }) : request.OrderValue(null);
-            var rowCount = result.Count();
-            var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
-            sw.Stop();
-            return Task.FromResult(new Library.Models.Pagination.PagedResult<CollectionList>
-            {
-                TotalCount = rowCount,
-                CurrentPage = request.PageValue,
-                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
-                OperationTime = sw.ElapsedMilliseconds,
-                Rows = rows
-            });
         }
 
         private Task<OperationResult<Collection>> CollectionByIdAction(Guid id, IEnumerable<string> includes = null)

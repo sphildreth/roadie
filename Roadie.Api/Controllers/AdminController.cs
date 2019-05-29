@@ -35,12 +35,11 @@ namespace Roadie.Api.Controllers
             return Ok();
         }
 
-
-        [HttpGet("scan/inbound")]
+        [HttpPost("delete/artist/{id}")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> ScanInbound()
+        public async Task<IActionResult> DeleteArtist(Guid id)
         {
-            var result = await this.AdminService.ScanInboundFolder(await this.UserManager.GetUserAsync(User));
+            var result = await this.AdminService.DeleteArtist(await this.UserManager.GetUserAsync(User), id);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
@@ -48,11 +47,11 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-        [HttpGet("scan/library")]
+        [HttpPost("delete/artist/releases/{id}")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> ScanLibrary()
+        public async Task<IActionResult> DeleteArtistReleases(Guid id)
         {
-            var result = await this.AdminService.ScanLibraryFolder(await this.UserManager.GetUserAsync(User));
+            var result = await this.AdminService.DeleteArtistReleases(await this.UserManager.GetUserAsync(User), id);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
@@ -60,66 +59,17 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-        [HttpPost("scan/artist/{id}")]
+        [HttpPost("delete/artistsecondaryimage/{id}/{index}")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> ScanArtist(Guid id)
+        public async Task<IActionResult> DeleteArtistSecondaryImage(Guid id, int index)
         {
-            var result = await this.AdminService.ScanArtist(await this.UserManager.GetUserAsync(User), id);
+            var result = await this.AdminService.DeleteArtistSecondaryImage(await this.UserManager.GetUserAsync(User), id, index);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
             return Ok(result);
         }
-
-        [HttpPost("scan/release/{id}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> ScanRelease(Guid id)
-        {
-            var result = await this.AdminService.ScanRelease(await this.UserManager.GetUserAsync(User), id);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
-        [HttpPost("scan/collection/rescanall")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> ScanAllCollections()
-        {
-            var result = await this.AdminService.ScanAllCollections(await this.UserManager.GetUserAsync(User));
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
-        [HttpPost("scan/collection/{id}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> ScanCollection(Guid id)
-        {
-            var result = await this.AdminService.ScanCollection(await this.UserManager.GetUserAsync(User), id);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
-        [HttpPost("missingcollectionreleases")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> MissingCollectionReleases()
-        {
-            var result = await this.AdminService.MissingCollectionReleases(await this.UserManager.GetUserAsync(User));
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
 
         [HttpPost("delete/release/{id}")]
         [ProducesResponseType(200)]
@@ -145,11 +95,11 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-        [HttpPost("delete/artist/{id}")]
+        [HttpPost("delete/user/{id}")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> DeleteArtist(Guid id)
+        public async Task<IActionResult> DeleteUser(Guid id)
         {
-            var result = await this.AdminService.DeleteArtist(await this.UserManager.GetUserAsync(User), id);
+            var result = await this.AdminService.DeleteUser(await this.UserManager.GetUserAsync(User), id);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
@@ -157,11 +107,11 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-        [HttpPost("delete/artistsecondaryimage/{id}/{index}")]
+        [HttpPost("missingcollectionreleases")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> DeleteArtistSecondaryImage(Guid id, int index)
+        public async Task<IActionResult> MissingCollectionReleases()
         {
-            var result = await this.AdminService.DeleteArtistSecondaryImage(await this.UserManager.GetUserAsync(User), id, index);
+            var result = await this.AdminService.MissingCollectionReleases(await this.UserManager.GetUserAsync(User));
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
@@ -169,12 +119,71 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-
-        [HttpPost("delete/artist/releases/{id}")]
+        [HttpPost("scan/collection/rescanall")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> DeleteArtistReleases(Guid id)
+        public async Task<IActionResult> ScanAllCollections()
         {
-            var result = await this.AdminService.DeleteArtistReleases(await this.UserManager.GetUserAsync(User), id);
+            var result = await this.AdminService.ScanAllCollections(await this.UserManager.GetUserAsync(User));
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("scan/artist/{id}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ScanArtist(Guid id)
+        {
+            var result = await this.AdminService.ScanArtist(await this.UserManager.GetUserAsync(User), id);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("scan/collection/{id}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ScanCollection(Guid id)
+        {
+            var result = await this.AdminService.ScanCollection(await this.UserManager.GetUserAsync(User), id);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpGet("scan/inbound")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ScanInbound()
+        {
+            var result = await this.AdminService.ScanInboundFolder(await this.UserManager.GetUserAsync(User));
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpGet("scan/library")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ScanLibrary()
+        {
+            var result = await this.AdminService.ScanLibraryFolder(await this.UserManager.GetUserAsync(User));
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("scan/release/{id}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ScanRelease(Guid id)
+        {
+            var result = await this.AdminService.ScanRelease(await this.UserManager.GetUserAsync(User), id);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

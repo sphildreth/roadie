@@ -27,14 +27,6 @@ namespace Roadie.Api.Controllers
             this.StatisticsService = statisticsService;
         }
 
-        [HttpGet("ping")]
-        [ProducesResponseType(200)]
-        [AllowAnonymous]
-        public IActionResult Ping()
-        {
-            return Ok("pong");
-        }
-
         [HttpGet("info")]
         [ProducesResponseType(200)]
         [AllowAnonymous]
@@ -60,6 +52,14 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Library()
         {
             return Ok(await this.StatisticsService.LibraryStatistics());
+        }
+
+        [HttpGet("ping")]
+        [ProducesResponseType(200)]
+        [AllowAnonymous]
+        public IActionResult Ping()
+        {
+            return Ok("pong");
         }
 
         [HttpGet("releasesByDate")]

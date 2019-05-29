@@ -208,7 +208,7 @@ namespace Roadie.Library.MetaData.ID3Tags
                     result.Release = id3v2.Album;
                     result.Artist = id3v2.AlbumArtist ?? id3v2.Artist;
                     result.ArtistRaw = id3v2.AlbumArtist ?? id3v2.Artist;
-                    result.Genres = id3v2.Genre?.Split(new char[] { ',', '\\' });
+                    result.Genres = id3v2.Genre?.Split(new char[] { ',', '\\', ';', '|' });
                     result.TrackArtist = id3v2.OriginalArtist ?? id3v2.Artist ?? id3v2.AlbumArtist;
                     result.TrackArtistRaw = id3v2.OriginalArtist;
                     result.AudioBitrate = (int?)audioFile.Bitrate;

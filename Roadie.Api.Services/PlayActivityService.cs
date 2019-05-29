@@ -168,7 +168,7 @@ namespace Roadie.Api.Services
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex, $"CreatePlayActivity RoadieUser `{ roadieUser }` StreamInfo `{ streamInfo }`");                
+                this.Logger.LogError(ex, $"CreatePlayActivity RoadieUser `{ roadieUser }` StreamInfo `{ streamInfo }`");
             }
             return new OperationResult<PlayActivityList>();
         }

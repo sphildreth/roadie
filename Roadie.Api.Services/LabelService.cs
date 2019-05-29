@@ -138,49 +138,6 @@ namespace Roadie.Api.Services
             return await this.SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
 
-        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-            var label = this.DbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
-            if (label == null)
-            {
-                return new OperationResult<Library.Models.Image>(true, string.Format("Label Not Found [{0}]", id));
-            }
-            try
-            {
-                var now = DateTime.UtcNow;
-                label.Thumbnail = imageBytes;
-                if (label.Thumbnail != null)
-                {
-                    // Ensure is jpeg first
-                    label.Thumbnail = ImageHelper.ConvertToJpegFormat(label.Thumbnail);
-
-                    // Resize to store in database as thumbnail
-                    label.Thumbnail = ImageHelper.ResizeImage(label.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
-                }
-                label.LastUpdated = now;
-                await this.DbContext.SaveChangesAsync();
-                this.CacheManager.ClearRegion(label.CacheRegion);
-                this.Logger.LogInformation($"UploadLabelImage `{ label }` By User `{ user }`");
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex);
-                errors.Add(ex);
-            }
-            sw.Stop();
-
-            return new OperationResult<Library.Models.Image>
-            {
-                IsSuccess = !errors.Any(),
-                Data = base.MakeThumbnailImage(id, "label", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height, true),
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
         public async Task<OperationResult<bool>> UpdateLabel(User user, Label model)
         {
             var sw = new Stopwatch();
@@ -303,6 +260,49 @@ namespace Roadie.Api.Services
                 IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
             });
+        }
+
+        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var label = this.DbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
+            if (label == null)
+            {
+                return new OperationResult<Library.Models.Image>(true, string.Format("Label Not Found [{0}]", id));
+            }
+            try
+            {
+                var now = DateTime.UtcNow;
+                label.Thumbnail = imageBytes;
+                if (label.Thumbnail != null)
+                {
+                    // Ensure is jpeg first
+                    label.Thumbnail = ImageHelper.ConvertToJpegFormat(label.Thumbnail);
+
+                    // Resize to store in database as thumbnail
+                    label.Thumbnail = ImageHelper.ResizeImage(label.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                }
+                label.LastUpdated = now;
+                await this.DbContext.SaveChangesAsync();
+                this.CacheManager.ClearRegion(label.CacheRegion);
+                this.Logger.LogInformation($"UploadLabelImage `{ label }` By User `{ user }`");
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                errors.Add(ex);
+            }
+            sw.Stop();
+
+            return new OperationResult<Library.Models.Image>
+            {
+                IsSuccess = !errors.Any(),
+                Data = base.MakeThumbnailImage(id, "label", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height, true),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
         }
     }
 }
