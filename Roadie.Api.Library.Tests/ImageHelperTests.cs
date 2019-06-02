@@ -43,6 +43,7 @@ namespace Roadie.Library.Tests
         [Theory]
         [InlineData("cover.jpeg")]
         [InlineData("cover.jpg")]
+        [InlineData("Cover.jpg")]
         [InlineData("cover.png")]
         [InlineData("Cover.Jpg")]
         [InlineData("Release.JPG")]
@@ -56,7 +57,10 @@ namespace Roadie.Library.Tests
         [InlineData("Art -Front.jpg")]
         [InlineData("F1.jpg")]
         [InlineData("F 1.jpg")]
-        [InlineData("F-1.jpg")]
+        [InlineData("F-1.jpg")] 
+        [InlineData("front_.jpg")]
+        [InlineData("BIG.JPg")]
+        [InlineData("BIG.PNG")]
         public void Test_Should_Be_Release_Images(string input)
         {
             Assert.True(ImageHelper.IsReleaseImage(new FileInfo(input)));
@@ -164,7 +168,7 @@ namespace Roadie.Library.Tests
         [InlineData("Book-1.jpg")]
         [InlineData("Book-01.jpg")]
         [InlineData("Back.jpg")]
-        [InlineData("Inside.jpg")]
+        [InlineData("BAcK.JPg")]
         [InlineData("Cd.jpg")]
         [InlineData("CD.JPG")]
         [InlineData("Cd1.jpg")]
@@ -177,8 +181,13 @@ namespace Roadie.Library.Tests
         [InlineData("Encartes.jpg")]
         [InlineData("Art - Back.jpg")]
         [InlineData("disc.jpg")]
-        [InlineData("inlay.jpg")]
+        [InlineData("disc.png")]
         [InlineData("inside.jpg")]
+        [InlineData("Inside1.jpg")]
+        [InlineData("Inside 1.jpg")]
+        [InlineData("Inside-1.jpg")]
+        [InlineData("in1.jpg")]
+        [InlineData("inlay.jpg")]
         [InlineData("release 1.jpg")]
         [InlineData("release-1.jpg")]
         [InlineData("release_1.jpg")]
@@ -186,7 +195,12 @@ namespace Roadie.Library.Tests
         [InlineData("release 10.jpg")]
         [InlineData("Dixieland-Label-Side 1.JPG")]
         [InlineData("Dixieland-Label-Side 2.JPG")] 
-        [InlineData("Hearing Is Believing-Inside 1.jpg")] 
+        [InlineData("Hearing Is Believing-Inside 1.jpg")]
+        [InlineData("Booklet (2-3).jpg")] 
+        [InlineData("Booklet (14-15).jpg")] 
+        [InlineData("Booklet#2.jpg")] 
+        [InlineData("traycard.png")] 
+        [InlineData("Jewel Case.jpg")]
         public void Test_Should_Be_Release_Secondary_Images(string input)
         {
             Assert.True(ImageHelper.IsReleaseSecondaryImage(new FileInfo(input)));

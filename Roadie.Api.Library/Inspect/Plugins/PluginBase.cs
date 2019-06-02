@@ -39,7 +39,8 @@ namespace Roadie.Library.Inspect.Plugins
                     var metaDatasForFilesInFolder = new List<AudioMetaData>();
                     foreach (var fileInMetaDataFolder in filesInMetaDataFolder)
                     {
-                        metaDatasForFilesInFolder.Add(TagsHelper.MetaDataForFile(fileInMetaDataFolder.FullName).Data);
+                        var metaData = TagsHelper.MetaDataForFile(fileInMetaDataFolder.FullName, true);
+                        metaDatasForFilesInFolder.Add(metaData.Data);
                     }
                     CachedAudioDatas.Add(directory.FullName, metaDatasForFilesInFolder);
                 }

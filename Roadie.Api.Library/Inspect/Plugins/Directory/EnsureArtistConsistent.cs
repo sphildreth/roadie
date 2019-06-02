@@ -2,6 +2,7 @@
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.MetaData.ID3Tags;
+using Roadie.Library.Utility;
 using System;
 using System.IO;
 using System.Linq;
@@ -35,7 +36,7 @@ namespace Roadie.Library.Inspect.Plugins.Directory
             if (metaDatasForFilesInFolder.Any())
             {
                 found = metaDatasForFilesInFolder.Count();
-                var firstMetaData = metaDatasForFilesInFolder.OrderBy(x => x.TrackNumber).FirstOrDefault();
+                var firstMetaData = metaDatasForFilesInFolder.OrderBy(x => x.Filename ?? string.Empty).ThenBy(x => SafeParser.ToNumber<short>(x.TrackNumber)).FirstOrDefault();
                 if (firstMetaData == null)
                 {
                     return new OperationResult<string>("Error Getting First MetaData")

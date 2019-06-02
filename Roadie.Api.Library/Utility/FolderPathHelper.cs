@@ -28,7 +28,7 @@ namespace Roadie.Library.Utility
             return directoryInfo.FullName;
         }
 
-        public static void DeleteEmptyDirs(string dir)
+        public static void DeleteEmptyDirs(string dir, bool deleteDirIfEmpty = true)
         {
             if (String.IsNullOrEmpty(dir))
             {
@@ -41,7 +41,7 @@ namespace Roadie.Library.Utility
                     DeleteEmptyDirs(d);
                 }
                 var entries = Directory.EnumerateFileSystemEntries(dir);
-                if (!entries.Any())
+                if (!entries.Any() && deleteDirIfEmpty)
                 {
                     try
                     {

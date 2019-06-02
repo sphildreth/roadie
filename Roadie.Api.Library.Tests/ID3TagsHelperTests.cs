@@ -192,7 +192,9 @@ namespace Roadie.Library.Tests
         [InlineData("1 - Tithe II.mp3")]
         [InlineData("1 Up.mp3")]
         [InlineData("1. Up.mp3")]
-        [InlineData("1- Up.mp3")]
+        [InlineData("1- Up.mp3")] 
+        [InlineData("(01) [Iperyt] The Black Emperor.mp3")]
+        [InlineData("[01] [Iperyt] The Black Emperor.mp3")]
         public void DetermineTrackNumber(string filename)
         {
             var tn = ID3TagsHelper.DetermineTrackNumber(filename);

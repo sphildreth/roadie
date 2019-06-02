@@ -872,11 +872,28 @@ namespace Roadie.Library.Engines
                 var releaseFolder = new DirectoryInfo(result.ReleaseFileFolder(artistFolder));
                 if (releaseFolder.Exists)
                 {
+                    string coverFileName = null;
                     var cover = ImageHelper.FindImageTypeInDirectory(releaseFolder, ImageType.Release);
-                    if(cover.Any())
+                    if(!cover.Any())
+                    {
+                        // See if cover exist by filename
+                        var imageFilesInFolder = ImageHelper.ImageFilesInFolder(releaseFolder.FullName, SearchOption.AllDirectories);
+                        if (imageFilesInFolder != null && imageFilesInFolder.Any())
+                        {
+                            var imageCoverByReleaseName = imageFilesInFolder.FirstOrDefault(x => x == result.Title || x == result.Title.ToFileNameFriendly());
+                            if(imageCoverByReleaseName != null)
+                            {
+                                coverFileName = imageCoverByReleaseName;
+                            }
+                        }
+                    }
+                    else if(cover.Any())
+                    {
+                        coverFileName = cover.First().FullName;
+                    }
+                    if(!string.IsNullOrEmpty(coverFileName))
                     {
                         // Read image and convert to jpeg
-                        var coverFileName = cover.First().FullName;
                         result.Thumbnail = File.ReadAllBytes(coverFileName);
                         this.Logger.LogDebug("Using Release Cover File [{0}]", coverFileName);
                     }

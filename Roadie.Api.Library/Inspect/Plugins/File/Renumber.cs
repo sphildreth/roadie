@@ -28,7 +28,7 @@ namespace Roadie.Library.Inspect.Plugins.File
         {
             var result = new OperationResult<AudioMetaData>();
             var metaDatasForFilesInFolder = GetAudioMetaDatasForDirectory(metaData.FileInfo.Directory);
-            metaData.TrackNumber = metaData.TrackNumber ?? ID3TagsHelper.DetermineTrackNumber(metaData.Filename);
+            metaData.TrackNumber = (metaData.TrackNumber ?? 0) > 0 ? metaData.TrackNumber : ID3TagsHelper.DetermineTrackNumber(metaData.FileInfo.Name);
             metaData.TotalTrackNumbers = ID3TagsHelper.DetermineTotalTrackNumbers(metaData.Filename) ?? metaDatasForFilesInFolder.Count();
             metaData.Disk = ID3TagsHelper.DetermineDiscNumber(metaData);
             metaData.TotalDiscCount = ID3TagsHelper.DetermineTotalDiscNumbers(metaDatasForFilesInFolder);
