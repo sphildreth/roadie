@@ -91,6 +91,7 @@ namespace Roadie.Library.MetaData.ID3Tags
                     Album = metaData.Release,
                     Title = metaData.Title,
                     Year = metaData.Year.Value.ToString(),
+                    Genre = metaData.Genres == null || !metaData.Genres.Any() ? null : string.Join("/", metaData.Genres),
                     TrackNumber = totalTrackNumber < 99 ? $"{trackNumber.ToString("00")}/{totalTrackNumber.ToString("00")}" : $"{trackNumber.ToString()}/{totalTrackNumber.ToString()}",
                     DiscNumber = discCount < 99 ? $"{disc.ToString("00")}/{discCount.ToString("00")}" : $"{disc.ToString()}/{discCount.ToString()}"
                 };
@@ -155,7 +156,7 @@ namespace Roadie.Library.MetaData.ID3Tags
                 result.ArtistRaw = theTrack.AlbumArtist ?? theTrack.Artist;
                 result.Genres = theTrack.Genre?.Split(new char[] { ',', '\\' });
                 result.TrackArtist = theTrack.OriginalArtist ?? theTrack.Artist ?? theTrack.AlbumArtist;
-                result.TrackArtistRaw = theTrack.OriginalArtist;
+                result.TrackArtistRaw = theTrack.OriginalArtist ?? theTrack.Artist ?? theTrack.AlbumArtist;
                 result.AudioBitrate = (int?)theTrack.Bitrate;
                 result.AudioSampleRate = (int)theTrack.Bitrate;
                 result.Disk = theTrack.DiscNumber;
@@ -204,18 +205,19 @@ namespace Roadie.Library.MetaData.ID3Tags
                 IAudioFile audioFile = AudioFile.Create(fileName, true);
                 if (ID3v2Tag.DoesTagExist(fileName))
                 {
-                    IID3v2Tag id3v2 = new ID3v2Tag(fileName);
-                    result.Release = id3v2.Album;
+                    IID3v2Tag id3v2 = new ID3v2Tag(fileName);                    
                     result.Artist = id3v2.AlbumArtist ?? id3v2.Artist;
                     result.ArtistRaw = id3v2.AlbumArtist ?? id3v2.Artist;
-                    result.Genres = id3v2.Genre?.Split(new char[] { ',', '\\', ';', '|' });
-                    result.TrackArtist = id3v2.OriginalArtist ?? id3v2.Artist ?? id3v2.AlbumArtist;
-                    result.TrackArtistRaw = id3v2.OriginalArtist;
                     result.AudioBitrate = (int?)audioFile.Bitrate;
                     result.AudioChannels = audioFile.Channels;
                     result.AudioSampleRate = (int)audioFile.Bitrate;
+                    result.Comments = id3v2.CommentsList != null ? string.Join("|", id3v2.CommentsList?.Select(x => x.Value)) : null;
                     result.Disk = ID3TagsHelper.ParseDiscNumber(id3v2.DiscNumber);
                     result.DiskSubTitle = id3v2.SetSubtitle;
+                    result.Genres = id3v2.Genre?.Split(new char[] { ',', '\\', ';', '|' });
+                    result.Release = id3v2.Album;
+                    result.TrackArtist = id3v2.OriginalArtist ?? id3v2.Artist ?? id3v2.AlbumArtist;
+                    result.TrackArtistRaw = id3v2.OriginalArtist ?? id3v2.Artist ?? id3v2.AlbumArtist;
                     result.Images = id3v2.PictureList?.Select(x => new AudioMetaDataImage
                     {
                         Data = x.PictureData,
@@ -265,6 +267,16 @@ namespace Roadie.Library.MetaData.ID3Tags
                 Data = result
             };
         }
+
+        public static short? DetermineTrackNumber(string filename)
+        {
+            var part = filename.Substring(0, 2);
+            part = part.Replace(".", "");
+            part = part.Replace("-", "");
+            part = part.Replace(" ", "");
+            return SafeParser.ToNumber<short?>(part);
+        }
+
 
         public static short? DetermineTotalTrackNumbers(string filename, string trackNumber = null)
         {

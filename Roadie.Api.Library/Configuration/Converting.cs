@@ -3,7 +3,7 @@
 namespace Roadie.Library.Configuration
 {
     [Serializable]
-    public class Converting
+    public class Converting : IConverting
     {
         public string APEConvertCommand { get; set; }
         public bool DoDeleteAfter { get; set; }

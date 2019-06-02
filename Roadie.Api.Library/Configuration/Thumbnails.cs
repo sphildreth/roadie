@@ -3,7 +3,7 @@
 namespace Roadie.Library.Configuration
 {
     [Serializable]
-    public class ImageSize
+    public class ImageSize : IImageSize
     {
         public short Height { get; set; }
         public short Width { get; set; }

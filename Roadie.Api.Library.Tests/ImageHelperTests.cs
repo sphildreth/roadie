@@ -46,6 +46,7 @@ namespace Roadie.Library.Tests
         [InlineData("cover.png")]
         [InlineData("Cover.Jpg")]
         [InlineData("Release.JPG")]
+        [InlineData("folder.JPG")]
         [InlineData("front.jpg")]
         [InlineData("FrOnt.jpg")]
         [InlineData("Art - front.jpg")]
@@ -106,6 +107,7 @@ namespace Roadie.Library.Tests
         [InlineData("cover 1.jpg")]
         [InlineData("cover_01.jpg")]
         [InlineData("cover 03.jpg")]
+        [InlineData("Dixieland-Front1.jpg")]
         public void Test_Should_Not_Be_Release_Images(string input)
         {
             Assert.False(ImageHelper.IsReleaseImage(new FileInfo(input)));
@@ -153,7 +155,8 @@ namespace Roadie.Library.Tests
 
         [InlineData("Booklet-1.jpg")]
         [InlineData("Booklet-10.jpg")]
-        [InlineData("Booklet_1.jpg")]
+        [InlineData("Booklet_1.jpg")] 
+        [InlineData("Booklet 3.jpg")] 
         [InlineData("Booklet.jpg")]
         [InlineData("Book.jpg")]
         [InlineData("Book_3.jpg")]
@@ -181,6 +184,9 @@ namespace Roadie.Library.Tests
         [InlineData("release_1.jpg")]
         [InlineData("release 3.jpg")]
         [InlineData("release 10.jpg")]
+        [InlineData("Dixieland-Label-Side 1.JPG")]
+        [InlineData("Dixieland-Label-Side 2.JPG")] 
+        [InlineData("Hearing Is Believing-Inside 1.jpg")] 
         public void Test_Should_Be_Release_Secondary_Images(string input)
         {
             Assert.True(ImageHelper.IsReleaseSecondaryImage(new FileInfo(input)));

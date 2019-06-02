@@ -2,30 +2,54 @@
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.MetaData.Audio;
-using System;
+using Roadie.Library.MetaData.ID3Tags;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
+using System.Linq;
 
 namespace Roadie.Library.Inspect.Plugins
 {
-    public abstract class PluginBase : IInspectorPlugin
+    public abstract class PluginBase
     {
-        protected IRoadieSettings Configuration { get; }
-        protected ICacheManager CacheManager { get; }
-        protected ILogger Logger { get; }
-
-        public abstract int Order { get; }
         public abstract string Description { get; }
+        public abstract int Order { get; }
+        protected ICacheManager CacheManager { get; }
+        protected IRoadieSettings Configuration { get; }
+        protected IEnumerable<string> ListReplacements { get; } = new List<string> { " ; ", " ;", "; ", ";", " & ", " &", "& ", ";", "&" };
+        protected ILogger Logger { get; }
+        protected IID3TagsHelper TagsHelper { get; }
+        private Dictionary<string, IEnumerable<AudioMetaData>> CachedAudioDatas { get; set; }
 
-        public PluginBase(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger)
+        public PluginBase(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
         {
             this.Configuration = configuration;
             this.CacheManager = cacheManager;
             this.Logger = logger;
+            this.TagsHelper = tagsHelper;
+            CachedAudioDatas = new Dictionary<string, IEnumerable<AudioMetaData>>();
         }
 
-        public abstract OperationResult<IEnumerable<AudioMetaData>> Process(IEnumerable<AudioMetaData> metaDatas);
-
+        protected IEnumerable<AudioMetaData> GetAudioMetaDatasForDirectory(DirectoryInfo directory)
+        {
+            try
+            {
+                if (!CachedAudioDatas.ContainsKey(directory.FullName))
+                {
+                    var filesInMetaDataFolder = directory.GetFiles("*.mp3", SearchOption.TopDirectoryOnly);
+                    var metaDatasForFilesInFolder = new List<AudioMetaData>();
+                    foreach (var fileInMetaDataFolder in filesInMetaDataFolder)
+                    {
+                        metaDatasForFilesInFolder.Add(TagsHelper.MetaDataForFile(fileInMetaDataFolder.FullName).Data);
+                    }
+                    CachedAudioDatas.Add(directory.FullName, metaDatasForFilesInFolder);
+                }
+                return CachedAudioDatas[directory.FullName];
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError(ex);                
+            }
+            return Enumerable.Empty<AudioMetaData>();
+        }
     }
 }

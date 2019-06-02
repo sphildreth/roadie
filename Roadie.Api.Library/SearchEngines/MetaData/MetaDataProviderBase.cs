@@ -10,7 +10,7 @@ namespace Roadie.Library.MetaData
         protected readonly IRoadieSettings _configuration = null;
         protected readonly ILogger _logger = null;
 
-        protected ApiKey _apiKey = null;
+        protected IApiKey _apiKey = null;
 
         public virtual bool IsEnabled
         {
@@ -20,7 +20,7 @@ namespace Roadie.Library.MetaData
             }
         }
 
-        protected ApiKey ApiKey
+        protected IApiKey ApiKey
         {
             get
             {

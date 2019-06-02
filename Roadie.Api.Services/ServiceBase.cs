@@ -290,7 +290,7 @@ namespace Roadie.Api.Services
             return new Image($"{this.HttpContext.ImageBaseUrl }/{id}/{ width }/{ height }/{ (includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty) }", caption, $"{this.HttpContext.ImageBaseUrl }/{id}/{ this.Configuration.SmallImageSize.Width }/{ this.Configuration.SmallImageSize.Height }");
         }
 
-        protected Image MakeImage(Guid id, string type, ImageSize imageSize)
+        protected Image MakeImage(Guid id, string type, IImageSize imageSize)
         {
             return this.MakeImage(id, type, imageSize.Width, imageSize.Height);
         }

@@ -3,7 +3,7 @@
 namespace Roadie.Library.Configuration
 {
     [Serializable]
-    public class FilePlugins
+    public class FilePlugins : IFilePlugins
     {
         public int MinWeightToDelete { get; set; }
     }

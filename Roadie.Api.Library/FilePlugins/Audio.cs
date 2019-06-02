@@ -10,6 +10,7 @@ using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.Utility;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -115,11 +116,9 @@ namespace Roadie.Library.FilePlugins
                 try
                 {
                     // See if file folder parent folder (likely file is in release folder) has primary artist image if so then move to artist folder
-                    var artistImages = ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, Enums.ImageType.Artist);
-                    if (!artistImages.Any())
-                    {
-                        artistImages = ImageHelper.FindImageTypeInDirectory(fileInfo.Directory.Parent, Enums.ImageType.Artist);
-                    }
+                    var artistImages = new List<FileInfo>();
+                    artistImages.AddRange(ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, Enums.ImageType.Artist));
+                    artistImages.AddRange(ImageHelper.FindImageTypeInDirectory(fileInfo.Directory.Parent, Enums.ImageType.Artist));
                     if (artistImages.Any())
                     {
                         var artistImage = artistImages.First();
@@ -141,11 +140,9 @@ namespace Roadie.Library.FilePlugins
                     }
 
                     // See if any secondary artist images if so then move to artist folder
-                    artistImages = ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, Enums.ImageType.ArtistSecondary);
-                    if (!artistImages.Any())
-                    {
-                        artistImages = ImageHelper.FindImageTypeInDirectory(fileInfo.Directory.Parent, Enums.ImageType.Artist);
-                    }
+                    artistImages.Clear();
+                    artistImages.AddRange(ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, Enums.ImageType.ArtistSecondary));
+                    artistImages.AddRange(ImageHelper.FindImageTypeInDirectory(fileInfo.Directory.Parent, Enums.ImageType.Artist));
                     if (artistImages.Any())
                     {
                         var looper = 0;

@@ -48,11 +48,11 @@ namespace Roadie.Library.Tests
             {
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\01 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\01 - Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\02 - Not A Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\02 - Not A Depth Charge.mp3"
                 }
             };
             var n = ID3TagsHelper.DetermineTotalDiscNumbers(three);
@@ -62,11 +62,11 @@ namespace Roadie.Library.Tests
             {
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD1\01 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD1\01 - Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD1\02 - Not A Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD1\02 - Not A Depth Charge.mp3"
                 }
             };
             n = ID3TagsHelper.DetermineTotalDiscNumbers(three);
@@ -80,23 +80,23 @@ namespace Roadie.Library.Tests
             {
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\01 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\01 - Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 02\02 - Not A Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 02\02 - Not A Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 04\01 - First.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 04\01 - First.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 06\02 - Second.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 06\02 - Second.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 10\01 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 10\01 - Depth Charge.mp3"
                 }
             };
             var n = ID3TagsHelper.DetermineTotalDiscNumbers(three);
@@ -110,35 +110,35 @@ namespace Roadie.Library.Tests
             {
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\01 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\01 - Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\02 - Not A Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\02 - Not A Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 02\01 - First.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 02\01 - First.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 02\02 - Second.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 02\02 - Second.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 03\01 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 03\01 - Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 03\02 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 03\02 - Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 03\03 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 03\03 - Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 03\04 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 03\04 - Depth Charge.mp3"
                 }
             };
             var n = ID3TagsHelper.DetermineTotalDiscNumbers(three);
@@ -152,23 +152,23 @@ namespace Roadie.Library.Tests
             {
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\01 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\01 - Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\02 - Not A Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\02 - Not A Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\01 - First.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\01 - First.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 02\02 - Second.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 02\02 - Second.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\01 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 01\01 - Depth Charge.mp3"
                 }
             };
             var n = ID3TagsHelper.DetermineTotalDiscNumbers(three);
@@ -178,11 +178,11 @@ namespace Roadie.Library.Tests
             {
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD0\01 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD0\01 - Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD2\02 - Not A Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD2\02 - Not A Depth Charge.mp3"
                 }
             };
             n = ID3TagsHelper.DetermineTotalDiscNumbers(three);
@@ -192,11 +192,11 @@ namespace Roadie.Library.Tests
             {
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 1\01 - Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 1\01 - Depth Charge.mp3"
                 },
                 new AudioMetaData
                 {
-                    Filename = @"N:\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 2\02 - Not A Depth Charge.mp3"
+                    Filename = @"C:\roadie_dev_root\Devin Townsend (1996 - 2016)\The Devin Townsend Band (2003 - 2006)\2003 - Accelerated Evolution\CD 2\02 - Not A Depth Charge.mp3"
                 }
             };
             n = ID3TagsHelper.DetermineTotalDiscNumbers(three);

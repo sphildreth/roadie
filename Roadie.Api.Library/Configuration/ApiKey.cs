@@ -6,7 +6,7 @@ namespace Roadie.Library.Configuration
     /// This is a Api Key used by Roadie to interact with an API (ie KeyName is "BingImageSearch" and its key is the BingImageSearch Key)
     /// </summary>
     [Serializable]
-    public class ApiKey
+    public class ApiKey : IApiKey
     {
         public string ApiName { get; set; }
         public string Key { get; set; }

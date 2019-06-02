@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Roadie.Library.Configuration
 {
     [Serializable]
-    public class Processing
+    public class Processing : IProcessing
     {
         public bool DoAudioCleanup { get; set; }
         public bool DoClearComments { get; set; }

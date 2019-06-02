@@ -3,7 +3,7 @@
 namespace Roadie.Library.Configuration
 {
     [Serializable]
-    public class RedisCache
+    public class RedisCache : IRedisCache
     {
         public string ConnectionString { get; set; }
     }

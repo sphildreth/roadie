@@ -1,4 +1,5 @@
 ﻿using HashidsNet;
+using Mapster;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -6,14 +7,18 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
 using Roadie.Library.Inspect.Plugins;
+using Roadie.Library.Inspect.Plugins.File;
+using Roadie.Library.Inspect.Plugins.Directory;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.Processors;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Roadie.Library.Imaging;
+using Roadie.Library.Utility;
 
 namespace Roadie.Library.Inspect
 {
@@ -21,63 +26,94 @@ namespace Roadie.Library.Inspect
     {
         private static readonly string Salt = "6856F2EE-5965-4345-884B-2CCA457AAF59";
 
-        private IEnumerable<IInspectorPlugin> _plugins = null;
+        private IEnumerable<IInspectorFilePlugin> _filePlugins = null;
+        private IEnumerable<IInspectorDirectoryPlugin> _directoryPlugins = null;
 
-        public IEnumerable<IInspectorPlugin> Plugins
+        public DictionaryCacheManager CacheManager { get; }
+
+        public IEnumerable<IInspectorFilePlugin> FilePlugins
         {
             get
             {
-                if (this._plugins == null)
+                if (_filePlugins == null)
                 {
-                    var plugins = new List<IInspectorPlugin>();
+                    var plugins = new List<IInspectorFilePlugin>();
                     try
                     {
-                        var type = typeof(IInspectorPlugin);
+                        var type = typeof(IInspectorFilePlugin);
                         var types = AppDomain.CurrentDomain.GetAssemblies()
                             .SelectMany(s => s.GetTypes())
                             .Where(p => type.IsAssignableFrom(p));
                         foreach (Type t in types)
                         {
-                            if (t.GetInterface("IInspectorPlugin") != null && !t.IsAbstract && !t.IsInterface)
+                            if (t.GetInterface("IInspectorFilePlugin") != null && !t.IsAbstract && !t.IsInterface)
                             {
-                                IInspectorPlugin plugin = Activator.CreateInstance(t, new object[] { this.Configuration, this.CacheManager, this.Logger }) as IInspectorPlugin;
+                                IInspectorFilePlugin plugin = Activator.CreateInstance(t, new object[] { Configuration, CacheManager, Logger, TagsHelper }) as IInspectorFilePlugin;
                                 plugins.Add(plugin);
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        this.Logger.LogError(ex);
+                        Logger.LogError(ex);
                     }
-                    this._plugins = plugins.ToArray();
+                    _filePlugins = plugins.ToArray();
                 }
-                return this._plugins;
+                return _filePlugins;
             }
         }
 
-        private IEventMessageLogger MessageLogger { get; }
+        public IEnumerable<IInspectorDirectoryPlugin> DirectoryPlugins
+        {
+            get
+            {
+                if (_filePlugins == null)
+                {
+                    var plugins = new List<IInspectorDirectoryPlugin>();
+                    try
+                    {
+                        var type = typeof(IInspectorDirectoryPlugin);
+                        var types = AppDomain.CurrentDomain.GetAssemblies()
+                            .SelectMany(s => s.GetTypes())
+                            .Where(p => type.IsAssignableFrom(p));
+                        foreach (Type t in types)
+                        {
+                            if (t.GetInterface("IInspectorDirectoryPlugin") != null && !t.IsAbstract && !t.IsInterface)
+                            {
+                                IInspectorDirectoryPlugin plugin = Activator.CreateInstance(t, new object[] { Configuration, CacheManager, Logger, TagsHelper }) as IInspectorDirectoryPlugin;
+                                plugins.Add(plugin);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex);
+                    }
+                    _directoryPlugins = plugins.ToArray();
+                }
+                return _directoryPlugins;
+            }
+        }
+
+        private IRoadieSettings Configuration { get; }
+
         private ILogger Logger
         {
             get
             {
-                return this.MessageLogger as ILogger;
+                return MessageLogger as ILogger;
             }
         }
 
+        private IEventMessageLogger MessageLogger { get; }
         private ID3TagsHelper TagsHelper { get; }
-
-        private IRoadieSettings Configuration { get; }
-
-        public DictionaryCacheManager CacheManager { get; }
-
 
         public Inspector()
         {
             Console.WriteLine("Roadie Media Inspector");
 
-
-            this.MessageLogger = new EventMessageLogger();
-            this.MessageLogger.Messages += MessageLogger_Messages;
+            MessageLogger = new EventMessageLogger();
+            MessageLogger.Messages += MessageLogger_Messages;
 
             var settings = new RoadieSettings();
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
@@ -85,154 +121,283 @@ namespace Roadie.Library.Inspect
             IConfiguration configuration = configurationBuilder.Build();
             configuration.GetSection("RoadieSettings").Bind(settings);
             settings.ConnectionString = configuration.GetConnectionString("RoadieDatabaseConnection");
-            this.Configuration = settings;
-            this.CacheManager = new DictionaryCacheManager(this.Logger, new CachePolicy(TimeSpan.FromHours(4)));
-            this.TagsHelper = new ID3TagsHelper(this.Configuration, this.CacheManager, this.Logger);
-
+            Configuration = settings;
+            CacheManager = new DictionaryCacheManager(Logger, new CachePolicy(TimeSpan.FromHours(4)));
+            TagsHelper = new ID3TagsHelper(Configuration, CacheManager, Logger);
         }
 
-        private void MessageLogger_Messages(object sender, EventMessage e)
+        public static string ToToken(string input)
         {
-            Console.WriteLine($"Log Level [{ e.Level }] Log Message [{ e.Message }] ");
-        }
-
-        public static string ArtistInspectorToken(AudioMetaData metaData)
-        {
-            var hashids = new Hashids(Inspector.Salt);
-            var artistId = 0;
-            var bytes = System.Text.Encoding.ASCII.GetBytes(metaData.Artist);
-            var looper = bytes.Length / 4;
-            for(var i = 0; i < looper; i++)
-            {
-                artistId += BitConverter.ToInt32(bytes, i * 4);
-            }
-            if (artistId < 0)
-            {
-                artistId = artistId * -1;
-            }
-            var token = hashids.Encode(artistId);
-            return token;
-        }
-
-        public static string ReleaseInspectorToken(AudioMetaData metaData)
-        {
-            var hashids = new Hashids(Inspector.Salt);
-            var releaseId = 0;
-            var bytes = System.Text.Encoding.ASCII.GetBytes(metaData.Artist + metaData.Release);
+            var hashids = new Hashids(Salt);
+            var numbers = 0;
+            var bytes = System.Text.Encoding.ASCII.GetBytes(input);
             var looper = bytes.Length / 4;
             for (var i = 0; i < looper; i++)
             {
-                releaseId += BitConverter.ToInt32(bytes, i * 4);
+                numbers += BitConverter.ToInt32(bytes, i * 4);
             }
-            if (releaseId < 0)
+            if (numbers < 0)
             {
-                releaseId = releaseId * -1;
+                numbers *= -1;
             }
-            var token = hashids.Encode(releaseId);
+            var token = hashids.Encode(numbers);
             return token;
         }
 
-        public void Inspect(bool doCopy, string folder, string destination)
+        public static string ArtistInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist);
+
+        public static string ReleaseInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist + metaData.Release);
+
+        public void Inspect(bool doCopy, bool isReadOnly, string directoryToInspect, string destination, bool dontAppendSubFolder, bool dontDeleteEmptyFolders)
         {
+            Configuration.Inspector.IsInReadOnlyMode = isReadOnly;
+            Configuration.Inspector.DoCopyFiles = doCopy;
+
+            var artistsFound = new List<string>();
+            var releasesFound = new List<string>();
+            var mp3FilesFoundCount = 0;
+            // Create a new destination subfolder for each Inspector run by Current timestamp
+            var dest = Path.Combine(destination, DateTime.UtcNow.ToString("yyyyMMddHHmm"));
+            if (isReadOnly || dontAppendSubFolder)
+            {
+                dest = destination;
+            }
+            if (!isReadOnly && !Directory.Exists(dest))
+            {
+                Directory.CreateDirectory(dest);
+            }
             // Get all the directorys in the directory
-            var folderDirectories = Directory.GetDirectories(folder, "*.*", SearchOption.AllDirectories);
+            var directoryDirectories = Directory.GetDirectories(directoryToInspect, "*.*", SearchOption.AllDirectories);
             var directories = new List<string>
             {
-                folder
+                directoryToInspect
             };
-            directories.AddRange(folderDirectories);
+            directories.AddRange(directoryDirectories);
+            directories.Remove(dest);
+            var inspectedImagesInDirectories = new List<string>();
             foreach (var directory in directories)
             {
+                var directoryInfo = new DirectoryInfo(directory);
+
+                var sw = Stopwatch.StartNew();
+
                 Console.WriteLine($"╔ ░▒▓ Inspecting [{ directory }] ▓▒░");
-                Console.WriteLine("╠═╗");
-                // Get all the MP3 files in the folder
+                Console.WriteLine("╠╦════════════════════════╣");
+
+                // Get all the MP3 files in 'directory'
                 var files = Directory.GetFiles(directory, "*.mp3", SearchOption.TopDirectoryOnly);
                 if (files == null || !files.Any())
                 {
                     continue;
                 }
-                Console.WriteLine($"Found [{ files.Length }] mp3 Files");
-                Console.WriteLine("╠═╣");
-                // Get audiometadata and output details including weight/validity
-                foreach (var file in files)
+                // Run directory plugins against current directory
+                foreach (var plugin in DirectoryPlugins.OrderBy(x => x.Order))
                 {
-                    var tagLib = this.TagsHelper.MetaDataForFile(file);
-                    Console.WriteLine(tagLib.Data);
-                }
-                Console.WriteLine("╠═╣");
-                List<AudioMetaData> fileMetaDatas = new List<AudioMetaData>();
-                List<FileInfo> fileInfos = new List<FileInfo>();
-                foreach (var file in files)
-                {
-                    var fileInfo = new FileInfo(file);
-                    var tagLib = this.TagsHelper.MetaDataForFile(fileInfo.FullName);
-                    var artistToken = ArtistInspectorToken(tagLib.Data);
-                    var releaseToken = ReleaseInspectorToken(tagLib.Data);
-                    var newFileName = $"{artistToken}_{releaseToken}_CD{ (tagLib.Data.Disk ?? ID3TagsHelper.DetermineDiscNumber(tagLib.Data)).ToString("000") }_{ tagLib.Data.TrackNumber.Value.ToString("0000") }.mp3";
-                    var subFolder = folder == destination ? fileInfo.DirectoryName : destination;
-                    var newPath = Path.Combine(destination, subFolder, newFileName.ToFileNameFriendly());
-                    if (!doCopy)
-                    {
-                        if (fileInfo.FullName != newPath)
-                        {
-                            if (File.Exists(newPath))
-                            {
-                                File.Delete(newPath);
-                            }
-                            fileInfo.MoveTo(newPath);
-                        }
-                    }
-                    else
-                    {
-                        fileInfo.CopyTo(newPath, true);
-                    }
-                    tagLib.Data.Filename = fileInfo.FullName;
-                    fileMetaDatas.Add(tagLib.Data);
-                    fileInfos.Add(fileInfo);
-                }
-                // Perform InspectorPlugins
-                IEnumerable<AudioMetaData> pluginMetaData = fileMetaDatas.OrderBy(x => x.Filename);
-                foreach (var plugin in this.Plugins.OrderBy(x => x.Order))
-                {
-                    Console.WriteLine($"╟ Running Plugin { plugin.Description }");
-                    OperationResult<IEnumerable<AudioMetaData>> pluginResult = null;
+                    Console.WriteLine($"╠╬═ Running Directory Plugin { plugin.Description }");
                     try
                     {
-                        pluginResult = plugin.Process(pluginMetaData);
+                        var pluginResult = plugin.Process(directoryInfo);
+                        if (!pluginResult.IsSuccess)
+                        {
+                            Console.WriteLine($"Plugin Failed: Error [{ JsonConvert.SerializeObject(pluginResult)}]");
+                            return;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"╠╣ Directory Plugin Message: { pluginResult.Data }");
+                        }
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine($"Plugin Error: [{ ex.ToString() }]");
+                        return;
                     }
-                    if (!pluginResult.IsSuccess)
+                }
+                Console.WriteLine($"╠╝");
+                Console.WriteLine($"╟─ Found [{ files.Length }] mp3 Files");
+                List<AudioMetaData> fileMetaDatas = new List<AudioMetaData>();
+                List<FileInfo> fileInfos = new List<FileInfo>();
+                // Inspect the found MP3 files in 'directory'
+                foreach (var file in files)
+                {
+                    mp3FilesFoundCount++;
+                    var fileInfo = new FileInfo(file);
+                    Console.WriteLine($"╟─ Inspecting [{ fileInfo.FullName }]");
+                    var tagLib = TagsHelper.MetaDataForFile(fileInfo.FullName);
+                    Console.WriteLine($"╟ (Pre ) : { tagLib.Data }");
+                    tagLib.Data.Filename = fileInfo.FullName;
+                    var originalMetaData = tagLib.Data.Adapt<AudioMetaData>();
+                    var pluginMetaData = tagLib.Data;
+                    // Run all file plugins against the MP3 file modifying the MetaData
+                    foreach (var plugin in FilePlugins.OrderBy(x => x.Order))
                     {
-                        Console.WriteLine($"Plugin Failed. Error [{ JsonConvert.SerializeObject(pluginResult)}]");
+                        Console.WriteLine($"╟┤ Running File Plugin { plugin.Description }");
+                        OperationResult<AudioMetaData> pluginResult = null;
+                        try
+                        {
+                            pluginResult = plugin.Process(pluginMetaData);
+                            if (!pluginResult.IsSuccess)
+                            {
+                                Console.WriteLine($"Plugin Failed: Error [{ JsonConvert.SerializeObject(pluginResult)}]");
+                                return;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Plugin Error: [{ ex.ToString() }]");
+                            return;
+                        }
+                        pluginMetaData = pluginResult.Data;
                     }
-                    pluginMetaData = pluginResult.Data;
-                }
-                // Save all plugin modifications to the MetaData
-                foreach (var metadata in pluginMetaData)
-                {
-                    this.TagsHelper.WriteTags(metadata, metadata.Filename);
-                }
-                Console.WriteLine("╠═╣");
-                // Get audiometadata and output details including weight/validity
-                foreach (var fileInfo in fileInfos)
-                {
-                    var tagLib = this.TagsHelper.MetaDataForFile(fileInfo.FullName);
-                    if (!tagLib.IsSuccess || !tagLib.Data.IsValid)
+                    // See if the MetaData from the Plugins is different from the original
+                    var differences = AutoCompare.Comparer.Compare(originalMetaData, pluginMetaData);
+                    if (differences.Any())
                     {
-                        Console.WriteLine($"■■ INVALID: {tagLib.Data }");
+                        var skipDifferences = new List<string> { "AudioMetaDataWeights", "FileInfo", "Images", "TrackArtists", "ValidWeight" };
+                        var differencesDescription = $"{ System.Environment.NewLine }";
+                        foreach (var difference in differences)
+                        {
+                            if (skipDifferences.Contains(difference.Name))
+                            {
+                                continue;
+                            }
+                            differencesDescription += $"╟ || { difference.Name } : Was [{ difference.OldValue}] Now [{ difference.NewValue}]{ System.Environment.NewLine }";
+                        }
+                        Console.Write($"╟ ≡ != ID3 Tag Modified: { differencesDescription }");
+
+                        if (!isReadOnly)
+                        {
+                            TagsHelper.WriteTags(pluginMetaData, pluginMetaData.Filename);
+                        }
+                        else
+                        {
+                            Console.WriteLine("╟ ■ Read Only Mode: Not Modifying File ID3 Tags.");
+                        }
                     }
                     else
                     {
-                        Console.WriteLine(tagLib.Data);
+                        Console.WriteLine($"╟ ≡ == ID3 Tag NOT Modified");
                     }
+                    if(!pluginMetaData.IsValid)
+                    {
+                        Console.WriteLine($"╟ ■■ INVALID: { pluginMetaData }");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"╟ (Post) : { pluginMetaData }");
+                    }
+                    var artistToken = ArtistInspectorToken(tagLib.Data);
+                    if(!artistsFound.Contains(artistToken))
+                    {
+                        artistsFound.Add(artistToken);
+                    }
+                    var releaseToken = ReleaseInspectorToken(tagLib.Data);
+                    if (!releasesFound.Contains(releaseToken))
+                    {
+                        releasesFound.Add(releaseToken);
+                    }
+                    var newFileName = $"CD{ (tagLib.Data.Disk ?? ID3TagsHelper.DetermineDiscNumber(tagLib.Data)).ToString("000") }_{ tagLib.Data.TrackNumber.Value.ToString("0000") }.mp3";
+                    // Artist sub folder is created to hold Releases for Artist and Artist Images
+                    var artistSubDirectory = directory == dest ? fileInfo.DirectoryName : Path.Combine(dest, artistToken);
+                    // Each release is put into a subfolder into the current run Inspector folder to hold MP3 Files and Release Images
+                    var subDirectory = directory == dest ? fileInfo.DirectoryName : Path.Combine(dest, artistToken, releaseToken);
+                    if(!isReadOnly && !Directory.Exists(subDirectory))
+                    {
+                        Directory.CreateDirectory(subDirectory);
+                    }
+                    // If enabled move MP3 to new folder
+                    var newPath = Path.Combine(dest, subDirectory, newFileName.ToFileNameFriendly());
+                    if (isReadOnly)
+                    {
+                        Console.WriteLine($"╟ ■ Read Only Mode: File would be [{ (doCopy ? "Copied" : "Moved") }] to [{ newPath }]");
+                    }
+                    else
+                    {
+                        if (!doCopy)
+                        {
+                            if (fileInfo.FullName != newPath)
+                            {
+                                if (File.Exists(newPath))
+                                {
+                                    File.Delete(newPath);
+                                }
+                                fileInfo.MoveTo(newPath);
+                            }
+                        }
+                        else
+                        {
+                            fileInfo.CopyTo(newPath, true);
+                        }
+                    }
+                    if (!inspectedImagesInDirectories.Contains(fileInfo.DirectoryName))
+                    {
+                        // Get all artist images and move to artist folder
+                        var foundArtistImages = new List<FileInfo>();
+                        foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo.Parent, Enums.ImageType.Artist, SearchOption.TopDirectoryOnly));
+                        foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo.Parent, Enums.ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly));
+                        foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.Artist, SearchOption.TopDirectoryOnly));
+                        foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly));
+                        
+                        foreach (var artistImage in foundArtistImages)
+                        {
+                            MoveImage(isReadOnly, doCopy, dest, artistSubDirectory, artistImage);
+                        }
+
+                        // Get all release images and move to release folder
+                        var foundReleaseImages = new List<FileInfo>();
+                        foundReleaseImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.Release, SearchOption.AllDirectories));
+                        foundReleaseImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.ReleaseSecondary, SearchOption.AllDirectories));
+                        foreach (var foundReleaseImage in foundReleaseImages)
+                        {
+                            MoveImage(isReadOnly, doCopy, dest, subDirectory, foundReleaseImage);
+                        }
+                        inspectedImagesInDirectories.Add(fileInfo.DirectoryName);
+                    }
+                    Console.WriteLine("╠════════════════════════╣");
                 }
-                Console.WriteLine("╚═╝");
+                sw.Stop();
+                Console.WriteLine($"╚═ Elapsed Time { sw.ElapsedMilliseconds.ToString("0000000") }, Artists { artistsFound.Count() }, Releases { releasesFound.Count() }, MP3s { mp3FilesFoundCount } ═╝");
+            }
+            if (!dontDeleteEmptyFolders)
+            {
+                var delEmptyFolderIn = new DirectoryInfo(directoryToInspect);
+                Console.WriteLine($"╟ X Deleting Empty folders in [{ delEmptyFolderIn.FullName }]");
+                FolderPathHelper.DeleteEmptyDirs(directoryToInspect);
+            }
+            else
+            {
+                Console.WriteLine("╟ ■ Read Only Mode: Not deleting empty folders.");
             }
         }
 
+        private void MoveImage(bool isReadOnly, bool doCopy, string dest, string subdirectory, FileInfo image)
+        {
+            Console.WriteLine($"╟─ Inspecting Image [{ image.FullName }]");
+            var newImagePath = Path.Combine(dest, subdirectory, image.Name);
+            if (isReadOnly)
+            {
+                Console.WriteLine($"╟ ■ Read Only Mode: Would be [{ (doCopy ? "Copied" : "Moved") }] to [{ newImagePath }]");
+            }
+            else
+            {
+                if (!doCopy)
+                {
+                    if (image.FullName != newImagePath)
+                    {
+                        if (File.Exists(newImagePath))
+                        {
+                            File.Delete(newImagePath);
+                        }
+                        image.MoveTo(newImagePath);
+                    }
+                }
+                else
+                {
+                    image.CopyTo(newImagePath, true);
+                }
+            }
+        }
 
+        private void MessageLogger_Messages(object sender, EventMessage e) => Console.WriteLine($"Log Level [{ e.Level }] Log Message [{ e.Message }] ");
     }
 }

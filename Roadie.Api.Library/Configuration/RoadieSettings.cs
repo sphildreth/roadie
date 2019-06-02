@@ -22,23 +22,23 @@ namespace Roadie.Library.Configuration
         /// </summary>
         public string ContentPath { get; set; }
 
-        public Converting Converting { get; set; }
+        public IConverting Converting { get; set; }
         public string DefaultTimeZone { get; set; }
         public string DiagnosticsPassword { get; set; }
         public IEnumerable<string> DontDoMetaDataProvidersSearchArtists { get; set; }
         public IEnumerable<string> FileExtensionsToDelete { get; set; }
-        public FilePlugins FilePlugins { get; set; }
+        public IFilePlugins FilePlugins { get; set; }
         public string InboundFolder { get; set; }
-        public Integrations Integrations { get; set; }
-        public ImageSize LargeImageSize { get; set; }
-        public ImageSize MaximumImageSize { get; set; }
+        public IIntegrations Integrations { get; set; }
+        public IImageSize LargeImageSize { get; set; }
+        public IImageSize MaximumImageSize { get; set; }
         public string LibraryFolder { get; set; }
         public string ListenAddress { get; set; }
-        public ImageSize MediumImageSize { get; set; }
-        public Processing Processing { get; set; }
+        public IImageSize MediumImageSize { get; set; }
+        public IProcessing Processing { get; set; }
         public bool RecordNoResultSearches { get; set; }
-        public RedisCache Redis { get; set; }
-        public ImageSize SmallImageSize { get; set; }
+        public IRedisCache Redis { get; set; }
+        public IImageSize SmallImageSize { get; set; }
         public string SecretKey { get; set; }
         public string SingleArtistHoldingFolder { get; set; }
         public string SiteName { get; set; }
@@ -48,19 +48,24 @@ namespace Roadie.Library.Configuration
         public int SmtpPort { get; set; }
         public string SmtpUsername { get; set; }
         public bool SmtpUseSSl { get; set; }
-        public ImageSize ThumbnailImageSize { get; set; }
+        public IImageSize ThumbnailImageSize { get; set; }
         public Dictionary<string, string> TrackPathReplace { get; set; }
         public bool UseSSLBehindProxy { get; set; }
         public string BehindProxyHost { get; set; }
         public string WebsocketAddress { get; set; }
+        public IInspector Inspector { get; set; }
 
         public RoadieSettings()
         {
-            this.ThumbnailImageSize = new ImageSize { Width = 80, Height = 80 };
-            this.SmallImageSize = new ImageSize { Width = 160, Height = 160 };
-            this.MediumImageSize = new ImageSize { Width = 320, Height = 320 };
-            this.LargeImageSize = new ImageSize { Width = 500, Height = 500 };
-            this.MaximumImageSize = new ImageSize { Width = 1024, Height = 1024 };
+            ThumbnailImageSize = new ImageSize { Width = 80, Height = 80 };
+            SmallImageSize = new ImageSize { Width = 160, Height = 160 };
+            MediumImageSize = new ImageSize { Width = 320, Height = 320 };
+            LargeImageSize = new ImageSize { Width = 500, Height = 500 };
+            MaximumImageSize = new ImageSize { Width = 1024, Height = 1024 };
+            Inspector = new Inspector();
+            Converting = new Converting();
+            Integrations = new Integrations();
+            Processing = new Processing();
         }
     }
 }

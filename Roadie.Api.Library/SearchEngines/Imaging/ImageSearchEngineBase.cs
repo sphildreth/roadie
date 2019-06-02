@@ -14,10 +14,10 @@ namespace Roadie.Library.SearchEngines.Imaging
         protected readonly IRoadieSettings _configuratio = null;
         protected readonly string _referrer = null;
         protected readonly string _requestIp = null;
-        protected ApiKey _apiKey = null;
+        protected IApiKey _apiKey = null;
         protected ILogger _logger = null;
 
-        protected ApiKey ApiKey
+        protected IApiKey ApiKey
         {
             get
             {

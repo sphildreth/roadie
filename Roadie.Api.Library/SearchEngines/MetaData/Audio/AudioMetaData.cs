@@ -1,4 +1,5 @@
 ﻿using Roadie.Library.Extensions;
+using Roadie.Library.Inspect.Plugins;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +10,7 @@ namespace Roadie.Library.MetaData.Audio
 {
     [Serializable]
     [DebuggerDisplay("Artist: {Artist}, TrackArtist: {TrackArtist}, Release: {Release}, TrackNumber: {TrackNumber}, Title: {Title}, Year: {Year}")]
-    public sealed class AudioMetaData
+    public sealed class AudioMetaData : IAudioMetaData
     {
         public const char ArtistSplitCharacter = '/';
 
@@ -59,27 +60,6 @@ namespace Roadie.Library.MetaData.Audio
         }
 
         public string ArtistRaw { get; set; }
-
-        /// <summary>
-        /// TPE1 All Lead Artists
-        /// <seealso cref="http://id3.org/id3v2.3.0"/>
-        /// </summary>
-        /// <remarks>Per ID3.Org Spec: The 'Lead artist(s)/Lead performer(s)/Soloist(s)/Performing group' is used for the main artist(s). They are seperated with the "/" character.</remarks>
-        public IEnumerable<string> Artists
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(this._artist))
-                {
-                    return new string[0];
-                }
-                if (!this._artist.Contains(AudioMetaData.ArtistSplitCharacter.ToString()))
-                {
-                    return new string[0];
-                }
-                return this._artist.Split(AudioMetaData.ArtistSplitCharacter).Select(x => x.ToTitleCase()).ToArray();
-            }
-        }
 
         public int? AudioBitrate { get; set; }
 
@@ -215,6 +195,11 @@ namespace Roadie.Library.MetaData.Audio
         /// </summary>
         public string Release { get; set; }
 
+        /// <summary>
+        /// COMM
+        /// </summary>
+        public string Comments { get; set; }
+
         public string ReleaseLastFmId { get; set; }
 
         public string ReleaseMusicBrainzId { get; set; }
@@ -230,6 +215,9 @@ namespace Roadie.Library.MetaData.Audio
         /// </summary>
         public TimeSpan? Time { get; set; }
 
+        /// <summary>
+        /// TIT2
+        /// </summary>
         public string Title
         {
             get
@@ -269,29 +257,26 @@ namespace Roadie.Library.MetaData.Audio
         public int? TotalTrackNumbers { get; set; }
 
         /// <summary>
-        /// TOPE First Contributing Artist
+        /// TOPE First Contributing Artist, null if same as Artist
         /// </summary>
         public string TrackArtist
         {
             get
             {
-                if (!string.IsNullOrEmpty(this._trackArtist) && this._trackArtist.Contains(AudioMetaData.ArtistSplitCharacter.ToString()))
+                string result = null;
+                if (!string.IsNullOrEmpty(this._trackArtist))
                 {
-                    return this._trackArtist.Split(AudioMetaData.ArtistSplitCharacter).First().ToTitleCase();
+                    result = this._trackArtist.Split(AudioMetaData.ArtistSplitCharacter).First().ToTitleCase();
                 }
-                if (!string.IsNullOrEmpty(this._artist) || !string.IsNullOrEmpty(this._trackArtist))
+                if (!string.IsNullOrEmpty(this._artist) || !string.IsNullOrEmpty(result))
                 {
-                    return !this._artist.Equals(this._trackArtist, StringComparison.OrdinalIgnoreCase) ? this._trackArtist : null;
+                    result = !this._artist.Equals(result, StringComparison.OrdinalIgnoreCase) ? result : null;
                 }
-                return null;
+                return result;
             }
             set
             {
                 this._trackArtist = value;
-                if (!string.IsNullOrEmpty(this._trackArtist))
-                {
-                    this._trackArtist = this._trackArtist.Replace(';', AudioMetaData.ArtistSplitCharacter).ToTitleCase();
-                }
             }
         }
 
@@ -321,7 +306,7 @@ namespace Roadie.Library.MetaData.Audio
                 {
                     if (!this._artist.Equals(this._trackArtist, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this._trackArtist.Split(AudioMetaData.ArtistSplitCharacter).Where(x => !string.IsNullOrEmpty(x)).Select(x => x.ToTitleCase()).ToArray();
+                        return this._trackArtist.Split(AudioMetaData.ArtistSplitCharacter).Where(x => !string.IsNullOrEmpty(x)).Select(x => x.ToTitleCase()).OrderBy(x => x).ToArray();
                     }
                 }
                 return new string[0];
@@ -398,7 +383,13 @@ namespace Roadie.Library.MetaData.Audio
 
         public override string ToString()
         {
-            return string.Format($"IsValid: {this.IsValid}{ (this.IsSoundTrack ? " [SoundTrack ]" : string.Empty)}, ValidWeight {this.ValidWeight}, Artist: {this.Artist}, Release: {this.Release}, TrackNumber: {this.TrackNumber}, TrackTotal: {this.TotalTrackNumbers}, Title: {this.Title}, Year: {this.Year}, Duration: {(this.Time == null ? "-" : this.Time.Value.ToString())}");
+            var result = $"IsValid: {this.IsValid}{ (this.IsSoundTrack ? " [SoundTrack ]" : string.Empty)}, ValidWeight {this.ValidWeight}, Artist: {this.Artist}";
+            if(!string.IsNullOrEmpty(this.TrackArtist))
+            {
+                result += $", TrackArtist: { this.TrackArtist}";
+            }
+            result += $", Release: {this.Release}, TrackNumber: {this.TrackNumber}, TrackTotal: {this.TotalTrackNumbers}, Title: {this.Title}, Year: {this.Year}, Duration: {(this.Time == null ? "-" : this.Time.Value.ToString())}";
+            return result;
         }
     }
 }

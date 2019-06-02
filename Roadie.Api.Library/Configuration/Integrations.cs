@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Roadie.Library.Configuration
 {
-    public class Integrations
+    public class Integrations : IIntegrations
     {
         private string _discogsConsumerKey = null;
         private string _discogsConsumerSecret = null;
@@ -13,6 +13,7 @@ namespace Roadie.Library.Configuration
         private bool _lastFmEnabled = true;
         private string _lastFMSecret = null;
         public List<ApiKey> ApiKeys { get; set; }
+
 
         public string DiscogsConsumerKey
         {

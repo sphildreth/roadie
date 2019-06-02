@@ -93,6 +93,11 @@ namespace Roadie.Library.Tests
         [InlineData("1983/02/24")]
         [InlineData("1983//1983")]
         [InlineData("1983\\1983")]
+        [InlineData("1983,1983")]
+        [InlineData("1983;1983")]
+        [InlineData("1983 1983")]
+        [InlineData("1983;;1983")]
+        [InlineData("1983; 1983")]
         [InlineData("83")]
         public void ParseYearShouldBeNinteenEightyThree(string year)
         {
@@ -177,6 +182,21 @@ namespace Roadie.Library.Tests
         {
             var dn = ID3TagsHelper.ParseDiscNumber(discNumber);
             Assert.Null(dn);
+        }
+
+        [Theory]
+        [InlineData("01. Up.mp3")]
+        [InlineData("01 - Relentless Ascension.mp3")]
+        [InlineData("01.Say Goodbye.mp3")]
+        [InlineData("01 Up.mp3")]
+        [InlineData("1 - Tithe II.mp3")]
+        [InlineData("1 Up.mp3")]
+        [InlineData("1. Up.mp3")]
+        [InlineData("1- Up.mp3")]
+        public void DetermineTrackNumber(string filename)
+        {
+            var tn = ID3TagsHelper.DetermineTrackNumber(filename);
+            Assert.True(tn > 0);
         }
 
         [Fact]
@@ -386,10 +406,10 @@ namespace Roadie.Library.Tests
         }
 
         [Theory]
-        [InlineData(@"N:\Rita Ora - Phoenix (Deluxe) (2018) Mp3 (320kbps) [Hunter]\Rita Ora - Phoenix (Deluxe) (2018)")]
-        [InlineData(@"N:\Travis Scott - ASTROWORLD (2018) Mp3 (320kbps) [Hunter]")]
-        [InlineData(@"N:\Lil Wayne - Tha Carter V (2018) Mp3 (320kbps) [Hunter]")]
-        [InlineData(@"N:\Beyonce & JAY-Z - EVERYTHING IS LOVE (2018) Mp3 (320kbps) [Hunter]")]
+        [InlineData(@"C:\roadie_dev_root\Rita Ora - Phoenix (Deluxe) (2018) Mp3 (320kbps) [Hunter]\Rita Ora - Phoenix (Deluxe) (2018)")]
+        [InlineData(@"C:\roadie_dev_root\Travis Scott - ASTROWORLD (2018) Mp3 (320kbps) [Hunter]")]
+        [InlineData(@"C:\roadie_dev_root\Lil Wayne - Tha Carter V (2018) Mp3 (320kbps) [Hunter]")]
+        [InlineData(@"C:\roadie_dev_root\Beyonce & JAY-Z - EVERYTHING IS LOVE (2018) Mp3 (320kbps) [Hunter]")]
         public void ReadFolderTestAllFiles(string folderName)
         {
             if (!Directory.Exists(folderName))
@@ -470,7 +490,7 @@ namespace Roadie.Library.Tests
         [Fact]
         public void ReadID3TagsFromFileWithAlbumNoTrackSet()
         {
-            var file = new FileInfo(@"Z:\inbound\MEGAPACK ---METAL-DEATH-BLACK---\ebony_tears-evil_as_hell-2001-ss\01-deviation-ss.mp3");
+            var file = new FileInfo(@"M:\inbound\MEGAPACK ---METAL-DEATH-BLACK---\ebony_tears-evil_as_hell-2001-ss\01-deviation-ss.mp3");
             if (file.Exists)
             {
                 var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
@@ -496,7 +516,7 @@ namespace Roadie.Library.Tests
         [Fact]
         public void Read_File_Test_Is_valid()
         {
-            var file = new FileInfo(@"Z:\unknown\2eec19bd-3575-4b7f-84dd-db2a0ec3e2f3~[2009] Dolly - Disc 1 Of 4~06 Nobody But You (Previously Unissued).mp3");
+            var file = new FileInfo(@"M:\unknown\2eec19bd-3575-4b7f-84dd-db2a0ec3e2f3~[2009] Dolly - Disc 1 Of 4~06 Nobody But You (Previously Unissued).mp3");
             if (file.Exists)
             {
                 var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
@@ -523,7 +543,7 @@ namespace Roadie.Library.Tests
         [Fact]
         public void Read_File_Test_Is_valid2()
         {
-            var file = new FileInfo(@"Z:\library_old\Perverse\[2014] Champion Dub\01 Champion Dub (Original Mix).mp3");
+            var file = new FileInfo(@"M:\library_old\Perverse\[2014] Champion Dub\01 Champion Dub (Original Mix).mp3");
             if (file.Exists)
             {
                 var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
@@ -578,7 +598,7 @@ namespace Roadie.Library.Tests
         [Fact]
         public void ReadID3TagsFromFileWithTrackAndArtistTheSame()
         {
-            var file = new FileInfo(@"Z:\library\Blind Melon\[1992] Blind Melon\01. Blind Melon - Soak The Sin.mp3");
+            var file = new FileInfo(@"M:\library\Blind Melon\[1992] Blind Melon\01. Blind Melon - Soak The Sin.mp3");
             if (file.Exists)
             {
                 var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
@@ -670,7 +690,7 @@ namespace Roadie.Library.Tests
         [Fact]
         public void ReadID3TagsFromFile2()
         {
-            var file = new FileInfo(@"Z:\library\Denver, John\[1972] Aerie\10 Readjustment Blues.mp3");
+            var file = new FileInfo(@"M:\library\Denver, John\[1972] Aerie\10 Readjustment Blues.mp3");
             if (file.Exists)
             {
                 var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
@@ -724,7 +744,7 @@ namespace Roadie.Library.Tests
         [Fact]
         public void ReadID3TagsFromFile4()
         {
-            var file = new FileInfo(@"Z:\library\Ac Dc\[1975] T.N.T\01 It'S A Long Way To The Top (If You Wanna Rock 'N' Roll).mp3");
+            var file = new FileInfo(@"M:\library\Ac Dc\[1975] T.N.T\01 It'S A Long Way To The Top (If You Wanna Rock 'N' Roll).mp3");
             if (file.Exists)
             {
                 var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);

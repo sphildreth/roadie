@@ -2,7 +2,7 @@
   "profiles": {
     "Inspector": {
       "commandName": "Project",
-      "commandLineArgs": "-f \"C:\\roadie_dev_root\\inbound\""
+      "commandLineArgs": "-f \"C:\\roadie_dev_root\\inbound\" -r"
     }
   }
 }

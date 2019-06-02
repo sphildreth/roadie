@@ -5,7 +5,7 @@ using System.Text;
 namespace Roadie.Library.Configuration
 {
     [Serializable]
-    public class ReplacementString
+    public class ReplacementString : IReplacementString
     {
         public int Order { get; set; }
         public string Key { get; set; }

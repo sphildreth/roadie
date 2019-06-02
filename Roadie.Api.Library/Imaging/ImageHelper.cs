@@ -154,7 +154,7 @@ namespace Roadie.Library.Imaging
             {
                 return false;
             }
-            return Regex.IsMatch(fileinfo.Name, @"((f[-_\s]*[0-9]*)|cover|release|front)\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+            return Regex.IsMatch(fileinfo.Name, @"((f[-_\s]*[0-9]*)|cover|folder|release|front)\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
         }
 
         public static bool IsReleaseSecondaryImage(FileInfo fileinfo)
@@ -163,7 +163,7 @@ namespace Roadie.Library.Imaging
             {
                 return false;
             }
-            return Regex.IsMatch(fileinfo.Name, @"((book[let]*[-_]*[0-9]*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|(cover[\s_-]+[0-9]+)|back|disc|inside|inlet|inlay|cd[0-9]*|inside|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+            return Regex.IsMatch(fileinfo.Name, @"((book[let]*[-_\s]*[0-9]*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|(cover[\s_-]+[0-9]+)|back|disc|(.*)[in]*side(.*)|inlet|inlay|cd[0-9]*|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
         }
 
         public static bool IsLabelImage(FileInfo fileinfo)
