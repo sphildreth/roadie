@@ -96,6 +96,7 @@ namespace Roadie.Library.Data
         public string Tags { get; set; }
 
         [Column("thumbnail", TypeName = "blob")]
+        [MaxLength(65535)]
         public byte[] Thumbnail { get; set; }
 
         [MaxLength(250)]

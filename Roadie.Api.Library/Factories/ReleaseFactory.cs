@@ -790,33 +790,23 @@ namespace Roadie.Library.Factories
 
                 if (release.Thumbnail == null)
                 {
-                    var imageFiles = ImageHelper.ImageFilesInFolder(releasePath, SearchOption.AllDirectories);
+                    var imageFiles = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releasePath), ImageType.Release, SearchOption.TopDirectoryOnly);
                     if (imageFiles != null && imageFiles.Any())
                     {
-                        foreach (var imageFile in imageFiles)
-                        {
-                            var i = new FileInfo(imageFile);
-                            var iName = i.Name.ToLower().Trim();
-                            var isCoverArtType = iName.Contains("cover") || iName.Contains("folder") || iName.Contains("front") || iName.Contains("release") || iName.Contains("album");
-                            if (isCoverArtType)
-                            {
-                                // Read image and convert to jpeg
-                                release.Thumbnail = File.ReadAllBytes(i.FullName);
-                                release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
-                                release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
-                                release.LastUpdated = now;
-                                await this.DbContext.SaveChangesAsync();
-                                this.CacheManager.ClearRegion(release.Artist.CacheRegion);
-                                this.CacheManager.ClearRegion(release.CacheRegion);
-                                this.Logger.LogInformation("Update Thumbnail using Release Cover File [{0}]", iName);
-                                break;
-                            }
-                        }
+                        // Read image and convert to jpeg                        
+                        var i = imageFiles.First();
+                        release.Thumbnail = File.ReadAllBytes(i.FullName);
+                        release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                        release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
+                        release.LastUpdated = now;
+                        await this.DbContext.SaveChangesAsync();
+                        this.CacheManager.ClearRegion(release.Artist.CacheRegion);
+                        this.CacheManager.ClearRegion(release.CacheRegion);
+                        this.Logger.LogInformation("Update Thumbnail using Release Cover File [{0}]", i.Name);
                     }
                 }
 
                 sw.Stop();
-
 
                 await base.UpdateReleaseCounts(release.Id, now);
                 await base.UpdateArtistCountsForRelease(release.Id, now);

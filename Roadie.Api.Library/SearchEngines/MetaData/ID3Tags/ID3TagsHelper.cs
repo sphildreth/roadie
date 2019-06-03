@@ -132,7 +132,14 @@ namespace Roadie.Library.MetaData.ID3Tags
             part = part.Replace(".", "");
             part = part.Replace("-", "");
             part = part.Replace(" ", "");
-            return SafeParser.ToNumber<short?>(part);
+            var result = SafeParser.ToNumber<short?>(part);
+            if((result ?? 0) == 0)
+            {
+                var firstNumber = filename.IndexOfAny("0123456789".ToCharArray());
+                part = filename.Substring(firstNumber, 2);
+                result = SafeParser.ToNumber<short?>(part);
+            }
+            return result;
         }
 
         public static int? ParseDiscNumber(string input)

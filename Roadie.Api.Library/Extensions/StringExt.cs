@@ -55,6 +55,10 @@ namespace Roadie.Library.Extensions
                 result = result.Replace(kvp.Key, kvp.ReplaceWith, StringComparison.OrdinalIgnoreCase);
             }
             result = result.Trim().ToTitleCase(false);
+            if(string.IsNullOrEmpty(result))
+            {
+                return input;
+            }
             var rs = removeStringsRegex ?? settings.Processing.RemoveStringsRegex;
             if (!string.IsNullOrEmpty(rs))
             {

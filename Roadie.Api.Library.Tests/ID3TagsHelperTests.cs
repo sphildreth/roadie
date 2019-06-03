@@ -194,7 +194,8 @@ namespace Roadie.Library.Tests
         [InlineData("1. Up.mp3")]
         [InlineData("1- Up.mp3")] 
         [InlineData("(01) [Iperyt] The Black Emperor.mp3")]
-        [InlineData("[01] [Iperyt] The Black Emperor.mp3")]
+        [InlineData("[01] [Iperyt] The Black Emperor.mp3")] 
+        [InlineData("Van Morrison - 01 - Some Peace of Mind (with Bobby Womack).mp3")] 
         public void DetermineTrackNumber(string filename)
         {
             var tn = ID3TagsHelper.DetermineTrackNumber(filename);

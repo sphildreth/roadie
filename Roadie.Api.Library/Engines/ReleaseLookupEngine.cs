@@ -904,6 +904,11 @@ namespace Roadie.Library.Engines
             {
                 result.Thumbnail = ImageHelper.ResizeImage(result.Thumbnail, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
                 result.Thumbnail = ImageHelper.ConvertToJpegFormat(result.Thumbnail);
+                if(result.Thumbnail.Length >= 65535)
+                {
+                    Logger.LogWarning($"Release Thumbnail larger than maximum size after resizing to [{ this.Configuration.ThumbnailImageSize.Width }x{ this.Configuration.ThumbnailImageSize.Height}] Thumbnail Size [{ result.Thumbnail.Length }]");
+                    result.Thumbnail = null;
+                }
             }
             sw.Stop();
             return new OperationResult<Data.Release>
