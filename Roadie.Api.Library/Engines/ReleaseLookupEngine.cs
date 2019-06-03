@@ -10,6 +10,7 @@ using Roadie.Library.Extensions;
 using Roadie.Library.Factories;
 using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.Audio;
+using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.SearchEngines.Imaging;
 using Roadie.Library.SearchEngines.MetaData;
 using Roadie.Library.Utility;
@@ -219,10 +220,16 @@ namespace Roadie.Library.Engines
                     {
                         foreach (var releaseGenreTable in releaseGenreTables)
                         {
-                            var genreName = releaseGenreTable.Genre.Name.ToLower().Trim();
+                            var genreName = releaseGenreTable.Genre?.Name?.ToLower().Trim();
                             if (string.IsNullOrEmpty(genreName))
                             {
                                 continue;
+                            }
+                            if (genreName.Length > 100)
+                            {
+                                var originalName = genreName;
+                                genreName = genreName.Substring(0, 99);
+                                this.Logger.LogWarning($"Genre Name Too long was [{ originalName }] truncated to [{ genreName }]");
                             }
                             var genre = this.DbContext.Genres.FirstOrDefault(x => x.Name.ToLower().Trim() == genreName);
                             if (genre == null)
@@ -731,10 +738,13 @@ namespace Roadie.Library.Engines
                     var rg = releaseGenre.Trim();
                     if (!string.IsNullOrEmpty(rg))
                     {
-                        result.Genres.Add(new Data.ReleaseGenre
+                        foreach (var g in ID3TagsHelper.SplitGenre(rg))
                         {
-                            Genre = (this.DbContext.Genres.Where(x => x.Name.ToLower() == rg.ToLower()).FirstOrDefault() ?? new Data.Genre { Name = rg })
-                        });
+                            result.Genres.Add(new Data.ReleaseGenre
+                            {
+                                Genre = (this.DbContext.Genres.Where(x => x.Name.ToLower() == g.ToLower()).FirstOrDefault() ?? new Data.Genre { Name = g })
+                            });
+                        }
                     }
                 };
             }

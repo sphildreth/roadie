@@ -362,7 +362,7 @@ namespace Roadie.Library.MetaData.ID3Tags
                 result.Release = theTrack.Album;
                 result.Artist = theTrack.AlbumArtist ?? theTrack.Artist;
                 result.ArtistRaw = theTrack.AlbumArtist ?? theTrack.Artist;
-                result.Genres = theTrack.Genre?.Split(new char[] { ',', '\\' });
+                result.Genres = ID3TagsHelper.SplitGenre(theTrack.Genre);
                 result.TrackArtist = theTrack.OriginalArtist ?? theTrack.Artist ?? theTrack.AlbumArtist;
                 result.TrackArtistRaw = theTrack.OriginalArtist ?? theTrack.Artist ?? theTrack.AlbumArtist;
                 result.AudioBitrate = (int?)theTrack.Bitrate;
@@ -398,6 +398,17 @@ namespace Roadie.Library.MetaData.ID3Tags
             };
         }
 
+        public static ICollection<string> SplitGenre(string genre)
+        {
+            if(string.IsNullOrEmpty(genre))
+            {
+                return null;
+            }
+            genre = genre.Replace(" / ", "/").Replace(" \\ ", "/").Replace("\\", "/");
+            return genre?.Split(new char[] { ',', ';', '|', '/' });
+        }
+
+
         private OperationResult<AudioMetaData> MetaDataForFileFromIdSharp(string fileName)
         {
             var sw = new Stopwatch();
@@ -420,7 +431,7 @@ namespace Roadie.Library.MetaData.ID3Tags
                     result.Comments = id3v2.CommentsList != null ? string.Join("|", id3v2.CommentsList?.Select(x => x.Value)) : null;
                     result.Disk = ID3TagsHelper.ParseDiscNumber(id3v2.DiscNumber);
                     result.DiskSubTitle = id3v2.SetSubtitle;
-                    result.Genres = id3v2.Genre?.Split(new char[] { ',', '\\', ';', '|' });
+                    result.Genres = ID3TagsHelper.SplitGenre(id3v2.Genre);
                     result.Release = id3v2.Album;
                     result.TrackArtist = id3v2.OriginalArtist ?? id3v2.Artist ?? id3v2.AlbumArtist;
                     result.TrackArtistRaw = id3v2.OriginalArtist ?? id3v2.Artist ?? id3v2.AlbumArtist;
