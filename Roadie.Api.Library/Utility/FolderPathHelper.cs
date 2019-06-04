@@ -150,7 +150,7 @@ namespace Roadie.Library.Utility
         public static string TrackFileName(IRoadieSettings configuration, AudioMetaData metaData)
         {
             var fileInfo = new FileInfo(metaData.Filename);
-            return FolderPathHelper.TrackFileName(configuration, metaData.Release, metaData.TrackNumber ?? 0, metaData.Disk, metaData.TotalTrackNumbers, fileInfo.Extension.ToLower());
+            return FolderPathHelper.TrackFileName(configuration, metaData.Release, metaData.TrackNumber ?? 0, metaData.Disc, metaData.TotalTrackNumbers, fileInfo.Extension.ToLower());
         }
 
         /// <summary>
@@ -158,10 +158,10 @@ namespace Roadie.Library.Utility
         /// </summary>
         /// <param name="trackTitle">Title of the Track</param>
         /// <param name="trackNumber">Track Number</param>
-        /// <param name="diskNumber">Optional disk number defaults to 0</param>
+        /// <param name="discNumber">Optional disc number defaults to 0</param>
         /// <param name="totalTrackNumber">Optional Total Tracks defaults to TrackNumber</param>
         /// <param name="fileExtension">Optional File Extension defaults to mp3</param>
-        public static string TrackFileName(IRoadieSettings configuration, string trackTitle, short trackNumber, int? diskNumber = null, int? totalTrackNumber = null, string fileExtension = "mp3")
+        public static string TrackFileName(IRoadieSettings configuration, string trackTitle, short trackNumber, int? discNumber = null, int? totalTrackNumber = null, string fileExtension = "mp3")
         {
             SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(trackTitle), "Invalid Track Title");
             SimpleContract.Requires<ArgumentException>(trackNumber > 0, "Invalid Track Number");
@@ -170,8 +170,8 @@ namespace Roadie.Library.Utility
             // If the total number of tracks is more than 99 or the track number itself is more than 99 then 3 pad else 2 pad
             var track = (totalTrackNumber ?? trackNumber) > 99 || trackNumber > 99 ? trackNumber.ToString("D3") : trackNumber.ToString("D2");
             // Put an "m" for media on the TPOS greater than 1 so the directory sorts proper
-            var dn = diskNumber ?? 0;
-            var disk = dn > 1 ? string.Format("m{0} ", dn.ToString("D3")) : string.Empty;
+            var dn = discNumber ?? 0;
+            var disc = dn > 1 ? string.Format("m{0} ", dn.ToString("D3")) : string.Empty;
 
             // Get new name for file
             var fileNameFromTitle = trackTitle.ToTitleCase(false).ToFileNameFriendly();
@@ -193,7 +193,7 @@ namespace Roadie.Library.Utility
                 }
             }
 
-            return string.Format("{0}{1} {2}.{3}", disk, track, fileNameFromTitle, fileExtension.ToLower());
+            return string.Format("{0}{1} {2}.{3}", disc, track, fileNameFromTitle, fileExtension.ToLower());
         }
 
         /// <summary>
@@ -205,7 +205,7 @@ namespace Roadie.Library.Utility
         public static string TrackFullPath(IRoadieSettings configuration, AudioMetaData metaData, string destinationFolder = null, string artistFolder = null, string releaseFolder = null)
         {
             return FolderPathHelper.TrackFullPath(configuration, metaData.Artist, metaData.Release, SafeParser.ToDateTime(metaData.Year).Value, 
-                                                  metaData.Title, metaData.TrackNumber ?? 0, destinationFolder, metaData.Disk ?? 0, 
+                                                  metaData.Title, metaData.TrackNumber ?? 0, destinationFolder, metaData.Disc ?? 0, 
                                                   metaData.TotalTrackNumbers ?? 0, 
                                                   artistFolder: artistFolder,
                                                   releaseFolder: releaseFolder);
@@ -232,15 +232,15 @@ namespace Roadie.Library.Utility
         /// <param name="releaseDate">Date of Release</param>
         /// <param name="trackNumber">Track Number</param>
         /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
-        /// <param name="diskNumber">Optional disk number defaults to 0</param>
+        /// <param name="discNumber">Optional disc number defaults to 0</param>
         /// <param name="totalTrackNumber">Optional Total Tracks defaults to TrackNumber</param>
         /// <param name="fileExtension">Optional File Extension defaults to mp3</param>
-        public static string TrackFullPath(IRoadieSettings configuration, string artistSortName, string releaseTitle, DateTime releaseDate, string trackTitle, short trackNumber, string destinationFolder = null, int? diskNumber = null, int? totalTrackNumber = null, string fileExtension = "mp3", string artistFolder = null, string releaseFolder = null)
+        public static string TrackFullPath(IRoadieSettings configuration, string artistSortName, string releaseTitle, DateTime releaseDate, string trackTitle, short trackNumber, string destinationFolder = null, int? discNumber = null, int? totalTrackNumber = null, string fileExtension = "mp3", string artistFolder = null, string releaseFolder = null)
         {
             destinationFolder = destinationFolder ?? configuration.LibraryFolder;
             artistFolder = artistFolder ?? FolderPathHelper.ArtistPath(configuration, artistSortName, destinationFolder);
             releaseFolder = releaseFolder ?? FolderPathHelper.ReleasePath(artistFolder, releaseTitle, releaseDate);
-            var trackFileName = FolderPathHelper.TrackFileName(configuration, trackTitle, trackNumber, diskNumber, totalTrackNumber, fileExtension);
+            var trackFileName = FolderPathHelper.TrackFileName(configuration, trackTitle, trackNumber, discNumber, totalTrackNumber, fileExtension);
 
             var result = Path.Combine(artistFolder, releaseFolder, trackFileName);
             var resultInfo = new DirectoryInfo(result);
@@ -281,12 +281,12 @@ namespace Roadie.Library.Utility
         /// <param name="releaseDate">Date of Release</param>
         /// <param name="trackNumber">Track Number</param>
         /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
-        /// <param name="diskNumber">Optional disk number defaults to 0</param>
+        /// <param name="discNumber">Optional disc number defaults to 0</param>
         /// <param name="totalTrackNumber">Optional Total Tracks defaults to TrackNumber</param>
         /// <param name="fileExtension">Optional File Extension defaults to mp3</param>
-        public static string TrackPath(IRoadieSettings configuration, string artistSortName, string releaseTitle, DateTime releaseDate, string trackTitle, short trackNumber, string destinationFolder = null, int? diskNumber = null, int? totalTrackNumber = null, string fileExtension = "mp3")
+        public static string TrackPath(IRoadieSettings configuration, string artistSortName, string releaseTitle, DateTime releaseDate, string trackTitle, short trackNumber, string destinationFolder = null, int? discNumber = null, int? totalTrackNumber = null, string fileExtension = "mp3")
         {
-            var fileInfo = new FileInfo(FolderPathHelper.TrackFullPath(configuration, artistSortName, releaseTitle, releaseDate, trackTitle, trackNumber, destinationFolder, diskNumber, totalTrackNumber));
+            var fileInfo = new FileInfo(FolderPathHelper.TrackFullPath(configuration, artistSortName, releaseTitle, releaseDate, trackTitle, trackNumber, destinationFolder, discNumber, totalTrackNumber));
             return fileInfo.Directory.Name;
         }
     }

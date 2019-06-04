@@ -156,7 +156,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
                             Title = track.title,
                             Time = track.length.HasValue ? (TimeSpan?)TimeSpan.FromMilliseconds(track.length.Value) : null,
                             TrackNumber = SafeParser.ToNumber<short?>(track.position ?? track.number) ?? 0,
-                            Disk = media.position,
+                            Disc = media.position,
                             Year = date > 0 ? (int?)date : null,
                             TotalTrackNumbers = media.trackcount,
                             //tagFile.Tag.Pictures.Select(x => new AudoMetaDataImage

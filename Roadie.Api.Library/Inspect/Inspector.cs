@@ -6,19 +6,18 @@ using Newtonsoft.Json;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
-using Roadie.Library.Inspect.Plugins;
-using Roadie.Library.Inspect.Plugins.File;
+using Roadie.Library.Imaging;
 using Roadie.Library.Inspect.Plugins.Directory;
+using Roadie.Library.Inspect.Plugins.File;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.Processors;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Roadie.Library.Imaging;
-using Roadie.Library.Utility;
 
 namespace Roadie.Library.Inspect
 {
@@ -26,42 +25,9 @@ namespace Roadie.Library.Inspect
     {
         private static readonly string Salt = "6856F2EE-5965-4345-884B-2CCA457AAF59";
 
-        private IEnumerable<IInspectorFilePlugin> _filePlugins = null;
         private IEnumerable<IInspectorDirectoryPlugin> _directoryPlugins = null;
-
+        private IEnumerable<IInspectorFilePlugin> _filePlugins = null;
         public DictionaryCacheManager CacheManager { get; }
-
-        public IEnumerable<IInspectorFilePlugin> FilePlugins
-        {
-            get
-            {
-                if (_filePlugins == null)
-                {
-                    var plugins = new List<IInspectorFilePlugin>();
-                    try
-                    {
-                        var type = typeof(IInspectorFilePlugin);
-                        var types = AppDomain.CurrentDomain.GetAssemblies()
-                            .SelectMany(s => s.GetTypes())
-                            .Where(p => type.IsAssignableFrom(p));
-                        foreach (Type t in types)
-                        {
-                            if (t.GetInterface("IInspectorFilePlugin") != null && !t.IsAbstract && !t.IsInterface)
-                            {
-                                IInspectorFilePlugin plugin = Activator.CreateInstance(t, new object[] { Configuration, CacheManager, Logger, TagsHelper }) as IInspectorFilePlugin;
-                                plugins.Add(plugin);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogError(ex);
-                    }
-                    _filePlugins = plugins.ToArray();
-                }
-                return _filePlugins;
-            }
-        }
 
         public IEnumerable<IInspectorDirectoryPlugin> DirectoryPlugins
         {
@@ -92,6 +58,38 @@ namespace Roadie.Library.Inspect
                     _directoryPlugins = plugins.ToArray();
                 }
                 return _directoryPlugins;
+            }
+        }
+
+        public IEnumerable<IInspectorFilePlugin> FilePlugins
+        {
+            get
+            {
+                if (_filePlugins == null)
+                {
+                    var plugins = new List<IInspectorFilePlugin>();
+                    try
+                    {
+                        var type = typeof(IInspectorFilePlugin);
+                        var types = AppDomain.CurrentDomain.GetAssemblies()
+                            .SelectMany(s => s.GetTypes())
+                            .Where(p => type.IsAssignableFrom(p));
+                        foreach (Type t in types)
+                        {
+                            if (t.GetInterface("IInspectorFilePlugin") != null && !t.IsAbstract && !t.IsInterface)
+                            {
+                                IInspectorFilePlugin plugin = Activator.CreateInstance(t, new object[] { Configuration, CacheManager, Logger, TagsHelper }) as IInspectorFilePlugin;
+                                plugins.Add(plugin);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex);
+                    }
+                    _filePlugins = plugins.ToArray();
+                }
+                return _filePlugins;
             }
         }
 
@@ -126,6 +124,10 @@ namespace Roadie.Library.Inspect
             TagsHelper = new ID3TagsHelper(Configuration, CacheManager, Logger);
         }
 
+        public static string ArtistInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist);
+
+        public static string ReleaseInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist + metaData.Release);
+
         public static string ToToken(string input)
         {
             var hashids = new Hashids(Salt);
@@ -143,10 +145,6 @@ namespace Roadie.Library.Inspect
             var token = hashids.Encode(numbers);
             return token;
         }
-
-        public static string ArtistInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist);
-
-        public static string ReleaseInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist + metaData.Release);
 
         public void Inspect(bool doCopy, bool isReadOnly, string directoryToInspect, string destination, bool dontAppendSubFolder, bool dontDeleteEmptyFolders)
         {
@@ -203,7 +201,7 @@ namespace Roadie.Library.Inspect
                             Console.WriteLine($"Plugin Failed: Error [{ JsonConvert.SerializeObject(pluginResult)}]");
                             return;
                         }
-                        else if(!string.IsNullOrEmpty(pluginResult.Data))
+                        else if (!string.IsNullOrEmpty(pluginResult.Data))
                         {
                             Console.WriteLine($"╠╣ Directory Plugin Message: { pluginResult.Data }");
                         }
@@ -296,7 +294,7 @@ namespace Roadie.Library.Inspect
                             {
                                 releasesFound.Add(releaseToken);
                             }
-                            var newFileName = $"CD{ (tagLib.Data.Disk ?? ID3TagsHelper.DetermineDiscNumber(tagLib.Data)).ToString("000") }_{ tagLib.Data.TrackNumber.Value.ToString("0000") }.mp3";
+                            var newFileName = $"CD{ (tagLib.Data.Disc ?? ID3TagsHelper.DetermineDiscNumber(tagLib.Data)).ToString("000") }_{ tagLib.Data.TrackNumber.Value.ToString("0000") }.mp3";
                             // Artist sub folder is created to hold Releases for Artist and Artist Images
                             var artistSubDirectory = directory == dest ? fileInfo.DirectoryName : Path.Combine(dest, artistToken);
                             // Each release is put into a subfolder into the current run Inspector folder to hold MP3 Files and Release Images
@@ -328,6 +326,9 @@ namespace Roadie.Library.Inspect
                                 {
                                     fileInfo.CopyTo(newPath, true);
                                 }
+                                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                                Console.WriteLine($"╠═» { (doCopy ? "Copied" : "Moved")} MP3 File to [{ newPath }]");
+                                Console.ResetColor();
                             }
                             if (!inspectedImagesInDirectories.Contains(directoryInfo.FullName))
                             {
@@ -404,6 +405,9 @@ namespace Roadie.Library.Inspect
                 {
                     image.CopyTo(newImagePath, true);
                 }
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine($"╠═» { (doCopy ? "Copied" : "Moved")} Image File to [{ newImagePath }]");
+                Console.ResetColor();
             }
         }
 

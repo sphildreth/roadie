@@ -179,7 +179,11 @@ namespace Roadie.Library.Tests
         [Theory]
         [InlineData("Angie (Limited)")]
         [InlineData("Angie CD1")]
+        [InlineData("Angie CD 1")]
+        [InlineData("Angie CD #2")]
         [InlineData("Angie CD2")]
+        [InlineData("Angie CD-2")]
+        [InlineData("Angie CD_2")]
         [InlineData("Angie CD23")]
         [InlineData("Angie - CD1")]
         [InlineData("Angie (Limited Edition)")]
@@ -204,10 +208,11 @@ namespace Roadie.Library.Tests
         [InlineData("Angie [2006, Self Released]")]
         [InlineData("Angie (2002 Expanded Edition)")]
         [InlineData("Angie (2004 Remastered)")]
-        [InlineData("Angie (Japan Ltd Dig")]
+        [InlineData("Angie (Japan Ltd Dig")] 
+        [InlineData("Angie (Japan Release)")]
         public void CleanString_Release_Should_Be_Angie(string input)
         {
-            var r = @"(\s*(-\s)*((CD[0-9][0-9]*)))|((\(|\[)+([0-9]|,|self|bonus|re(leas|master|(e|d)*)*|th|anniversary|cd|disc|deluxe|dig(ipack)*|vinyl|japan(ese)*|asian|remastered|limited|ltd|expanded|edition|\s)+(]|\)*))";
+            var r = @"(\s*(-\s)*((CD[_\-#\s]*[0-9]*)))|((\(|\[)+([0-9]|,|self|bonus|re(leas|master|(e|d)*)*|th|anniversary|cd|disc|deluxe|dig(ipack)*|vinyl|japan(ese)*|asian|remastered|limited|ltd|expanded|edition|\s)+(]|\)*))";
             var cleaned = input.CleanString(this.Configuration, r);
             Assert.Equal("Angie", cleaned);
         }

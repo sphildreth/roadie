@@ -291,7 +291,7 @@ namespace Roadie.Library.MetaData.ID3Tags
                 var trackNumber = metaData.TrackNumber ?? 1;
                 var totalTrackNumber = metaData.TotalTrackNumbers ?? trackNumber;
 
-                var disc = metaData.Disk ?? 1;
+                var disc = metaData.Disc ?? 1;
                 var discCount = metaData.TotalDiscCount ?? disc;
 
                 IID3v2Tag id3v2 = new ID3v2Tag(filename)
@@ -367,10 +367,10 @@ namespace Roadie.Library.MetaData.ID3Tags
                 result.TrackArtistRaw = theTrack.OriginalArtist ?? theTrack.Artist ?? theTrack.AlbumArtist;
                 result.AudioBitrate = (int?)theTrack.Bitrate;
                 result.AudioSampleRate = (int)theTrack.Bitrate;
-                result.Disk = theTrack.DiscNumber;
+                result.Disc = theTrack.DiscNumber;
                 if (theTrack.AdditionalFields.ContainsKey("TSST"))
                 {
-                    result.DiskSubTitle = theTrack.AdditionalFields["TSST"];
+                    result.DiscSubTitle = theTrack.AdditionalFields["TSST"];
                 }
                 result.Images = theTrack.EmbeddedPictures?.Select(x => new AudioMetaDataImage
                 {
@@ -429,8 +429,8 @@ namespace Roadie.Library.MetaData.ID3Tags
                     result.AudioChannels = audioFile.Channels;
                     result.AudioSampleRate = (int)audioFile.Bitrate;
                     result.Comments = id3v2.CommentsList != null ? string.Join("|", id3v2.CommentsList?.Select(x => x.Value)) : null;
-                    result.Disk = ID3TagsHelper.ParseDiscNumber(id3v2.DiscNumber);
-                    result.DiskSubTitle = id3v2.SetSubtitle;
+                    result.Disc = ID3TagsHelper.ParseDiscNumber(id3v2.DiscNumber);
+                    result.DiscSubTitle = id3v2.SetSubtitle;
                     result.Genres = ID3TagsHelper.SplitGenre(id3v2.Genre);
                     result.Release = id3v2.Album;
                     result.TrackArtist = id3v2.OriginalArtist ?? id3v2.Artist ?? id3v2.AlbumArtist;

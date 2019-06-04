@@ -29,8 +29,12 @@ namespace Roadie.Library.Inspect.Plugins.File
             {
                 artist = artist.Replace(replace, splitCharacter, StringComparison.OrdinalIgnoreCase);
             }
+            var originalArtist = artist;
             var result = artist.CleanString(this.Configuration, this.Configuration.Processing.ArtistRemoveStringsRegex).ToTitleCase(doPutTheAtEnd: false);
-
+            if(string.IsNullOrEmpty(result))
+            {
+                result = originalArtist;
+            }
             if (!string.IsNullOrEmpty(result) && !string.IsNullOrEmpty(trackArtist))
             {
                 result = result.Replace(splitCharacter + trackArtist + splitCharacter, "", StringComparison.OrdinalIgnoreCase);

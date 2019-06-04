@@ -15,8 +15,8 @@ namespace Roadie.Library.MetaData.Audio
         int? AudioSampleRate { get; set; }
         string Comments { get; set; }
         string Directory { get; }
-        int? Disk { get; set; }
-        string DiskSubTitle { get; set; }
+        int? Disc { get; set; }
+        string DiscSubTitle { get; set; }
         FileInfo FileInfo { get; }
         string Filename { get; set; }
         ICollection<string> Genres { get; set; }

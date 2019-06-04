@@ -118,12 +118,12 @@ namespace Roadie.Library.MetaData.Audio
         /// <summary>
         /// TPOS
         /// </summary>
-        public int? Disk { get; set; }
+        public int? Disc { get; set; }
 
         /// <summary>
         /// TSST
         /// </summary>
-        public string DiskSubTitle { get; set; }
+        public string DiscSubTitle { get; set; }
 
         /// <summary>
         /// Full filename to the file used to get this AudioMetaData
@@ -388,7 +388,12 @@ namespace Roadie.Library.MetaData.Audio
             {
                 result += $", TrackArtist: { this.TrackArtist}";
             }
-            result += $", Release: {this.Release}, TrackNumber: {this.TrackNumber}, TrackTotal: {this.TotalTrackNumbers}, Title: {this.Title}, Year: {this.Year}, Duration: {(this.Time == null ? "-" : this.Time.Value.ToString())}";
+            result += $", Release: {this.Release}, TrackNumber: {this.TrackNumber}, TrackTotal: {this.TotalTrackNumbers}";
+            if(this.TotalDiscCount > 1)
+            {
+                result += $", Disc: { this.Disc }/{ this.TotalDiscCount}";
+            }
+            result += $", Title: {this.Title}, Year: {this.Year}, Duration: {(this.Time == null ? "-" : this.Time.Value.ToString())}";
             return result;
         }
     }

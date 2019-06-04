@@ -46,6 +46,9 @@ namespace Roadie.Library.Tests
         [InlineData("Cover.jpg")]
         [InlineData("cover.png")]
         [InlineData("Cover.Jpg")]
+        [InlineData("Cover.JPG")]
+        [InlineData("Cover.PNG")]
+        [InlineData("CvR.Jpg")]
         [InlineData("Release.JPG")]
         [InlineData("folder.JPG")]
         [InlineData("front.jpg")]
@@ -170,9 +173,15 @@ namespace Roadie.Library.Tests
         [InlineData("Back.jpg")]
         [InlineData("BAcK.JPg")]
         [InlineData("Cd.jpg")]
-        [InlineData("CD.JPG")]
+        [InlineData("CD.JPG")] 
         [InlineData("Cd1.jpg")]
+        [InlineData("CD-1.jpg")]
+        [InlineData("CD 1.jpg")]
+        [InlineData("CD_1.jpg")]
+        [InlineData("CD-5.jpg")]
         [InlineData("CD3.jpg")]
+        [InlineData("Scan-1.jpg")]
+        [InlineData("Scan-12.jpg")]
         [InlineData("cover_01.jpg")]
         [InlineData("cover 03.jpg")]
         [InlineData("cover 1.jpg")]
@@ -201,6 +210,8 @@ namespace Roadie.Library.Tests
         [InlineData("Booklet#2.jpg")] 
         [InlineData("traycard.png")] 
         [InlineData("Jewel Case.jpg")]
+        [InlineData("Matrix-1.jpg")]
+        [InlineData("Matrix 1.jpg")]
         public void Test_Should_Be_Release_Secondary_Images(string input)
         {
             Assert.True(ImageHelper.IsReleaseSecondaryImage(new FileInfo(input)));
@@ -248,8 +259,9 @@ namespace Roadie.Library.Tests
             }
             var cover = ImageHelper.FindImageTypeInDirectory(folder, Enums.ImageType.Release);
             Assert.NotNull(cover);
-            Assert.Single(cover);
-            Assert.Equal("cover.jpg", cover.First().Name);
+
+            var secondaryImages = ImageHelper.FindImageTypeInDirectory(folder, Enums.ImageType.ReleaseSecondary, SearchOption.AllDirectories);
+            Assert.NotNull(secondaryImages);
         }
 
         [Fact]

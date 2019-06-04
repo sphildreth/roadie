@@ -174,7 +174,7 @@ namespace Roadie.Library.MetaData.Audio
             result.Year = left.Year.Or(right.Year);
             result.TrackNumber = left.TrackNumber.Or(right.TrackNumber);
             result.TotalTrackNumbers = left.TotalTrackNumbers.Or(right.TotalTrackNumbers);
-            result.Disk = left.Disk.Or(right.Disk);
+            result.Disc = left.Disc.Or(right.Disc);
             result.Time = left.Time ?? right.Time;
             result.AudioBitrate = left.AudioBitrate.Or(right.AudioBitrate);
             result.AudioChannels = left.AudioChannels.Or(right.AudioChannels);

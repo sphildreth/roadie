@@ -22,7 +22,12 @@ namespace Roadie.Library.Inspect.Plugins.File
             var result = new OperationResult<AudioMetaData>();
             if (this.Configuration.Processing.DoAudioCleanup)
             {
+                var originalRelease = metaData.Release;
                 metaData.Release = metaData.Release?.CleanString(this.Configuration, this.Configuration.Processing.ReleaseRemoveStringsRegex).ToTitleCase(doPutTheAtEnd: false);
+                if(string.IsNullOrEmpty(metaData.Release))
+                {
+                    metaData.Release = originalRelease;
+                }
             }
             result.Data = metaData;
             result.IsSuccess = true;

@@ -248,7 +248,7 @@ namespace Roadie.Library.MetaData.FileName
                 return new AudioMetaData
                 {
                     Artist = CleanString(artist),
-                    Disk = SafeParser.ToNumber<int?>(CleanString(tpos)),
+                    Disc = SafeParser.ToNumber<int?>(CleanString(tpos)),
                     Release = CleanString(Release),
                     TrackNumber = SafeParser.ToNumber<short?>(CleanString(trck)),
                     Title = CleanString(title)

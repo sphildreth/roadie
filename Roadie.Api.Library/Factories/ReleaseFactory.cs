@@ -596,7 +596,7 @@ namespace Roadie.Library.Factories
                             var trackHash = HashHelper.CreateMD5(release.ArtistId.ToString() + file.LastWriteTimeUtc.GetHashCode().ToString() + audioMetaData.GetHashCode().ToString());
                             totalNumberOfTracksFound++;
                             totalTrackCount = totalTrackCount ?? (short)(audioMetaData.TotalTrackNumbers ?? 0);
-                            var releaseMediaNumber = (short)(audioMetaData.Disk ?? 1);
+                            var releaseMediaNumber = (short)(audioMetaData.Disc ?? 1);
                             if (!releaseMediaTotalNumberOfTracks.ContainsKey(releaseMediaNumber))
                             {
                                 releaseMediaTotalNumberOfTracks.Add(releaseMediaNumber, (short)(audioMetaData.TotalTrackNumbers ?? 0));

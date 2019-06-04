@@ -74,7 +74,7 @@ namespace Roadie.Library.FilePlugins
                 var title = metaData.Title.CleanString(this.Configuration).ToTitleCase(false);
                 var year = metaData.Year;
                 var trackNumber = metaData.TrackNumber ?? 0;
-                var diskNumber = metaData.Disk ?? 0;
+                var discNumber = metaData.Disc ?? 0;
 
                 SimpleContract.Requires(metaData.IsValid, "Track MetaData Invalid");
                 SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artist), "Missing Track Artist");

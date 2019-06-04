@@ -368,7 +368,7 @@ namespace Roadie.Library.Tests
                 Assert.NotNull(metaData.Release);
                 Assert.NotNull(metaData.Title);
                 Assert.True(metaData.Year > 0);
-                Assert.Equal(2, metaData.Disk);
+                Assert.Equal(2, metaData.Disc);
                 Assert.NotNull(metaData.TrackNumber);
                 Assert.True(metaData.TotalSeconds > 0);
                 Assert.True(metaData.ValidWeight > 30);
