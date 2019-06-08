@@ -24,6 +24,15 @@ Built on:
 * [EF Core](https://docs.microsoft.com/en-us/ef/core/)
 * [Cachemanager](http://cachemanager.michaco.net/)
 
+Metadata Providers:
+---------
+* ID3 Tags (via [idsharp.tagging](https://github.com/RandallFlagg/IdSharpCore))
+* Discogs
+* Last.FM (via [inflatable.lastfm](https://github.com/inflatablefriends/lastfm))
+* iTunes
+* Musicbrainz
+* Wikipedia
+* Spotify
 
 Support:
 ------------
