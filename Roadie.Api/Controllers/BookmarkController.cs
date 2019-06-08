@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using System;
@@ -21,8 +22,9 @@ namespace Roadie.Api.Controllers
     {
         private IBookmarkService BookmarkService { get; }
 
-        public BookmarkController(IBookmarkService bookmarkService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
-            : base(cacheManager, configuration, userManager)
+        public BookmarkController(IBookmarkService bookmarkService, ILoggerFactory logger, ICacheManager cacheManager, 
+                                  UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+            : base(cacheManager, roadieSettings, userManager)
         {
             this.Logger = logger.CreateLogger("RoadieApi.Controllers.BookmarkController");
             this.BookmarkService = bookmarkService;

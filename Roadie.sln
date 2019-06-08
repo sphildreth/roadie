@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29001.49
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Roadie.Api", "Roadie.Api\Roadie.Api.csproj", "{68C80416-0D72-409D-B727-3FEA7AB7FD2C}"
 EndProject
@@ -12,13 +12,14 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{1BA7115B-6E37-4546-BBD6-C8B0787A3FE0}"
 	ProjectSection(SolutionItems) = preProject
 		roadie.sql = roadie.sql
+		Upgrade0001.sql = Upgrade0001.sql
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Roadie.Api.Services", "Roadie.Api.Services\Roadie.Api.Services.csproj", "{7B37031E-F2AE-4BE2-9F6F-005CA7A6FDF1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Roadie.Api.Hubs", "Roadie.Api.Hubs\Roadie.Api.Hubs.csproj", "{E740C89E-3363-4577-873B-0871823E252C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inspector", "Inspector\Inspector.csproj", "{9A0831DC-343A-4E0C-8617-AF62426F3BA8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inspector", "Inspector\Inspector.csproj", "{9A0831DC-343A-4E0C-8617-AF62426F3BA8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

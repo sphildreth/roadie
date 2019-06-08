@@ -12,27 +12,24 @@ namespace Roadie.Library.Configuration
         private string _lastFMApiKey = null;
         private bool _lastFmEnabled = true;
         private string _lastFMSecret = null;
-        public List<ApiKey> ApiKeys { get; set; }
+
+        public List<ApiKey> ApiKeys { get; set; } = new List<ApiKey>();
 
 
         public string DiscogsConsumerKey
         {
             get
             {
-                if (string.IsNullOrEmpty(this._discogsConsumerKey))
+                var keySetting = this.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey");
+                if (keySetting != null)
                 {
-                    var keySetting = this.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey");
-                    if (keySetting != null)
-                    {
-                        this._discogsConsumerKey = keySetting.Key;
-                        this._discogsConsumerSecret = keySetting.KeySecret;
-                    }
-                    else
-                    {
-                        Trace.WriteLine("Unable To Find Api Key with Key Name of 'DiscogsConsumerKey', Discogs Integration Disabled");
-                    }
+                    return keySetting.Key;
                 }
-                return this._discogsConsumerKey;
+                else
+                {
+                    Trace.WriteLine("Unable To Find Api Key with Key Name of 'DiscogsConsumerKey', Discogs Integration Disabled");
+                }
+                return null;
             }
         }
 
@@ -40,20 +37,16 @@ namespace Roadie.Library.Configuration
         {
             get
             {
-                if (string.IsNullOrEmpty(this._discogsConsumerSecret))
+                var keySetting = this.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey");
+                if (keySetting != null)
                 {
-                    var keySetting = this.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey");
-                    if (keySetting != null)
-                    {
-                        this._discogsConsumerKey = keySetting.Key;
-                        this._discogsConsumerSecret = keySetting.KeySecret;
-                    }
-                    else
-                    {
-                        Trace.WriteLine("Unable To Find Api Key with Key Name of 'DiscogsConsumerKey', Discogs Integration Disabled");
-                    }
+                    return keySetting.KeySecret;
                 }
-                return this._discogsConsumerSecret;
+                else
+                {
+                    Trace.WriteLine("Unable To Find Api Key with Key Name of 'DiscogsConsumerKey', Discogs Integration Disabled");
+                }
+                return null;
             }
         }
 
@@ -83,20 +76,16 @@ namespace Roadie.Library.Configuration
         {
             get
             {
-                if (string.IsNullOrEmpty(this._lastFMApiKey))
+                var keySetting = this.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey");
+                if (keySetting != null)
                 {
-                    var keySetting = this.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey");
-                    if (keySetting != null)
-                    {
-                        this._lastFMApiKey = keySetting.Key;
-                        this._lastFMSecret = keySetting.KeySecret;
-                    }
-                    else
-                    {
-                        Trace.WriteLine("Unable To Find Api Key with Key Name of 'LastFMApiKey', Last FM Integration Disabled");
-                    }
+                    return keySetting.Key;
                 }
-                return this._lastFMApiKey;
+                else
+                {
+                    Trace.WriteLine("Unable To Find Api Key with Key Name of 'LastFMApiKey', Last FM Integration Disabled");
+                }
+                return null;
             }
         }
 
@@ -104,20 +93,16 @@ namespace Roadie.Library.Configuration
         {
             get
             {
-                if (string.IsNullOrEmpty(this._lastFMSecret))
+                var keySetting = this.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey");
+                if (keySetting != null)
                 {
-                    var keySetting = this.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey");
-                    if (keySetting != null)
-                    {
-                        this._lastFMApiKey = keySetting.Key;
-                        this._lastFMSecret = keySetting.KeySecret;
-                    }
-                    else
-                    {
-                        Trace.WriteLine("Unable To Find Api Key with Key Name of 'LastFMApiKey', Last FM Integration Disabled");
-                    }
+                    return keySetting.KeySecret;
                 }
-                return this._lastFMSecret;
+                else
+                {
+                    Trace.WriteLine("Unable To Find Api Key with Key Name of 'LastFMApiKey', Last FM Integration Disabled");
+                }
+                return null;
             }
         }
 

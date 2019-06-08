@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Users;
@@ -26,8 +27,10 @@ namespace Roadie.Api.Controllers
         private IHttpContext RoadieHttpContext { get; }
         private IUserService UserService { get; }
 
-        public UserController(IUserService userService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, ITokenService tokenService, UserManager<ApplicationUser> userManager, IHttpContext httpContext)
-            : base(cacheManager, configuration, userManager)
+        public UserController(IUserService userService, ILoggerFactory logger, ICacheManager cacheManager, 
+                              IConfiguration configuration, ITokenService tokenService, UserManager<ApplicationUser> userManager, 
+                              IHttpContext httpContext, IRoadieSettings roadieSettings)
+            : base(cacheManager, roadieSettings, userManager)
         {
             this.Logger = logger.CreateLogger("RoadieApi.Controllers.UserController");
             this.UserService = userService;
@@ -53,6 +56,12 @@ namespace Roadie.Api.Controllers
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            result.AdditionalClientData = new System.Collections.Generic.Dictionary<string, object>();
+            if (RoadieSettings.Integrations.LastFmProviderEnabled)
+            {
+                var lastFmCallBackUrl = $"{ this.RoadieHttpContext.BaseUrl}/users/integration/grant?userId={ user.UserId }&iname=lastfm";
+                result.AdditionalClientData.Add("lastFMIntegrationUrl", $"http://www.last.fm/api/auth/?api_key={ RoadieSettings.Integrations.LastFMApiKey }&cb={ WebUtility.UrlEncode(lastFmCallBackUrl) }");
             }
             return Ok(result);
         }
@@ -262,6 +271,19 @@ namespace Roadie.Api.Controllers
             }
             this.CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
             return Ok(result);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("integration/grant")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> IntegrationGrant(Guid userId, string iname, string token)
+        {
+            var result = await this.UserService.UpdateIntegrationGrant(userId, iname, token);
+            if (!result.IsSuccess)
+            {
+                return Content($"Error while attempting to enable integration");
+            }
+            return Content($"Successfully enabled integration!");
         }
 
         [HttpPost("profile/edit")]

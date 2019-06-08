@@ -20,10 +20,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
         {
             get
             {
-                // TODO
-                //return this.Configuration.Integrations.dis.GetValue<bool>("Integrations:DiscogsProviderEnabled", true) &&
-                //       !string.IsNullOrEmpty(this.ApiKey.Key);
-                return false;
+                return this.Configuration.Integrations.DiscogsProviderEnabled;
             }
         }
 

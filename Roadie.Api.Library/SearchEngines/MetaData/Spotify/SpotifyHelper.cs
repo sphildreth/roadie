@@ -34,6 +34,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             ArtistSearchResult data = null;
             try
             {
+                // TODO update this to use https://github.com/JohnnyCrazy/SpotifyAPI-NET
+
                 this.Logger.LogTrace("SpotifyHelper:PerformArtistSearch:{0}", query);
                 var request = this.BuildSearchRequest(query, 1, "artist");
 

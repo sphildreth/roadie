@@ -26,12 +26,12 @@ namespace Roadie.Library.Data
         public int? UserId { get; set; }
 
         [Column("duration")]
-        public int? Duration { get; set; } // TODO update this on playlist edit
+        public int? Duration { get; set; }
 
         [Column("trackCount")]
-        public short TrackCount { get; set; } // TODO update this on playlist edit
+        public short TrackCount { get; set; } 
 
         [Column("releaseCount")]
-        public short ReleaseCount { get; set; } // TODO update this on playlist edit
+        public short ReleaseCount { get; set; } 
     }
 }

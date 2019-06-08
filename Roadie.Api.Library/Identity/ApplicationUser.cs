@@ -127,6 +127,10 @@ namespace Roadie.Library.Identity
         [StringLength(50)]
         public string Timezone { get; set; }
 
+        [Column("lastFMSessionKey")]
+        [StringLength(50)]
+        public string LastFMSessionKey { get; set; }
+
         public ICollection<UserTrack> TrackRatings { get; set; }
 
         public ICollection<UserQue> UserQues { get; set; }

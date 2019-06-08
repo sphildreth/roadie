@@ -73,7 +73,7 @@ namespace Roadie.Api.Services
             this.EventMessageLogger.Messages += EventMessageLogger_Messages;
 
             this.MusicBrainzProvider = new MusicBrainzProvider(configuration, cacheManager, MessageLogger);
-            this.LastFmHelper = new LastFmHelper(configuration, cacheManager, MessageLogger);
+            this.LastFmHelper = new LastFmHelper(configuration, cacheManager, MessageLogger, context, httpEncoder);
             this.FileNameHelper = new FileNameHelper(configuration, cacheManager, MessageLogger);
             this.ID3TagsHelper = new ID3TagsHelper(configuration, cacheManager, MessageLogger);
 

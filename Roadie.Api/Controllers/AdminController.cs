@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using System;
 using System.Net;
@@ -19,8 +20,9 @@ namespace Roadie.Api.Controllers
     {
         private IAdminService AdminService { get; }
 
-        public AdminController(IAdminService adminService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
-            : base(cacheManager, configuration, userManager)
+        public AdminController(IAdminService adminService, ILoggerFactory logger, ICacheManager cacheManager, 
+                               UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+            : base(cacheManager, roadieSettings, userManager)
         {
             this.Logger = logger.CreateLogger("RoadieApi.Controllers.AdminController");
             this.AdminService = adminService;

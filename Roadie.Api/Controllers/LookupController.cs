@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
+using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using System;
 using System.Net;
@@ -20,8 +21,9 @@ namespace Roadie.Api.Controllers
     {
         private ILookupService LookupService { get; }
 
-        public LookupController(ILabelService labelService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager, ILookupService lookupService)
-            : base(cacheManager, configuration, userManager)
+        public LookupController(ILabelService labelService, ILoggerFactory logger, ICacheManager cacheManager, 
+                                UserManager<ApplicationUser> userManager, ILookupService lookupService, IRoadieSettings roadieSettings)
+            : base(cacheManager, roadieSettings, userManager)
         {
             this.Logger = logger.CreateLogger("RoadieApi.Controllers.LookupController");
             this.LookupService = lookupService;

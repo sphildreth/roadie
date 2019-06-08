@@ -28,5 +28,14 @@ namespace Roadie.Library.Extensions
             var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             return Convert.ToInt64((date - epoch).TotalSeconds);
         }
+
+        public static int ToUnixTimeSinceEpoch(this DateTime dateTime)
+        {
+            DateTime utcDateTime = dateTime.ToUniversalTime();
+            var jan1St1970 = new DateTime(1970, 1, 1, 0, 0, 0);
+
+            TimeSpan timeSinceJan1St1970 = utcDateTime.Subtract(jan1St1970);
+            return (int)timeSinceJan1St1970.TotalSeconds;
+        }
     }
 }
