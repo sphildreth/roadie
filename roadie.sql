@@ -658,6 +658,7 @@ CREATE TABLE `user` (
   `PhoneNumber` varchar(100) DEFAULT NULL,
   `PhoneNumberConfirmed` bit(1) DEFAULT NULL,
   `removeTrackFromQueAfterPlayed` bit(1) DEFAULT NULL,
+  `lastFMSessionKey` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `ix_user_username` (`username`),

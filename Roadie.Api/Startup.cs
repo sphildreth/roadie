@@ -22,6 +22,8 @@ using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
+using Roadie.Library.MetaData.LastFm;
+using Roadie.Library.Scrobble;
 using Roadie.Library.Utility;
 using System;
 using System.Diagnostics;
@@ -154,28 +156,29 @@ namespace Roadie.Api
                 if (integrationKeys != null)
                 {
                     settings.Integrations.ApiKeys = new System.Collections.Generic.List<ApiKey>
-                {
-                    new ApiKey
                     {
-                        ApiName = "LastFMApiKey",
-                        Key = integrationKeys.LastFMApiKey,
-                        KeySecret = integrationKeys.LastFMSecret
-                    },
-                    new ApiKey
-                    {
-                        ApiName = "DiscogsConsumerKey",
-                        Key = integrationKeys.DiscogsConsumerKey,
-                        KeySecret = integrationKeys.DiscogsConsumerSecret
-                    },
-                    new ApiKey
-                    {
-                        ApiName = "BingImageSearch",
-                        Key = integrationKeys.BingImageSearch
-                    }
-                };
+                        new ApiKey
+                        {
+                            ApiName = "LastFMApiKey",
+                            Key = integrationKeys.LastFMApiKey,
+                            KeySecret = integrationKeys.LastFMSecret
+                        },
+                        new ApiKey
+                        {
+                            ApiName = "DiscogsConsumerKey",
+                            Key = integrationKeys.DiscogsConsumerKey,
+                            KeySecret = integrationKeys.DiscogsConsumerSecret
+                        },
+                        new ApiKey
+                        {
+                            ApiName = "BingImageSearch",
+                            Key = integrationKeys.BingImageSearch
+                        }
+                    };
                 }
                 return settings;
             });
+
             services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
             services.AddSingleton<IDefaultNotFoundImages, DefaultNotFoundImages>();
             services.AddScoped<IStatisticsService, StatisticsService>();
@@ -189,6 +192,7 @@ namespace Roadie.Api
             services.AddScoped<ILabelService, LabelService>();
             services.AddScoped<IPlaylistService, PlaylistService>();
             services.AddScoped<IPlayActivityService, PlayActivityService>();
+            services.AddScoped<IScrobbleHandler, ScrobbleHandler>();
             services.AddScoped<IGenreService, GenreService>();
             services.AddScoped<ISubsonicService, SubsonicService>();
             services.AddScoped<IUserService, UserService>();

@@ -61,7 +61,9 @@ namespace Roadie.Library.Engines
         public IReleaseSearchEngine SpotifyReleaseSearchEngine { get; }
         public IReleaseSearchEngine WikipediaReleaseSearchEngine { get; }
 
-        public ReleaseLookupEngine(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine aristLookupEngine, ILabelLookupEngine labelLookupEngine)
+        public ReleaseLookupEngine(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, 
+                                   ICacheManager cacheManager, ILogger logger, IArtistLookupEngine aristLookupEngine, 
+                                   ILabelLookupEngine labelLookupEngine)
             : base(configuration, httpEncoder, context, cacheManager, logger)
         {
             this.ArtistLookupEngine = ArtistLookupEngine;
@@ -69,7 +71,7 @@ namespace Roadie.Library.Engines
 
             this.ITunesReleaseSearchEngine = new ITunesSearchEngine(this.Configuration, this.CacheManager, this.Logger);
             this.MusicBrainzReleaseSearchEngine = new musicbrainz.MusicBrainzProvider(this.Configuration, this.CacheManager, this.Logger);
-            this.LastFmReleaseSearchEngine = new lastfm.LastFmHelper(this.Configuration, this.CacheManager, this.Logger);
+            this.LastFmReleaseSearchEngine = new lastfm.LastFmHelper(this.Configuration, this.CacheManager, this.Logger, context, httpEncoder);
             this.DiscogsReleaseSearchEngine = new discogs.DiscogsHelper(this.Configuration, this.CacheManager, this.Logger);
             this.SpotifyReleaseSearchEngine = new spotify.SpotifyHelper(this.Configuration, this.CacheManager, this.Logger);
             this.WikipediaReleaseSearchEngine = new wikipedia.WikipediaHelper(this.Configuration, this.CacheManager, this.Logger, this.HttpEncoder);

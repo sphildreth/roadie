@@ -34,6 +34,8 @@ namespace Roadie.Library
         [XmlIgnore]
         public Dictionary<string, object> AdditionalData { get; set; } = new Dictionary<string, object>();
 
+        public Dictionary<string, object> AdditionalClientData { get; set; } = new Dictionary<string, object>();
+
         /// <summary>
         /// Client friendly exceptions
         /// </summary>

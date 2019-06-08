@@ -9,6 +9,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
+using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Statistics;
@@ -21,13 +22,14 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
-
 using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Services
 {
     public class UserService : ServiceBase, IUserService
     {
+        private ILastFmHelper LastFmHelper { get; }
+
         private UserManager<ApplicationUser> UserManager { get; }
 
         public UserService(IRoadieSettings configuration,
@@ -36,10 +38,12 @@ namespace Roadie.Api.Services
                              data.IRoadieDbContext context,
                              ICacheManager cacheManager,
                              ILogger<ArtistService> logger,
-                             UserManager<ApplicationUser> userManager)
+                             UserManager<ApplicationUser> userManager
+                             )
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
             this.UserManager = userManager;
+            this.LastFmHelper = new LastFmHelper(this.Configuration, this.CacheManager, this.Logger, context, httpEncoder); ;
         }
 
         public async Task<OperationResult<User>> ById(User user, Guid id, IEnumerable<string> includes)
@@ -382,6 +386,51 @@ namespace Roadie.Api.Services
             result.AdditionalData.Add("Timing", sw.ElapsedMilliseconds);
             this.Logger.LogInformation($"User `{ roadieUser }` set rating [{ rating }] on TrackId [{ trackId }]. Result [{ JsonConvert.SerializeObject(result) }]");
             return result;
+        }
+
+        private async Task<OperationResult<bool>> UpdateLastFMSessionKey(ApplicationUser user, string token)
+        {
+            var lastFmSessionKeyResult = await this.LastFmHelper.GetSessionKeyForUserToken(token);
+            if(!lastFmSessionKeyResult.IsSuccess)
+            {
+                return new OperationResult<bool>(false, $"Unable to Get LastFM Session Key For Token [{ token }]");
+            }
+            // Check concurrency stamp
+            if (user.ConcurrencyStamp != user.ConcurrencyStamp)
+            {
+                return new OperationResult<bool>
+                {
+                    Errors = new List<Exception> { new Exception("User data is stale.") }
+                };
+            }
+            user.LastFMSessionKey = lastFmSessionKeyResult.Data;
+            user.LastUpdated = DateTime.UtcNow;
+            user.ConcurrencyStamp = Guid.NewGuid().ToString();
+            await this.DbContext.SaveChangesAsync();
+
+            this.CacheManager.ClearRegion(ApplicationUser.CacheRegionUrn(user.RoadieId));
+
+            this.Logger.LogInformation($"User `{ user }` Updated LastFm SessionKey");
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
+        }
+
+        public async Task<OperationResult<bool>> UpdateIntegrationGrant(Guid userId, string integrationName, string token)
+        {
+            var user = this.DbContext.Users.FirstOrDefault(x => x.RoadieId == userId);
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"User Not Found [{ userId }]");
+            }
+            if (integrationName == "lastfm")
+            {
+                return await this.UpdateLastFMSessionKey(user, token);
+            }
+            throw new NotImplementedException();
         }
 
         public async Task<OperationResult<bool>> UpdateProfile(User userPerformingUpdate, User userBeingUpdatedModel)
