@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
-using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using System;
 using System.Net;
@@ -21,13 +20,18 @@ namespace Roadie.Api.Controllers
     {
         private IImageService ImageService { get; }
 
-        public ImageController(IImageService imageService, ILoggerFactory logger, ICacheManager cacheManager, 
-                               UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
-            : base(cacheManager, roadieSettings, userManager)
+        public ImageController(IImageService imageService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+            : base(cacheManager, configuration, userManager)
         {
             this.Logger = logger.CreateLogger("RoadieApi.Controllers.ImageController");
             this.ImageService = imageService;
         }
+
+        //[EnableQuery]
+        //public IActionResult Get()
+        //{
+        //    return Ok(this._RoadieDbContext.Tracks.ProjectToType<models.Image>());
+        //}
 
         [HttpGet("artist/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]

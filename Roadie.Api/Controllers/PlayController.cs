@@ -5,9 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
-using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
-using Roadie.Library.Scrobble;
 using Roadie.Library.Utility;
 using System;
 using System.Linq;
@@ -22,18 +20,16 @@ namespace Roadie.Api.Controllers
     [Authorize]
     public class PlayController : EntityControllerBase
     {
-        private IScrobbleHandler ScrobbleHandler { get; }
+        private IPlayActivityService PlayActivityService { get; }
         private IReleaseService ReleaseService { get; }
         private ITrackService TrackService { get; }
 
-        public PlayController(ITrackService trackService, IReleaseService releaseService, IScrobbleHandler scrobblerHandler, 
-                              ILoggerFactory logger, ICacheManager cacheManager, UserManager<ApplicationUser> userManager,
-                              IRoadieSettings roadieSettings)
-                            : base(cacheManager, roadieSettings, userManager)
+        public PlayController(ITrackService trackService, IReleaseService releaseService, IPlayActivityService playActivityService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+                            : base(cacheManager, configuration, userManager)
         {
             this.Logger = logger.CreateLogger("RoadieApi.Controllers.PlayController");
             this.TrackService = trackService;
-            this.ScrobbleHandler = scrobblerHandler;
+            this.PlayActivityService = playActivityService;
             this.ReleaseService = releaseService;
         }
 
@@ -69,31 +65,6 @@ namespace Roadie.Api.Controllers
         }
 
         /// <summary>
-        /// A scrobble is done at the end of a Track being played and is not exactly the same as a track activity (user can fetch a track and not play it in its entirety).
-        /// </summary>
-        [HttpPost("track/scrobble/{id}/{startedPlaying}/{isRandom}")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
-        public async Task<IActionResult> Scrobble(Guid id, string startedPlaying, bool isRandom)
-        {
-            var result = await this.ScrobbleHandler.Scrobble(await this.CurrentUserModel(), new ScrobbleInfo
-            {
-                TrackId = id,
-                TimePlayed = SafeParser.ToDateTime(startedPlaying) ?? DateTime.UtcNow,
-                IsRandomizedScrobble = isRandom
-            }); 
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
-        /// <summary>
         /// This was done to use a URL based token as many clients don't support adding Auth Bearer tokens to audio requests.
         /// </summary>
         [HttpGet("track/{userId}/{trackPlayToken}/{id}.{mp3?}")]
@@ -109,7 +80,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.Unauthorized);
             }
-            return await base.StreamTrack(id, this.TrackService, this.ScrobbleHandler, this.UserModelForUser(user));
+            return await base.StreamTrack(id, this.TrackService, this.PlayActivityService, this.UserModelForUser(user));
         }
     }
 }

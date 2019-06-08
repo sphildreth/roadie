@@ -51,7 +51,7 @@ namespace Roadie.Library.Engines
         {
             this.ITunesArtistSearchEngine = new ITunesSearchEngine(this.Configuration, this.CacheManager, this.Logger);
             this.MusicBrainzArtistSearchEngine = new musicbrainz.MusicBrainzProvider(this.Configuration, this.CacheManager, this.Logger);
-            this.LastFmArtistSearchEngine = new lastfm.LastFmHelper(this.Configuration, this.CacheManager, this.Logger, context, httpEncoder);
+            this.LastFmArtistSearchEngine = new lastfm.LastFmHelper(this.Configuration, this.CacheManager, this.Logger);
             this.SpotifyArtistSearchEngine = new spotify.SpotifyHelper(this.Configuration, this.CacheManager, this.Logger);
             this.WikipediaArtistSearchEngine = new wikipedia.WikipediaHelper(this.Configuration, this.CacheManager, this.Logger, this.HttpEncoder);
             this.DiscogsArtistSearchEngine = new discogs.DiscogsHelper(this.Configuration, this.CacheManager, this.Logger);

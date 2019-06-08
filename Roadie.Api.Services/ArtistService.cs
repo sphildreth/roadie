@@ -70,7 +70,7 @@ namespace Roadie.Api.Services
             this.BookmarkService = bookmarkService;
 
             this.MusicBrainzProvider = new mb.MusicBrainzProvider(configuration, cacheManager, logger);
-            this.LastFmHelper = new LastFmHelper(configuration, cacheManager, logger, dbContext, httpEncoder);
+            this.LastFmHelper = new LastFmHelper(configuration, cacheManager, logger);
             this.FileNameHelper = new FileNameHelper(configuration, cacheManager, logger);
             this.ID3TagsHelper = new ID3TagsHelper(configuration, cacheManager, logger);
             this.ArtistLookupEngine = new ArtistLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);

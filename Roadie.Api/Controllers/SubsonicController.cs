@@ -7,11 +7,9 @@ using Newtonsoft.Json;
 using Roadie.Api.ModelBinding;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
-using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.ThirdPartyApi.Subsonic;
-using Roadie.Library.Scrobble;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +22,7 @@ namespace Roadie.Api.Controllers
     [ApiController]
     public class SubsonicController : EntityControllerBase
     {
-        private IScrobbleHandler ScrobbleHandler { get; }
+        private IPlayActivityService PlayActivityService { get; }
         private IReleaseService ReleaseService { get; }
         private ISubsonicService SubsonicService { get; }
 
@@ -35,16 +33,14 @@ namespace Roadie.Api.Controllers
 
         private ITrackService TrackService { get; }
 
-        public SubsonicController(ISubsonicService subsonicService, ITrackService trackService, IReleaseService releaseService, 
-                                  IScrobbleHandler scrobbleHandler, ILoggerFactory logger, ICacheManager cacheManager, 
-                                  UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
-            : base(cacheManager, roadieSettings, userManager)
+        public SubsonicController(ISubsonicService subsonicService, ITrackService trackService, IReleaseService releaseService, IPlayActivityService playActivityService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+            : base(cacheManager, configuration, userManager)
         {
             this.Logger = logger.CreateLogger("RoadieApi.Controllers.SubsonicController");
             this.SubsonicService = subsonicService;
             this.TrackService = trackService;
             this.ReleaseService = releaseService;
-            this.ScrobbleHandler = scrobbleHandler;
+            this.PlayActivityService = playActivityService;
         }
 
         [HttpGet("addChatMessage.view")]
@@ -130,7 +126,7 @@ namespace Roadie.Api.Controllers
             var trackId = request.TrackId;
             if (trackId != null)
             {
-                return await base.StreamTrack(trackId.Value, this.TrackService, this.ScrobbleHandler, this.SubsonicUser);
+                return await base.StreamTrack(trackId.Value, this.TrackService, this.PlayActivityService, this.SubsonicUser);
             }
             var releaseId = request.ReleaseId;
             if (releaseId != null)
@@ -723,7 +719,7 @@ namespace Roadie.Api.Controllers
             {
                 return NotFound("Invalid TrackId");
             }
-            return await base.StreamTrack(trackId.Value, this.TrackService, this.ScrobbleHandler, this.SubsonicUser);
+            return await base.StreamTrack(trackId.Value, this.TrackService, this.PlayActivityService, this.SubsonicUser);
         }
 
         [HttpGet("unstar.view")]

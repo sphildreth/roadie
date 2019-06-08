@@ -9,7 +9,6 @@ using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
-using Roadie.Library.Scrobble;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -27,14 +26,18 @@ namespace Roadie.Api.Controllers
 
         private models.User _currentUser = null;
         protected ICacheManager CacheManager { get; }
+        protected IConfiguration Configuration { get; }
         protected ILogger Logger { get; set; }
         protected IRoadieSettings RoadieSettings { get; }
         protected UserManager<ApplicationUser> UserManager { get; }
 
-        public EntityControllerBase(ICacheManager cacheManager, IRoadieSettings roadieSettings, UserManager<ApplicationUser> userManager)
+        public EntityControllerBase(ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
         {
             this.CacheManager = cacheManager;
-            this.RoadieSettings = roadieSettings;
+            this.Configuration = configuration;
+
+            this.RoadieSettings = new RoadieSettings();
+            this.Configuration.GetSection("RoadieSettings").Bind(this.RoadieSettings);
             this.UserManager = userManager;
         }
 
@@ -57,7 +60,7 @@ namespace Roadie.Api.Controllers
             return this._currentUser;
         }
 
-        protected async Task<IActionResult> StreamTrack(Guid id, ITrackService trackService, IScrobbleHandler scrobbleHandler, models.User currentUser = null)
+        protected async Task<IActionResult> StreamTrack(Guid id, ITrackService trackService, IPlayActivityService playActivityService, models.User currentUser = null)
         {
             var sw = Stopwatch.StartNew();
             var timings = new Dictionary<string, long>();
@@ -118,25 +121,12 @@ namespace Roadie.Api.Controllers
             Response.Headers.Add("Cache-Control", info.Data.CacheControl);
             Response.Headers.Add("Expires", info.Data.Expires);
 
+            var stream = new MemoryStream(info.Data.Bytes);
             await Response.Body.WriteAsync(info.Data.Bytes, 0, info.Data.Bytes.Length);
 
-            var scrobble = new ScrobbleInfo
-            {
-                IsRandomizedScrobble = false,
-                TimePlayed = DateTime.UtcNow,
-                TrackId = id
-            };
-            if(!info.Data.IsFullRequest)
-            {
-                await scrobbleHandler.NowPlaying(user, scrobble);
-            }
-            else
-            {
-                await scrobbleHandler.Scrobble(user, scrobble);
-            }
-            
+            var playListUser = await playActivityService.CreatePlayActivity(user, info?.Data);
             sw.Stop();
-            this.Logger.LogInformation($"StreamTrack ElapsedTime [{ sw.ElapsedMilliseconds }], Timings [{ JsonConvert.SerializeObject(timings) }], StreamInfo `{ info?.Data.ToString() }`");
+            this.Logger.LogInformation($"StreamTrack ElapsedTime [{ sw.ElapsedMilliseconds }], Timings [{ JsonConvert.SerializeObject(timings) }] PlayActivity `{ playListUser?.Data.ToString() }`, StreamInfo `{ info?.Data.ToString() }`");
             return new EmptyResult();
         }
 

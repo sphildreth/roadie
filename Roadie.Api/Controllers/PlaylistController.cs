@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
-using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Playlists;
@@ -24,9 +23,8 @@ namespace Roadie.Api.Controllers
     {
         private IPlaylistService PlaylistService { get; }
 
-        public PlaylistController(IPlaylistService playlistService, ILoggerFactory logger, ICacheManager cacheManager, 
-                                  UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
-            : base(cacheManager, roadieSettings, userManager)
+        public PlaylistController(IPlaylistService playlistService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+            : base(cacheManager, configuration, userManager)
         {
             this.Logger = logger.CreateLogger("RoadieApi.Controllers.PlaylistController");
             this.PlaylistService = playlistService;

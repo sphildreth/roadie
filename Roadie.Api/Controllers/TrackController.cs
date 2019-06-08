@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
-using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
@@ -25,9 +24,8 @@ namespace Roadie.Api.Controllers
     {
         private ITrackService TrackService { get; }
 
-        public TrackController(ITrackService trackService, ILoggerFactory logger, ICacheManager cacheManager, 
-                               UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
-            : base(cacheManager, roadieSettings, userManager)
+        public TrackController(ITrackService trackService, ILoggerFactory logger, ICacheManager cacheManager, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+            : base(cacheManager, configuration, userManager)
         {
             this.Logger = logger.CreateLogger("RoadieApi.Controllers.TrackController");
             this.TrackService = trackService;

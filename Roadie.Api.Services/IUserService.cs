@@ -44,7 +44,5 @@ namespace Roadie.Api.Services
         Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating);
 
         Task<OperationResult<bool>> UpdateProfile(User userPerformingUpdate, User userBeingUpdatedModel);
-
-        Task<OperationResult<bool>> UpdateIntegrationGrant(Guid userId, string integrationName, string token);
     }
 }
