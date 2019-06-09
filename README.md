@@ -28,7 +28,7 @@ Metadata Providers:
 ---------
 * ID3 Tags (via [idsharp.tagging](https://github.com/RandallFlagg/IdSharpCore))
 * Discogs
-* Last.FM (via [inflatable.lastfm](https://github.com/inflatablefriends/lastfm))
+* Last.FM (via [inflatable.lastfm](https://github.com/inflatablefriends/lastfm)) ( Scrobbling support as well)
 * iTunes
 * Musicbrainz
 * Wikipedia
