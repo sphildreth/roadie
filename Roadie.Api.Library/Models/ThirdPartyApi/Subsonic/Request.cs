@@ -37,6 +37,16 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         public string c { get; set; }
 
         /// <summary>
+        /// The time (in milliseconds since 1 Jan 1970) at which the song was listened to.
+        /// </summary>
+        public string time { get; set; }
+
+        /// <summary>
+        /// Whether this is a "submission" or a "now playing" notification.
+        /// </summary>
+        public string submission { get; set; }
+
+        /// <summary>
         /// <seealso cref="f"/>
         /// </summary>
         public string callback { get; set; }

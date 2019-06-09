@@ -1,7 +1,6 @@
 ﻿using Mapster;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Roadie.Api.ModelBinding;
@@ -12,6 +11,7 @@ using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.ThirdPartyApi.Subsonic;
 using Roadie.Library.Scrobble;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +24,7 @@ namespace Roadie.Api.Controllers
     [ApiController]
     public class SubsonicController : EntityControllerBase
     {
-        private IScrobbleHandler ScrobbleHandler { get; }
+        private IPlayActivityService PlayActivityService { get; }
         private IReleaseService ReleaseService { get; }
         private ISubsonicService SubsonicService { get; }
 
@@ -35,8 +35,8 @@ namespace Roadie.Api.Controllers
 
         private ITrackService TrackService { get; }
 
-        public SubsonicController(ISubsonicService subsonicService, ITrackService trackService, IReleaseService releaseService, 
-                                  IScrobbleHandler scrobbleHandler, ILoggerFactory logger, ICacheManager cacheManager, 
+        public SubsonicController(ISubsonicService subsonicService, ITrackService trackService, IReleaseService releaseService,
+                                  IPlayActivityService playActivityService, ILoggerFactory logger, ICacheManager cacheManager,
                                   UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
@@ -44,7 +44,7 @@ namespace Roadie.Api.Controllers
             this.SubsonicService = subsonicService;
             this.TrackService = trackService;
             this.ReleaseService = releaseService;
-            this.ScrobbleHandler = scrobbleHandler;
+            this.PlayActivityService = playActivityService;
         }
 
         [HttpGet("addChatMessage.view")]
@@ -130,7 +130,7 @@ namespace Roadie.Api.Controllers
             var trackId = request.TrackId;
             if (trackId != null)
             {
-                return await base.StreamTrack(trackId.Value, this.TrackService, this.ScrobbleHandler, this.SubsonicUser);
+                return await base.StreamTrack(trackId.Value, this.TrackService, this.PlayActivityService, this.SubsonicUser);
             }
             var releaseId = request.ReleaseId;
             if (releaseId != null)
@@ -635,6 +635,31 @@ namespace Roadie.Api.Controllers
             return this.BuildResponse(request, result);
         }
 
+        [HttpGet("scrobble.view")]
+        [HttpGet("scrobble")]
+        [HttpPost("scrobble.view")]
+        [HttpPost("scrobble")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> Scrobble(SubsonicRequest request)
+        {
+            var authResult = await this.AuthenticateUser(request);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+            var timePlayed = string.IsNullOrEmpty(request.time) ? DateTime.UtcNow.AddDays(-1) : SafeParser.ToNumber<long>(request.time).FromUnixTime();
+            var scrobblerResponse = await this.PlayActivityService.Scrobble(this.SubsonicUser, new ScrobbleInfo
+            {
+                TrackId = request.TrackId.Value,
+                TimePlayed = timePlayed
+            });
+            return this.BuildResponse(request, new SubsonicOperationResult<Response>
+            {
+                IsSuccess = scrobblerResponse.IsSuccess,
+                Data = new Response()
+            });
+        }
+
         /// <summary>
         /// Returns albums, artists and songs matching the given search criteria. Supports paging through the result.
         /// </summary>
@@ -723,7 +748,7 @@ namespace Roadie.Api.Controllers
             {
                 return NotFound("Invalid TrackId");
             }
-            return await base.StreamTrack(trackId.Value, this.TrackService, this.ScrobbleHandler, this.SubsonicUser);
+            return await base.StreamTrack(trackId.Value, this.TrackService, this.PlayActivityService, this.SubsonicUser);
         }
 
         [HttpGet("unstar.view")]

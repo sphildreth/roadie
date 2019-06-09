@@ -4,6 +4,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.Models.Users;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,18 +22,21 @@ namespace Roadie.Library.Scrobble
         private data.IRoadieDbContext DbContext { get; }
         private ILogger Logger { get; }
         private IHttpEncoder HttpEncoder { get; }
+        private IHttpContext HttpContext { get; }
 
         private IEnumerable<IScrobblerIntegration> Scrobblers { get; }
 
-        public ScrobbleHandler(IRoadieSettings configuration, ILogger<ScrobbleHandler> logger, data.IRoadieDbContext dbContext, ICacheManager cacheManager, IHttpEncoder httpEncoder)
+        public ScrobbleHandler(IRoadieSettings configuration, ILogger<ScrobbleHandler> logger, data.IRoadieDbContext dbContext, 
+                               ICacheManager cacheManager, IHttpEncoder httpEncoder, IHttpContext httpContext)
         {
             Logger = logger;
             Configuration = configuration;
             DbContext = dbContext;
             HttpEncoder = httpEncoder;
+            HttpContext = httpContext;
             var scrobblers = new List<IScrobblerIntegration>
             {
-                new RoadieScrobbler(configuration, logger, dbContext, cacheManager)
+                new RoadieScrobbler(configuration, logger, dbContext, cacheManager, httpContext)
             };
             if (configuration.Integrations.LastFmProviderEnabled)
             {

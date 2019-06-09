@@ -40,7 +40,9 @@ namespace Roadie.Library.MetaData.LastFm
         {
             get
             {
-                return this.Configuration.Integrations.LastFmProviderEnabled;
+                return this.Configuration.Integrations.LastFmProviderEnabled &&
+                       !string.IsNullOrEmpty(this.Configuration.Integrations.LastFMApiKey) &&
+                       !string.IsNullOrEmpty(this.Configuration.Integrations.LastFmApiSecret);
             }
         }
 

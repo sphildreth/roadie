@@ -3,6 +3,7 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.Models.Users;
+using Roadie.Library.Utility;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 
@@ -16,8 +17,9 @@ namespace Roadie.Library.Scrobble
     {
         private ILastFmHelper LastFmHelper { get; }
 
-        public LastFMScrobbler(IRoadieSettings configuration, ILogger logger, data.IRoadieDbContext dbContext, ICacheManager cacheManager, ILastFmHelper lastFmHelper)
-            : base(configuration, logger, dbContext, cacheManager)
+        public LastFMScrobbler(IRoadieSettings configuration, ILogger logger, data.IRoadieDbContext dbContext, 
+                               ICacheManager cacheManager, ILastFmHelper lastFmHelper, IHttpContext httpContext)
+            : base(configuration, logger, dbContext, cacheManager, httpContext)
         {
             LastFmHelper = lastFmHelper;
         }

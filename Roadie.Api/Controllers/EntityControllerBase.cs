@@ -57,7 +57,7 @@ namespace Roadie.Api.Controllers
             return this._currentUser;
         }
 
-        protected async Task<IActionResult> StreamTrack(Guid id, ITrackService trackService, IScrobbleHandler scrobbleHandler, models.User currentUser = null)
+        protected async Task<IActionResult> StreamTrack(Guid id, ITrackService trackService, IPlayActivityService playActivityService, models.User currentUser = null)
         {
             var sw = Stopwatch.StartNew();
             var timings = new Dictionary<string, long>();
@@ -126,15 +126,7 @@ namespace Roadie.Api.Controllers
                 TimePlayed = DateTime.UtcNow,
                 TrackId = id
             };
-            if(!info.Data.IsFullRequest)
-            {
-                await scrobbleHandler.NowPlaying(user, scrobble);
-            }
-            else
-            {
-                await scrobbleHandler.Scrobble(user, scrobble);
-            }
-            
+            await playActivityService.NowPlaying(user, scrobble);            
             sw.Stop();
             this.Logger.LogInformation($"StreamTrack ElapsedTime [{ sw.ElapsedMilliseconds }], Timings [{ JsonConvert.SerializeObject(timings) }], StreamInfo `{ info?.Data.ToString() }`");
             return new EmptyResult();
