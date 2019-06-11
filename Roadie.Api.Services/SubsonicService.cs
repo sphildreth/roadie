@@ -1029,14 +1029,14 @@ namespace Roadie.Api.Services
 
             pagedRequest.Sort = null;
             pagedRequest.Order = null;
-            pagedRequest.FilterToTrackIds = playActivityResult.Rows.Select(x => SafeParser.ToGuid(x.Track.Value)).Distinct().ToArray();
+            pagedRequest.FilterToTrackIds = playActivityResult.Rows.Select(x => SafeParser.ToGuid(x.Track.Track.Value)).Distinct().ToArray();
             var playActivityTracksResult = await this.TrackService.List(pagedRequest, roadieUser);
 
             var playEntries = new List<subsonic.NowPlayingEntry>();
             var now = DateTime.UtcNow;
             foreach (var row in playActivityResult.Rows)
             {
-                var rowTrack = playActivityTracksResult.Rows.FirstOrDefault(x => x.Track.Value == row.Track.Value);
+                var rowTrack = playActivityTracksResult.Rows.FirstOrDefault(x => x.Track.Value == row.Track.Track.Value);
                 var playEntryTrackChild = this.SubsonicChildForTrack(rowTrack);
                 var playEntry = playEntryTrackChild.Adapt<subsonic.NowPlayingEntry>();
                 playEntry.username = row.User.Text;

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Roadie.Library.Inspect
 {
@@ -244,33 +245,42 @@ namespace Roadie.Library.Inspect
                             pluginMetaData = pluginResult.Data;
                         }
                         // See if the MetaData from the Plugins is different from the original
-                        var differences = AutoCompare.Comparer.Compare(originalMetaData, pluginMetaData);
-                        if (differences.Any())
+                        if (originalMetaData != null && pluginMetaData != null)
                         {
-                            var skipDifferences = new List<string> { "AudioMetaDataWeights", "FileInfo", "Images", "TrackArtists", "ValidWeight" };
-                            var differencesDescription = $"{ System.Environment.NewLine }";
-                            foreach (var difference in differences)
+                            var differences = AutoCompare.Comparer.Compare(originalMetaData, pluginMetaData);
+                            if (differences.Any())
                             {
-                                if (skipDifferences.Contains(difference.Name))
+                                var skipDifferences = new List<string> { "AudioMetaDataWeights", "FileInfo", "Images", "TrackArtists", "ValidWeight" };
+                                var differencesDescription = $"{ System.Environment.NewLine }";
+                                foreach (var difference in differences)
                                 {
-                                    continue;
+                                    if (skipDifferences.Contains(difference.Name))
+                                    {
+                                        continue;
+                                    }
+                                    differencesDescription += $"╟ || { difference.Name } : Was [{ difference.OldValue}] Now [{ difference.NewValue}]{ System.Environment.NewLine }";
                                 }
-                                differencesDescription += $"╟ || { difference.Name } : Was [{ difference.OldValue}] Now [{ difference.NewValue}]{ System.Environment.NewLine }";
-                            }
-                            Console.Write($"╟ ≡ != ID3 Tag Modified: { differencesDescription }");
+                                Console.Write($"╟ ≡ != ID3 Tag Modified: { differencesDescription }");
 
-                            if (!isReadOnly)
-                            {
-                                TagsHelper.WriteTags(pluginMetaData, pluginMetaData.Filename);
+                                if (!isReadOnly)
+                                {
+                                    TagsHelper.WriteTags(pluginMetaData, pluginMetaData.Filename);
+                                }
+                                else
+                                {
+                                    Console.WriteLine("╟ ■ Read Only Mode: Not Modifying File ID3 Tags.");
+                                }
                             }
                             else
                             {
-                                Console.WriteLine("╟ ■ Read Only Mode: Not Modifying File ID3 Tags.");
+                                Console.WriteLine($"╟ ≡ == ID3 Tag NOT Modified");
                             }
                         }
                         else
                         {
-                            Console.WriteLine($"╟ ≡ == ID3 Tag NOT Modified");
+                            var oBad = originalMetaData == null;
+                            var pBad = pluginMetaData == null;
+                            Console.WriteLine($"╟ !! MetaData comparison skipped. { (oBad ? "Pre MetaData is Invalid" : "")} { (pBad ? "Post MetaData is Invalid" : "") }");
                         }
                         if (!pluginMetaData.IsValid)
                         {

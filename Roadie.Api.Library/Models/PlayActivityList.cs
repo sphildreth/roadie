@@ -18,6 +18,14 @@ namespace Roadie.Library.Models
             }
         }
 
+        public string PlayedDay
+        {
+            get
+            {
+                return this.PlayedDateDateTime.HasValue ? this.PlayedDateDateTime.Value.ToString("MM/dd/yyyy") : null;
+            }
+        }
+
         [JsonIgnore]
         public DateTime? PlayedDateDateTime { get; set; }
 
@@ -25,7 +33,7 @@ namespace Roadie.Library.Models
         public DataToken Release { get; set; }
         public string ReleasePlayUrl { get; set; }
         public Image ReleaseThumbnail { get; set; }
-        public DataToken Track { get; set; }
+        public TrackList Track { get; set; }
         public DataToken TrackArtist { get; set; }
         public string TrackPlayUrl { get; set; }
         public DataToken User { get; set; }

@@ -268,10 +268,7 @@ namespace Roadie.Library.MetaData.Audio
                 {
                     result = this._trackArtist.Split(AudioMetaData.ArtistSplitCharacter).First().ToTitleCase();
                 }
-                if (!string.IsNullOrEmpty(this._artist) || !string.IsNullOrEmpty(result))
-                {
-                    result = !this._artist.Equals(result, StringComparison.OrdinalIgnoreCase) ? result : null;
-                }
+                result = !this._artist?.Equals(result, StringComparison.OrdinalIgnoreCase) ?? false ? result : null;
                 return result;
             }
             set

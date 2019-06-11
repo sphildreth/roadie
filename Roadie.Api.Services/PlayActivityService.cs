@@ -57,6 +57,7 @@ namespace Roadie.Api.Services
                               join releaseArtist in this.DbContext.Artists on r.ArtistId equals releaseArtist.Id
                               where (newerThan == null || usertrack.LastPlayed >= newerThan)
                               where ((roadieUser == null && !(u.IsPrivate ?? false)) || (roadieUser != null && (usertrack != null && usertrack.User.Id == roadieUser.Id)))
+                              where (!request.FilterRatedOnly || (roadieUser == null && t.Rating > 0 || roadieUser != null && usertrack.Rating >0))
                               where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
                                         t.Title != null && t.Title.ToLower().Contains(request.Filter.ToLower()) ||
                                         t.AlternateNames != null && t.AlternateNames.ToLower().Contains(request.Filter.ToLower())
@@ -68,11 +69,17 @@ namespace Roadie.Api.Services
                                       Text = r.Title,
                                       Value = r.RoadieId.ToString()
                                   },
-                                  Track = new DataToken
-                                  {
-                                      Text = t.Title,
-                                      Value = t.RoadieId.ToString()
-                                  },
+                                  Track = TrackList.FromDataTrack(null,
+                                                                  t,
+                                                                  rm.MediaNumber,
+                                                                  r,
+                                                                  releaseArtist,
+                                                                  trackArtist,
+                                                                  this.HttpContext.BaseUrl,
+                                                                  this.MakeTrackThumbnailImage(t.RoadieId),
+                                                                  this.MakeReleaseThumbnailImage(r.RoadieId),
+                                                                  this.MakeArtistThumbnailImage(releaseArtist.RoadieId),
+                                                                  this.MakeArtistThumbnailImage(trackArtist == null ? null : (Guid?)trackArtist.RoadieId)),
                                   User = new DataToken
                                   {
                                       Text = u.UserName,
@@ -172,11 +179,17 @@ namespace Roadie.Api.Services
                         Text = track.ReleaseMedia.Release.Title,
                         Value = track.ReleaseMedia.Release.RoadieId.ToString()
                     },
-                    Track = new DataToken
-                    {
-                        Text = track.Title,
-                        Value = track.RoadieId.ToString()
-                    },
+                    Track = TrackList.FromDataTrack(null,
+                                                                         track,
+                                                                         track.ReleaseMedia.MediaNumber,
+                                                                         track.ReleaseMedia.Release,
+                                                                         track.ReleaseMedia.Release.Artist,
+                                                                         track.TrackArtist,
+                                                                         this.HttpContext.BaseUrl,
+                                                                         this.MakeTrackThumbnailImage(track.RoadieId),
+                                                                         this.MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId),
+                                                                         this.MakeArtistThumbnailImage(track.ReleaseMedia.Release.Artist.RoadieId),
+                                                                         this.MakeArtistThumbnailImage(track.TrackArtist == null ? null : (Guid?)track.TrackArtist.RoadieId)),
                     User = new DataToken
                     {
                         Text = roadieUser.UserName,
