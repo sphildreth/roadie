@@ -11,12 +11,12 @@ Roadie
 ======
 Powerful API Music Server.
 
-API server that works well with [roadie-vuejs](https://github.com/sphildreth/roadie-vuejs) and also has a full [Subsonic compatible API](http://www.subsonic.org/pages/apps.jsp) that works with many Subsonic mobile applications. Roadie was built to be able to handle music collections with [hundreds of thousands of songs](http://www.redferret.net/?page_id=38781).
+API server that works well with [roadie-vuejs](https://github.com/sphildreth/roadie-vuejs) and also has a full [Subsonic compatible API](http://www.subsonic.org/pages/apps.jsp) that works with many Subsonic mobile applications. Roadie was built to be able to handle music collections with [hundreds of thousands of tracks](http://www.redferret.net/?page_id=38781).
 
 [DEMO SITE](https://www.roadie.rocks/)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://travis-ci.org/sphildreth/roadie-dotnetcore.svg?branch=master)](https://travis-ci.org/sphildreth/roadie-dotnetcore)
+[![Build Status](https://travis-ci.org/sphildreth/roadie.svg?branch=master)](https://travis-ci.org/sphildreth/roadie)
 
 Built on:
 ---------
