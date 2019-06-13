@@ -685,6 +685,7 @@ namespace Roadie.Api.Services
             result.BeginDate = result.BeginDate == null || result.BeginDate == DateTime.MinValue ? null : result.BeginDate;
             result.EndDate = result.EndDate == null || result.EndDate == DateTime.MinValue ? null : result.EndDate;
             result.BirthDate = result.BirthDate == null || result.BirthDate == DateTime.MinValue ? null : result.BirthDate;
+            result.RankPosition = result.Rank > 0 ? SafeParser.ToNumber<int?>(this.DbContext.Artists.Count(x => x.Rank > result.Rank) + 1) : null;
             tsw.Stop();
             timings.Add("adaptArtist", tsw.ElapsedMilliseconds);
             result.Thumbnail = base.MakeArtistThumbnailImage(id);

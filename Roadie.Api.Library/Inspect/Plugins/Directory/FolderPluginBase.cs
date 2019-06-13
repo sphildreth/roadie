@@ -8,6 +8,8 @@ namespace Roadie.Library.Inspect.Plugins.Directory
 {
     public abstract class FolderPluginBase : PluginBase, IInspectorDirectoryPlugin
     {
+        public virtual bool IsEnabled => true;
+
         public FolderPluginBase(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
             : base(configuration, cacheManager, logger, tagsHelper)
         {

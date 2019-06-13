@@ -11,6 +11,8 @@ namespace Roadie.Library.Inspect.Plugins.Directory
 {
     public class EnsureArtistConsistent : FolderPluginBase
     {
+        public override bool IsEnabled => false;
+
         public override string Description
         {
             get

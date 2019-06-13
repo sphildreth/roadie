@@ -48,7 +48,14 @@ namespace Roadie.Library.Inspect
                             if (t.GetInterface("IInspectorDirectoryPlugin") != null && !t.IsAbstract && !t.IsInterface)
                             {
                                 IInspectorDirectoryPlugin plugin = Activator.CreateInstance(t, new object[] { Configuration, CacheManager, Logger, TagsHelper }) as IInspectorDirectoryPlugin;
-                                plugins.Add(plugin);
+                                if (plugin.IsEnabled)
+                                {
+                                    plugins.Add(plugin);
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"__ Not Loading Disabled Pluging [{ plugin.Description }]");
+                                }
                             }
                         }
                     }
@@ -80,7 +87,15 @@ namespace Roadie.Library.Inspect
                             if (t.GetInterface("IInspectorFilePlugin") != null && !t.IsAbstract && !t.IsInterface)
                             {
                                 IInspectorFilePlugin plugin = Activator.CreateInstance(t, new object[] { Configuration, CacheManager, Logger, TagsHelper }) as IInspectorFilePlugin;
-                                plugins.Add(plugin);
+
+                                if (plugin.IsEnabled)
+                                {
+                                    plugins.Add(plugin);
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"__ Not Loading Disabled Pluging [{ plugin.Description }]");
+                                }
                             }
                         }
                     }

@@ -788,7 +788,7 @@ namespace Roadie.Api.Services
             result.AlternateNames = release.AlternateNames;
             result.Tags = release.Tags;
             result.URLs = release.URLs;
-
+            result.RankPosition = result.Rank > 0 ? SafeParser.ToNumber<int?>(this.DbContext.Releases.Count(x => x.Rank > result.Rank) + 1) : null;
             if (release.SubmissionId.HasValue)
             {
                 var submission = this.DbContext.Submissions.Include(x => x.User).FirstOrDefault(x => x.Id == release.SubmissionId);

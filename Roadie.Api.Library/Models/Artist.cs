@@ -96,6 +96,11 @@ namespace Roadie.Library.Models
 
         public decimal? Rank { get; set; }
 
+        /// <summary>
+        /// The Position of this Artist as ranked against other Artists (highest ranking Artist is #1)
+        /// </summary>
+        public int? RankPosition { get; set; }
+
         [MaxLength(500)]
         public string RealName { get; set; }
 

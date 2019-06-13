@@ -4,6 +4,7 @@ namespace Roadie.Library.Inspect.Plugins.File
 {
     public interface IInspectorFilePlugin
     {
+        bool IsEnabled { get; }
         string Description { get; }
         int Order { get; }
 

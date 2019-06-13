@@ -8,6 +8,8 @@ namespace Roadie.Library.Inspect.Plugins.File
 {
     public abstract class FilePluginBase : PluginBase, IInspectorFilePlugin
     {
+        public virtual bool IsEnabled => true;
+
         public FilePluginBase(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
             : base(configuration, cacheManager, logger, tagsHelper)
         {

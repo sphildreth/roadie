@@ -55,6 +55,11 @@ namespace Roadie.Library.Models.Releases
         public short? Rating { get; set; }
         public decimal? Rank { get; set; }
 
+        /// <summary>
+        /// The Position of this Release as ranked against other Releases (highest ranking Release is #1)
+        /// </summary>
+        public int? RankPosition { get; set; }
+
         [Required]
         public DateTime ReleaseDate { get; set; }
 
