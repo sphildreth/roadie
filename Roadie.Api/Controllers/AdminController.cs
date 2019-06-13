@@ -85,6 +85,19 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("delete/releasesecondaryimage/{id}/{index}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> DeleteReleaseSecondaryImage(Guid id, int index)
+        {
+            var result = await this.AdminService.DeleteReleaseSecondaryImage(await this.UserManager.GetUserAsync(User), id, index);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+
         [HttpPost("delete/track/{id}")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteTrack(Guid id, bool? doDeleteFile)

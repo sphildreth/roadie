@@ -40,7 +40,6 @@ namespace Roadie.Library.Configuration
         public RedisCache Redis { get; set; }
         public ImageSize SmallImageSize { get; set; }
         public string SecretKey { get; set; }
-        public string SingleArtistHoldingFolder { get; set; }
         public string SiteName { get; set; }
         public string SmtpFromAddress { get; set; }
         public string SmtpHost { get; set; }

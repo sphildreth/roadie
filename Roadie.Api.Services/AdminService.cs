@@ -234,6 +234,45 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<bool>> DeleteReleaseSecondaryImage(ApplicationUser user, Guid releaseId, int index)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == releaseId);
+            if (release == null)
+            {
+                await this.LogAndPublish($"DeleteReleaseSecondaryImage Unknown Release [{ releaseId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Release Not Found [{ releaseId }]");
+            }
+            try
+            {
+                var releaseFolder = release.ReleaseFileFolder(release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder));
+                var releaseImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder), ImageType.ReleaseSecondary, SearchOption.TopDirectoryOnly);
+                var releaseImageFilename = releaseImagesInFolder.Skip(index).FirstOrDefault();
+                if (releaseImageFilename.Exists)
+                {
+                    releaseImageFilename.Delete();
+                }
+                this.CacheManager.ClearRegion(release.CacheRegion);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogError(ex);
+                await this.LogAndPublish("Error deleting release secondary image.");
+                errors.Add(ex);
+            }
+            sw.Stop();
+            await this.LogAndPublish($"DeleteReleaseSecondaryImage `{ release }` Index [{ index }], By User `{user }`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
         public async Task<OperationResult<bool>> DeleteTrack(ApplicationUser user, Guid trackId, bool? doDeleteFile)
         {
             var sw = new Stopwatch();

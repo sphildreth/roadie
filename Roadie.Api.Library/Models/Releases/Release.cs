@@ -70,6 +70,10 @@ namespace Roadie.Library.Models.Releases
         // When populated a "data:image" base64 byte array of an image to use as new Thumbnail
         public string NewThumbnailData { get; set; }
 
+        /// <summary>
+        /// When populated a "data:image" base64 byte array of an image to use as secondary Release images.
+        /// </summary>
+        public List<string> NewSecondaryImagesData { get; set; }
 
         [MaxLength(250)]
         [Required]

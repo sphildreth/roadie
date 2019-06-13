@@ -657,6 +657,32 @@ namespace Roadie.Api.Services
                     didChangeThumbnail = true;
                 }
 
+                if (model.NewSecondaryImagesData != null && model.NewSecondaryImagesData.Any())
+                {
+                    var releaseFolder = release.ReleaseFileFolder(release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder));
+                    // Additional images to add to artist
+                    var looper = 0;
+                    foreach (var newSecondaryImageData in model.NewSecondaryImagesData)
+                    {
+                        var releaseSecondaryImage = ImageHelper.ImageDataFromUrl(newSecondaryImageData);
+                        if (releaseSecondaryImage != null)
+                        {
+                            // Ensure is jpeg first
+                            releaseSecondaryImage = ImageHelper.ConvertToJpegFormat(releaseSecondaryImage);
+
+                            var releaseImageFilename = Path.Combine(releaseFolder, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                            while (File.Exists(releaseImageFilename))
+                            {
+                                looper++;
+                                releaseImageFilename = Path.Combine(releaseFolder, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                            }
+                            File.WriteAllBytes(releaseImageFilename, releaseSecondaryImage);
+                        }
+                        looper++;
+                    }
+                }
+
+
                 if (model.Genres != null && model.Genres.Any())
                 {
                     // Remove existing Genres not in model list

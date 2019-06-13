@@ -2,6 +2,7 @@
 {
     public interface IConverting
     {
+        bool ConvertingEnabled { get; set; }
         string APEConvertCommand { get; set; }
         bool DoDeleteAfter { get; set; }
         string M4AConvertCommand { get; set; }

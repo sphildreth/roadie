@@ -24,7 +24,6 @@ namespace Roadie.Library.Configuration
         bool RecordNoResultSearches { get; set; }
         RedisCache Redis { get; set; }
         string SecretKey { get; set; }
-        string SingleArtistHoldingFolder { get; set; }
         string SiteName { get; set; }
         ImageSize SmallImageSize { get; set; }
         string SmtpFromAddress { get; set; }

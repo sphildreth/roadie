@@ -390,9 +390,15 @@ namespace Roadie.Library.MetaData.LastFm
             {
                 parameters = new Dictionary<string, string>();
             }
-            parameters.Add("method", method);
-            parameters.Add("api_key", this._apiKey.Key);
-            if (!string.IsNullOrEmpty(sk))
+            if (!parameters.ContainsKey("method"))
+            {
+                parameters.Add("method", method);
+            }
+            if (!parameters.ContainsKey("api_key"))
+            {
+                parameters.Add("api_key", this._apiKey.Key);
+            }
+            if (!string.IsNullOrEmpty(sk) && !parameters.ContainsKey("sk"))
             {
                 parameters.Add("sk", sk);
             }
