@@ -16,7 +16,7 @@ API server that works well with [roadie-vuejs](https://github.com/sphildreth/roa
 [DEMO SITE](https://www.roadie.rocks/)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://travis-ci.org/sphildreth/roadie-dotnetcore.svg?branch=master)](https://travis-ci.org/sphildreth/roadie-dotnetcore)
+[![Build Status](https://travis-ci.org/sphildreth/roadie.svg?branch=master)](https://travis-ci.org/sphildreth/roadie)
 
 Built on:
 ---------
