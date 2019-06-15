@@ -798,6 +798,11 @@ namespace Roadie.Library.Factories
                         release.Thumbnail = File.ReadAllBytes(i.FullName);
                         release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
                         release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
+                        if (release.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
+                        {
+                            Logger.LogWarning($"Release Thumbnail larger than maximum size after resizing to [{ this.Configuration.ThumbnailImageSize.Width }x{ this.Configuration.ThumbnailImageSize.Height}] Thumbnail Size [{ release.Thumbnail.Length }]");
+                            release.Thumbnail = null;
+                        }
                         release.LastUpdated = now;
                         await this.DbContext.SaveChangesAsync();
                         this.CacheManager.ClearRegion(release.Artist.CacheRegion);

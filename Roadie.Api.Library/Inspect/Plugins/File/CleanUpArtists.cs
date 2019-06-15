@@ -11,7 +11,7 @@ namespace Roadie.Library.Inspect.Plugins.File
     public class CleanUpArtists : FilePluginBase
     {
         public override string Description => "Clean: Artist (TPE1) and TrackArtist (TOPE)";
-        public override int Order => 2;
+        public override int Order => 5;
 
         public CleanUpArtists(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
             : base(configuration, cacheManager, logger, tagsHelper)

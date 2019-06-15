@@ -62,7 +62,7 @@ namespace Roadie.Library.Engines
         public IReleaseSearchEngine WikipediaReleaseSearchEngine { get; }
 
         public ReleaseLookupEngine(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, 
-                                   ICacheManager cacheManager, ILogger logger, IArtistLookupEngine aristLookupEngine, 
+                                   ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, 
                                    ILabelLookupEngine labelLookupEngine)
             : base(configuration, httpEncoder, context, cacheManager, logger)
         {
@@ -916,7 +916,7 @@ namespace Roadie.Library.Engines
             {
                 result.Thumbnail = ImageHelper.ResizeImage(result.Thumbnail, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
                 result.Thumbnail = ImageHelper.ConvertToJpegFormat(result.Thumbnail);
-                if(result.Thumbnail.Length >= 65535)
+                if(result.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
                 {
                     Logger.LogWarning($"Release Thumbnail larger than maximum size after resizing to [{ this.Configuration.ThumbnailImageSize.Width }x{ this.Configuration.ThumbnailImageSize.Height}] Thumbnail Size [{ result.Thumbnail.Length }]");
                     result.Thumbnail = null;

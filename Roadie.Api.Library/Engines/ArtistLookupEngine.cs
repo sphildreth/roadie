@@ -80,7 +80,7 @@ namespace Roadie.Library.Engines
                         {
                             artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, this.Configuration.ThumbnailImageSize.Width, this.Configuration.ThumbnailImageSize.Height);
                             artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
-                            if (artist.Thumbnail.Length >= 65535)
+                            if (artist.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
                             {
                                 Logger.LogWarning($"Artist Thumbnail larger than maximum size after resizing to [{ this.Configuration.ThumbnailImageSize.Width }x{ this.Configuration.ThumbnailImageSize.Height}] Thumbnail Size [{ artist.Thumbnail.Length }]");
                                 artist.Thumbnail = null;

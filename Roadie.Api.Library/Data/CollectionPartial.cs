@@ -102,13 +102,13 @@ namespace Roadie.Library.Data
         }
 
 
-        private IEnumerable<PositionAristRelease> _positionAristReleases = null;
+        private IEnumerable<PositionArtistRelease> _positionArtistReleases = null;
 
-        public IEnumerable<PositionAristRelease> PositionArtistReleases()
+        public IEnumerable<PositionArtistRelease> PositionArtistReleases()
         {
-            if (this._positionAristReleases == null)
+            if (this._positionArtistReleases == null)
             {
-                var rows = new List<PositionAristRelease>();
+                var rows = new List<PositionArtistRelease>();
                 using (var sr = new StringReader(this.ListInCSV))
                 {
                     var index = 0;
@@ -125,7 +125,7 @@ namespace Roadie.Library.Data
                     while (csv.Read())
                     {
                         index++;
-                        rows.Add(new PositionAristRelease
+                        rows.Add(new PositionArtistRelease
                         {
                             Index = index,
                             Position = csv.GetField<int>(this.PositionColumn),
@@ -134,9 +134,9 @@ namespace Roadie.Library.Data
                         });
                     }
                 }
-                this._positionAristReleases = rows;
+                this._positionArtistReleases = rows;
             }
-            return this._positionAristReleases;
+            return this._positionArtistReleases;
         }
 
         public Collection()
@@ -152,7 +152,7 @@ namespace Roadie.Library.Data
     }
 
     [Serializable]
-    public class PositionAristRelease
+    public class PositionArtistRelease
     {
         [JsonIgnore]
         public Statuses Status { get; set; }

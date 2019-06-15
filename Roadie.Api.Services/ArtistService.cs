@@ -523,13 +523,13 @@ namespace Roadie.Api.Services
                             // Ensure is jpeg first
                             artistSecondaryImage = ImageHelper.ConvertToJpegFormat(artistSecondaryImage);
 
-                            var aristImageFilename = Path.Combine(newArtistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
-                            while (File.Exists(aristImageFilename))
+                            var artistImageFilename = Path.Combine(newArtistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                            while (File.Exists(artistImageFilename))
                             {
                                 looper++;
-                                aristImageFilename = Path.Combine(newArtistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                                artistImageFilename = Path.Combine(newArtistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
                             }
-                            File.WriteAllBytes(aristImageFilename, artistSecondaryImage);
+                            File.WriteAllBytes(artistImageFilename, artistSecondaryImage);
                         }
                         looper++;
                     }

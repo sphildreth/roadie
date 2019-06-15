@@ -10,7 +10,7 @@ namespace Roadie.Library.Inspect.Plugins.File
     public class CleanUpReleaseTitle : FilePluginBase
     {
         public override string Description => "Clean: Release Title (TALB)";
-        public override int Order => 2;
+        public override int Order => 5;
 
         public CleanUpReleaseTitle(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
             : base(configuration, cacheManager, logger, tagsHelper)

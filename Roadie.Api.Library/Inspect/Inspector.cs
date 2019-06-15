@@ -131,7 +131,7 @@ namespace Roadie.Library.Inspect
 
             var settings = new RoadieSettings();
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddJsonFile("appsettings.json");
+            configurationBuilder.AddJsonFile("appsettings.json", false);
             IConfiguration configuration = configurationBuilder.Build();
             configuration.GetSection("RoadieSettings").Bind(settings);
             settings.ConnectionString = configuration.GetConnectionString("RoadieDatabaseConnection");
@@ -208,7 +208,7 @@ namespace Roadie.Library.Inspect
                         continue;
                     }
                     // Run directory plugins against current directory
-                    foreach (var plugin in DirectoryPlugins.OrderBy(x => x.Order))
+                    foreach (var plugin in DirectoryPlugins.Where(x => !x.IsPostProcessingPlugin).OrderBy(x => x.Order))
                     {
                         Console.WriteLine($"╠╬═ Running Directory Plugin { plugin.Description }");
                         var pluginResult = plugin.Process(directoryInfo);
@@ -382,6 +382,22 @@ namespace Roadie.Library.Inspect
                             Console.WriteLine("╠════════════════════════╣");
                         }
                     }
+                    // Run post-processing directory plugins against current directory
+                    foreach (var plugin in DirectoryPlugins.Where(x => x.IsPostProcessingPlugin).OrderBy(x => x.Order))
+                    {
+                        Console.WriteLine($"╠╬═ Running Post-Processing Directory Plugin { plugin.Description }");
+                        var pluginResult = plugin.Process(directoryInfo);
+                        if (!pluginResult.IsSuccess)
+                        {
+                            Console.WriteLine($"Plugin Failed: Error [{ JsonConvert.SerializeObject(pluginResult)}]");
+                            return;
+                        }
+                        else if (!string.IsNullOrEmpty(pluginResult.Data))
+                        {
+                            Console.WriteLine($"╠╣ Directory Plugin Message: { pluginResult.Data }");
+                        }
+                    }
+                    Console.WriteLine($"╠╝");
                     sw.Stop();
                     Console.WriteLine($"╚═ Elapsed Time { sw.ElapsedMilliseconds.ToString("0000000") }, Artists { artistsFound.Count() }, Releases { releasesFound.Count() }, MP3s { mp3FilesFoundCount } ═╝");
                 }

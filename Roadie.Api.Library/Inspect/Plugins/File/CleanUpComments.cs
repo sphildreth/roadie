@@ -9,7 +9,7 @@ namespace Roadie.Library.Inspect.Plugins.File
     public class CleanUpComments : FilePluginBase
     {
         public override string Description => "Clean: Clear Comments (COMM)";
-        public override int Order => 2;
+        public override int Order => 5;
 
         public CleanUpComments(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
             : base(configuration, cacheManager, logger, tagsHelper)

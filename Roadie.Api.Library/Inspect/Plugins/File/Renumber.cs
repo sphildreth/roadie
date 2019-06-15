@@ -17,7 +17,7 @@ namespace Roadie.Library.Inspect.Plugins.File
             }
         }
 
-        public override int Order { get; } = 1;
+        public override int Order { get; } = 2;
 
         public Renumber(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
             : base(configuration, cacheManager, logger, tagsHelper)

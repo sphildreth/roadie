@@ -449,7 +449,7 @@ namespace Roadie.Api.Services
                 var collectionReleases = (from cr in this.DbContext.CollectionReleases
                                           where cr.CollectionId == collection.Id
                                           select cr);
-                PositionAristRelease[] pars = null;
+                PositionArtistRelease[] pars = null;
 
                 try
                 {
@@ -567,7 +567,7 @@ namespace Roadie.Api.Services
             sw.Start();
 
             CollectionRelease[] crs = new CollectionRelease[0];
-            var result = new List<PositionAristRelease>();
+            var result = new List<PositionArtistRelease>();
             var errors = new List<Exception>();
             var collection = this.DbContext.Collections.FirstOrDefault(x => x.RoadieId == collectionId);
             if (collection == null)

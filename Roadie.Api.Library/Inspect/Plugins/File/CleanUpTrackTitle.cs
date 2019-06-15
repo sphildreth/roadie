@@ -10,7 +10,7 @@ namespace Roadie.Library.Inspect.Plugins.File
     public class CleanUpTrackTitle : FilePluginBase
     {
         public override string Description => "Clean: Clean Track Title (TIT2) ";
-        public override int Order => 2;
+        public override int Order => 5;
 
         public CleanUpTrackTitle(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
             : base(configuration, cacheManager, logger, tagsHelper)

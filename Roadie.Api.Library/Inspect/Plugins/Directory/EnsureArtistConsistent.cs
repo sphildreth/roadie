@@ -50,7 +50,7 @@ namespace Roadie.Library.Inspect.Plugins.Directory
                 foreach (var metaData in metaDatasForFilesInFolder.Where(x => x.Artist != artist))
                 {
                     modified++;
-                    Console.WriteLine($"╟ Setting Arist to [{ artist }], was [{ metaData.Artist }] on file [{ metaData.FileInfo.Name}");
+                    Console.WriteLine($"╟ Setting Artist to [{ artist }], was [{ metaData.Artist }] on file [{ metaData.FileInfo.Name}");
                     metaData.Artist = artist;
                     if (!Configuration.Inspector.IsInReadOnlyMode)
                     {

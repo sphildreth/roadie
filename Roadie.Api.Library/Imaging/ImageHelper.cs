@@ -16,6 +16,8 @@ namespace Roadie.Library.Imaging
 {
     public static class ImageHelper
     {
+        public static int MaximumThumbnailByteSize = 65535;
+
         public static string ArtistImageFilename = "artist.jpg";
         public static string ArtistSecondaryImageFilename = "artist {0}.jpg"; // Replace with counter of image
         public static string ReleaseCoverFilename = "cover.jpg";
@@ -163,7 +165,7 @@ namespace Roadie.Library.Imaging
             {
                 return false;
             }
-            return Regex.IsMatch(fileinfo.Name, @"((book[let]*[#-_\s(]*[0-9]*-*[0-9]*(\))*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|scan(.)?[0-9]*|matrix(.)?[0-9]*|(cover[\s_-]+[0-9]+)|back|traycard|jewel case|disc|(.*)[in]*side(.*)|in([side|lay|let|site])*[0-9]*|cd(.)?[0-9]*|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+            return Regex.IsMatch(fileinfo.Name, @"((book[let]*[#-_\s(]*[0-9]*-*[0-9]*(\))*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|scan(.)?[0-9]*|matrix(.)?[0-9]*|(cover[\s_-]*[0-9]+)|back|traycard|jewel case|disc|(.*)[in]*side(.*)|in([side|lay|let|site])*[0-9]*|cd(.)?[0-9]*|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
         }
 
         public static bool IsLabelImage(FileInfo fileinfo)

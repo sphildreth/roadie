@@ -122,8 +122,8 @@ namespace Roadie.Library.FilePlugins
                     if (artistImages.Any())
                     {
                         var artistImage = artistImages.First();
-                        var aristImageFilename = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
-                        if (aristImageFilename != artistImage.FullName)
+                        var artistImageFilename = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
+                        if (artistImageFilename != artistImage.FullName)
                         {
                             // Read image and convert to jpeg
                             var imageBytes = File.ReadAllBytes(artistImage.FullName);
@@ -132,7 +132,7 @@ namespace Roadie.Library.FilePlugins
                             // Move artist image to artist folder
                             if (!doJustInfo)
                             {
-                                File.WriteAllBytes(aristImageFilename, imageBytes);
+                                File.WriteAllBytes(artistImageFilename, imageBytes);
                                 artistImage.Delete();
                             }
                             this.Logger.LogDebug("Found Artist Image File [{0}], Moved to artist folder.", artistImage.Name);
