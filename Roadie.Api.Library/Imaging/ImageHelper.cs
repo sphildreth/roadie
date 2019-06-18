@@ -138,7 +138,7 @@ namespace Roadie.Library.Imaging
             {
                 return false;
             }
-            return Regex.IsMatch(fileinfo.Name, @"(band|artist|group)\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+            return Regex.IsMatch(fileinfo.Name, @"(band|artist|group|photo)\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
         }
 
         public static bool IsArtistSecondaryImage(FileInfo fileinfo)
@@ -147,7 +147,7 @@ namespace Roadie.Library.Imaging
             {
                 return false;
             }
-            return Regex.IsMatch(fileinfo.Name, @"(artist_logo|logo|(artist[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+            return Regex.IsMatch(fileinfo.Name, @"(artist_logo|logo|photo[-_\s]*[0-9]+|(artist[\s_-]+[0-9]+)|(band[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
         }
 
         public static bool IsReleaseImage(FileInfo fileinfo, string releaseName = null)
@@ -165,7 +165,7 @@ namespace Roadie.Library.Imaging
             {
                 return false;
             }
-            return Regex.IsMatch(fileinfo.Name, @"((book[let]*[#-_\s(]*[0-9]*-*[0-9]*(\))*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|scan(.)?[0-9]*|matrix(.)?[0-9]*|(cover[\s_-]*[0-9]+)|back|traycard|jewel case|disc|(.*)[in]*side(.*)|in([side|lay|let|site])*[0-9]*|cd(.)?[0-9]*|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+            return Regex.IsMatch(fileinfo.Name, @"((img[\s-_]*[0-9]*[\s-_]*[0-9]*)|(book[let]*[#-_\s(]*[0-9]*-*[0-9]*(\))*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|scan(.)?[0-9]*|matrix(.)?[0-9]*|(cover[\s_-]*[0-9]+)|back|traycard|jewel case|disc|(.*)[in]*side(.*)|in([side|lay|let|site])*[0-9]*|cd(.)?[0-9]*|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
         }
 
         public static bool IsLabelImage(FileInfo fileinfo)
@@ -175,6 +175,32 @@ namespace Roadie.Library.Imaging
                 return false;
             }
             return Regex.IsMatch(fileinfo.Name, @"(label|recordlabel|record_label)\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+        }
+
+        public static IEnumerable<FileInfo> FindImagesByName(DirectoryInfo directory, string name, SearchOption folderSearchOptions = SearchOption.AllDirectories)
+        {
+            var result = new List<FileInfo>();
+            if (directory == null || !directory.Exists || string.IsNullOrEmpty(name))
+            {
+                return result;
+            }
+            var imageFilesInFolder = ImageFilesInFolder(directory.FullName, folderSearchOptions);
+            if (imageFilesInFolder == null || !imageFilesInFolder.Any())
+            {
+                return result;
+            }
+            if (imageFilesInFolder.Any())
+            {
+                foreach (var imageFileInFolder in imageFilesInFolder)
+                {
+                    var image = new FileInfo(imageFileInFolder);
+                    if(image.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        result.Add(image);
+                    }
+                }
+            }
+            return result;
         }
 
         public static IEnumerable<FileInfo> FindImageTypeInDirectory(DirectoryInfo directory, ImageType type, SearchOption folderSearchOptions = SearchOption.AllDirectories)

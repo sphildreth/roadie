@@ -18,6 +18,7 @@ namespace Roadie.Library.Tests
         [InlineData("group.jpg")]
         [InlineData("ARTIST.JPG")]
         [InlineData("GrOup.jpg")]
+        [InlineData("photo.jpg")]
         [InlineData("aRtist.jpg")]
         public void Test_Should_Be_Artist_Images(string input)
         {
@@ -29,12 +30,18 @@ namespace Roadie.Library.Tests
         [InlineData("logo.jpg")]
         [InlineData("logo.png")]
         [InlineData("Logo.Jpg")]
+        [InlineData("logo.gif")]
         [InlineData("artist_logo.jpg")]
         [InlineData("Artist_logo.jpg")]
         [InlineData("ARTIST_LOGO.JPG")]
         [InlineData("artist 1.jpg")]
         [InlineData("artist_01.jpg")]
         [InlineData("artist 03.jpg")]
+        [InlineData("band 01.jpg")]
+        [InlineData("band_01.jpg")]
+        [InlineData("band 1.jpg")]
+        [InlineData("photo 1.jpg")]
+        [InlineData("photo1.jpg")]
         public void Test_Should_Be_Artist_Secondary_Images(string input)
         {
             Assert.True(ImageHelper.IsArtistSecondaryImage(new FileInfo(input)));
@@ -215,6 +222,7 @@ namespace Roadie.Library.Tests
         [InlineData("Jewel Case.jpg")]
         [InlineData("Matrix-1.jpg")]
         [InlineData("Matrix 1.jpg")]
+        [InlineData("IMG_20160921_0004.jpg")] 
         public void Test_Should_Be_Release_Secondary_Images(string input)
         {
             Assert.True(ImageHelper.IsReleaseSecondaryImage(new FileInfo(input)));

@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Roadie.Library.Inspect
 {
@@ -328,6 +327,33 @@ namespace Roadie.Library.Inspect
                             {
                                 Directory.CreateDirectory(subDirectory);
                             }
+                            // Inspect images
+                            if (!inspectedImagesInDirectories.Contains(directoryInfo.FullName))
+                            {
+                                // Get all artist images and move to artist folder
+                                var foundArtistImages = new List<FileInfo>();
+                                foundArtistImages.AddRange(ImageHelper.FindImagesByName(directoryInfo.Parent, tagLib.Data.Artist, SearchOption.TopDirectoryOnly));
+                                foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo.Parent, Enums.ImageType.Artist, SearchOption.TopDirectoryOnly));
+                                foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo.Parent, Enums.ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly));
+                                foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.Artist, SearchOption.TopDirectoryOnly));
+                                foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly));
+
+                                foreach (var artistImage in foundArtistImages)
+                                {
+                                    InspectImage(isReadOnly, doCopy, dest, artistSubDirectory, artistImage);
+                                }
+
+                                // Get all release images and move to release folder
+                                var foundReleaseImages = new List<FileInfo>();
+                                foundReleaseImages.AddRange(ImageHelper.FindImagesByName(directoryInfo, tagLib.Data.Release, SearchOption.AllDirectories));
+                                foundReleaseImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.Release, SearchOption.AllDirectories));
+                                foundReleaseImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.ReleaseSecondary, SearchOption.AllDirectories));
+                                foreach (var foundReleaseImage in foundReleaseImages)
+                                {
+                                    InspectImage(isReadOnly, doCopy, dest, subDirectory, foundReleaseImage);
+                                }
+                                inspectedImagesInDirectories.Add(directoryInfo.FullName);
+                            }
                             // If enabled move MP3 to new folder
                             var newPath = Path.Combine(dest, subDirectory, newFileName.ToFileNameFriendly());
                             if (isReadOnly)
@@ -354,30 +380,6 @@ namespace Roadie.Library.Inspect
                                 Console.ForegroundColor = ConsoleColor.DarkYellow;
                                 Console.WriteLine($"╠═» { (doCopy ? "Copied" : "Moved")} MP3 File to [{ newPath }]");
                                 Console.ResetColor();
-                            }
-                            if (!inspectedImagesInDirectories.Contains(directoryInfo.FullName))
-                            {
-                                // Get all artist images and move to artist folder
-                                var foundArtistImages = new List<FileInfo>();
-                                foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo.Parent, Enums.ImageType.Artist, SearchOption.TopDirectoryOnly));
-                                foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo.Parent, Enums.ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly));
-                                foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.Artist, SearchOption.TopDirectoryOnly));
-                                foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly));
-
-                                foreach (var artistImage in foundArtistImages)
-                                {
-                                    InspectImage(isReadOnly, doCopy, dest, artistSubDirectory, artistImage);
-                                }
-
-                                // Get all release images and move to release folder
-                                var foundReleaseImages = new List<FileInfo>();
-                                foundReleaseImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.Release, SearchOption.AllDirectories));
-                                foundReleaseImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.ReleaseSecondary, SearchOption.AllDirectories));
-                                foreach (var foundReleaseImage in foundReleaseImages)
-                                {
-                                    InspectImage(isReadOnly, doCopy, dest, subDirectory, foundReleaseImage);
-                                }
-                                inspectedImagesInDirectories.Add(directoryInfo.FullName);
                             }
                             Console.WriteLine("╠════════════════════════╣");
                         }
@@ -423,33 +425,42 @@ namespace Roadie.Library.Inspect
 
         private void InspectImage(bool isReadOnly, bool doCopy, string dest, string subdirectory, FileInfo image)
         {
+            if (!image.Exists)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"╟ ■ InspectImage: Image Not Found [{ image.FullName }]");
+                Console.ResetColor();
+                return;
+            }
             Console.WriteLine($"╟─ Inspecting Image [{ image.FullName }]");
             var newImagePath = Path.Combine(dest, subdirectory, image.Name);
-            if (isReadOnly)
+            if (image.FullName != newImagePath)
             {
-                Console.WriteLine($"╟ ■ Read Only Mode: Would be [{ (doCopy ? "Copied" : "Moved") }] to [{ newImagePath }]");
-            }
-            else
-            {
-                if (!doCopy)
+                var looper = 0;
+                while (File.Exists(newImagePath))
                 {
-                    if (image.FullName != newImagePath)
-                    {
-                        if (File.Exists(newImagePath))
-                        {
-                            File.Delete(newImagePath);
-                        }
-                        image.MoveTo(newImagePath);
-                    }
+                    looper++;
+                    newImagePath = Path.Combine(dest, subdirectory, looper.ToString("00"), image.Name);
+                }
+                if (isReadOnly)
+                {
+                    Console.WriteLine($"╟ ■ Read Only Mode: Would be [{ (doCopy ? "Copied" : "Moved") }] to [{ newImagePath }]");
                 }
                 else
                 {
-                    image.CopyTo(newImagePath, true);
+                    if (!doCopy)
+                    {
+                        image.MoveTo(newImagePath);
+                    }
+                    else
+                    {
+                        image.CopyTo(newImagePath, true);
+                    }
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    Console.WriteLine($"╠═» { (doCopy ? "Copied" : "Moved")} Image File to [{ newImagePath }]");
                 }
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.WriteLine($"╠═» { (doCopy ? "Copied" : "Moved")} Image File to [{ newImagePath }]");
-                Console.ResetColor();
             }
+            Console.ResetColor();
         }
 
         private void MessageLogger_Messages(object sender, EventMessage e) => Console.WriteLine($"Log Level [{ e.Level }] Log Message [{ e.Message }] ");

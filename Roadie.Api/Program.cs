@@ -12,10 +12,9 @@ namespace Roadie.Api
     {
         public static void Main(string[] args)
         {
-            var dbFilename = $"logs\\errors.db";
+            var dbFilename = Path.Combine("logs", "errors.db");
             Log.Logger = new LoggerConfiguration()
                             .ReadFrom.Configuration(Configuration)
-                            .WriteTo.SQLite(sqliteDbPath: dbFilename, storeTimestampInUtc: true, restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Error)
                             .CreateLogger();
 
             try
