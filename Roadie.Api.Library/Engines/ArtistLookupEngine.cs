@@ -183,8 +183,10 @@ namespace Roadie.Library.Engines
 
                 return (from a in this.DbContext.Artists
                         where (a.Name == searchName ||
+                               a.Name == specialSearchName ||
                                a.SortName == searchName ||
                                a.SortName == searchSortName ||
+                               a.SortName == specialSearchName ||
                                a.AlternateNames.StartsWith(searchNameStart) ||
                                a.AlternateNames.Contains(searchNameIn) ||
                                a.AlternateNames.EndsWith(searchNameEnd) ||

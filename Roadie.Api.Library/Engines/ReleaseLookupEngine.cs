@@ -112,15 +112,16 @@ namespace Roadie.Library.Engines
 
                 var release = (from r in this.DbContext.Releases
                                where (r.ArtistId == artist.Id)
-                               where (r.Title.ToLower() == searchName ||
-                                      r.AlternateNames.ToLower() == searchName ||
-                                      r.AlternateNames.ToLower() == specialSearchName ||
-                                      r.AlternateNames.ToLower().Contains(altStart) ||
-                                      r.AlternateNames.ToLower().Contains(altIn) ||
-                                      r.AlternateNames.ToLower().Contains(altEnds) ||
-                                      r.AlternateNames.ToLower().Contains(altStartSpecial) ||
-                                      r.AlternateNames.ToLower().Contains(altInSpecial) ||
-                                      r.AlternateNames.ToLower().Contains(altEndsSpecial))                                      
+                               where (r.Title == searchName ||
+                                      r.Title == specialSearchName ||
+                                      r.AlternateNames == searchName ||
+                                      r.AlternateNames == specialSearchName ||
+                                      r.AlternateNames.Contains(altStart) ||
+                                      r.AlternateNames.Contains(altIn) ||
+                                      r.AlternateNames.Contains(altEnds) ||
+                                      r.AlternateNames.Contains(altStartSpecial) ||
+                                      r.AlternateNames.Contains(altInSpecial) ||
+                                      r.AlternateNames.Contains(altEndsSpecial))                                      
                                select r
                                ).FirstOrDefault();
 

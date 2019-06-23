@@ -24,7 +24,8 @@ namespace Roadie.Library.Configuration
         public string ArtistRemoveStringsRegex { get; set; }
         public string ReleaseRemoveStringsRegex { get; set; }
         public string TrackRemoveStringsRegex { get; set; }
-
+        public string PreInspectScript { get; set; }
+        public string PostInspectScript { get; set; }
         public List<ReplacementString> ReplaceStrings { get; set; }
         public string UnknownFolder { get; set; }
 

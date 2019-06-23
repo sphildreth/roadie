@@ -7,17 +7,22 @@
 
   <ItemGroup>
     <None Remove="appsettings.json" />
+    <None Remove="PreInspectScript.ps1" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="PreInspectScript.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.4" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="6.2.1" />
   </ItemGroup>
 
   <ItemGroup>

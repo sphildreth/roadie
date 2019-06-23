@@ -1,4 +1,5 @@
 ﻿using Roadie.Library.Enums;
+using Roadie.Library.Extensions;
 using Roadie.Library.SearchEngines.Imaging;
 using Roadie.Library.Utility;
 using SixLabors.ImageSharp;
@@ -156,7 +157,7 @@ namespace Roadie.Library.Imaging
             {
                 return false;
             }
-            return Regex.IsMatch(fileinfo.Name, @"((f[-_\s]*[0-9]*)|big|cover|cvr|folder|release|front[-_\s]*)\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+            return Regex.IsMatch(fileinfo.Name, @"((f[-_\s]*[0-9]*)|art|big[art]*|cover|cvr|folder|release|front[-_\s]*)\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
         }
 
         public static bool IsReleaseSecondaryImage(FileInfo fileinfo)
@@ -165,7 +166,7 @@ namespace Roadie.Library.Imaging
             {
                 return false;
             }
-            return Regex.IsMatch(fileinfo.Name, @"((img[\s-_]*[0-9]*[\s-_]*[0-9]*)|(book[let]*[#-_\s(]*[0-9]*-*[0-9]*(\))*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|scan(.)?[0-9]*|matrix(.)?[0-9]*|(cover[\s_-]*[0-9]+)|back|traycard|jewel case|disc|(.*)[in]*side(.*)|in([side|lay|let|site])*[0-9]*|cd(.)?[0-9]*|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
+            return Regex.IsMatch(fileinfo.Name, @"((img[\s-_]*[0-9]*[\s-_]*[0-9]*)|(book[let]*[#-_\s(]*[0-9]*-*[0-9]*(\))*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|sc[an]*(.)?[0-9]*|matrix(.)?[0-9]*|(cover[\s_-]*[0-9]+)|back|traycard|jewel case|disc|(.*)[in]*side(.*)|in([side|lay|let|site])*[0-9]*|cd(.)?[0-9]*|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)", RegexOptions.IgnoreCase);
         }
 
         public static bool IsLabelImage(FileInfo fileinfo)
@@ -191,10 +192,13 @@ namespace Roadie.Library.Imaging
             }
             if (imageFilesInFolder.Any())
             {
+                name = name.ToAlphanumericName();
                 foreach (var imageFileInFolder in imageFilesInFolder)
                 {
                     var image = new FileInfo(imageFileInFolder);
-                    if(image.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    var filenameWithoutExtension = Path.GetFileName(imageFileInFolder).ToAlphanumericName();
+                    var imageName = image.Name.ToAlphanumericName();
+                    if(imageName.Equals(name) || filenameWithoutExtension.Equals(name))
                     {
                         result.Add(image);
                     }

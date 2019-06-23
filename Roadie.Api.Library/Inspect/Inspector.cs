@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Management.Automation;
 
 namespace Roadie.Library.Inspect
 {
@@ -53,7 +54,7 @@ namespace Roadie.Library.Inspect
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"__ Not Loading Disabled Pluging [{ plugin.Description }]");
+                                    Console.WriteLine($"╠╣ Not Loading Disabled Plugin [{ plugin.Description }]");
                                 }
                             }
                         }
@@ -93,7 +94,7 @@ namespace Roadie.Library.Inspect
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"__ Not Loading Disabled Pluging [{ plugin.Description }]");
+                                    Console.WriteLine($"╠╣ Not Loading Disabled Plugin [{ plugin.Description }]");
                                 }
                             }
                         }
@@ -169,15 +170,26 @@ namespace Roadie.Library.Inspect
             var artistsFound = new List<string>();
             var releasesFound = new List<string>();
             var mp3FilesFoundCount = 0;
+
+            Console.BackgroundColor = ConsoleColor.White;
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine($"✨ Inspector Start, UTC [{ DateTime.UtcNow.ToString("s") }]");
+            Console.ResetColor();
+
+            // Run PreInspect script
+            var scriptResult = RunScript(Configuration.Processing.PreInspectScript, doCopy, isReadOnly, directoryToInspect, destination);
+            if(!string.IsNullOrEmpty(scriptResult))
+            {
+                Console.BackgroundColor = ConsoleColor.Blue;
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine($"PreInspectScript Results: { System.Environment.NewLine + scriptResult + System.Environment.NewLine }");
+                Console.ResetColor();
+            }
             // Create a new destination subfolder for each Inspector run by Current timestamp
             var dest = Path.Combine(destination, DateTime.UtcNow.ToString("yyyyMMddHHmm"));
             if (isReadOnly || dontAppendSubFolder)
             {
                 dest = destination;
-            }
-            if (!isReadOnly && !Directory.Exists(dest))
-            {
-                Directory.CreateDirectory(dest);
             }
             // Get all the directorys in the directory
             var directoryDirectories = Directory.GetDirectories(directoryToInspect, "*.*", SearchOption.AllDirectories);
@@ -190,198 +202,205 @@ namespace Roadie.Library.Inspect
             var inspectedImagesInDirectories = new List<string>();
             try
             {
+                var createdDestinationFolder = false;
                 foreach (var directory in directories.OrderBy(x => x))
                 {
                     var directoryInfo = new DirectoryInfo(directory);
 
                     var sw = Stopwatch.StartNew();
                     Console.ForegroundColor = ConsoleColor.Blue;
-                    Console.WriteLine($"╔ ░▒▓ Inspecting [{ directory }] ▓▒░");
+                    Console.WriteLine($"╔ 📂 Inspecting [{ directory }]");
                     Console.ResetColor();
                     Console.WriteLine("╠╦════════════════════════╣");
 
                     // Get all the MP3 files in 'directory'
                     var files = Directory.GetFiles(directory, "*.mp3", SearchOption.TopDirectoryOnly);
-                    if (files == null || !files.Any())
+                    if (files != null  && files.Any())
                     {
-                        continue;
-                    }
-                    // Run directory plugins against current directory
-                    foreach (var plugin in DirectoryPlugins.Where(x => !x.IsPostProcessingPlugin).OrderBy(x => x.Order))
-                    {
-                        Console.WriteLine($"╠╬═ Running Directory Plugin { plugin.Description }");
-                        var pluginResult = plugin.Process(directoryInfo);
-                        if (!pluginResult.IsSuccess)
+                        if (!isReadOnly && !createdDestinationFolder && !Directory.Exists(dest))
                         {
-                            Console.WriteLine($"Plugin Failed: Error [{ JsonConvert.SerializeObject(pluginResult)}]");
-                            return;
+                            Directory.CreateDirectory(dest);
+                            createdDestinationFolder = true;
                         }
-                        else if (!string.IsNullOrEmpty(pluginResult.Data))
+
+                        // Run directory plugins against current directory
+                        foreach (var plugin in DirectoryPlugins.Where(x => !x.IsPostProcessingPlugin).OrderBy(x => x.Order))
                         {
-                            Console.WriteLine($"╠╣ Directory Plugin Message: { pluginResult.Data }");
-                        }
-                    }
-                    Console.WriteLine($"╠╝");
-                    Console.WriteLine($"╟─ Found [{ files.Length }] mp3 Files");
-                    List<AudioMetaData> fileMetaDatas = new List<AudioMetaData>();
-                    List<FileInfo> fileInfos = new List<FileInfo>();
-                    // Inspect the found MP3 files in 'directory'
-                    foreach (var file in files)
-                    {
-                        mp3FilesFoundCount++;
-                        var fileInfo = new FileInfo(file);
-                        Console.ForegroundColor = ConsoleColor.DarkGreen;
-                        Console.WriteLine($"╟─ Inspecting [{ fileInfo.FullName }]");
-                        var tagLib = TagsHelper.MetaDataForFile(fileInfo.FullName, true);
-                        Console.ForegroundColor = ConsoleColor.Cyan;
-                        if (!tagLib?.IsSuccess ?? false)
-                        {
-                            Console.ForegroundColor = ConsoleColor.DarkYellow;
-                        }
-                        Console.WriteLine($"╟ (Pre ) : { tagLib.Data }");
-                        Console.ResetColor();
-                        tagLib.Data.Filename = fileInfo.FullName;
-                        var originalMetaData = tagLib.Data.Adapt<AudioMetaData>();
-                        var pluginMetaData = tagLib.Data;
-                        // Run all file plugins against the MP3 file modifying the MetaData
-                        foreach (var plugin in FilePlugins.OrderBy(x => x.Order))
-                        {
-                            Console.WriteLine($"╟┤ Running File Plugin { plugin.Description }");
-                            OperationResult<AudioMetaData> pluginResult = null;
-                            pluginResult = plugin.Process(pluginMetaData);
+                            Console.WriteLine($"╠╬═ Running Directory Plugin { plugin.Description }");
+                            var pluginResult = plugin.Process(directoryInfo);
                             if (!pluginResult.IsSuccess)
                             {
-                                Console.ForegroundColor = ConsoleColor.Red;
-                                Console.WriteLine($"Plugin Failed: Error [{ JsonConvert.SerializeObject(pluginResult)}]");
-                                Console.ResetColor();
+                                Console.WriteLine($"📛 Plugin Failed: Error [{ JsonConvert.SerializeObject(pluginResult)}]");
                                 return;
                             }
-                            pluginMetaData = pluginResult.Data;
-                        }
-                        // See if the MetaData from the Plugins is different from the original
-                        if (originalMetaData != null && pluginMetaData != null)
-                        {
-                            var differences = AutoCompare.Comparer.Compare(originalMetaData, pluginMetaData);
-                            if (differences.Any())
+                            else if (!string.IsNullOrEmpty(pluginResult.Data))
                             {
-                                var skipDifferences = new List<string> { "AudioMetaDataWeights", "FileInfo", "Images", "TrackArtists", "ValidWeight" };
-                                var differencesDescription = $"{ System.Environment.NewLine }";
-                                foreach (var difference in differences)
-                                {
-                                    if (skipDifferences.Contains(difference.Name))
-                                    {
-                                        continue;
-                                    }
-                                    differencesDescription += $"╟ || { difference.Name } : Was [{ difference.OldValue}] Now [{ difference.NewValue}]{ System.Environment.NewLine }";
-                                }
-                                Console.Write($"╟ ≡ != ID3 Tag Modified: { differencesDescription }");
-
-                                if (!isReadOnly)
-                                {
-                                    TagsHelper.WriteTags(pluginMetaData, pluginMetaData.Filename);
-                                }
-                                else
-                                {
-                                    Console.WriteLine("╟ ■ Read Only Mode: Not Modifying File ID3 Tags.");
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine($"╟ ≡ == ID3 Tag NOT Modified");
+                                Console.WriteLine($"╠╣ Directory Plugin Message: { pluginResult.Data }");
                             }
                         }
-                        else
+                        Console.WriteLine($"╠╝");
+                        Console.WriteLine($"╟─ Found [{ files.Length }] mp3 Files");
+                        List<AudioMetaData> fileMetaDatas = new List<AudioMetaData>();
+                        List<FileInfo> fileInfos = new List<FileInfo>();
+                        // Inspect the found MP3 files in 'directory'
+                        foreach (var file in files)
                         {
-                            var oBad = originalMetaData == null;
-                            var pBad = pluginMetaData == null;
-                            Console.WriteLine($"╟ !! MetaData comparison skipped. { (oBad ? "Pre MetaData is Invalid" : "")} { (pBad ? "Post MetaData is Invalid" : "") }");
-                        }
-                        if (!pluginMetaData.IsValid)
-                        {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine($"╟ ■■ INVALID: Missing: { ID3TagsHelper.DetermineMissingRequiredMetaData(pluginMetaData) }");
-                            Console.ResetColor();
-                        }
-                        else
-                        {
+                            mp3FilesFoundCount++;
+                            var fileInfo = new FileInfo(file);
+                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                            Console.WriteLine($"╟─ 🎵 Inspecting [{ fileInfo.FullName }]");
+                            var tagLib = TagsHelper.MetaDataForFile(fileInfo.FullName, true);
                             Console.ForegroundColor = ConsoleColor.Cyan;
-                            Console.WriteLine($"╟ (Post) : { pluginMetaData }");
+                            if (!tagLib?.IsSuccess ?? false)
+                            {
+                                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                            }
+                            Console.WriteLine($"╟ (Pre ) : { tagLib.Data }");
                             Console.ResetColor();
-
-                            var artistToken = ArtistInspectorToken(tagLib.Data);
-                            if (!artistsFound.Contains(artistToken))
+                            tagLib.Data.Filename = fileInfo.FullName;
+                            var originalMetaData = tagLib.Data.Adapt<AudioMetaData>();
+                            var pluginMetaData = tagLib.Data;
+                            // Run all file plugins against the MP3 file modifying the MetaData
+                            foreach (var plugin in FilePlugins.OrderBy(x => x.Order))
                             {
-                                artistsFound.Add(artistToken);
-                            }
-                            var releaseToken = ReleaseInspectorToken(tagLib.Data);
-                            if (!releasesFound.Contains(releaseToken))
-                            {
-                                releasesFound.Add(releaseToken);
-                            }
-                            var newFileName = $"CD{ (tagLib.Data.Disc ?? ID3TagsHelper.DetermineDiscNumber(tagLib.Data)).ToString("000") }_{ tagLib.Data.TrackNumber.Value.ToString("0000") }.mp3";
-                            // Artist sub folder is created to hold Releases for Artist and Artist Images
-                            var artistSubDirectory = directory == dest ? fileInfo.DirectoryName : Path.Combine(dest, artistToken);
-                            // Each release is put into a subfolder into the current run Inspector folder to hold MP3 Files and Release Images
-                            var subDirectory = directory == dest ? fileInfo.DirectoryName : Path.Combine(dest, artistToken, releaseToken);
-                            if (!isReadOnly && !Directory.Exists(subDirectory))
-                            {
-                                Directory.CreateDirectory(subDirectory);
-                            }
-                            // Inspect images
-                            if (!inspectedImagesInDirectories.Contains(directoryInfo.FullName))
-                            {
-                                // Get all artist images and move to artist folder
-                                var foundArtistImages = new List<FileInfo>();
-                                foundArtistImages.AddRange(ImageHelper.FindImagesByName(directoryInfo.Parent, tagLib.Data.Artist, SearchOption.TopDirectoryOnly));
-                                foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo.Parent, Enums.ImageType.Artist, SearchOption.TopDirectoryOnly));
-                                foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo.Parent, Enums.ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly));
-                                foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.Artist, SearchOption.TopDirectoryOnly));
-                                foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly));
-
-                                foreach (var artistImage in foundArtistImages)
+                                Console.WriteLine($"╟┤ Running File Plugin { plugin.Description }");
+                                OperationResult<AudioMetaData> pluginResult = null;
+                                pluginResult = plugin.Process(pluginMetaData);
+                                if (!pluginResult.IsSuccess)
                                 {
-                                    InspectImage(isReadOnly, doCopy, dest, artistSubDirectory, artistImage);
+                                    Console.ForegroundColor = ConsoleColor.Red;
+                                    Console.WriteLine($"📛 Plugin Failed: Error [{ JsonConvert.SerializeObject(pluginResult)}]");
+                                    Console.ResetColor();
+                                    return;
                                 }
-
-                                // Get all release images and move to release folder
-                                var foundReleaseImages = new List<FileInfo>();
-                                foundReleaseImages.AddRange(ImageHelper.FindImagesByName(directoryInfo, tagLib.Data.Release, SearchOption.AllDirectories));
-                                foundReleaseImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.Release, SearchOption.AllDirectories));
-                                foundReleaseImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.ReleaseSecondary, SearchOption.AllDirectories));
-                                foreach (var foundReleaseImage in foundReleaseImages)
-                                {
-                                    InspectImage(isReadOnly, doCopy, dest, subDirectory, foundReleaseImage);
-                                }
-                                inspectedImagesInDirectories.Add(directoryInfo.FullName);
+                                pluginMetaData = pluginResult.Data;
                             }
-                            // If enabled move MP3 to new folder
-                            var newPath = Path.Combine(dest, subDirectory, newFileName.ToFileNameFriendly());
-                            if (isReadOnly)
+                            // See if the MetaData from the Plugins is different from the original
+                            if (originalMetaData != null && pluginMetaData != null)
                             {
-                                Console.WriteLine($"╟ ■ Read Only Mode: File would be [{ (doCopy ? "Copied" : "Moved") }] to [{ newPath }]");
-                            }
-                            else
-                            {
-                                if (!doCopy)
+                                var differences = AutoCompare.Comparer.Compare(originalMetaData, pluginMetaData);
+                                if (differences.Any())
                                 {
-                                    if (fileInfo.FullName != newPath)
+                                    var skipDifferences = new List<string> { "AudioMetaDataWeights", "FileInfo", "Images", "TrackArtists", "ValidWeight" };
+                                    var differencesDescription = $"{ System.Environment.NewLine }";
+                                    foreach (var difference in differences)
                                     {
-                                        if (File.Exists(newPath))
+                                        if (skipDifferences.Contains(difference.Name))
                                         {
-                                            File.Delete(newPath);
+                                            continue;
                                         }
-                                        fileInfo.MoveTo(newPath);
+                                        differencesDescription += $"╟ || { difference.Name } : Was [{ difference.OldValue}] Now [{ difference.NewValue}]{ System.Environment.NewLine }";
+                                    }
+                                    Console.Write($"╟ ≡ != ID3 Tag Modified: { differencesDescription }");
+
+                                    if (!isReadOnly)
+                                    {
+                                        TagsHelper.WriteTags(pluginMetaData, pluginMetaData.Filename);
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("╟ 🔒 Read Only Mode: Not Modifying File ID3 Tags.");
                                     }
                                 }
                                 else
                                 {
-                                    fileInfo.CopyTo(newPath, true);
+                                    Console.WriteLine($"╟ ≡ == ID3 Tag NOT Modified");
                                 }
-                                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                                Console.WriteLine($"╠═» { (doCopy ? "Copied" : "Moved")} MP3 File to [{ newPath }]");
+                            }
+                            else
+                            {
+                                var oBad = originalMetaData == null;
+                                var pBad = pluginMetaData == null;
+                                Console.WriteLine($"╟ !! MetaData comparison skipped. { (oBad ? "Pre MetaData is Invalid" : "")} { (pBad ? "Post MetaData is Invalid" : "") }");
+                            }
+                            if (!pluginMetaData.IsValid)
+                            {
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine($"╟ ❗ INVALID: Missing: { ID3TagsHelper.DetermineMissingRequiredMetaData(pluginMetaData) }");
                                 Console.ResetColor();
                             }
-                            Console.WriteLine("╠════════════════════════╣");
+                            else
+                            {
+                                Console.ForegroundColor = ConsoleColor.Cyan;
+                                Console.WriteLine($"╟ (Post) : { pluginMetaData }");
+                                Console.ResetColor();
+
+                                var artistToken = ArtistInspectorToken(tagLib.Data);
+                                if (!artistsFound.Contains(artistToken))
+                                {
+                                    artistsFound.Add(artistToken);
+                                }
+                                var releaseToken = ReleaseInspectorToken(tagLib.Data);
+                                if (!releasesFound.Contains(releaseToken))
+                                {
+                                    releasesFound.Add(releaseToken);
+                                }
+                                var newFileName = $"CD{ (tagLib.Data.Disc ?? ID3TagsHelper.DetermineDiscNumber(tagLib.Data)).ToString("000") }_{ tagLib.Data.TrackNumber.Value.ToString("0000") }.mp3";
+                                // Artist sub folder is created to hold Releases for Artist and Artist Images
+                                var artistSubDirectory = directory == dest ? fileInfo.DirectoryName : Path.Combine(dest, artistToken);
+                                // Each release is put into a subfolder into the current run Inspector folder to hold MP3 Files and Release Images
+                                var subDirectory = directory == dest ? fileInfo.DirectoryName : Path.Combine(dest, artistToken, releaseToken);
+                                if (!isReadOnly && !Directory.Exists(subDirectory))
+                                {
+                                    Directory.CreateDirectory(subDirectory);
+                                }
+                                // Inspect images
+                                if (!inspectedImagesInDirectories.Contains(directoryInfo.FullName))
+                                {
+                                    // Get all artist images and move to artist folder
+                                    var foundArtistImages = new List<FileInfo>();
+                                    foundArtistImages.AddRange(ImageHelper.FindImagesByName(directoryInfo, tagLib.Data.Artist, SearchOption.TopDirectoryOnly));
+                                    foundArtistImages.AddRange(ImageHelper.FindImagesByName(directoryInfo.Parent, tagLib.Data.Artist, SearchOption.TopDirectoryOnly));
+                                    foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo.Parent, Enums.ImageType.Artist, SearchOption.TopDirectoryOnly));
+                                    foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo.Parent, Enums.ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly));
+                                    foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.Artist, SearchOption.TopDirectoryOnly));
+                                    foundArtistImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly));
+
+                                    foreach (var artistImage in foundArtistImages)
+                                    {
+                                        InspectImage(isReadOnly, doCopy, dest, artistSubDirectory, artistImage);
+                                    }
+
+                                    // Get all release images and move to release folder
+                                    var foundReleaseImages = new List<FileInfo>();
+                                    foundReleaseImages.AddRange(ImageHelper.FindImagesByName(directoryInfo, tagLib.Data.Release, SearchOption.AllDirectories));
+                                    foundReleaseImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.Release, SearchOption.AllDirectories));
+                                    foundReleaseImages.AddRange(ImageHelper.FindImageTypeInDirectory(directoryInfo, Enums.ImageType.ReleaseSecondary, SearchOption.AllDirectories));
+                                    foreach (var foundReleaseImage in foundReleaseImages)
+                                    {
+                                        InspectImage(isReadOnly, doCopy, dest, subDirectory, foundReleaseImage);
+                                    }
+                                    inspectedImagesInDirectories.Add(directoryInfo.FullName);
+                                }
+                                // If enabled move MP3 to new folder
+                                var newPath = Path.Combine(dest, subDirectory, newFileName.ToFileNameFriendly());
+                                if (isReadOnly)
+                                {
+                                    Console.WriteLine($"╟ 🔒 Read Only Mode: File would be [{ (doCopy ? "Copied" : "Moved") }] to [{ newPath }]");
+                                }
+                                else
+                                {
+                                    if (!doCopy)
+                                    {
+                                        if (fileInfo.FullName != newPath)
+                                        {
+                                            if (File.Exists(newPath))
+                                            {
+                                                File.Delete(newPath);
+                                            }
+                                            fileInfo.MoveTo(newPath);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        fileInfo.CopyTo(newPath, true);
+                                    }
+                                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                                    Console.WriteLine($"╠═ 🚛 { (doCopy ? "Copied" : "Moved")} MP3 File to [{ newPath }]");
+                                    Console.ResetColor();
+                                }
+                                Console.WriteLine("╠════════════════════════╣");
+                            }
                         }
                     }
                     // Run post-processing directory plugins against current directory
@@ -391,7 +410,7 @@ namespace Roadie.Library.Inspect
                         var pluginResult = plugin.Process(directoryInfo);
                         if (!pluginResult.IsSuccess)
                         {
-                            Console.WriteLine($"Plugin Failed: Error [{ JsonConvert.SerializeObject(pluginResult)}]");
+                            Console.WriteLine($"📛 Plugin Failed: Error [{ JsonConvert.SerializeObject(pluginResult)}]");
                             return;
                         }
                         else if (!string.IsNullOrEmpty(pluginResult.Data))
@@ -407,20 +426,56 @@ namespace Roadie.Library.Inspect
             catch (Exception ex)
             {
                 Logger.LogError(ex);
-                Console.WriteLine("!! Exception: " + ex.ToString());
+                Console.WriteLine("📛 Exception: " + ex.ToString());
             }
             if (!dontDeleteEmptyFolders)
             {
                 var delEmptyFolderIn = new DirectoryInfo(directoryToInspect);
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine($"X Deleting Empty folders in [{ delEmptyFolderIn.FullName }]");
+                Console.WriteLine($"❌ Deleting Empty folders in [{ delEmptyFolderIn.FullName }]");
                 Console.ResetColor();
                 FolderPathHelper.DeleteEmptyDirs(directoryToInspect, false);
             }
             else
             {
-                Console.WriteLine("X ■ Read Only Mode: Not deleting empty folders.");
+                Console.WriteLine("🔒 Read Only Mode: Not deleting empty folders.");
             }
+            // Run PreInspect script
+            scriptResult = RunScript(Configuration.Processing.PostInspectScript, doCopy, isReadOnly, directoryToInspect, destination);
+            if (!string.IsNullOrEmpty(scriptResult))
+            {
+                Console.BackgroundColor = ConsoleColor.Blue;
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine($"PostInspectScript Results: { Environment.NewLine + scriptResult + Environment.NewLine }");
+                Console.ResetColor();
+            }
+        }
+
+        private string RunScript(string scriptFilename, bool doCopy, bool isReadOnly, string directoryToInspect, string dest)
+        {
+            if(string.IsNullOrEmpty(scriptFilename))
+            {
+                return null;
+            }
+            try
+            {
+                var script = File.ReadAllText(scriptFilename);
+                using (var ps = PowerShell.Create())
+                {
+                    var r = "";
+                    var results = ps.AddScript(script).Invoke();
+                    foreach (var result in results)
+                    {
+                        r += result.ToString() + System.Environment.NewLine;
+                    }
+                    return r;
+                }
+            }
+            catch (Exception ex) 
+            {
+                Console.WriteLine($"📛 Error with Script File [{scriptFilename}], Error [{ ex.ToString() }] ");
+            }
+            return null;
         }
 
         private void InspectImage(bool isReadOnly, bool doCopy, string dest, string subdirectory, FileInfo image)
@@ -433,7 +488,13 @@ namespace Roadie.Library.Inspect
                 return;
             }
             Console.WriteLine($"╟─ Inspecting Image [{ image.FullName }]");
+            var newImageFolder = new DirectoryInfo(Path.Combine(dest, subdirectory));
+            if(!newImageFolder.Exists)
+            {
+                newImageFolder.Create();
+            }
             var newImagePath = Path.Combine(dest, subdirectory, image.Name);
+
             if (image.FullName != newImagePath)
             {
                 var looper = 0;
@@ -444,25 +505,60 @@ namespace Roadie.Library.Inspect
                 }
                 if (isReadOnly)
                 {
-                    Console.WriteLine($"╟ ■ Read Only Mode: Would be [{ (doCopy ? "Copied" : "Moved") }] to [{ newImagePath }]");
+                    Console.WriteLine($"╟ 🔒 Read Only Mode: Would be [{ (doCopy ? "Copied" : "Moved") }] to [{ newImagePath }]");
                 }
                 else
                 {
-                    if (!doCopy)
+                    try
                     {
-                        image.MoveTo(newImagePath);
+                        if (!doCopy)
+                        {
+                            image.MoveTo(newImagePath);
+                        }
+                        else
+                        {
+                            image.CopyTo(newImagePath, true);
+                        }
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        Console.WriteLine($"╠═ 🚛 { (doCopy ? "Copied" : "Moved")} Image File to [{ newImagePath }]");
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        image.CopyTo(newImagePath, true);
+                        Logger.LogError(ex);
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"📛 Error file [{ image.FullName }], newImagePath [{ newImagePath }], Exception: [{ ex.ToString()  }]");
                     }
-                    Console.ForegroundColor = ConsoleColor.DarkYellow;
-                    Console.WriteLine($"╠═» { (doCopy ? "Copied" : "Moved")} Image File to [{ newImagePath }]");
                 }
             }
             Console.ResetColor();
         }
 
-        private void MessageLogger_Messages(object sender, EventMessage e) => Console.WriteLine($"Log Level [{ e.Level }] Log Message [{ e.Message }] ");
+        private void MessageLogger_Messages(object sender, EventMessage e)
+        {
+            Console.WriteLine($"Log Level [{ e.Level }] Log Message [{ e.Message }] ");
+            var message = e.Message;
+            switch (e.Level)
+            {
+                case LogLevel.Trace:
+                    this.Logger.LogTrace(message);
+                    break;
+
+                case LogLevel.Debug:
+                    this.Logger.LogDebug(message);
+                    break;
+
+                case LogLevel.Information:
+                    this.Logger.LogInformation(message);
+                    break;
+
+                case LogLevel.Warning:
+                    this.Logger.LogWarning(message);
+                    break;
+
+                case LogLevel.Critical:
+                    this.Logger.LogCritical(message);
+                    break;
+            }
+        }
     }
 }

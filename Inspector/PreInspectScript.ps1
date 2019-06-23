@@ -1,0 +1,1 @@
+﻿gci -Path "N:\_complete" -r -include *.zip,*.rar,*.7z | foreach { & 'C:\Program Files\7-Zip\7z.exe' -x -y $_.FullName -o"$(' " '+$_.DirectoryName+' " ')"}              

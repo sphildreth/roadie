@@ -170,12 +170,17 @@ namespace Roadie.Api.Services
             }
             var result = (from c in collections
                           where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && c.Name.Contains(request.Filter)))
+                          where (request.FilterToStatusValue == Statuses.Ok || (c.Status == request.FilterToStatusValue))
                           select CollectionList.FromDataCollection(c, (from crc in this.DbContext.CollectionReleases
                                                                        where crc.CollectionId == c.Id
                                                                        select crc.Id).Count(), this.MakeCollectionThumbnailImage(c.RoadieId)));
             var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } }) : request.OrderValue(null);
             var rowCount = result.Count();
             var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            if (request.FilterToStatusValue == Statuses.Incomplete)
+            {
+                rows = rows.OrderByDescending(x => x.PercentComplete).ThenBy(x => x.SortName).ToArray();
+            }
             sw.Stop();
             return Task.FromResult(new Library.Models.Pagination.PagedResult<CollectionList>
             {

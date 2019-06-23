@@ -328,6 +328,7 @@ namespace Roadie.Library.Factories
                                     existingReleaseMedia.TrackCount++;
                                     existingReleaseMedia.LastUpdated = now;
                                     releaseToMergeInto.TrackCount++;
+                                    mergedTracksToMove.Add(mergeTrack);
                                 }
                                 else
                                 {

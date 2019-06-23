@@ -5,6 +5,7 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Runtime.Serialization;
 
 namespace Roadie.Library.Models
@@ -23,13 +24,12 @@ namespace Roadie.Library.Models
             {
                 if (this._alternateNamesList == null)
                 {
-                    if (string.IsNullOrEmpty(this.AlternateNames))
+                    if (!string.IsNullOrEmpty(this.AlternateNames))
                     {
-                        return null;
+                        this._alternateNamesList = this.AlternateNames.Split('|');
                     }
-                    return this.AlternateNames.Split('|');
                 }
-                return this._alternateNamesList;
+                return this._alternateNamesList ?? Enumerable.Empty<string>();
             }
             set
             {

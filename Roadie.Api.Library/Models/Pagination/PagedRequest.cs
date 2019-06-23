@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Roadie.Library.Enums;
+using Roadie.Library.Utility;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -98,7 +100,14 @@ namespace Roadie.Library.Models.Pagination
             return result.ToString();
         }
 
-        public bool? FilterOnlyMissing { get; set; }
+        public short? FilterToStatus { get; set; }
+        public Statuses FilterToStatusValue
+        {
+            get
+            {
+                return SafeParser.ToEnum<Statuses>(FilterToStatus);
+            }
+        }
 
         public Guid? FilterToArtistId { get; set; }
         public Guid? FilterToReleaseId { get; set; }

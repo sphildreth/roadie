@@ -66,6 +66,24 @@ namespace Roadie.Library.Tests
             Assert.Null(t);
         }
 
+        [Theory]
+        [InlineData("Bob", "bob")]
+        [InlineData("Bob Marley", "bobmarley")]
+        [InlineData("Ringo Starr And His All-Starr Band", "ringostarrandhisallstarrband")]
+        [InlineData("Leslie & Tom", "leslieandtom")]
+        [InlineData(" Leslie  &  Tom", "leslieandtom")]
+        [InlineData("Leslie And Tom", "leslieandtom")]
+        [InlineData("Leslie Tom", "leslietom")]
+        [InlineData("Hüsker Dü", "huskerdu")] 
+        [InlineData("Motörhead", "motorhead")] //
+        [InlineData("Alright, Still", "alrightstill")]
+        [InlineData("Something,  SOMETHING & somEthing!", "somethingsomethingandsomething")]
+        public void ToAlphanumericNameShouldStripAndMatch(string input, string shouldBe)
+        {
+            var t = input.ToAlphanumericName();
+            Assert.Equal(shouldBe, t);
+        }
+
         [Fact]
         public void RemoveFirst()
         {

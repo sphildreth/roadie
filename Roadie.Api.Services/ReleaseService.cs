@@ -169,7 +169,7 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
 
-            IEnumerable<int> collectionReleaseIds = null;
+            IQueryable<int> collectionReleaseIds = null;
             if (request.FilterToCollectionId.HasValue)
             {
                 collectionReleaseIds = (from cr in this.DbContext.CollectionReleases
@@ -177,9 +177,9 @@ namespace Roadie.Api.Services
                                         join r in this.DbContext.Releases on cr.ReleaseId equals r.Id
                                         where c.RoadieId == request.FilterToCollectionId.Value
                                         orderby cr.ListNumber
-                                        select r.Id).ToArray();
+                                        select r.Id);
             }
-            int[] favoriteReleaseIds = new int[0];
+            IQueryable<int> favoriteReleaseIds = null;
             if (request.FilterFavoriteOnly)
             {
                 favoriteReleaseIds = (from a in this.DbContext.Releases
@@ -187,9 +187,9 @@ namespace Roadie.Api.Services
                                       where ur.IsFavorite ?? false
                                       where (roadieUser == null || ur.UserId == roadieUser.Id)
                                       select a.Id
-                                     ).ToArray();
+                                     );
             }
-            int[] genreReleaseIds = new int[0];
+            IQueryable<int> genreReleaseIds = null;
             var isFilteredToGenre = false;
             if (!string.IsNullOrEmpty(request.FilterByGenre) || (!string.IsNullOrEmpty(request.Filter) && request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase)))
             {
@@ -198,8 +198,7 @@ namespace Roadie.Api.Services
                                    join g in this.DbContext.Genres on rg.GenreId equals g.Id
                                    where g.Name.Contains(genreFilter)
                                    select rg.ReleaseId)
-                                   .Distinct()
-                                   .ToArray();
+                                   .Distinct();
                 request.Filter = null;
                 isFilteredToGenre = true;
             }
@@ -384,6 +383,7 @@ namespace Roadie.Api.Services
                                 {
                                     Text = par.Release
                                 },
+                                Status = Statuses.Missing,
                                 CssClass = "missing",
                                 ArtistThumbnail = new Library.Models.Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
                                 Thumbnail = new Library.Models.Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
@@ -392,6 +392,10 @@ namespace Roadie.Api.Services
                         }
                     }
                     // Resort the list for the collection by listNumber
+                    if (request.FilterToStatusValue != Statuses.Ok)
+                    {
+                        newRows = newRows.Where(x => x.Status == request.FilterToStatusValue).ToList();
+                    }
                     rows = newRows.OrderBy(x => x.ListNumber).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
                     rowCount = collection.CollectionCount;
                 }
@@ -614,7 +618,13 @@ namespace Roadie.Api.Services
                 release.IsVirtual = model.IsVirtual;
                 release.Status = SafeParser.ToEnum<Statuses>(model.Status);
                 release.Title = model.Title;
-                release.AlternateNames = model.AlternateNamesList.ToDelimitedList();
+                var specialReleaseTitle = model.Title.ToAlphanumericName();
+                var alt = new List<string>(model.AlternateNamesList);
+                if (!model.AlternateNamesList.Contains(specialReleaseTitle, StringComparer.OrdinalIgnoreCase))
+                {
+                    alt.Add(specialReleaseTitle);
+                }
+                release.AlternateNames = alt.ToDelimitedList();
                 release.ReleaseDate = model.ReleaseDate;
                 release.Rating = model.Rating;
                 release.TrackCount = model.TrackCount;
@@ -681,7 +691,6 @@ namespace Roadie.Api.Services
                         looper++;
                     }
                 }
-
 
                 if (model.Genres != null && model.Genres.Any())
                 {

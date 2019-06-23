@@ -12,7 +12,6 @@ namespace Roadie.Api
     {
         public static void Main(string[] args)
         {
-            var dbFilename = Path.Combine("logs", "errors.db");
             Log.Logger = new LoggerConfiguration()
                             .ReadFrom.Configuration(Configuration)
                             .CreateLogger();

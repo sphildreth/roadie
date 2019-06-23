@@ -2,7 +2,7 @@
   "profiles": {
     "Inspector": {
       "commandName": "Project",
-      "commandLineArgs": "-f \"N:\\_complete\" -d \"M:\\inbound\" -r"
+      "commandLineArgs": "-f \"N:\\_complete\" -d \"M:\\inbound\""
     }
   }
 }

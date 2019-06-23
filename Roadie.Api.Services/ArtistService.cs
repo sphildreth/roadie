@@ -147,7 +147,7 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
 
-            int[] favoriteArtistIds = new int[0];
+            IQueryable<int> favoriteArtistIds = null;
             if (request.FilterFavoriteOnly)
             {
                 favoriteArtistIds = (from a in this.DbContext.Artists
@@ -155,9 +155,9 @@ namespace Roadie.Api.Services
                                      where ua.IsFavorite ?? false
                                      where (roadieUser == null || ua.UserId == roadieUser.Id)
                                      select a.Id
-                                     ).ToArray();
+                                     );
             }
-            int[] labelArtistIds = new int[0];
+            IQueryable<int> labelArtistIds = null;
             if (request.FilterToLabelId.HasValue)
             {
                 labelArtistIds = (from l in this.DbContext.Labels
@@ -165,10 +165,9 @@ namespace Roadie.Api.Services
                                   join r in this.DbContext.Releases on rl.ReleaseId equals r.Id
                                   where l.RoadieId == request.FilterToLabelId
                                   select r.ArtistId)
-                                  .Distinct()
-                                  .ToArray();
+                                  .Distinct();
             }
-            int[] genreArtistIds = new int[0];
+            IQueryable<int> genreArtistIds = null;
             var isFilteredToGenre = false;
             if (!string.IsNullOrEmpty(request.Filter) && request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase))
             {
@@ -177,8 +176,7 @@ namespace Roadie.Api.Services
                                   join g in this.DbContext.Genres on ag.GenreId equals g.Id
                                   where g.Name.Contains(genreFilter)
                                   select ag.ArtistId)
-                                  .Distinct()
-                                  .ToArray();
+                                  .Distinct();
                 isFilteredToGenre = true;
                 request.Filter = null;
             }
@@ -278,14 +276,17 @@ namespace Roadie.Api.Services
             sw.Stop();
             if (!string.IsNullOrEmpty(request.Filter) && rowCount == 0)
             {
-                // Create request for no artist found
-                var req = new data.Request
+                if (Configuration.RecordNoResultSearches)
                 {
-                    UserId = roadieUser?.Id,
-                    Description = request.Filter
-                };
-                this.DbContext.Requests.Add(req);
-                await this.DbContext.SaveChangesAsync();
+                    // Create request for no artist found
+                    var req = new data.Request
+                    {
+                        UserId = roadieUser?.Id,
+                        Description = request.Filter
+                    };
+                    this.DbContext.Requests.Add(req);
+                    await this.DbContext.SaveChangesAsync();
+                }
             }
             return new Library.Models.Pagination.PagedResult<ArtistList>
             {
@@ -465,7 +466,13 @@ namespace Roadie.Api.Services
             {
                 var now = DateTime.UtcNow;
                 var originalArtistFolder = artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
-                artist.AlternateNames = model.AlternateNamesList.ToDelimitedList();
+                var specialArtistName = model.Name.ToAlphanumericName();
+                var alt = new List<string>(model.AlternateNamesList);
+                if (!model.AlternateNamesList.Contains(specialArtistName, StringComparer.OrdinalIgnoreCase))
+                {
+                    alt.Add(specialArtistName);
+                }
+                artist.AlternateNames = alt.ToDelimitedList();
                 artist.ArtistType = model.ArtistType;
                 artist.AmgId = model.AmgId;
                 artist.BeginDate = model.BeginDate;

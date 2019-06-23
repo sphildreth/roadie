@@ -60,6 +60,7 @@ namespace Roadie.Library.Tests
         [InlineData("folder.JPG")]
         [InlineData("front.jpg")]
         [InlineData("FrOnt.jpg")]
+        [InlineData("Art.jpg")]
         [InlineData("Art - front.jpg")]
         [InlineData("Art - Front.jpg")]
         [InlineData("Art-Front.jpg")]
@@ -70,6 +71,7 @@ namespace Roadie.Library.Tests
         [InlineData("F-1.jpg")] 
         [InlineData("front_.jpg")]
         [InlineData("BIG.JPg")]
+        [InlineData("bigart.JPg")]
         [InlineData("BIG.PNG")]
         public void Test_Should_Be_Release_Images(string input)
         {
@@ -191,6 +193,11 @@ namespace Roadie.Library.Tests
         [InlineData("CD3.jpg")]
         [InlineData("Scan-1.jpg")]
         [InlineData("Scan-12.jpg")]
+        [InlineData("Scan 1.jpg")]
+        [InlineData("sc 1.jpg")]
+        [InlineData("sc01.jpg")]
+        [InlineData("sc-01.jpg")]
+        [InlineData("sc 01.jpg")]
         [InlineData("cover_01.jpg")]
         [InlineData("cover 03.jpg")]
         [InlineData("cover 1.jpg")]

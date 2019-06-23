@@ -201,6 +201,21 @@ namespace Roadie.Library.Extensions
             return input;
         }
 
+        public static String RemoveDiacritics(this string s)
+        {
+            String normalizedString = s.Normalize(NormalizationForm.FormD);
+            StringBuilder stringBuilder = new StringBuilder();
+            for (int i = 0; i < normalizedString.Length; i++)
+            {
+                Char c = normalizedString[i];
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+            return stringBuilder.ToString();
+        }
+
         public static string ToAlphanumericName(this string input)
         {
             if (string.IsNullOrEmpty(input))
@@ -210,7 +225,7 @@ namespace Roadie.Library.Extensions
             input = input.ToLower().Trim().Replace("&", "and");
             char[] arr = input.ToCharArray();
             arr = Array.FindAll<char>(arr, (c => (char.IsLetterOrDigit(c))));
-            return new string(arr);
+            return new string(arr).RemoveDiacritics();
         }
 
         public static string ToContentDispositionFriendly(this string input)

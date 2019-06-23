@@ -203,7 +203,7 @@ namespace Roadie.Api.Services
                                           select t.Id).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
                 }
 
-                int[] topTrackids = new int[0];
+                IQueryable<int> topTrackids = null;
                 if (request.FilterTopPlayedOnly)
                 {
                     // Get request number of top played songs for artist
@@ -215,7 +215,7 @@ namespace Roadie.Api.Services
                                    where a.RoadieId == request.FilterToArtistId
                                    orderby ut.PlayedCount descending
                                    select t.Id
-                                   ).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                                   ).Skip(request.SkipValue).Take(request.LimitValue);
                 }
                 int[] randomTrackIds = null;
                 if (doRandomize ?? false)

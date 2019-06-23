@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Mapster;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -484,31 +485,37 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<bool>> ScanAllCollections(ApplicationUser user, bool isReadOnly = false, bool doPurgeFirst = true)
+        public async Task<OperationResult<bool>> ScanAllCollections(ApplicationUser user, bool isReadOnly = false, bool doPurgeFirst = false)
         {
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
 
-            var collections = this.DbContext.Collections.Where(x => x.Status != Statuses.Complete).ToArray();
+            var collections = this.DbContext.Collections.Where(x => x.IsLocked == false).ToArray();
+            var updatedReleaseIds = new List<int>();
             foreach (var collection in collections)
             {
                 try
                 {
-                    var result = await this.ScanCollection(user, collection.RoadieId, isReadOnly, doPurgeFirst);
+                    var result = await this.ScanCollection(user, collection.RoadieId, isReadOnly, doPurgeFirst, false);
                     if (!result.IsSuccess)
                     {
                         errors.AddRange(result.Errors);
                     }
+                    updatedReleaseIds.AddRange((int[])result.AdditionalData["updatedReleaseIds"]);
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.LogError(ex);
+                    await this.LogAndPublish(ex.ToString(), LogLevel.Error);
                     errors.Add(ex);
                 }
             }
+            foreach (var updatedReleaseId in updatedReleaseIds.Distinct())
+            {
+                await this.UpdateReleaseRank(updatedReleaseId);
+            }
             sw.Stop();
-            this.Logger.LogInformation(string.Format("ScanAllCollections, By User `{0}`", user));
+            await this.LogAndPublish($"ScanAllCollections, By User `{user}`, Updated Release Count [{ updatedReleaseIds.Distinct().Count() }], ElapsedTime [{ sw.ElapsedMilliseconds}]", LogLevel.Information);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -561,12 +568,13 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> ScanCollection(ApplicationUser user, Guid collectionId, bool isReadOnly = false, bool doPurgeFirst = true)
+        public async Task<OperationResult<bool>> ScanCollection(ApplicationUser user, Guid collectionId, bool isReadOnly = false, bool doPurgeFirst = false, bool doUpdateRanks = true)
         {
             var sw = new Stopwatch();
             sw.Start();
 
-            CollectionRelease[] crs = new CollectionRelease[0];
+            var releaseIdsInCollection = new List<int>();
+            var updatedReleaseIds = new List<int>();
             var result = new List<PositionArtistRelease>();
             var errors = new List<Exception>();
             var collection = this.DbContext.Collections.FirstOrDefault(x => x.RoadieId == collectionId);
@@ -579,7 +587,8 @@ namespace Roadie.Api.Services
             {
                 if (doPurgeFirst)
                 {
-                    crs = this.DbContext.CollectionReleases.Where(x => x.CollectionId == collection.Id).ToArray();
+                    await this.LogAndPublish($"ScanCollection Purgeing Collection [{ collectionId}]", LogLevel.Warning);
+                    var crs = this.DbContext.CollectionReleases.Where(x => x.CollectionId == collection.Id).ToArray();
                     this.DbContext.CollectionReleases.RemoveRange(crs);
                     await this.DbContext.SaveChangesAsync();
                 }
@@ -603,7 +612,7 @@ namespace Roadie.Api.Services
                                              select a).ToArray();
                         if (!artistResults.Any())
                         {
-                            this.Logger.LogWarning("Unable To Find Artist [{0}], SearchName [{1}]", csvRelease.Artist, searchName);
+                            await this.LogAndPublish($"Unable To Find Artist [{csvRelease.Artist }], SearchName [{ searchName}]", LogLevel.Warning);
                             csvRelease.Status = Library.Enums.Statuses.Missing;
                             continue;
                         }
@@ -626,13 +635,14 @@ namespace Roadie.Api.Services
                         }
                         if (release == null)
                         {
-                            this.Logger.LogWarning("Unable To Find Release [{0}], SearchName [{1}]", csvRelease.Release, searchName);
+                            await this.LogAndPublish($"Unable To Find Release [{csvRelease.Release}] for Artist [{csvRelease.Artist}], SearchName [{searchName}]", LogLevel.Warning );
                             csvRelease.Status = Library.Enums.Statuses.Missing;
                             continue;
                         }
                         var isInCollection = this.DbContext.CollectionReleases.FirstOrDefault(x => x.CollectionId == collection.Id &&
                                                                                                    x.ListNumber == csvRelease.Position &&
                                                                                                    x.ReleaseId == release.Id);
+                        var updated = false;
                         // Found in Database but not in collection add to Collection
                         if (isInCollection == null)
                         {
@@ -642,13 +652,20 @@ namespace Roadie.Api.Services
                                 ReleaseId = release.Id,
                                 ListNumber = csvRelease.Position,
                             });
+                            updated = true;
                         }
                         // If Item in Collection is at different List number update CollectionRelease
                         else if (isInCollection.ListNumber != csvRelease.Position)
                         {
                             isInCollection.LastUpdated = now;
                             isInCollection.ListNumber = csvRelease.Position;
+                            updated = true;
                         }
+                        if(updated && !updatedReleaseIds.Any(x => x == release.Id))
+                        {
+                            updatedReleaseIds.Add(release.Id);
+                        }
+                        releaseIdsInCollection.Add(release.Id);
                     }
                     collection.LastUpdated = now;
                     await this.DbContext.SaveChangesAsync();
@@ -669,10 +686,22 @@ namespace Roadie.Api.Services
                     {
                         collection.Status = Statuses.Incomplete;
                     }
-                    await this.DbContext.SaveChangesAsync();
-                    foreach (var cr in crs)
+                    var collectionReleasesToRemove = (from cr in this.DbContext.CollectionReleases
+                                                      where cr.CollectionId == collection.Id
+                                                      where !releaseIdsInCollection.Contains(cr.ReleaseId)
+                                                      select cr).ToArray();
+                    if (collectionReleasesToRemove.Any())
                     {
-                        await this.UpdateReleaseRank(cr.ReleaseId);
+                        await this.LogAndPublish($"Removing [{ collectionReleasesToRemove.Count() }] Stale Release Records from Collection.", LogLevel.Information);
+                        this.DbContext.CollectionReleases.RemoveRange(collectionReleasesToRemove);
+                    }
+                    await this.DbContext.SaveChangesAsync();
+                    if (doUpdateRanks)
+                    {
+                        foreach(var updatedReleaseId in updatedReleaseIds)
+                        {
+                            await this.UpdateReleaseRank(updatedReleaseId);
+                        }
                     }
                     this.CacheManager.ClearRegion(collection.CacheRegion);
                 }
@@ -687,6 +716,7 @@ namespace Roadie.Api.Services
 
             return new OperationResult<bool>
             {
+                AdditionalData = new Dictionary<string, object> { { "updatedReleaseIds", updatedReleaseIds.ToArray() } },
                 IsSuccess = !errors.Any(),
                 Data = true,
                 OperationTime = sw.ElapsedMilliseconds,
