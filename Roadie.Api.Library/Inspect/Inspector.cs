@@ -203,11 +203,12 @@ namespace Roadie.Library.Inspect
             try
             {
                 var createdDestinationFolder = false;
+                var sw = Stopwatch.StartNew();
+
                 foreach (var directory in directories.OrderBy(x => x))
                 {
                     var directoryInfo = new DirectoryInfo(directory);
 
-                    var sw = Stopwatch.StartNew();
                     Console.ForegroundColor = ConsoleColor.Blue;
                     Console.WriteLine($"╔ 📂 Inspecting [{ directory }]");
                     Console.ResetColor();
@@ -259,6 +260,13 @@ namespace Roadie.Library.Inspect
                             Console.ResetColor();
                             tagLib.Data.Filename = fileInfo.FullName;
                             var originalMetaData = tagLib.Data.Adapt<AudioMetaData>();
+                            if (!originalMetaData.IsValid)
+                            {
+                                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                                Console.WriteLine($"╟ ❗ INVALID: Missing: { ID3TagsHelper.DetermineMissingRequiredMetaData(originalMetaData) }");
+                                Console.WriteLine($"╟ [{ JsonConvert.SerializeObject(tagLib, Formatting.Indented)}]");
+                                Console.ResetColor();
+                            }
                             var pluginMetaData = tagLib.Data;
                             // Run all file plugins against the MP3 file modifying the MetaData
                             foreach (var plugin in FilePlugins.OrderBy(x => x.Order))
@@ -275,13 +283,20 @@ namespace Roadie.Library.Inspect
                                 }
                                 pluginMetaData = pluginResult.Data;
                             }
+                            if (!pluginMetaData.IsValid)
+                            {
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine($"╟ ❗ INVALID: Missing: { ID3TagsHelper.DetermineMissingRequiredMetaData(pluginMetaData) }");
+                                Console.ResetColor();
+                                return;
+                            }
                             // See if the MetaData from the Plugins is different from the original
                             if (originalMetaData != null && pluginMetaData != null)
                             {
                                 var differences = AutoCompare.Comparer.Compare(originalMetaData, pluginMetaData);
                                 if (differences.Any())
                                 {
-                                    var skipDifferences = new List<string> { "AudioMetaDataWeights", "FileInfo", "Images", "TrackArtists", "ValidWeight" };
+                                    var skipDifferences = new List<string> { "AudioMetaDataWeights", "FileInfo", "Images", "TrackArtists" };
                                     var differencesDescription = $"{ System.Environment.NewLine }";
                                     foreach (var difference in differences)
                                     {
@@ -295,7 +310,13 @@ namespace Roadie.Library.Inspect
 
                                     if (!isReadOnly)
                                     {
-                                        TagsHelper.WriteTags(pluginMetaData, pluginMetaData.Filename);
+                                        if (!TagsHelper.WriteTags(pluginMetaData, pluginMetaData.Filename))
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.Red;
+                                            Console.WriteLine($"📛 WriteTags Failed");
+                                            Console.ResetColor();
+                                            return;
+                                        }
                                     }
                                     else
                                     {
@@ -403,6 +424,12 @@ namespace Roadie.Library.Inspect
                             }
                         }
                     }
+                }
+                foreach (var directory in directories.OrderBy(x => x))
+                {
+                    var directoryInfo = new DirectoryInfo(directory);
+                    Console.WriteLine($"╠╬═ Post-Processing Directory [{ directoryInfo.FullName }] ");
+
                     // Run post-processing directory plugins against current directory
                     foreach (var plugin in DirectoryPlugins.Where(x => x.IsPostProcessingPlugin).OrderBy(x => x.Order))
                     {
@@ -418,10 +445,11 @@ namespace Roadie.Library.Inspect
                             Console.WriteLine($"╠╣ Directory Plugin Message: { pluginResult.Data }");
                         }
                     }
-                    Console.WriteLine($"╠╝");
-                    sw.Stop();
-                    Console.WriteLine($"╚═ Elapsed Time { sw.ElapsedMilliseconds.ToString("0000000") }, Artists { artistsFound.Count() }, Releases { releasesFound.Count() }, MP3s { mp3FilesFoundCount } ═╝");
                 }
+                Console.WriteLine($"╠╝");
+                sw.Stop();
+                Console.WriteLine($"╚═ Elapsed Time { sw.ElapsedMilliseconds.ToString("0000000") }, Artists { artistsFound.Count() }, Releases { releasesFound.Count() }, MP3s { mp3FilesFoundCount } ═╝");
+
             }
             catch (Exception ex)
             {

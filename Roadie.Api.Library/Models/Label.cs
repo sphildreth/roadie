@@ -1,6 +1,7 @@
 ﻿using Roadie.Library.Models.Statistics;
 using Roadie.Library.Utility;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Roadie.Library.Models
@@ -8,7 +9,7 @@ namespace Roadie.Library.Models
     [Serializable]
     public class Label : EntityModelBase
     {
-        public const string DefaultIncludes = "stats";
+        public const string DefaultIncludes = "comments,stats";
 
         [MaxLength(65535)]
         public string BioContext { get; set; }
@@ -49,5 +50,7 @@ namespace Roadie.Library.Models
             }
 
         }
+
+        public IEnumerable<Comment> Comments { get; set; }
     }
 }

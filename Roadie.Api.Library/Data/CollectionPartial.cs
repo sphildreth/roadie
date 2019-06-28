@@ -141,6 +141,8 @@ namespace Roadie.Library.Data
 
         public Collection()
         {
+            this.Releases = new HashSet<CollectionRelease>();
+            this.Comments = new HashSet<Comment>();
             ListInCSVFormat = "Position,Release,Artist";
             CollectionType = Enums.CollectionType.Rank;
         }

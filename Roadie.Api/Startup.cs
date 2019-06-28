@@ -198,6 +198,7 @@ namespace Roadie.Api
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<ILookupService, LookupService>();
+            services.AddScoped<ICommentService, CommentService>();
 
             var securityKey = new SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration["Tokens:PrivateKey"]));
 

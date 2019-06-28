@@ -7,29 +7,17 @@ namespace Roadie.Library.Utility
 {
     public static class SafeParser
     {
-        public static T ChangeType<T>(object value)
+        private static T ChangeType<T>(object value)
         {
             var t = typeof(T);
-
-            if (t.IsGenericType && t.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+            if (!t.IsGenericType || t.GetGenericTypeDefinition() != typeof(Nullable<>))
+                return (T) Convert.ChangeType(value, t);
+            if (value == null)
             {
-                if (value == null)
-                {
-                    return default(T);
-                }
-
-                t = Nullable.GetUnderlyingType(t);
+                return default(T);
             }
-
+            t = Nullable.GetUnderlyingType(t);
             return (T)Convert.ChangeType(value, t);
-        }
-
-        /// <summary>
-        /// Return a value that is safe to use as a Key value
-        /// </summary>
-        public static string KeyFriendly(string input)
-        {
-            return input;
         }
 
         /// <summary>
@@ -38,25 +26,24 @@ namespace Roadie.Library.Utility
         /// </summary>
         public static bool ToBoolean(object input)
         {
-            if (input == null)
+            switch (input)
             {
-                return false;
-            }
-            var t = input as bool?;
-            if (t != null)
-            {
-                return t.Value;
-            }
-            switch (input.ToString().ToLower())
-            {
-                case "true":
-                case "1":
-                case "y":
-                case "yes":
-                    return true;
-
-                default:
+                case null:
                     return false;
+                case bool t:
+                    return t;
+                default:
+                    switch (input.ToString().ToLower())
+                    {
+                        case "true":
+                        case "1":
+                        case "y":
+                        case "yes":
+                            return true;
+
+                        default:
+                            return false;
+                    }
             }
         }
 
@@ -71,7 +58,7 @@ namespace Roadie.Library.Utility
             {
                 i = i.Substring(2, i.Length - 2);
             }
-            if (!Guid.TryParse(i.ToString(), out Guid result))
+            if (!Guid.TryParse(i, out var result))
             {
                 return null;
             }
@@ -104,10 +91,10 @@ namespace Roadie.Library.Utility
                     {
                         if(parts[0] != null && parts[1] != null && parts[0] == parts[1])
                         {
-                            parts = new List<string>(new string[2] { parts[0], "01" });
+                            parts = new List<string>{parts[0], "01"};
                         }
                     }
-                    while (parts.Count() < 3)
+                    while (parts.Count < 3)
                     {
                         parts.Insert(0, "01");
                     }
@@ -129,7 +116,9 @@ namespace Roadie.Library.Utility
                 }
                 catch
                 {
+                    // ignored
                 }
+
                 return dt != DateTime.MinValue ? (DateTime?)dt : null;
             }
             catch
@@ -170,16 +159,15 @@ namespace Roadie.Library.Utility
         public static string ToString(object input, string defaultValue = null)
         {
             defaultValue = defaultValue ?? string.Empty;
-            if (input == null)
+            switch (input)
             {
-                return defaultValue;
+                case null:
+                    return defaultValue;
+                case string r:
+                    return r.Trim();
+                default:
+                    return defaultValue;
             }
-            var r = input as string;
-            if (r != null)
-            {
-                return r.Trim();
-            }
-            return defaultValue;
         }
 
         public static int? ToYear(string input)
@@ -188,7 +176,7 @@ namespace Roadie.Library.Utility
             {
                 return null;
             }
-            int parsed = -1;
+            int parsed;
             if (input.Length == 4)
             {
                 if (int.TryParse(input, out parsed))

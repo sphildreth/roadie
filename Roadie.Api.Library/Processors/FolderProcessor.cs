@@ -71,21 +71,6 @@ namespace Roadie.Library.Processors
                 {
                     pluginResultInfos.Add(operation.AdditionalData[PluginResultInfo.AdditionalDataKeyPluginResultInfo] as PluginResultInfo);
                 }
-                if (operation == null)
-                {
-                    var fileExtensionsToDelete = this.Configuration.FileExtensionsToDelete ?? new string[0];
-                    if (fileExtensionsToDelete.Any(x => x.Equals(Path.GetExtension(file), StringComparison.OrdinalIgnoreCase)))
-                    {
-                        if (!doJustInfo)
-                        {
-                            if (!Path.GetFileNameWithoutExtension(file).ToLower().Equals("cover"))
-                            {
-                                File.Delete(file);
-                                this.Logger.LogInformation("x Deleted File [{0}], Was foud in in FileExtensionsToDelete", file);
-                            }
-                        }
-                    }
-                }
                 processedFiles++;
                 if (this.ProcessLimit.HasValue && processedFiles > this.ProcessLimit.Value)
                 {
@@ -114,17 +99,32 @@ namespace Roadie.Library.Processors
         private async Task<bool> PostProcessFolder(DirectoryInfo inboundFolder, IEnumerable<PluginResultInfo> pluginResults, bool doJustInfo)
         {
             SimpleContract.Requires<ArgumentNullException>(inboundFolder != null, "Invalid InboundFolder");
-            if (!doJustInfo)
-            {
-                FolderProcessor.DeleteEmptyFolders(inboundFolder, this.Logger);
-                
-            }
             if (pluginResults != null)
             {
                 foreach (var releasesInfo in pluginResults.GroupBy(x => x.ReleaseId).Select(x => x.First()))
                 {
                     await this.ReleaseFactory.ScanReleaseFolder(releasesInfo.ReleaseId, this.DestinationRoot, doJustInfo);
                 }
+            }
+            if (!doJustInfo)
+            {
+                var fileExtensionsToDelete = this.Configuration.FileExtensionsToDelete ?? new string[0];
+                if (fileExtensionsToDelete.Any())
+                {
+                    foreach (var fileInFolder in inboundFolder.GetFiles("*.*", SearchOption.AllDirectories))
+                    {
+                        if (fileExtensionsToDelete.Any(x => x.Equals(fileInFolder.Extension, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            if (!doJustInfo)
+                            {
+                                fileInFolder.Delete();
+                                this.Logger.LogInformation("x Deleted File [{0}], Was foud in in FileExtensionsToDelete", fileInFolder.Name);
+                            }
+                        }
+                    }
+                }
+                FolderProcessor.DeleteEmptyFolders(inboundFolder, this.Logger);
+
             }
             return true;
         }

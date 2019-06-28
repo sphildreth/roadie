@@ -62,7 +62,7 @@ namespace Roadie.Library.MetaData.ID3Tags
             {
                 result.Add("TrackNumber (TRCK)");
             }
-            return string.Join(",", result);
+            return string.Join(", ", result);
         }
 
         public static int DetermineTotalDiscNumbers(IEnumerable<AudioMetaData> metaDatas)
@@ -126,6 +126,10 @@ namespace Roadie.Library.MetaData.ID3Tags
 
         public static short? DetermineTrackNumber(string filename)
         {
+            if(string.IsNullOrEmpty(filename) || filename.Length < 2)
+            {
+                return null;
+            }
             filename = filename.Replace("(", "");
             filename = filename.Replace("[", "");
             var part = filename.Substring(0, 2);
@@ -228,10 +232,6 @@ namespace Roadie.Library.MetaData.ID3Tags
         {
             var r = new OperationResult<AudioMetaData>();
             var result = this.MetaDataForFileFromIdSharp(fileName);
-            if (result.IsSuccess || returnEvenIfInvalid)
-            {
-                return result;
-            }
             if (result.Messages != null && result.Messages.Any())
             {
                 foreach (var m in result.Messages)
@@ -239,18 +239,37 @@ namespace Roadie.Library.MetaData.ID3Tags
                     r.AddMessage(m);
                 }
             }
-            result = this.MetaDataForFileFromATL(fileName);
-            if (result.IsSuccess)
+            if(result.Errors != null && result.Errors.Any())
             {
-                return result;
-            }
-            if (result.Messages != null && result.Messages.Any())
-            {
-                foreach (var m in result.Messages)
+                foreach(var e in result.Errors)
                 {
-                    r.AddMessage(m);
+                    r.AddError(e);
                 }
             }
+            if (!result.IsSuccess)
+            {
+                result =  this.MetaDataForFileFromATL(fileName);
+                if (result.Messages != null && result.Messages.Any())
+                {
+                    foreach (var m in result.Messages)
+                    {
+                        r.AddMessage(m);
+                    }
+                }
+                if (result.Errors != null && result.Errors.Any())
+                {
+                    foreach (var e in result.Errors)
+                    {
+                        r.AddError(e);
+                    }
+                }
+            }
+            if(!result.IsSuccess)
+            {
+                r.AddMessage($"Missing Data `[{ ID3TagsHelper.DetermineMissingRequiredMetaData(result.Data) }]`");
+            }
+            r.Data = result.Data;
+            r.IsSuccess = result.IsSuccess;
             return r;
         }
 

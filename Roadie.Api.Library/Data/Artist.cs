@@ -82,11 +82,14 @@ namespace Roadie.Library.Data
         [Column("trackCount")]
         public int? TrackCount { get; set; }
 
+        public ICollection<Comment> Comments { get; set; }
+
         public Artist()
         {
             this.Releases = new HashSet<Release>();
             this.Genres = new HashSet<ArtistGenre>();
             this.AssociatedArtists = new HashSet<ArtistAssociation>();
+            this.Comments = new HashSet<Comment>();
             this.Rating = 0;
             this.Status = Statuses.Ok;
         }

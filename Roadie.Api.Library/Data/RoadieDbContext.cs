@@ -12,6 +12,8 @@ namespace Roadie.Library.Data
         public DbSet<Artist> Artists { get; set; }
         public DbSet<Bookmark> Bookmarks { get; set; }
         public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<Comment> Comments { get; set; }
+        public DbSet<CommentReaction> CommentReactions { get; set; }
         public DbSet<CollectionRelease> CollectionReleases { get; set; }
         public DbSet<Collection> Collections { get; set; }
         public DbSet<Genre> Genres { get; set; }

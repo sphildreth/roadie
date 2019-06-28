@@ -8,6 +8,7 @@
         Incomplete = 3,
         Missing = 4,
         Wishlist = 5,
+        AdminRemoved = 6,
         Deleted = 99
     }
 }

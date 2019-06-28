@@ -133,6 +133,22 @@ namespace Roadie.Api.Services
                 {
                     result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
                 }
+
+                if (result.Data.Comments.Any())
+                {
+                    var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
+                    var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                                                where commentIds.Contains(cr.CommentId)
+                                                where cr.UserId == roadieUser.Id
+                                                select cr).ToArray();
+                    foreach (var comment in result.Data.Comments)
+                    {
+                        var userCommentReaction = userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
+                        comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
+                        comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
+                    }
+                }
+
             }
             return new OperationResult<Playlist>(result.Messages)
             {
@@ -422,6 +438,28 @@ namespace Roadie.Api.Services
                                                                          this.MakeArtistThumbnailImage(releaseArtist.RoadieId),
                                                                          this.MakeArtistThumbnailImage(trackArtist == null ? null : (Guid?)trackArtist.RoadieId))
                                      }).ToArray();
+                }
+                if (includes.Contains("comments"))
+                {
+                    var playlistComments = this.DbContext.Comments.Include(x => x.User).Where(x => x.PlaylistId == playlist.Id).OrderByDescending(x => x.CreatedDate).ToArray();
+                    if (playlistComments.Any())
+                    {
+                        var comments = new List<Comment>();
+                        var commentIds = playlistComments.Select(x => x.Id).ToArray();
+                        var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                                                    where commentIds.Contains(cr.CommentId)
+                                                    select cr).ToArray();
+                        foreach (var playlistComment in playlistComments)
+                        {
+                            var comment = playlistComment.Adapt<Comment>();
+                            comment.DatabaseId = playlistComment.Id;
+                            comment.User = UserList.FromDataUser(playlistComment.User, this.MakeUserThumbnailImage(playlistComment.User.RoadieId));
+                            comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == playlistComment.Id && x.ReactionValue == CommentReaction.Dislike);
+                            comment.LikedCount = userCommentReactions.Count(x => x.CommentId == playlistComment.Id && x.ReactionValue == CommentReaction.Like);
+                            comments.Add(comment);
+                        }
+                        result.Comments = comments;
+                    }
                 }
             }
 

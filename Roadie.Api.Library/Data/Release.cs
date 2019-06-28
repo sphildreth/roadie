@@ -114,6 +114,8 @@ namespace Roadie.Library.Data
         [Column("rank")]
         public decimal? Rank { get; set; }
 
+        public ICollection<Comment> Comments { get; set; }
+
         public Release()
         {
             this.Rating = 0;
@@ -123,6 +125,7 @@ namespace Roadie.Library.Data
             this.Labels = new HashSet<ReleaseLabel>();
             this.Collections = new HashSet<CollectionRelease>();
             this.Genres = new HashSet<ReleaseGenre>();
+            this.Comments = new HashSet<Comment>();
         }
     }
 }

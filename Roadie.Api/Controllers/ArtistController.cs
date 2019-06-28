@@ -8,6 +8,7 @@ using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
+using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using System;
 using System.Net;
@@ -40,10 +41,7 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
             var user = await this.CurrentUserModel();
-            var result = await this.CacheManager.GetAsync($"urn:artist_by_id_for_user:{ id }: { user?.Id }", async () =>
-             {
-                 return await this.ArtistService.ById(user, id, (inc ?? models.Artist.DefaultIncludes).ToLower().Split(","));
-             }, ControllerCacheRegionUrn);
+            var result = await this.ArtistService.ById(user, id, (inc ?? models.Artist.DefaultIncludes).ToLower().Split(","));
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();

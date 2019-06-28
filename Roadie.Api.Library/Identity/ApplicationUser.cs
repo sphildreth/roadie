@@ -133,6 +133,8 @@ namespace Roadie.Library.Identity
 
         public ICollection<UserTrack> TrackRatings { get; set; }
 
+        public ICollection<Comment> Comments { get; set; }
+
         public ICollection<UserQue> UserQues { get; set; }
 
         public ICollection<ApplicationUserRole> UserRoles { get; set; }

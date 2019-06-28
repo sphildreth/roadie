@@ -11,7 +11,7 @@ namespace Roadie.Library.Models.Playlists
     [Serializable]
     public class Playlist : EntityModelBase
     {
-        public const string DefaultIncludes = "stats";
+        public const string DefaultIncludes = "comments,stats";
 
         public bool IsPublic { get; set; }
         /// <summary>
@@ -45,5 +45,6 @@ namespace Roadie.Library.Models.Playlists
             }
 
         }
+        public IEnumerable<Comment> Comments { get; set; }
     }
 }

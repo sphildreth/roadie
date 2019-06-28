@@ -33,10 +33,14 @@ namespace Roadie.Library.Data
         [Column("trackCount")]
         public int? TrackCount { get; set; } 
 
-        public List<ReleaseLabel> ReleaseLabels { get; set; }
+        public ICollection<ReleaseLabel> ReleaseLabels { get; set; }
+
+        public ICollection<Comment> Comments { get; set; }
 
         public Label()
         {
+            this.ReleaseLabels = new HashSet<ReleaseLabel>();
+            this.Comments = new HashSet<Comment>();
             this.Status = Statuses.Ok;
         }
     }

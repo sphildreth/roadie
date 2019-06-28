@@ -128,6 +128,24 @@ namespace Roadie.Api.Services
                 }
                 tsw.Stop();
                 timings.Add("userArtist", tsw.ElapsedMilliseconds);
+                
+                if(result.Data.Comments.Any())
+                {
+                    tsw.Restart();
+                    var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
+                    var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                                                where commentIds.Contains(cr.CommentId)
+                                                where cr.UserId == roadieUser.Id
+                                                select cr).ToArray();
+                    foreach(var comment in result.Data.Comments)
+                    {
+                        var userCommentReaction = userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
+                        comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
+                        comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
+                    }
+                    tsw.Stop();
+                    timings.Add("commentReactions", tsw.ElapsedMilliseconds);
+                }
             }
             sw.Stop();
             timings.Add("operation", sw.ElapsedMilliseconds);
@@ -866,6 +884,31 @@ namespace Roadie.Api.Services
                     }
                     tsw.Stop();
                     timings.Add("collections", tsw.ElapsedMilliseconds);
+                }
+                if(includes.Contains("comments"))
+                {
+                    tsw.Restart();
+                    var artistComments = this.DbContext.Comments.Include(x => x.User).Where(x => x.ArtistId == artist.Id).OrderByDescending(x => x.CreatedDate).ToArray();
+                    if(artistComments.Any())
+                    {
+                        var comments = new List<Comment>();
+                        var commentIds = artistComments.Select(x => x.Id).ToArray();
+                        var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                                                    where commentIds.Contains(cr.CommentId)
+                                                    select cr).ToArray();
+                        foreach (var artistComment in artistComments)
+                        {
+                            var comment = artistComment.Adapt<Comment>();
+                            comment.DatabaseId = artistComment.Id;
+                            comment.User = UserList.FromDataUser(artistComment.User, this.MakeUserThumbnailImage(artistComment.User.RoadieId));
+                            comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == artistComment.Id && x.ReactionValue == CommentReaction.Dislike);
+                            comment.LikedCount = userCommentReactions.Count(x => x.CommentId == artistComment.Id && x.ReactionValue == CommentReaction.Like);
+                            comments.Add(comment);
+                        }                        
+                        result.Comments = comments;
+                    }
+                    tsw.Stop();
+                    timings.Add("comments", tsw.ElapsedMilliseconds);
                 }
                 if (includes.Contains("playlists"))
                 {

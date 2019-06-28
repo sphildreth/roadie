@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using Roadie.Library.Enums;
 using Roadie.Library.Models.Statistics;
 
@@ -9,7 +10,7 @@ namespace Roadie.Library.Models.Collections
     [Serializable]
     public class Collection : EntityModelBase
     {
-        public const string DefaultIncludes = "stats,list";
+        public const string DefaultIncludes = "comments,stats,list";
 
         public int CollectionCount { get; set; }
 
@@ -63,5 +64,6 @@ namespace Roadie.Library.Models.Collections
         // When populated a "data:image" base64 byte array of an image to use as new Thumbnail
         public string NewThumbnailData { get; set; }
 
+        public IEnumerable<Comment> Comments { get; set; } 
     }
 }

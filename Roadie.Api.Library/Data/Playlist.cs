@@ -32,6 +32,13 @@ namespace Roadie.Library.Data
         public short TrackCount { get; set; } 
 
         [Column("releaseCount")]
-        public short ReleaseCount { get; set; } 
+        public short ReleaseCount { get; set; }
+
+        public ICollection<Comment> Comments { get; set; }
+
+        public Playlist()
+        {
+            this.Comments = new HashSet<Comment>();
+        }
     }
 }

@@ -128,6 +128,20 @@ namespace Roadie.Api.Services
                         PlayedCount = userTrack.PlayedCount
                     };
                 }
+                if (result.Data.Comments.Any())
+                {
+                    var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
+                    var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                                                where commentIds.Contains(cr.CommentId)
+                                                where cr.UserId == roadieUser.Id
+                                                select cr).ToArray();
+                    foreach (var comment in result.Data.Comments)
+                    {
+                        var userCommentReaction = userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
+                        comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
+                        comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
+                    }
+                }
             }
             sw.Stop();
             return new OperationResult<Track>(result.Messages)
@@ -871,6 +885,28 @@ namespace Roadie.Api.Services
                     {
                         result.Statistics.DislikedCount = userTracks.Count(x => x.IsDisliked ?? false);
                         result.Statistics.FavoriteCount = userTracks.Count(x => x.IsFavorite ?? false);
+                    }
+                }
+                if (includes.Contains("comments"))
+                {
+                    var trackComments = this.DbContext.Comments.Include(x => x.User).Where(x => x.TrackId == track.Id).OrderByDescending(x => x.CreatedDate).ToArray();
+                    if (trackComments.Any())
+                    {
+                        var comments = new List<Comment>();
+                        var commentIds = trackComments.Select(x => x.Id).ToArray();
+                        var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                                                    where commentIds.Contains(cr.CommentId)
+                                                    select cr).ToArray();
+                        foreach (var trackComment in trackComments)
+                        {
+                            var comment = trackComment.Adapt<Comment>();
+                            comment.DatabaseId = trackComment.Id;
+                            comment.User = UserList.FromDataUser(trackComment.User, this.MakeUserThumbnailImage(trackComment.User.RoadieId));
+                            comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == trackComment.Id && x.ReactionValue == CommentReaction.Dislike);
+                            comment.LikedCount = userCommentReactions.Count(x => x.CommentId == trackComment.Id && x.ReactionValue == CommentReaction.Like);
+                            comments.Add(comment);
+                        }
+                        result.Comments = comments;
                     }
                 }
             }

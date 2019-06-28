@@ -71,12 +71,14 @@ namespace Roadie.Library.Identity
 
           //  Collections = new HashSet<Collection>();
             Playlists = new HashSet<Playlist>();
+            UserRoles = new HashSet<ApplicationUserRole>();
             Requests = new HashSet<Request>();
             Submissions = new HashSet<Submission>();
             UserQues = new HashSet<UserQue>();
             ArtistRatings = new HashSet<UserArtist>();
             ReleaseRatings = new HashSet<UserRelease>();
             TrackRatings = new HashSet<UserTrack>();
+            Comments = new HashSet<Comment>();
 
         }
     }

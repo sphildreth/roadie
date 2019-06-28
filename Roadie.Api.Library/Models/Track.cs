@@ -13,7 +13,7 @@ namespace Roadie.Library.Models
     [Serializable]
     public class Track : EntityModelBase
     {
-        public const string DefaultIncludes = "stats";
+        public const string DefaultIncludes = "comments,stats";
 
         [MaxLength(50)]
         public string AmgId { get; set; }
@@ -113,5 +113,7 @@ namespace Roadie.Library.Models
         public UserTrack UserRating { get; set; }
 
         public string TrackPlayUrl { get; set; }
+
+        public IEnumerable<Comment> Comments { get; set; }
     }
 }

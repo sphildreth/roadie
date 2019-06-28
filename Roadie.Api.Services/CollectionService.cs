@@ -20,6 +20,7 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
+using Roadie.Library.Models;
 
 namespace Roadie.Api.Services
 {
@@ -90,6 +91,20 @@ namespace Roadie.Api.Services
                 if (userBookmarkResult.IsSuccess)
                 {
                     result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
+                }
+                if (result.Data.Comments.Any())
+                {
+                    var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
+                    var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                                                where commentIds.Contains(cr.CommentId)
+                                                where cr.UserId == roadieUser.Id
+                                                select cr).ToArray();
+                    foreach (var comment in result.Data.Comments)
+                    {
+                        var userCommentReaction = userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
+                        comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
+                        comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
+                    }
                 }
             }
             return new OperationResult<Collection>(result.Messages)
@@ -343,6 +358,28 @@ namespace Roadie.Api.Services
                         TrackCount = collectionReleases.Sum(x => x.TrackCount),
                         TrackPlayedCount = collectionReleases.Sum(x => x.PlayedCount)
                     };
+                }
+                if (includes.Contains("comments"))
+                {
+                    var collectionComments = this.DbContext.Comments.Include(x => x.User).Where(x => x.CollectionId == collection.Id).OrderByDescending(x => x.CreatedDate).ToArray();
+                    if (collectionComments.Any())
+                    {
+                        var comments = new List<Comment>();
+                        var commentIds = collectionComments.Select(x => x.Id).ToArray();
+                        var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                                                    where commentIds.Contains(cr.CommentId)
+                                                    select cr).ToArray();
+                        foreach (var collectionComment in collectionComments)
+                        {
+                            var comment = collectionComment.Adapt<Comment>();
+                            comment.DatabaseId = collectionComment.Id;
+                            comment.User = UserList.FromDataUser(collectionComment.User, this.MakeUserThumbnailImage(collectionComment.User.RoadieId));
+                            comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == collectionComment.Id && x.ReactionValue == CommentReaction.Dislike);
+                            comment.LikedCount = userCommentReactions.Count(x => x.CommentId == collectionComment.Id && x.ReactionValue == CommentReaction.Like);
+                            comments.Add(comment);
+                        }
+                        result.Comments = comments;
+                    }
                 }
             }
 

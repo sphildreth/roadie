@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Roadie.Library.Models
@@ -8,5 +9,7 @@ namespace Roadie.Library.Models
     {
         [MaxLength(100)]
         public string Name { get; set; }
+
+        public IEnumerable<Comment> Comments { get; set; }
     }
 }

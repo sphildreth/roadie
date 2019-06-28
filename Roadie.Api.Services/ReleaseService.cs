@@ -152,6 +152,20 @@ namespace Roadie.Api.Services
                         Rating = userRelease.Rating
                     };
                 }
+                if (result.Data.Comments.Any())
+                {
+                    var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
+                    var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                                                where commentIds.Contains(cr.CommentId)
+                                                where cr.UserId == roadieUser.Id
+                                                select cr).ToArray();
+                    foreach (var comment in result.Data.Comments)
+                    {
+                        var userCommentReaction = userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
+                        comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
+                        comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
+                    }
+                }
             }
             sw.Stop();
             return new OperationResult<Library.Models.Releases.Release>(result.Messages)
@@ -968,6 +982,28 @@ namespace Roadie.Api.Services
                             });
                         }
                         result.Collections = collections;
+                    }
+                }
+                if (includes.Contains("comments"))
+                {
+                    var releaseComments = this.DbContext.Comments.Include(x => x.User).Where(x => x.ReleaseId == release.Id).OrderByDescending(x => x.CreatedDate).ToArray();
+                    if (releaseComments.Any())
+                    {
+                        var comments = new List<Comment>();
+                        var commentIds = releaseComments.Select(x => x.Id).ToArray();
+                        var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                                                    where commentIds.Contains(cr.CommentId)
+                                                    select cr).ToArray();
+                        foreach (var releaseComment in releaseComments)
+                        {
+                            var comment = releaseComment.Adapt<Comment>();
+                            comment.DatabaseId = releaseComment.Id;
+                            comment.User = UserList.FromDataUser(releaseComment.User, this.MakeUserThumbnailImage(releaseComment.User.RoadieId));
+                            comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == releaseComment.Id && x.ReactionValue == CommentReaction.Dislike);
+                            comment.LikedCount = userCommentReactions.Count(x => x.CommentId == releaseComment.Id && x.ReactionValue == CommentReaction.Like);
+                            comments.Add(comment);
+                        }
+                        result.Comments = comments;
                     }
                 }
                 if (includes.Contains("tracks"))

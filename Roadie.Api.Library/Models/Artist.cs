@@ -7,6 +7,7 @@ using Roadie.Library.Models.Users;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Runtime.Serialization;
 
 namespace Roadie.Library.Models
@@ -14,7 +15,7 @@ namespace Roadie.Library.Models
     [Serializable]
     public class Artist : EntityModelBase
     {
-        public const string DefaultIncludes = "stats,images,associatedartists,collections,playlists,contributions,labels";
+        public const string DefaultIncludes = "stats,images,associatedartists,comments,collections,playlists,contributions,labels";
 
         public IEnumerable<ReleaseList> ArtistContributionReleases;
         public IEnumerable<LabelList> ArtistLabels;
@@ -41,6 +42,8 @@ namespace Roadie.Library.Models
         public IEnumerable<DataToken> Genres { get; set; }
 
         public IEnumerable<Image> Images { get; set; }
+
+        public IEnumerable<Comment> Comments { get; set; }
 
         [MaxLength(65535)]
         [JsonIgnore]

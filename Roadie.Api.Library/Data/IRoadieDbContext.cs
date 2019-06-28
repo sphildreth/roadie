@@ -20,6 +20,8 @@ namespace Roadie.Library.Data
         DbSet<ChatMessage> ChatMessages { get; set; }
         DbSet<CollectionRelease> CollectionReleases { get; set; }
         DbSet<Collection> Collections { get; set; }
+        DbSet<Comment> Comments { get; set; }
+        DbSet<CommentReaction> CommentReactions { get; set; }
         DatabaseFacade Database { get; }
         DbSet<Genre> Genres { get; set; }
         DbSet<Image> Images { get; set; }

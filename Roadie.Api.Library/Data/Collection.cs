@@ -36,5 +36,7 @@ namespace Roadie.Library.Data
 
         public ICollection<CollectionRelease> Releases { get; set; }
 
+        public ICollection<Comment> Comments { get; set; }
+
     }
 }

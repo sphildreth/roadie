@@ -11,7 +11,7 @@ namespace Roadie.Library.Models.Releases
     [Serializable]
     public class Release : EntityModelBase
     {
-        public const string DefaultIncludes = "tracks,stats,images,collections,labels,playlists,genres";
+        public const string DefaultIncludes = "tracks,stats,images,comments,collections,labels,playlists,genres";
         public const string DefaultListIncludes = "";
 
         [MaxLength(50)]
@@ -91,5 +91,7 @@ namespace Roadie.Library.Models.Releases
         public IEnumerable<Image> Images { get; set; }
         public UserRelease UserRating { get; set; }
         public Image MediumThumbnail { get; set; }
+
+        public IEnumerable<Comment> Comments { get; set; }
     }
 }

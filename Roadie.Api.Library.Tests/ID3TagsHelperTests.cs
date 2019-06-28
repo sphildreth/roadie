@@ -354,6 +354,32 @@ namespace Roadie.Library.Tests
             }
         }
 
+        [Fact]
+        public void ReadID3v24Tags()
+        {
+      //      var file = new FileInfo(@"N:\_complete\JN Dutplanet net Reset String - Ancient Future 2014\JN Dutplanet.net Reset String - Ancient Future 2014\01 O.P.D. (Obsessive Personality Disorder).mp3");
+            var file = new FileInfo(@"C:\roadie_dev_root\mp3_tests\01 O.P.D. (Obsessive Personality Disorder).mp3");
+            if (file.Exists)
+            {
+                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName, true);
+                Assert.True(tagLib.IsSuccess);
+                var metaData = tagLib.Data;
+                Assert.NotNull(metaData.Artist);
+                Assert.NotNull(metaData.Release);
+                Assert.NotNull(metaData.Title);
+                Assert.True(metaData.Year > 0);
+                Assert.NotNull(metaData.TrackNumber);
+                Assert.True(metaData.TotalSeconds > 0);
+                Assert.True(metaData.ValidWeight > 30);
+                Assert.True(metaData.IsValid);
+            }
+            else
+            {
+                Console.WriteLine($"skipping { file}");
+                Assert.True(true);
+            }
+        }
+
 
         [Fact]
         public void ReadID3TagsMultipleMediasWithMax()

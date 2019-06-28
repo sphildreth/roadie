@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -86,8 +87,11 @@ namespace Roadie.Library.Data
         [Required]
         public short TrackNumber { get; set; }
 
+        public ICollection<Comment> Comments { get; set; }
+
         public Track()
         {
+            this.Comments = new HashSet<Comment>();
             this.Rating = 0;
         }
     }

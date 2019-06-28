@@ -14,10 +14,13 @@ namespace Roadie.Library.Data
         public ICollection<ReleaseGenre> Releases { get; set; }
         public ICollection<ArtistGenre> Artists { get; set; }
 
+        public ICollection<Comment> Comments { get; set; }
+
         public Genre()
         {
             this.Releases = new HashSet<ReleaseGenre>();
             this.Artists = new HashSet<ArtistGenre>();
+            this.Comments = new HashSet<Comment>();
         }
     }
 }

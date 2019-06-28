@@ -59,6 +59,20 @@ namespace Roadie.Api.Services
                 {
                     result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
                 }
+                if (result.Data.Comments.Any())
+                {
+                    var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
+                    var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                                                where commentIds.Contains(cr.CommentId)
+                                                where cr.UserId == roadieUser.Id
+                                                select cr).ToArray();
+                    foreach (var comment in result.Data.Comments)
+                    {
+                        var userCommentReaction = userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
+                        comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
+                        comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
+                    }
+                }
             }
             return new OperationResult<Label>(result.Messages)
             {
@@ -250,6 +264,28 @@ namespace Roadie.Api.Services
                         TrackSize = result.DurationTime,
                         FileSize = labelTracks.Sum(x => (long?)x.FileSize).ToFileSize()
                     };
+                }
+                if (includes.Contains("comments"))
+                {
+                    var labelComments = this.DbContext.Comments.Include(x => x.User).Where(x => x.LabelId == label.Id).OrderByDescending(x => x.CreatedDate).ToArray();
+                    if (labelComments.Any())
+                    {
+                        var comments = new List<Comment>();
+                        var commentIds = labelComments.Select(x => x.Id).ToArray();
+                        var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                                                    where commentIds.Contains(cr.CommentId)
+                                                    select cr).ToArray();
+                        foreach (var labelComment in labelComments)
+                        {
+                            var comment = labelComment.Adapt<Comment>();
+                            comment.DatabaseId = labelComment.Id;
+                            comment.User = UserList.FromDataUser(labelComment.User, this.MakeUserThumbnailImage(labelComment.User.RoadieId));
+                            comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Dislike);
+                            comment.LikedCount = userCommentReactions.Count(x => x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Like);
+                            comments.Add(comment);
+                        }
+                        result.Comments = comments;
+                    }
                 }
             }
 

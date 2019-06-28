@@ -1,4 +1,5 @@
-﻿using Roadie.Library.Extensions;
+﻿using Newtonsoft.Json;
+using Roadie.Library.Extensions;
 using Roadie.Library.Inspect.Plugins;
 using System;
 using System.Collections.Generic;
@@ -131,6 +132,7 @@ namespace Roadie.Library.MetaData.Audio
         public string Filename { get; set; }
 
         private FileInfo _fileInfo = null;
+        [JsonIgnore]
         public FileInfo FileInfo
         {
             get
@@ -140,6 +142,7 @@ namespace Roadie.Library.MetaData.Audio
         }
 
         public ICollection<string> Genres { get; set; }
+        [JsonIgnore]
         public IEnumerable<AudioMetaDataImage> Images { get; set; }
 
         public string ISRC { get; internal set; }
