@@ -3,6 +3,7 @@ using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
+using Roadie.Library.Enums;
 using Roadie.Library.Models;
 using Roadie.Library.Utility;
 using System;
@@ -15,16 +16,16 @@ using data = Roadie.Library.Data;
 namespace Roadie.Api.Services
 {
     /// <summary>
-    /// Returns lookups (or dictionaries) of various allowable values for a given Type
+    ///     Returns lookups (or dictionaries) of various allowable values for a given Type
     /// </summary>
     public class LookupService : ServiceBase, ILookupService
     {
         public LookupService(IRoadieSettings configuration,
-                             IHttpEncoder httpEncoder,
-                             IHttpContext httpContext,
-                             data.IRoadieDbContext dbContext,
-                             ICacheManager cacheManager,
-                             ILogger<PlaylistService> logger)
+            IHttpEncoder httpEncoder,
+            IHttpContext httpContext,
+            data.IRoadieDbContext dbContext,
+            ICacheManager cacheManager,
+            ILogger<PlaylistService> logger)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
         }
@@ -34,7 +35,7 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
-                Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.ArtistType)),
+                Data = EnumToDataTokens(typeof(ArtistType)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             });
@@ -45,7 +46,7 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
-                Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.BandStatus)),
+                Data = EnumToDataTokens(typeof(BandStatus)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             });
@@ -56,7 +57,7 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
-                Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.BookmarkType)),
+                Data = EnumToDataTokens(typeof(BookmarkType)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             });
@@ -67,7 +68,7 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
-                Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.CollectionType)),
+                Data = EnumToDataTokens(typeof(CollectionType)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             });
@@ -78,7 +79,7 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
-                Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.LibraryStatus)),
+                Data = EnumToDataTokens(typeof(LibraryStatus)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             });
@@ -89,7 +90,7 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
-                Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.QueMessageType)),
+                Data = EnumToDataTokens(typeof(QueMessageType)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             });
@@ -100,7 +101,7 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
-                Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.ReleaseType)),
+                Data = EnumToDataTokens(typeof(ReleaseType)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             });
@@ -111,7 +112,7 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
-                Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.RequestStatus)),
+                Data = EnumToDataTokens(typeof(RequestStatus)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             });
@@ -122,7 +123,7 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
             {
-                Data = this.EnumToDataTokens(typeof(Roadie.Library.Enums.Statuses)),
+                Data = EnumToDataTokens(typeof(Statuses)),
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             });
@@ -132,13 +133,11 @@ namespace Roadie.Api.Services
         {
             var result = new List<DataToken>();
             foreach (var ls in Enum.GetValues(ee))
-            {
                 result.Add(new DataToken
                 {
                     Text = ls.ToString(),
                     Value = ((short)ls).ToString()
                 });
-            }
             return result.OrderBy(x => x.Text);
         }
     }

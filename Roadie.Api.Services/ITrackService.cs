@@ -12,11 +12,13 @@ namespace Roadie.Api.Services
     {
         Task<OperationResult<Track>> ById(User roadieUser, Guid id, IEnumerable<string> includes);
 
-        Task<Library.Models.Pagination.PagedResult<TrackList>> List(PagedRequest request, User roadieUser, bool? doRandomize = false, Guid? releaseId = null);
+        Task<PagedResult<TrackList>> List(PagedRequest request, User roadieUser, bool? doRandomize = false,
+            Guid? releaseId = null);
 
         OperationResult<Track> StreamCheckAndInfo(User roadieUser, Guid id);
 
-        Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes, User roadieUser);
+        Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes,
+            User roadieUser);
 
         Task<OperationResult<bool>> UpdateTrack(User user, Track track);
     }

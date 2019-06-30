@@ -1,7 +1,12 @@
+using System;
+
 namespace Roadie.Library
 {
-    public class AppException
+    [Serializable]
+    public class AppException : Exception
     {
-        
+        public AppException(string message) : base(message)
+        {
+        }
     }
 }

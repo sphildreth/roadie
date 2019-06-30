@@ -19,16 +19,17 @@ namespace Roadie.Api.Services
     public class GenreService : ServiceBase, IGenreService
     {
         public GenreService(IRoadieSettings configuration,
-                             IHttpEncoder httpEncoder,
-                             IHttpContext httpContext,
-                             data.IRoadieDbContext dbContext,
-                             ICacheManager cacheManager,
-                             ILogger<GenreService> logger)
+            IHttpEncoder httpEncoder,
+            IHttpContext httpContext,
+            data.IRoadieDbContext dbContext,
+            ICacheManager cacheManager,
+            ILogger<GenreService> logger)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
         }
 
-        public Task<Library.Models.Pagination.PagedResult<GenreList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
+        public Task<Library.Models.Pagination.PagedResult<GenreList>> List(User roadieUser, PagedRequest request,
+            bool? doRandomize = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -38,30 +39,31 @@ namespace Roadie.Api.Services
                 request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
                 request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
             }
-            var result = (from g in this.DbContext.Genres
-                          let releaseCount = (from rg in this.DbContext.ReleaseGenres
-                                              where rg.GenreId == g.Id
-                                              select rg.Id).Count()
-                          let artistCount = (from rg in this.DbContext.ArtistGenres
+
+            var result = from g in DbContext.Genres
+                         let releaseCount = (from rg in DbContext.ReleaseGenres
                                              where rg.GenreId == g.Id
                                              select rg.Id).Count()
-                          where (request.FilterValue.Length == 0 || (g.Name.Contains(request.FilterValue)))
-                          select new GenreList
-                          {
-                              DatabaseId = g.Id,
-                              Id = g.RoadieId,
-                              Genre = new DataToken
-                              {
-                                  Text = g.Name,
-                                  Value = g.RoadieId.ToString()
-                              },
-                              ReleaseCount = releaseCount,
-                              ArtistCount = artistCount,
-                              CreatedDate = g.CreatedDate,
-                              LastUpdated = g.LastUpdated,
-                          });
+                         let artistCount = (from rg in DbContext.ArtistGenres
+                                            where rg.GenreId == g.Id
+                                            select rg.Id).Count()
+                         where request.FilterValue.Length == 0 || g.Name.Contains(request.FilterValue)
+                         select new GenreList
+                         {
+                             DatabaseId = g.Id,
+                             Id = g.RoadieId,
+                             Genre = new DataToken
+                             {
+                                 Text = g.Name,
+                                 Value = g.RoadieId.ToString()
+                             },
+                             ReleaseCount = releaseCount,
+                             ArtistCount = artistCount,
+                             CreatedDate = g.CreatedDate,
+                             LastUpdated = g.LastUpdated
+                         };
 
-            GenreList[] rows = null;
+            GenreList[] rows;
             var rowCount = result.Count();
             if (doRandomize ?? false)
             {
@@ -71,9 +73,12 @@ namespace Roadie.Api.Services
             }
             else
             {
-                var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "Genre.Text", "ASC" } }) : request.OrderValue(null);
+                var sortBy = string.IsNullOrEmpty(request.Sort)
+                    ? request.OrderValue(new Dictionary<string, string> { { "Genre.Text", "ASC" } })
+                    : request.OrderValue();
                 rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }
+
             sw.Stop();
             return Task.FromResult(new Library.Models.Pagination.PagedResult<GenreList>
             {

@@ -32,87 +32,103 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
+using Image = Roadie.Library.Models.Image;
+using Release = Roadie.Library.Models.Releases.Release;
 
 namespace Roadie.Api.Services
 {
     public class ReleaseService : ServiceBase, IReleaseService
     {
         private IArtistLookupEngine ArtistLookupEngine { get; }
+
         private IAudioMetaDataHelper AudioMetaDataHelper { get; }
-        private IBookmarkService BookmarkService { get; } = null;
-        private ICollectionService CollectionService { get; } = null;
+
+        private IBookmarkService BookmarkService { get; }
+
+        private ICollectionService CollectionService { get; }
+
         private IFileNameHelper FileNameHelper { get; }
+
         private IID3TagsHelper ID3TagsHelper { get; }
+
         private IImageFactory ImageFactory { get; }
+
         private ILabelFactory LabelFactory { get; }
+
         private ILabelLookupEngine LabelLookupEngine { get; }
+
         private ILastFmHelper LastFmHelper { get; }
+
         private IMusicBrainzProvider MusicBrainzProvider { get; }
-        private IPlaylistService PlaylistService { get; } = null;
+
+        private IPlaylistService PlaylistService { get; }
+
         private IReleaseFactory ReleaseFactory { get; }
+
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
 
         public ReleaseService(IRoadieSettings configuration,
-                             IHttpEncoder httpEncoder,
-                             IHttpContext httpContext,
-                             data.IRoadieDbContext dbContext,
-                             ICacheManager cacheManager,
-                             ICollectionService collectionService,
-                             IPlaylistService playlistService,
-                             ILogger<ReleaseService> logger,
-                             IBookmarkService bookmarkService)
+                                                                                                                            IHttpEncoder httpEncoder,
+            IHttpContext httpContext,
+            data.IRoadieDbContext dbContext,
+            ICacheManager cacheManager,
+            ICollectionService collectionService,
+            IPlaylistService playlistService,
+            ILogger<ReleaseService> logger,
+            IBookmarkService bookmarkService)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
-            this.CollectionService = collectionService;
-            this.PlaylistService = playlistService;
-            this.BookmarkService = bookmarkService;
+            CollectionService = collectionService;
+            PlaylistService = playlistService;
+            BookmarkService = bookmarkService;
 
-            this.MusicBrainzProvider = new MusicBrainzProvider(configuration, cacheManager, logger);
-            this.LastFmHelper = new LastFmHelper(configuration, cacheManager, logger, dbContext, httpEncoder);
-            this.FileNameHelper = new FileNameHelper(configuration, cacheManager, logger);
-            this.ID3TagsHelper = new ID3TagsHelper(configuration, cacheManager, logger);
+            MusicBrainzProvider = new MusicBrainzProvider(configuration, cacheManager, logger);
+            LastFmHelper = new LastFmHelper(configuration, cacheManager, logger, dbContext, httpEncoder);
+            FileNameHelper = new FileNameHelper(configuration, cacheManager, logger);
+            ID3TagsHelper = new ID3TagsHelper(configuration, cacheManager, logger);
 
-            this.ArtistLookupEngine = new ArtistLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);
-            this.LabelLookupEngine = new LabelLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);
-            this.ReleaseLookupEngine = new ReleaseLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.LabelLookupEngine);
-            this.ImageFactory = new ImageFactory(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
-            this.LabelFactory = new LabelFactory(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.ReleaseLookupEngine);
-            this.AudioMetaDataHelper = new AudioMetaDataHelper(configuration, httpEncoder, dbContext, this.MusicBrainzProvider, this.LastFmHelper, cacheManager,
-                                                               logger, this.ArtistLookupEngine, this.ImageFactory, this.FileNameHelper, this.ID3TagsHelper);
-            this.ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, dbContext, cacheManager, logger, this.ArtistLookupEngine, this.LabelFactory, this.AudioMetaDataHelper, this.ReleaseLookupEngine);
+            ArtistLookupEngine = new ArtistLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);
+            LabelLookupEngine = new LabelLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);
+            ReleaseLookupEngine = new ReleaseLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger,
+                ArtistLookupEngine, LabelLookupEngine);
+            ImageFactory = new ImageFactory(configuration, httpEncoder, dbContext, cacheManager, logger,
+                ArtistLookupEngine, ReleaseLookupEngine);
+            LabelFactory = new LabelFactory(configuration, httpEncoder, dbContext, cacheManager, logger,
+                ArtistLookupEngine, ReleaseLookupEngine);
+            AudioMetaDataHelper = new AudioMetaDataHelper(configuration, httpEncoder, dbContext, MusicBrainzProvider,
+                LastFmHelper, cacheManager,
+                logger, ArtistLookupEngine, ImageFactory, FileNameHelper, ID3TagsHelper);
+            ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, dbContext, cacheManager, logger,
+                ArtistLookupEngine, LabelFactory, AudioMetaDataHelper, ReleaseLookupEngine);
         }
 
-        public async Task<OperationResult<Library.Models.Releases.Release>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
+        public async Task<OperationResult<Release>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
-            var cacheKey = string.Format("urn:release_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
-            var result = await this.CacheManager.GetAsync<OperationResult<Library.Models.Releases.Release>>(cacheKey, async () =>
-            {
-                return await this.ReleaseByIdAction(id, includes);
-            }, data.Artist.CacheRegionUrn(id));
+            var cacheKey = string.Format("urn:release_by_id_operation:{0}:{1}", id,
+                includes == null ? "0" : string.Join("|", includes));
+            var result = await CacheManager.GetAsync(cacheKey,
+                async () => { return await ReleaseByIdAction(id, includes); }, data.Artist.CacheRegionUrn(id));
             if (result?.Data != null && roadieUser != null)
             {
-                var release = this.GetRelease(id);
-                var userBookmarkResult = await this.BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Release);
+                var release = GetRelease(id);
+                var userBookmarkResult =
+                    await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Release);
                 if (userBookmarkResult.IsSuccess)
-                {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == release.RoadieId.ToString()) != null;
-                }
+                    result.Data.UserBookmarked =
+                        userBookmarkResult?.Rows?.FirstOrDefault(x =>
+                            x.Bookmark.Value == release.RoadieId.ToString()) != null;
                 if (result.Data.Medias != null)
                 {
-                    var user = this.GetUser(roadieUser.UserId);
+                    var user = GetUser(roadieUser.UserId);
                     foreach (var media in result.Data.Medias)
-                    {
                         foreach (var track in media.Tracks)
-                        {
-                            track.TrackPlayUrl = this.MakeTrackPlayUrl(user, track.DatabaseId, track.Id);
-                        }
-                    }
+                            track.TrackPlayUrl = MakeTrackPlayUrl(user, track.DatabaseId, track.Id);
 
                     var releaseTrackIds = result.Data.Medias.SelectMany(x => x.Tracks).Select(x => x.Id);
-                    var releaseUserTracks = (from ut in this.DbContext.UserTracks
-                                             join t in this.DbContext.Tracks on ut.TrackId equals t.Id
+                    var releaseUserTracks = (from ut in DbContext.UserTracks
+                                             join t in DbContext.Tracks on ut.TrackId equals t.Id
                                              where ut.UserId == roadieUser.Id
                                              where (from x in releaseTrackIds select x).Contains(t.RoadieId)
                                              select new
@@ -121,14 +137,11 @@ namespace Roadie.Api.Services
                                                  ut
                                              }).ToArray();
                     if (releaseUserTracks != null && releaseUserTracks.Any())
-                    {
                         foreach (var releaseUserTrack in releaseUserTracks)
-                        {
                             foreach (var media in result.Data.Medias)
                             {
                                 var releaseTrack = media.Tracks.FirstOrDefault(x => x.Id == releaseUserTrack.t.RoadieId);
                                 if (releaseTrack != null)
-                                {
                                     releaseTrack.UserRating = new UserTrack
                                     {
                                         Rating = releaseUserTrack.ut.Rating,
@@ -137,38 +150,37 @@ namespace Roadie.Api.Services
                                         LastPlayed = releaseUserTrack.ut.LastPlayed,
                                         PlayedCount = releaseUserTrack.ut.PlayedCount
                                     };
-                                }
                             }
-                        }
-                    }
                 }
-                var userRelease = this.DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == roadieUser.Id);
+
+                var userRelease =
+                    DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == roadieUser.Id);
                 if (userRelease != null)
-                {
                     result.Data.UserRating = new UserRelease
                     {
                         IsDisliked = userRelease.IsDisliked ?? false,
                         IsFavorite = userRelease.IsFavorite ?? false,
                         Rating = userRelease.Rating
                     };
-                }
                 if (result.Data.Comments.Any())
                 {
                     var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
-                    var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                    var userCommentReactions = (from cr in DbContext.CommentReactions
                                                 where commentIds.Contains(cr.CommentId)
                                                 where cr.UserId == roadieUser.Id
                                                 select cr).ToArray();
                     foreach (var comment in result.Data.Comments)
                     {
-                        var userCommentReaction = userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
+                        var userCommentReaction =
+                            userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
                         comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
                         comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
                     }
                 }
             }
+
             sw.Stop();
-            return new OperationResult<Library.Models.Releases.Release>(result.Messages)
+            return new OperationResult<Release>(result.Messages)
             {
                 Data = result?.Data,
                 IsNotFoundResult = result?.IsNotFoundResult ?? false,
@@ -178,44 +190,44 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
+        public Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(User roadieUser, PagedRequest request,
+            bool? doRandomize = false, IEnumerable<string> includes = null)
         {
             var sw = new Stopwatch();
             sw.Start();
 
             IQueryable<int> collectionReleaseIds = null;
             if (request.FilterToCollectionId.HasValue)
-            {
-                collectionReleaseIds = (from cr in this.DbContext.CollectionReleases
-                                        join c in this.DbContext.Collections on cr.CollectionId equals c.Id
-                                        join r in this.DbContext.Releases on cr.ReleaseId equals r.Id
-                                        where c.RoadieId == request.FilterToCollectionId.Value
-                                        orderby cr.ListNumber
-                                        select r.Id);
-            }
+                collectionReleaseIds = from cr in DbContext.CollectionReleases
+                                       join c in DbContext.Collections on cr.CollectionId equals c.Id
+                                       join r in DbContext.Releases on cr.ReleaseId equals r.Id
+                                       where c.RoadieId == request.FilterToCollectionId.Value
+                                       orderby cr.ListNumber
+                                       select r.Id;
             IQueryable<int> favoriteReleaseIds = null;
             if (request.FilterFavoriteOnly)
-            {
-                favoriteReleaseIds = (from a in this.DbContext.Releases
-                                      join ur in this.DbContext.UserReleases on a.Id equals ur.ReleaseId
-                                      where ur.IsFavorite ?? false
-                                      where (roadieUser == null || ur.UserId == roadieUser.Id)
-                                      select a.Id
-                                     );
-            }
+                favoriteReleaseIds = from a in DbContext.Releases
+                                     join ur in DbContext.UserReleases on a.Id equals ur.ReleaseId
+                                     where ur.IsFavorite ?? false
+                                     where roadieUser == null || ur.UserId == roadieUser.Id
+                                     select a.Id;
             IQueryable<int> genreReleaseIds = null;
             var isFilteredToGenre = false;
-            if (!string.IsNullOrEmpty(request.FilterByGenre) || (!string.IsNullOrEmpty(request.Filter) && request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase)))
+            if (!string.IsNullOrEmpty(request.FilterByGenre) || !string.IsNullOrEmpty(request.Filter) &&
+                request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase))
             {
-                var genreFilter = request.FilterByGenre ?? (request.Filter ?? string.Empty).Replace(":genre ", "", StringComparison.OrdinalIgnoreCase);
-                genreReleaseIds = (from rg in this.DbContext.ReleaseGenres
-                                   join g in this.DbContext.Genres on rg.GenreId equals g.Id
+                var genreFilter = request.FilterByGenre ??
+                                  (request.Filter ?? string.Empty).Replace(":genre ", "",
+                                      StringComparison.OrdinalIgnoreCase);
+                genreReleaseIds = (from rg in DbContext.ReleaseGenres
+                                   join g in DbContext.Genres on rg.GenreId equals g.Id
                                    where g.Name.Contains(genreFilter)
                                    select rg.ReleaseId)
-                                   .Distinct();
+                    .Distinct();
                 request.Filter = null;
                 isFilteredToGenre = true;
             }
+
             if (request.FilterFromYear.HasValue || request.FilterToYear.HasValue)
             {
                 // If from is larger than to then reverse values and set sort order to desc
@@ -248,22 +260,25 @@ namespace Roadie.Api.Services
                 }
             }
 
-            var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue) ? request.FilterValue.ToAlphanumericName() : null;
-            var result = (from r in this.DbContext.Releases
-                          join a in this.DbContext.Artists on r.ArtistId equals a.Id
-                          where (request.FilterMinimumRating == null || r.Rating >= request.FilterMinimumRating.Value)
-                          where (request.FilterToArtistId == null || r.Artist.RoadieId == request.FilterToArtistId)
-                          where (request.FilterToCollectionId == null || collectionReleaseIds.Contains(r.Id))
-                          where (!request.FilterFavoriteOnly || favoriteReleaseIds.Contains(r.Id))
-                          where (!isFilteredToGenre || genreReleaseIds.Contains(r.Id))
-                          where (request.FilterFromYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear)
-                          where (request.FilterToYear == null || r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear)
-                          where (request.FilterValue == "" || (r.Title.Contains(request.FilterValue) ||
-                                                               r.AlternateNames.Contains(request.FilterValue) ||
-                                                               r.AlternateNames.Contains(normalizedFilterValue)))
-                          where (!isEqualFilter || (r.Title.Equals(request.FilterValue) ||
-                                                    r.AlternateNames.Equals(request.FilterValue) ||
-                                                    r.AlternateNames.Equals(normalizedFilterValue)))
+            var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue)
+                ? request.FilterValue.ToAlphanumericName()
+                : null;
+            var result = (from r in DbContext.Releases
+                          join a in DbContext.Artists on r.ArtistId equals a.Id
+                          where request.FilterMinimumRating == null || r.Rating >= request.FilterMinimumRating.Value
+                          where request.FilterToArtistId == null || r.Artist.RoadieId == request.FilterToArtistId
+                          where request.FilterToCollectionId == null || collectionReleaseIds.Contains(r.Id)
+                          where !request.FilterFavoriteOnly || favoriteReleaseIds.Contains(r.Id)
+                          where !isFilteredToGenre || genreReleaseIds.Contains(r.Id)
+                          where request.FilterFromYear == null ||
+                                r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear
+                          where request.FilterToYear == null ||
+                                r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear
+                          where request.FilterValue == "" || r.Title.Contains(request.FilterValue) ||
+                                r.AlternateNames.Contains(request.FilterValue) ||
+                                r.AlternateNames.Contains(normalizedFilterValue)
+                          where !isEqualFilter || r.Title.Equals(request.FilterValue) ||
+                                r.AlternateNames.Equals(request.FilterValue) || r.AlternateNames.Equals(normalizedFilterValue)
                           select new ReleaseList
                           {
                               DatabaseId = r.Id,
@@ -278,7 +293,7 @@ namespace Roadie.Api.Services
                                   Text = r.Title,
                                   Value = r.RoadieId.ToString()
                               },
-                              ArtistThumbnail = this.MakeArtistThumbnailImage(a.RoadieId),
+                              ArtistThumbnail = MakeArtistThumbnailImage(a.RoadieId),
                               CreatedDate = r.CreatedDate,
                               Duration = r.Duration,
                               LastPlayed = r.LastPlayed,
@@ -288,13 +303,13 @@ namespace Roadie.Api.Services
                               Rating = r.Rating,
                               Rank = r.Rank,
                               ReleaseDateDateTime = r.ReleaseDate,
-                              ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ r.RoadieId}",
+                              ReleasePlayUrl = $"{HttpContext.BaseUrl}/play/release/{r.RoadieId}",
                               Status = r.Status,
-                              Thumbnail = this.MakeReleaseThumbnailImage(r.RoadieId),
+                              Thumbnail = MakeReleaseThumbnailImage(r.RoadieId),
                               TrackCount = r.TrackCount,
                               TrackPlayedCount = r.PlayedCount
                           }
-                          ).Distinct();
+                ).Distinct();
             ReleaseList[] rows = null;
 
             var rowCount = result.Count();
@@ -309,39 +324,27 @@ namespace Roadie.Api.Services
             {
                 string sortBy = null;
                 if (request.ActionValue == User.ActionKeyUserRated)
-                {
                     sortBy = request.OrderValue(new Dictionary<string, string> { { "Rating", "DESC" } });
-                }
                 else if (request.FilterToArtistId.HasValue)
-                {
-                    sortBy = request.OrderValue(new Dictionary<string, string> { { "ReleaseDate", "ASC" }, { "Release.Text", "ASC" } });
-                }
+                    sortBy = request.OrderValue(new Dictionary<string, string>
+                        {{"ReleaseDate", "ASC"}, {"Release.Text", "ASC"}});
                 else
-                {
                     sortBy = request.OrderValue(new Dictionary<string, string> { { "Release.Text", "ASC" } });
-                }
-                if (request.FilterRatedOnly)
-                {
-                    result = result.Where(x => x.Rating.HasValue);
-                }
+                if (request.FilterRatedOnly) result = result.Where(x => x.Rating.HasValue);
                 if (request.FilterMinimumRating.HasValue)
-                {
-                    result = result.Where(x => x.Rating.HasValue && x.Rating.Value >= request.FilterMinimumRating.Value);
-                }
+                    result = result.Where(x =>
+                        x.Rating.HasValue && x.Rating.Value >= request.FilterMinimumRating.Value);
                 if (request.FilterToCollectionId.HasValue)
-                {
                     rows = result.ToArray();
-                }
                 else
-                {
                     rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
-                }
             }
+
             if (rows.Any())
             {
                 var rowIds = rows.Select(x => x.DatabaseId).ToArray();
-                var genreData = (from rg in this.DbContext.ReleaseGenres
-                                 join g in this.DbContext.Genres on rg.GenreId equals g.Id
+                var genreData = (from rg in DbContext.ReleaseGenres
+                                 join g in DbContext.Genres on rg.GenreId equals g.Id
                                  where rowIds.Contains(rg.ReleaseId)
                                  orderby rg.Id
                                  select new
@@ -363,11 +366,11 @@ namespace Roadie.Api.Services
                 if (request.FilterToCollectionId.HasValue)
                 {
                     var newRows = new List<ReleaseList>(rows);
-                    var collection = this.GetCollection(request.FilterToCollectionId.Value);
-                    var collectionReleases = (from c in this.DbContext.Collections
-                                              join cr in this.DbContext.CollectionReleases on c.Id equals cr.CollectionId
-                                              where c.RoadieId == request.FilterToCollectionId
-                                              select cr);
+                    var collection = GetCollection(request.FilterToCollectionId.Value);
+                    var collectionReleases = from c in DbContext.Collections
+                                             join cr in DbContext.CollectionReleases on c.Id equals cr.CollectionId
+                                             where c.RoadieId == request.FilterToCollectionId
+                                             select cr;
                     var pars = collection.PositionArtistReleases().ToArray();
                     foreach (var par in pars)
                     {
@@ -377,12 +380,8 @@ namespace Roadie.Api.Services
                         {
                             var parRelease = rows.FirstOrDefault(x => x.DatabaseId == cr.ReleaseId);
                             if (parRelease != null)
-                            {
                                 if (!parRelease.ListNumber.HasValue)
-                                {
                                     parRelease.ListNumber = par.Position;
-                                }
-                            }
                         }
                         // Release is not known add missing dummy release to rows
                         else
@@ -399,29 +398,30 @@ namespace Roadie.Api.Services
                                 },
                                 Status = Statuses.Missing,
                                 CssClass = "missing",
-                                ArtistThumbnail = new Library.Models.Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
-                                Thumbnail = new Library.Models.Image($"{this.HttpContext.ImageBaseUrl }/unknown.jpg"),
+                                ArtistThumbnail = new Image($"{HttpContext.ImageBaseUrl}/unknown.jpg"),
+                                Thumbnail = new Image($"{HttpContext.ImageBaseUrl}/unknown.jpg"),
                                 ListNumber = par.Position
                             });
                         }
                     }
+
                     // Resort the list for the collection by listNumber
                     if (request.FilterToStatusValue != Statuses.Ok)
-                    {
                         newRows = newRows.Where(x => x.Status == request.FilterToStatusValue).ToList();
-                    }
-                    rows = newRows.OrderBy(x => x.ListNumber).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                    rows = newRows.OrderBy(x => x.ListNumber).Skip(request.SkipValue).Take(request.LimitValue)
+                        .ToArray();
                     rowCount = collection.CollectionCount;
                 }
 
                 if (roadieUser != null)
                 {
-                    var userReleaseRatings = (from ur in this.DbContext.UserReleases
+                    var userReleaseRatings = (from ur in DbContext.UserReleases
                                               where ur.UserId == roadieUser.Id
                                               where rowIds.Contains(ur.ReleaseId)
                                               select ur).ToArray();
 
-                    foreach (var userReleaseRating in userReleaseRatings.Where(x => rows.Select(r => r.DatabaseId).Contains(x.ReleaseId)))
+                    foreach (var userReleaseRating in userReleaseRatings.Where(x =>
+                        rows.Select(r => r.DatabaseId).Contains(x.ReleaseId)))
                     {
                         var row = rows.FirstOrDefault(x => x.DatabaseId == userReleaseRating.ReleaseId);
                         if (row != null)
@@ -433,53 +433,49 @@ namespace Roadie.Api.Services
                                 IsDisliked = isDisliked,
                                 IsFavorite = isFavorite,
                                 Rating = userReleaseRating.Rating,
-                                RatedDate = isDisliked || isFavorite ? (DateTime?)(userReleaseRating.LastUpdated ?? userReleaseRating.CreatedDate) : null
+                                RatedDate = isDisliked || isFavorite
+                                    ? (DateTime?)(userReleaseRating.LastUpdated ?? userReleaseRating.CreatedDate)
+                                    : null
                             };
                         }
                     }
                 }
             }
+
             if (includes != null && includes.Any())
-            {
                 if (includes.Contains("tracks"))
-                {
                     foreach (var release in rows)
                     {
-                        release.Media = this.DbContext.ReleaseMedias
-                                            .Include(x => x.Tracks)
-                                            .Where(x => x.ReleaseId == release.DatabaseId)
-                                            .ToArray()
-                                            .AsQueryable()
-                                            .ProjectToType<ReleaseMediaList>()
-                                            .OrderBy(x => x.MediaNumber)
-                                            .ToArray();
+                        release.Media = DbContext.ReleaseMedias
+                            .Include(x => x.Tracks)
+                            .Where(x => x.ReleaseId == release.DatabaseId)
+                            .ToArray()
+                            .AsQueryable()
+                            .ProjectToType<ReleaseMediaList>()
+                            .OrderBy(x => x.MediaNumber)
+                            .ToArray();
 
-                        var userRatingsForRelease = (from ut in this.DbContext.UserTracks
-                                                     join t in this.DbContext.Tracks on ut.TrackId equals t.Id
-                                                     join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                        var userRatingsForRelease = (from ut in DbContext.UserTracks
+                                                     join t in DbContext.Tracks on ut.TrackId equals t.Id
+                                                     join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                                      where rm.ReleaseId == release.DatabaseId
                                                      where ut.UserId == roadieUser.Id
                                                      select new { trackId = t.RoadieId, ut }).ToArray();
                         foreach (var userRatingForRelease in userRatingsForRelease)
                         {
-                            var mediaTrack = release.Media?.SelectMany(x => x.Tracks).FirstOrDefault(x => x.Id == userRatingForRelease.trackId);
+                            var mediaTrack = release.Media?.SelectMany(x => x.Tracks)
+                                .FirstOrDefault(x => x.Id == userRatingForRelease.trackId);
                             if (mediaTrack != null)
-                            {
                                 mediaTrack.UserRating = new UserTrack
                                 {
                                     Rating = userRatingForRelease.ut.Rating,
                                     IsFavorite = userRatingForRelease.ut.IsFavorite ?? false,
                                     IsDisliked = userRatingForRelease.ut.IsDisliked ?? false
                                 };
-                            }
                         }
                     }
-                }
-            }
-            if (request.FilterFavoriteOnly)
-            {
-                rows = rows.OrderBy(x => x.UserRating.Rating).ToArray();
-            }
+
+            if (request.FilterFavoriteOnly) rows = rows.OrderBy(x => x.UserRating.Rating).ToArray();
             sw.Stop();
             return Task.FromResult(new Library.Models.Pagination.PagedResult<ReleaseList>
             {
@@ -491,49 +487,54 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<bool>> MergeReleases(User user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
+        public async Task<OperationResult<bool>> MergeReleases(User user, Guid releaseToMergeId,
+            Guid releaseToMergeIntoId, bool addAsMedia)
         {
             var sw = new Stopwatch();
             sw.Start();
 
             var errors = new List<Exception>();
-            var releaseToMerge = this.DbContext.Releases
-                                    .Include(x => x.Artist)
-                                    .Include(x => x.Genres)
-                                    .Include("Genres.Genre")
-                                    .Include(x => x.Medias)
-                                    .Include("Medias.Tracks")
-                                    .Include("Medias.Tracks.TrackArtist")
-                                    .FirstOrDefault(x => x.RoadieId == releaseToMergeId);
+            var releaseToMerge = DbContext.Releases
+                .Include(x => x.Artist)
+                .Include(x => x.Genres)
+                .Include("Genres.Genre")
+                .Include(x => x.Medias)
+                .Include("Medias.Tracks")
+                .Include("Medias.Tracks.TrackArtist")
+                .FirstOrDefault(x => x.RoadieId == releaseToMergeId);
             if (releaseToMerge == null)
             {
-                this.Logger.LogWarning("MergeReleases Unknown Release [{0}]", releaseToMergeId);
+                Logger.LogWarning("MergeReleases Unknown Release [{0}]", releaseToMergeId);
                 return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", releaseToMergeId));
             }
-            var releaseToMergeInfo = this.DbContext.Releases
-                                    .Include(x => x.Artist)
-                                    .Include(x => x.Genres)
-                                    .Include("Genres.Genre")
-                                    .Include(x => x.Medias)
-                                    .Include("Medias.Tracks")
-                                    .Include("Medias.Tracks.TrackArtist")
-                                    .FirstOrDefault(x => x.RoadieId == releaseToMergeIntoId);
+
+            var releaseToMergeInfo = DbContext.Releases
+                .Include(x => x.Artist)
+                .Include(x => x.Genres)
+                .Include("Genres.Genre")
+                .Include(x => x.Medias)
+                .Include("Medias.Tracks")
+                .Include("Medias.Tracks.TrackArtist")
+                .FirstOrDefault(x => x.RoadieId == releaseToMergeIntoId);
             if (releaseToMergeInfo == null)
             {
-                this.Logger.LogWarning("MergeReleases Unknown Release [{0}]", releaseToMergeIntoId);
+                Logger.LogWarning("MergeReleases Unknown Release [{0}]", releaseToMergeIntoId);
                 return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", releaseToMergeIntoId));
             }
+
             try
             {
-                await this.ReleaseFactory.MergeReleases(releaseToMerge, releaseToMergeInfo, addAsMedia);
+                await ReleaseFactory.MergeReleases(releaseToMerge, releaseToMergeInfo, addAsMedia);
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
                 errors.Add(ex);
             }
+
             sw.Stop();
-            this.Logger.LogInformation("MergeReleases Release `{0}` Merged Into Release `{1}`, By User `{2}`", releaseToMerge, releaseToMergeInfo, user);
+            Logger.LogInformation("MergeReleases Release `{0}` Merged Into Release `{1}`, By User `{2}`",
+                releaseToMerge, releaseToMergeInfo, user);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -545,37 +546,38 @@ namespace Roadie.Api.Services
 
         public Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id)
         {
-            var release = this.GetRelease(id);
+            var release = GetRelease(id);
             if (release == null)
-            {
-                return Task.FromResult(new FileOperationResult<byte[]>(true, string.Format("Release Not Found [{0}]", id)));
-            }
+                return Task.FromResult(new FileOperationResult<byte[]>(true,
+                    string.Format("Release Not Found [{0}]", id)));
 
             byte[] zipBytes = null;
             string zipFileName = null;
             try
             {
-                var artistFolder = release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                var artistFolder = release.Artist.ArtistFileFolder(Configuration, Configuration.LibraryFolder);
                 var releaseFolder = release.ReleaseFileFolder(artistFolder);
                 if (!Directory.Exists(releaseFolder))
                 {
-                    this.Logger.LogCritical($"Release Folder [{ releaseFolder }] not found for Release `{ release }`");
-                    return Task.FromResult(new FileOperationResult<byte[]>(true, string.Format("Release Folder Not Found [{0}]", id)));
+                    Logger.LogCritical($"Release Folder [{releaseFolder}] not found for Release `{release}`");
+                    return Task.FromResult(new FileOperationResult<byte[]>(true,
+                        string.Format("Release Folder Not Found [{0}]", id)));
                 }
+
                 var releaseFiles = Directory.GetFiles(releaseFolder);
-                using (MemoryStream zipStream = new MemoryStream())
+                using (var zipStream = new MemoryStream())
                 {
-                    using (ZipArchive zip = new ZipArchive(zipStream, ZipArchiveMode.Create))
+                    using (var zip = new ZipArchive(zipStream, ZipArchiveMode.Create))
                     {
                         foreach (var releaseFile in releaseFiles)
                         {
                             var fileInfo = new FileInfo(releaseFile);
                             if (fileInfo.Extension.ToLower() == ".mp3" || fileInfo.Extension.ToLower() == ".jpg")
                             {
-                                ZipArchiveEntry entry = zip.CreateEntry(fileInfo.Name);
-                                using (Stream entryStream = entry.Open())
+                                var entry = zip.CreateEntry(fileInfo.Name);
+                                using (var entryStream = entry.Open())
                                 {
-                                    using (FileStream s = fileInfo.OpenRead())
+                                    using (var s = fileInfo.OpenRead())
                                     {
                                         s.CopyTo(entryStream);
                                     }
@@ -583,15 +585,19 @@ namespace Roadie.Api.Services
                             }
                         }
                     }
+
                     zipBytes = zipStream.ToArray();
                 }
-                zipFileName = $"{ release.Artist.Name }_{release.Title}.zip".ToFileNameFriendly();
-                this.Logger.LogInformation($"User `{ roadieUser }` downloaded Release `{ release }` ZipFileName [{ zipFileName }], Zip Size [{ zipBytes?.Length }]");
+
+                zipFileName = $"{release.Artist.Name}_{release.Title}.zip".ToFileNameFriendly();
+                Logger.LogInformation(
+                    $"User `{roadieUser}` downloaded Release `{release}` ZipFileName [{zipFileName}], Zip Size [{zipBytes?.Length}]");
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex, "Error creating zip for Release `{0}`", release.ToString());
+                Logger.LogError(ex, "Error creating zip for Release `{0}`", release.ToString());
             }
+
             return Task.FromResult(new FileOperationResult<byte[]>
             {
                 IsSuccess = zipBytes != null,
@@ -600,33 +606,31 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl)
+        public async Task<OperationResult<Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl)
         {
-            return await this.SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
+            return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
 
-        public async Task<OperationResult<bool>> UpdateRelease(User user, Library.Models.Releases.Release model)
+        public async Task<OperationResult<bool>> UpdateRelease(User user, Release model)
         {
             var didChangeArtist = false;
             var didChangeThumbnail = false;
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
-            var release = this.DbContext.Releases
-                                        .Include(x => x.Artist)
-                                        .Include(x => x.Genres)
-                                        .Include("Genres.Genre")
-                                        .Include(x => x.Labels)
-                                        .Include("Labels.Label")
-                                        .FirstOrDefault(x => x.RoadieId == model.Id);
+            var release = DbContext.Releases
+                .Include(x => x.Artist)
+                .Include(x => x.Genres)
+                .Include("Genres.Genre")
+                .Include(x => x.Labels)
+                .Include("Labels.Label")
+                .FirstOrDefault(x => x.RoadieId == model.Id);
             if (release == null)
-            {
                 return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", model.Id));
-            }
             try
             {
                 var now = DateTime.UtcNow;
-                var artistFolder = release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                var artistFolder = release.Artist.ArtistFileFolder(Configuration, Configuration.LibraryFolder);
                 var originalReleaseFolder = release.ReleaseFileFolder(artistFolder);
                 release.IsLocked = model.IsLocked;
                 release.IsVirtual = model.IsVirtual;
@@ -635,9 +639,7 @@ namespace Roadie.Api.Services
                 var specialReleaseTitle = model.Title.ToAlphanumericName();
                 var alt = new List<string>(model.AlternateNamesList);
                 if (!model.AlternateNamesList.Contains(specialReleaseTitle, StringComparer.OrdinalIgnoreCase))
-                {
                     alt.Add(specialReleaseTitle);
-                }
                 release.AlternateNames = alt.ToDelimitedList();
                 release.ReleaseDate = model.ReleaseDate;
                 release.Rating = model.Rating;
@@ -658,7 +660,8 @@ namespace Roadie.Api.Services
 
                 if (model?.Artist?.Artist?.Value != null)
                 {
-                    var artist = this.DbContext.Artists.FirstOrDefault(x => x.RoadieId == SafeParser.ToGuid(model.Artist.Artist.Value));
+                    var artist = DbContext.Artists.FirstOrDefault(x =>
+                        x.RoadieId == SafeParser.ToGuid(model.Artist.Artist.Value));
                     if (artist != null && release.ArtistId != artist.Id)
                     {
                         release.ArtistId = artist.Id;
@@ -673,17 +676,24 @@ namespace Roadie.Api.Services
                     release.Thumbnail = ImageHelper.ConvertToJpegFormat(releaseImage);
 
                     // Save unaltered image to cover file
-                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder)), "cover.jpg");
+                    var coverFileName =
+                        Path.Combine(
+                            release.ReleaseFileFolder(
+                                release.Artist.ArtistFileFolder(Configuration, Configuration.LibraryFolder)),
+                            "cover.jpg");
                     File.WriteAllBytes(coverFileName, release.Thumbnail);
 
                     // Resize to store in database as thumbnail
-                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, Configuration.MediumImageSize.Width,
+                        Configuration.MediumImageSize.Height);
                     didChangeThumbnail = true;
                 }
 
                 if (model.NewSecondaryImagesData != null && model.NewSecondaryImagesData.Any())
                 {
-                    var releaseFolder = release.ReleaseFileFolder(release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder));
+                    var releaseFolder =
+                        release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration,
+                            Configuration.LibraryFolder));
                     // Additional images to add to artist
                     var looper = 0;
                     foreach (var newSecondaryImageData in model.NewSecondaryImagesData)
@@ -694,14 +704,18 @@ namespace Roadie.Api.Services
                             // Ensure is jpeg first
                             releaseSecondaryImage = ImageHelper.ConvertToJpegFormat(releaseSecondaryImage);
 
-                            var releaseImageFilename = Path.Combine(releaseFolder, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                            var releaseImageFilename = Path.Combine(releaseFolder,
+                                string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
                             while (File.Exists(releaseImageFilename))
                             {
                                 looper++;
-                                releaseImageFilename = Path.Combine(releaseFolder, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                                releaseImageFilename = Path.Combine(releaseFolder,
+                                    string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
                             }
+
                             File.WriteAllBytes(releaseImageFilename, releaseSecondaryImage);
                         }
+
                         looper++;
                     }
                 }
@@ -711,11 +725,9 @@ namespace Roadie.Api.Services
                     // Remove existing Genres not in model list
                     foreach (var genre in release.Genres.ToList())
                     {
-                        var doesExistInModel = model.Genres.Any(x => SafeParser.ToGuid(x.Value) == genre.Genre.RoadieId);
-                        if (!doesExistInModel)
-                        {
-                            release.Genres.Remove(genre);
-                        }
+                        var doesExistInModel =
+                            model.Genres.Any(x => SafeParser.ToGuid(x.Value) == genre.Genre.RoadieId);
+                        if (!doesExistInModel) release.Genres.Remove(genre);
                     }
 
                     // Add new Genres in model not in data
@@ -725,16 +737,14 @@ namespace Roadie.Api.Services
                         var doesExistInData = release.Genres.Any(x => x.Genre.RoadieId == genreId);
                         if (!doesExistInData)
                         {
-                            var g = this.DbContext.Genres.FirstOrDefault(x => x.RoadieId == genreId);
+                            var g = DbContext.Genres.FirstOrDefault(x => x.RoadieId == genreId);
                             if (g != null)
-                            {
                                 release.Genres.Add(new data.ReleaseGenre
                                 {
                                     ReleaseId = release.Id,
                                     GenreId = g.Id,
                                     Genre = g
                                 });
-                            }
                         }
                     }
                 }
@@ -754,16 +764,18 @@ namespace Roadie.Api.Services
                 }
 
                 release.LastUpdated = now;
-                await this.DbContext.SaveChangesAsync();
-                await this.ReleaseFactory.CheckAndChangeReleaseTitle(release, originalReleaseFolder);
-                this.CacheManager.ClearRegion(release.CacheRegion);
-                this.Logger.LogInformation($"UpdateRelease `{ release }` By User `{ user }`: Edited Artist [{ didChangeArtist }], Uploaded new image [{ didChangeThumbnail }]");
+                await DbContext.SaveChangesAsync();
+                await ReleaseFactory.CheckAndChangeReleaseTitle(release, originalReleaseFolder);
+                CacheManager.ClearRegion(release.CacheRegion);
+                Logger.LogInformation(
+                    $"UpdateRelease `{release}` By User `{user}`: Edited Artist [{didChangeArtist}], Uploaded new image [{didChangeThumbnail}]");
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
                 errors.Add(ex);
             }
+
             sw.Stop();
 
             return new OperationResult<bool>
@@ -775,7 +787,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Library.Models.Image>> UploadReleaseImage(User user, Guid id, IFormFile file)
+        public async Task<OperationResult<Image>> UploadReleaseImage(User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
             using (var ms = new MemoryStream())
@@ -783,25 +795,26 @@ namespace Roadie.Api.Services
                 file.CopyTo(ms);
                 bytes = ms.ToArray();
             }
-            return await this.SaveImageBytes(user, id, bytes);
+
+            return await SaveImageBytes(user, id, bytes);
         }
 
-        private async Task<OperationResult<Library.Models.Releases.Release>> ReleaseByIdAction(Guid id, IEnumerable<string> includes = null)
+        private async Task<OperationResult<Release>> ReleaseByIdAction(Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
 
-            var release = this.GetRelease(id);
+            var release = GetRelease(id);
 
             if (release == null)
-            {
-                return new OperationResult<Library.Models.Releases.Release>(true, string.Format("Release Not Found [{0}]", id));
-            }
-            var result = release.Adapt<Library.Models.Releases.Release>();
-            result.Artist = ArtistList.FromDataArtist(release.Artist, this.MakeArtistThumbnailImage(release.Artist.RoadieId));
-            result.Thumbnail = this.MakeReleaseThumbnailImage(release.RoadieId);
-            result.MediumThumbnail = base.MakeThumbnailImage(id, "release", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
-            result.ReleasePlayUrl = $"{ this.HttpContext.BaseUrl }/play/release/{ release.RoadieId}";
+                return new OperationResult<Release>(true, string.Format("Release Not Found [{0}]", id));
+            var result = release.Adapt<Release>();
+            result.Artist =
+                ArtistList.FromDataArtist(release.Artist, MakeArtistThumbnailImage(release.Artist.RoadieId));
+            result.Thumbnail = MakeReleaseThumbnailImage(release.RoadieId);
+            result.MediumThumbnail = MakeThumbnailImage(id, "release", Configuration.MediumImageSize.Width,
+                Configuration.MediumImageSize.Height);
+            result.ReleasePlayUrl = $"{HttpContext.BaseUrl}/play/release/{release.RoadieId}";
             result.Profile = release.Profile;
             result.ReleaseDate = release.ReleaseDate.Value;
             result.MediaCount = release.MediaCount;
@@ -811,14 +824,15 @@ namespace Roadie.Api.Services
             result.AlternateNames = release.AlternateNames;
             result.Tags = release.Tags;
             result.URLs = release.URLs;
-            result.RankPosition = result.Rank > 0 ? SafeParser.ToNumber<int?>(this.DbContext.Releases.Count(x => x.Rank > result.Rank) + 1) : null;
+            result.RankPosition = result.Rank > 0
+                ? SafeParser.ToNumber<int?>(DbContext.Releases.Count(x => x.Rank > result.Rank) + 1)
+                : null;
             if (release.SubmissionId.HasValue)
             {
-                var submission = this.DbContext.Submissions.Include(x => x.User).FirstOrDefault(x => x.Id == release.SubmissionId);
+                var submission = DbContext.Submissions.Include(x => x.User)
+                    .FirstOrDefault(x => x.Id == release.SubmissionId);
                 if (submission != null)
-                {
                     if (!submission.User.IsPrivate ?? false)
-                    {
                         result.Submission = new ReleaseSubmission
                         {
                             User = new DataToken
@@ -826,44 +840,41 @@ namespace Roadie.Api.Services
                                 Text = submission.User.UserName,
                                 Value = submission.User.RoadieId.ToString()
                             },
-                            UserThumbnail = this.MakeUserThumbnailImage(submission.User.RoadieId),
+                            UserThumbnail = MakeUserThumbnailImage(submission.User.RoadieId),
                             SubmittedDate = submission.CreatedDate
                         };
-                    }
-                }
             }
+
             if (includes != null && includes.Any())
             {
                 if (includes.Contains("genres"))
-                {
                     result.Genres = release.Genres.Select(x => new DataToken
                     {
                         Text = x.Genre.Name,
                         Value = x.Genre.RoadieId.ToString()
                     });
-                }
                 if (includes.Contains("stats"))
                 {
-                    var releaseTracks = (from r in this.DbContext.Releases
-                                         join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                         join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                         where r.Id == release.Id
-                                         select new
-                                         {
-                                             id = t.Id,
-                                             size = t.FileSize,
-                                             time = t.Duration,
-                                             isMissing = t.Hash == null
-                                         });
-                    var releaseMedias = (from r in this.DbContext.Releases
-                                         join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                         where r.Id == release.Id
-                                         select new
-                                         {
-                                             rm.Id,
-                                             rm.MediaNumber
-                                         });
-                    long releaseTime = releaseTracks?.Sum(x => (long?)x.time) ?? 0;
+                    var releaseTracks = from r in DbContext.Releases
+                                        join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                        join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                        where r.Id == release.Id
+                                        select new
+                                        {
+                                            id = t.Id,
+                                            size = t.FileSize,
+                                            time = t.Duration,
+                                            isMissing = t.Hash == null
+                                        };
+                    var releaseMedias = from r in DbContext.Releases
+                                        join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                        where r.Id == release.Id
+                                        select new
+                                        {
+                                            rm.Id,
+                                            rm.MediaNumber
+                                        };
+                    var releaseTime = releaseTracks?.Sum(x => (long?)x.time) ?? 0;
                     var releaseStats = new ReleaseStatistics
                     {
                         MediaCount = release.MediaCount,
@@ -871,43 +882,41 @@ namespace Roadie.Api.Services
                         TrackCount = release.TrackCount,
                         TrackPlayedCount = release.PlayedCount,
                         TrackSize = releaseTracks?.Sum(x => (long?)x.size).ToFileSize(),
-                        TrackTime = releaseTracks.Any() ? new TimeInfo((decimal)releaseTime).ToFullFormattedString() : "--:--"
+                        TrackTime = releaseTracks.Any() ? new TimeInfo(releaseTime).ToFullFormattedString() : "--:--"
                     };
                     result.MaxMediaNumber = releaseMedias.Any() ? releaseMedias.Max(x => x.MediaNumber) : (short)0;
                     result.Statistics = releaseStats;
                     result.MediaCount = release.MediaCount ?? (short?)releaseStats?.MediaCount;
                 }
+
                 if (includes.Contains("images"))
                 {
-                    var releaseImages = this.DbContext.Images.Where(x => x.ReleaseId == release.Id).Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
-                    if (releaseImages != null && releaseImages.Any())
-                    {
-                        result.Images = releaseImages;
-                    }
-                    var artistFolder = release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder);
+                    var releaseImages = DbContext.Images.Where(x => x.ReleaseId == release.Id)
+                        .Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
+                    if (releaseImages != null && releaseImages.Any()) result.Images = releaseImages;
+                    var artistFolder = release.Artist.ArtistFileFolder(Configuration, Configuration.LibraryFolder);
                     var releaseFolder = release.ReleaseFileFolder(artistFolder);
-                    var releaseImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder), ImageType.ReleaseSecondary, SearchOption.TopDirectoryOnly);
+                    var releaseImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder),
+                        ImageType.ReleaseSecondary, SearchOption.TopDirectoryOnly);
                     if (releaseImagesInFolder.Any())
-                    {
-                        result.Images = result.Images.Concat(releaseImagesInFolder.Select((x, i) => MakeFullsizeSecondaryImage(id, ImageType.ReleaseSecondary, i)));
-                    }
+                        result.Images = result.Images.Concat(releaseImagesInFolder.Select((x, i) =>
+                            MakeFullsizeSecondaryImage(id, ImageType.ReleaseSecondary, i)));
                 }
+
                 if (includes.Contains("playlists"))
                 {
                     var pg = new PagedRequest
                     {
                         FilterToReleaseId = release.RoadieId
                     };
-                    var r = await this.PlaylistService.List(pg);
-                    if (r.IsSuccess)
-                    {
-                        result.Playlists = r.Rows.ToArray();
-                    }
+                    var r = await PlaylistService.List(pg);
+                    if (r.IsSuccess) result.Playlists = r.Rows.ToArray();
                 }
+
                 if (includes.Contains("labels"))
                 {
-                    var releaseLabels = (from l in this.DbContext.Labels
-                                         join rl in this.DbContext.ReleaseLabels on l.Id equals rl.LabelId
+                    var releaseLabels = (from l in DbContext.Labels
+                                         join rl in DbContext.ReleaseLabels on l.Id equals rl.LabelId
                                          where rl.ReleaseId == release.Id
                                          orderby rl.BeginDate, l.Name
                                          select new
@@ -946,17 +955,19 @@ namespace Roadie.Api.Services
                             };
                             labels.Add(rl);
                         }
+
                         result.Labels = labels;
                     }
                 }
+
                 if (includes.Contains("collections"))
                 {
-                    var releaseCollections = this.DbContext.CollectionReleases.Include(x => x.Collection).Where(x => x.ReleaseId == release.Id).OrderBy(x => x.ListNumber).ToArray();
+                    var releaseCollections = DbContext.CollectionReleases.Include(x => x.Collection)
+                        .Where(x => x.ReleaseId == release.Id).OrderBy(x => x.ListNumber).ToArray();
                     if (releaseCollections != null)
                     {
                         var collections = new List<ReleaseInCollection>();
                         foreach (var releaseCollection in releaseCollections)
-                        {
                             collections.Add(new ReleaseInCollection
                             {
                                 Collection = new CollectionList
@@ -969,8 +980,10 @@ namespace Roadie.Api.Services
                                     },
                                     Id = releaseCollection.Collection.RoadieId,
                                     CollectionCount = releaseCollection.Collection.CollectionCount,
-                                    CollectionType = (releaseCollection.Collection.CollectionType ?? CollectionType.Unknown).ToString(),
-                                    CollectionFoundCount = (from crc in this.DbContext.CollectionReleases
+                                    CollectionType =
+                                        (releaseCollection.Collection.CollectionType ?? CollectionType.Unknown)
+                                        .ToString(),
+                                    CollectionFoundCount = (from crc in DbContext.CollectionReleases
                                                             where crc.CollectionId == releaseCollection.Collection.Id
                                                             select crc.Id).Count(),
                                     CreatedDate = releaseCollection.Collection.CreatedDate,
@@ -980,32 +993,38 @@ namespace Roadie.Api.Services
                                 },
                                 ListNumber = releaseCollection.ListNumber
                             });
-                        }
                         result.Collections = collections;
                     }
                 }
+
                 if (includes.Contains("comments"))
                 {
-                    var releaseComments = this.DbContext.Comments.Include(x => x.User).Where(x => x.ReleaseId == release.Id).OrderByDescending(x => x.CreatedDate).ToArray();
+                    var releaseComments = DbContext.Comments.Include(x => x.User).Where(x => x.ReleaseId == release.Id)
+                        .OrderByDescending(x => x.CreatedDate).ToArray();
                     if (releaseComments.Any())
                     {
                         var comments = new List<Comment>();
                         var commentIds = releaseComments.Select(x => x.Id).ToArray();
-                        var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                        var userCommentReactions = (from cr in DbContext.CommentReactions
                                                     where commentIds.Contains(cr.CommentId)
                                                     select cr).ToArray();
                         foreach (var releaseComment in releaseComments)
                         {
                             var comment = releaseComment.Adapt<Comment>();
                             comment.DatabaseId = releaseComment.Id;
-                            comment.User = UserList.FromDataUser(releaseComment.User, this.MakeUserThumbnailImage(releaseComment.User.RoadieId));
-                            comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == releaseComment.Id && x.ReactionValue == CommentReaction.Dislike);
-                            comment.LikedCount = userCommentReactions.Count(x => x.CommentId == releaseComment.Id && x.ReactionValue == CommentReaction.Like);
+                            comment.User = UserList.FromDataUser(releaseComment.User,
+                                MakeUserThumbnailImage(releaseComment.User.RoadieId));
+                            comment.DislikedCount = userCommentReactions.Count(x =>
+                                x.CommentId == releaseComment.Id && x.ReactionValue == CommentReaction.Dislike);
+                            comment.LikedCount = userCommentReactions.Count(x =>
+                                x.CommentId == releaseComment.Id && x.ReactionValue == CommentReaction.Like);
                             comments.Add(comment);
                         }
+
                         result.Comments = comments;
                     }
                 }
+
                 if (includes.Contains("tracks"))
                 {
                     var releaseMedias = new List<ReleaseMediaList>();
@@ -1023,17 +1042,23 @@ namespace Roadie.Api.Services
                             };
                             t.MediaNumber = rm.MediaNumber;
                             t.CssClass = string.IsNullOrEmpty(track.Hash) ? "Missing" : "Ok";
-                            t.TrackArtist = track.TrackArtist != null ? ArtistList.FromDataArtist(track.TrackArtist, this.MakeArtistThumbnailImage(track.TrackArtist.RoadieId)) : null;
+                            t.TrackArtist = track.TrackArtist != null
+                                ? ArtistList.FromDataArtist(track.TrackArtist,
+                                    MakeArtistThumbnailImage(track.TrackArtist.RoadieId))
+                                : null;
                             rmTracks.Add(t);
                         }
+
                         rm.Tracks = rmTracks;
                         releaseMedias.Add(rm);
                     }
+
                     result.Medias = releaseMedias;
                 }
             }
+
             sw.Stop();
-            return new OperationResult<Library.Models.Releases.Release>
+            return new OperationResult<Release>
             {
                 Data = result,
                 IsSuccess = result != null,
@@ -1041,16 +1066,13 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
+        private async Task<OperationResult<Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
         {
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
-            var release = this.DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == id);
-            if (release == null)
-            {
-                return new OperationResult<Library.Models.Image>(true, string.Format("Release Not Found [{0}]", id));
-            }
+            var release = DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == id);
+            if (release == null) return new OperationResult<Image>(true, string.Format("Release Not Found [{0}]", id));
             try
             {
                 var now = DateTime.UtcNow;
@@ -1061,28 +1083,36 @@ namespace Roadie.Api.Services
                     release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
 
                     // Save unaltered image to cover file
-                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(this.Configuration, this.Configuration.LibraryFolder)), "cover.jpg");
+                    var coverFileName =
+                        Path.Combine(
+                            release.ReleaseFileFolder(
+                                release.Artist.ArtistFileFolder(Configuration, Configuration.LibraryFolder)),
+                            "cover.jpg");
                     File.WriteAllBytes(coverFileName, release.Thumbnail);
 
                     // Resize to store in database as thumbnail
-                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, Configuration.MediumImageSize.Width,
+                        Configuration.MediumImageSize.Height);
                 }
+
                 release.LastUpdated = now;
-                await this.DbContext.SaveChangesAsync();
-                this.CacheManager.ClearRegion(release.CacheRegion);
-                this.Logger.LogInformation($"SaveImageBytes `{ release }` By User `{ user }`");
+                await DbContext.SaveChangesAsync();
+                CacheManager.ClearRegion(release.CacheRegion);
+                Logger.LogInformation($"SaveImageBytes `{release}` By User `{user}`");
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
                 errors.Add(ex);
             }
+
             sw.Stop();
 
-            return new OperationResult<Library.Models.Image>
+            return new OperationResult<Image>
             {
                 IsSuccess = !errors.Any(),
-                Data = base.MakeThumbnailImage(id, "release", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height, true),
+                Data = MakeThumbnailImage(id, "release", Configuration.MediumImageSize.Width,
+                    Configuration.MediumImageSize.Height, true),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };

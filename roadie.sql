@@ -1,7 +1,7 @@
 -- ///
--- Roadie version 1.0.1.0 new database script, if upgrading skip this and run Upgrade*.sql scripts from your version to current.
+-- Roadie version 1.0.2.0 new database script, if upgrading skip this and run Upgrade*.sql scripts from your version to current.
 -- ///
---
+
 -- MySQL dump 10.17  Distrib 10.3.16-MariaDB, for Linux (x86_64)
 --
 -- Host: localhost    Database: roadie_dev
@@ -186,6 +186,23 @@ CREATE TABLE `collection` (
   KEY `maintainerId` (`maintainerId`),
   KEY `ix_collection_roadieId` (`roadieId`),
   CONSTRAINT `collection_ibfk_1` FOREIGN KEY (`maintainerId`) REFERENCES `user` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `collectionMissing`
+--
+
+DROP TABLE IF EXISTS `collectionMissing`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `collectionMissing` (
+  `collectionId` int(11) NOT NULL,
+  `isArtistFound` tinyint(1) DEFAULT NULL,
+  `position` int(11) NOT NULL,
+  `artist` varchar(1000) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `release` varchar(1000) COLLATE utf8mb4_unicode_ci NOT NULL,
+  KEY `ix_collection_collectionId` (`collectionId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -212,7 +229,7 @@ CREATE TABLE `collectionrelease` (
   KEY `ix_collectionrelease_roadieId` (`roadieId`),
   CONSTRAINT `collectionrelease_ibfk_1` FOREIGN KEY (`releaseId`) REFERENCES `release` (`id`) ON DELETE CASCADE,
   CONSTRAINT `collectionrelease_ibfk_2` FOREIGN KEY (`collectionId`) REFERENCES `collection` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -256,7 +273,7 @@ CREATE TABLE `comment` (
   CONSTRAINT `commentrelease_ibfk_1` FOREIGN KEY (`releaseId`) REFERENCES `release` (`id`) ON DELETE CASCADE,
   CONSTRAINT `commenttrack_ibfk_1` FOREIGN KEY (`trackId`) REFERENCES `track` (`id`) ON DELETE CASCADE,
   CONSTRAINT `commentuser_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -282,7 +299,7 @@ CREATE TABLE `commentReaction` (
   KEY `commentReactioncomment_ibfk_1` (`commentId`),
   CONSTRAINT `commentReactioncomment_ibfk_1` FOREIGN KEY (`commentId`) REFERENCES `comment` (`id`) ON DELETE CASCADE,
   CONSTRAINT `commentReactionuser_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1014,4 +1031,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2019-06-25 15:15:52
+-- Dump completed on 2019-06-30  8:12:31

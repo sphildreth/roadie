@@ -8,6 +8,7 @@ namespace Roadie.Api.Services
 {
     public interface IBookmarkService
     {
-        Task<PagedResult<BookmarkList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, BookmarkType? filterType = null);
+        Task<PagedResult<BookmarkList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false,
+            BookmarkType? filterType = null);
     }
 }

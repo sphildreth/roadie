@@ -16,7 +16,8 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<bool>> DeleteCollection(User user, Guid id);
 
-        Task<PagedResult<CollectionList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, Guid? releaseId = null, Guid? artistId = null);
+        Task<PagedResult<CollectionList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false,
+            Guid? releaseId = null, Guid? artistId = null);
 
         Task<OperationResult<bool>> UpdateCollection(User roadieUser, Collection collection);
     }

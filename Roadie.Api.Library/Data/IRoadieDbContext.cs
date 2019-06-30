@@ -18,6 +18,7 @@ namespace Roadie.Library.Data
         DbSet<Bookmark> Bookmarks { get; set; }
         ChangeTracker ChangeTracker { get; }
         DbSet<ChatMessage> ChatMessages { get; set; }
+        DbSet<CollectionMissing> CollectionMissings { get; set; }
         DbSet<CollectionRelease> CollectionReleases { get; set; }
         DbSet<Collection> Collections { get; set; }
         DbSet<Comment> Comments { get; set; }

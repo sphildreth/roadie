@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using Roadie.Library.Identity;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Services
@@ -15,7 +17,7 @@ namespace Roadie.Api.Services
 
         public TokenService(IConfiguration configuration)
         {
-            this._configuration = configuration;
+            _configuration = configuration;
         }
 
         public async Task<string> GenerateToken(ApplicationUser user, UserManager<ApplicationUser> userManager)
@@ -27,7 +29,7 @@ namespace Roadie.Api.Services
 
             var tokenHandler = new JwtSecurityTokenHandler();
 
-            var claims = new Claim[]
+            var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim("roadie_id", user.RoadieId.ToString()),
@@ -38,17 +40,19 @@ namespace Roadie.Api.Services
             }.Union(userRoles);
 
             var now = DateTime.UtcNow;
-            var securityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration.GetValue<String>("Tokens:PrivateKey")));
-            var signingCredentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(securityKey, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256Signature);
+            var securityKey =
+                new SymmetricSecurityKey(
+                    Encoding.Default.GetBytes(_configuration.GetValue<string>("Tokens:PrivateKey")));
+            var signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
 
             var jwt = new JwtSecurityToken(
                 signingCredentials: signingCredentials,
                 claims: claims,
                 notBefore: utcNow,
-                expires: utcNow.AddSeconds(this._configuration.GetValue<int>("Tokens:Lifetime")),
-                audience: this._configuration.GetValue<String>("Tokens:Audience"),
-                issuer: this._configuration.GetValue<String>("Tokens:Issuer")
-                );
+                expires: utcNow.AddSeconds(_configuration.GetValue<int>("Tokens:Lifetime")),
+                audience: _configuration.GetValue<string>("Tokens:Audience"),
+                issuer: _configuration.GetValue<string>("Tokens:Issuer")
+            );
 
             return new JwtSecurityTokenHandler().WriteToken(jwt);
         }

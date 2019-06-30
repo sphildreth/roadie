@@ -11,7 +11,8 @@ namespace Roadie.Api.Services
     {
         Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId);
 
-        Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId, bool doDeleteFiles = false);
+        Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId,
+            bool doDeleteFiles = false);
 
         Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index);
 
@@ -27,16 +28,19 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleases(ApplicationUser user);
 
-        Task<OperationResult<bool>> ScanAllCollections(ApplicationUser user, bool isReadOnly = false, bool doPurgeFirst = false);
+        Task<OperationResult<bool>> ScanAllCollections(ApplicationUser user, bool isReadOnly = false,
+            bool doPurgeFirst = false);
 
         Task<OperationResult<bool>> ScanArtist(ApplicationUser user, Guid artistId, bool isReadOnly = false);
 
-        Task<OperationResult<bool>> ScanCollection(ApplicationUser user, Guid collectionId, bool isReadOnly = false, bool doPurgeFirst = false, bool doUpdateRanks = true);
+        Task<OperationResult<bool>> ScanCollection(ApplicationUser user, Guid collectionId, bool isReadOnly = false,
+            bool doPurgeFirst = false, bool doUpdateRanks = true);
 
         Task<OperationResult<bool>> ScanInboundFolder(ApplicationUser user, bool isReadOnly = false);
 
         Task<OperationResult<bool>> ScanLibraryFolder(ApplicationUser user, bool isReadOnly = false);
 
-        Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
+        Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false,
+            bool wasDoneForInvalidTrackPlay = false);
     }
 }

@@ -11,6 +11,7 @@ using Roadie.Library.Extensions;
 using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
+using Roadie.Library.Models.Statistics;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
@@ -26,54 +27,56 @@ namespace Roadie.Api.Services
 {
     public class LabelService : ServiceBase, ILabelService
     {
-        private IBookmarkService BookmarkService { get; } = null;
+        private IBookmarkService BookmarkService { get; }
 
         public LabelService(IRoadieSettings configuration,
-                             IHttpEncoder httpEncoder,
-                             IHttpContext httpContext,
-                             data.IRoadieDbContext context,
-                             ICacheManager cacheManager,
-                             ILogger<LabelService> logger,
-                             ICollectionService collectionService,
-                             IPlaylistService playlistService,
-                             IBookmarkService bookmarkService)
+                    IHttpEncoder httpEncoder,
+            IHttpContext httpContext,
+            data.IRoadieDbContext context,
+            ICacheManager cacheManager,
+            ILogger<LabelService> logger,
+            ICollectionService collectionService,
+            IPlaylistService playlistService,
+            IBookmarkService bookmarkService)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
-            this.BookmarkService = bookmarkService;
+            BookmarkService = bookmarkService;
         }
 
         public async Task<OperationResult<Label>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
-            var cacheKey = string.Format("urn:label_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
-            var result = await this.CacheManager.GetAsync<OperationResult<Label>>(cacheKey, async () =>
-            {
-                return await this.LabelByIdAction(id, includes);
-            }, data.Artist.CacheRegionUrn(id));
+            var cacheKey = string.Format("urn:label_by_id_operation:{0}:{1}", id,
+                includes == null ? "0" : string.Join("|", includes));
+            var result = await CacheManager.GetAsync(cacheKey,
+                async () => { return await LabelByIdAction(id, includes); }, data.Artist.CacheRegionUrn(id));
             sw.Stop();
             if (result?.Data != null && roadieUser != null)
             {
-                var userBookmarkResult = await this.BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Label);
+                var userBookmarkResult =
+                    await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Label);
                 if (userBookmarkResult.IsSuccess)
-                {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
-                }
+                    result.Data.UserBookmarked =
+                        userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) !=
+                        null;
                 if (result.Data.Comments.Any())
                 {
                     var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
-                    var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                    var userCommentReactions = (from cr in DbContext.CommentReactions
                                                 where commentIds.Contains(cr.CommentId)
                                                 where cr.UserId == roadieUser.Id
                                                 select cr).ToArray();
                     foreach (var comment in result.Data.Comments)
                     {
-                        var userCommentReaction = userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
+                        var userCommentReaction =
+                            userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
                         comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
                         comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
                     }
                 }
             }
+
             return new OperationResult<Label>(result.Messages)
             {
                 Data = result?.Data,
@@ -84,7 +87,8 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<Library.Models.Pagination.PagedResult<LabelList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
+        public Task<Library.Models.Pagination.PagedResult<LabelList>> List(User roadieUser, PagedRequest request,
+            bool? doRandomize = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -94,30 +98,33 @@ namespace Roadie.Api.Services
                 request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
                 request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
             }
-            var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue) ? request.FilterValue.ToAlphanumericName() : null;
-            var result = (from l in this.DbContext.Labels
-                          where (request.FilterValue.Length == 0 || (request.FilterValue.Length > 0 && (
-                                    l.Name != null && l.Name.Contains(request.FilterValue) ||
-                                    l.AlternateNames != null && l.AlternateNames.Contains(request.FilterValue) ||
-                                    l.AlternateNames != null && l.AlternateNames.Contains(normalizedFilterValue)
-                          )))
-                          select new LabelList
-                          {
-                              DatabaseId = l.Id,
-                              Id = l.RoadieId,
-                              Label = new DataToken
-                              {
-                                  Text = l.Name,
-                                  Value = l.RoadieId.ToString()
-                              },
-                              SortName = l.SortName,
-                              CreatedDate = l.CreatedDate,
-                              LastUpdated = l.LastUpdated,
-                              ArtistCount = l.ArtistCount,
-                              ReleaseCount = l.ReleaseCount,
-                              TrackCount = l.TrackCount,
-                              Thumbnail = this.MakeLabelThumbnailImage(l.RoadieId)
-                          });
+
+            var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue)
+                ? request.FilterValue.ToAlphanumericName()
+                : null;
+            var result = from l in DbContext.Labels
+                         where request.FilterValue.Length == 0 || request.FilterValue.Length > 0 && (
+                                   l.Name != null && l.Name.Contains(request.FilterValue) ||
+                                   l.AlternateNames != null && l.AlternateNames.Contains(request.FilterValue) ||
+                                   l.AlternateNames != null && l.AlternateNames.Contains(normalizedFilterValue)
+                               )
+                         select new LabelList
+                         {
+                             DatabaseId = l.Id,
+                             Id = l.RoadieId,
+                             Label = new DataToken
+                             {
+                                 Text = l.Name,
+                                 Value = l.RoadieId.ToString()
+                             },
+                             SortName = l.SortName,
+                             CreatedDate = l.CreatedDate,
+                             LastUpdated = l.LastUpdated,
+                             ArtistCount = l.ArtistCount,
+                             ReleaseCount = l.ReleaseCount,
+                             TrackCount = l.TrackCount,
+                             Thumbnail = MakeLabelThumbnailImage(l.RoadieId)
+                         };
             LabelList[] rows = null;
             var rowCount = result.Count();
             if (doRandomize ?? false)
@@ -125,17 +132,20 @@ namespace Roadie.Api.Services
                 var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
                 request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
                 var sql = "SELECT l.Id FROM `label` l ORDER BY RAND() LIMIT {0}";
-                rows = (from rdn in this.DbContext.Labels.FromSql(sql, randomLimit)
+                rows = (from rdn in DbContext.Labels.FromSql(sql, randomLimit)
                         join rs in result on rdn.Id equals rs.DatabaseId
                         select rs)
-                        .Take(request.LimitValue)
-                        .ToArray();
+                    .Take(request.LimitValue)
+                    .ToArray();
             }
             else
             {
-                var sortBy = string.IsNullOrEmpty(request.Sort) ? request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Label.Text", "ASC" } }) : request.OrderValue(null);
+                var sortBy = string.IsNullOrEmpty(request.Sort)
+                    ? request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Label.Text", "ASC" } })
+                    : request.OrderValue();
                 rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }
+
             sw.Stop();
             return Task.FromResult(new Library.Models.Pagination.PagedResult<LabelList>
             {
@@ -149,7 +159,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<Image>> SetLabelImageByUrl(User user, Guid id, string imageUrl)
         {
-            return await this.SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
+            return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
 
         public async Task<OperationResult<bool>> UpdateLabel(User user, Label model)
@@ -157,11 +167,8 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
-            var label = this.DbContext.Labels.FirstOrDefault(x => x.RoadieId == model.Id);
-            if (label == null)
-            {
-                return new OperationResult<bool>(true, string.Format("Label Not Found [{0}]", model.Id));
-            }
+            var label = DbContext.Labels.FirstOrDefault(x => x.RoadieId == model.Id);
+            if (label == null) return new OperationResult<bool>(true, string.Format("Label Not Found [{0}]", model.Id));
             try
             {
                 var now = DateTime.UtcNow;
@@ -185,19 +192,22 @@ namespace Roadie.Api.Services
                     label.Thumbnail = ImageHelper.ConvertToJpegFormat(labelImage);
 
                     // Resize to store in database as thumbnail
-                    label.Thumbnail = ImageHelper.ResizeImage(label.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                    label.Thumbnail = ImageHelper.ResizeImage(label.Thumbnail, Configuration.MediumImageSize.Width,
+                        Configuration.MediumImageSize.Height);
                 }
-                label.LastUpdated = now;
-                await this.DbContext.SaveChangesAsync();
 
-                this.CacheManager.ClearRegion(label.CacheRegion);
-                this.Logger.LogInformation($"UpdateLabel `{ label }` By User `{ user }`");
+                label.LastUpdated = now;
+                await DbContext.SaveChangesAsync();
+
+                CacheManager.ClearRegion(label.CacheRegion);
+                Logger.LogInformation($"UpdateLabel `{label}` By User `{user}`");
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
                 errors.Add(ex);
             }
+
             sw.Stop();
 
             return new OperationResult<bool>
@@ -217,7 +227,8 @@ namespace Roadie.Api.Services
                 file.CopyTo(ms);
                 bytes = ms.ToArray();
             }
-            return await this.SaveImageBytes(user, id, bytes);
+
+            return await SaveImageBytes(user, id, bytes);
         }
 
         private Task<OperationResult<Label>> LabelByIdAction(Guid id, IEnumerable<string> includes = null)
@@ -225,38 +236,37 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             sw.Start();
 
-            var label = this.GetLabel(id);
+            var label = GetLabel(id);
 
             if (label == null)
-            {
                 return Task.FromResult(new OperationResult<Label>(true, string.Format("Label Not Found [{0}]", id)));
-            }
 
             var result = label.Adapt<Label>();
             result.AlternateNames = label.AlternateNames;
             result.Tags = label.Tags;
             result.URLs = label.URLs;
-            result.Thumbnail = this.MakeLabelThumbnailImage(label.RoadieId);
-            result.MediumThumbnail = base.MakeThumbnailImage(id, "label", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+            result.Thumbnail = MakeLabelThumbnailImage(label.RoadieId);
+            result.MediumThumbnail = MakeThumbnailImage(id, "label", Configuration.MediumImageSize.Width,
+                Configuration.MediumImageSize.Height);
             if (includes != null && includes.Any())
             {
                 if (includes.Contains("stats"))
                 {
-                    var labelTracks = (from l in this.DbContext.Labels
-                                       join rl in this.DbContext.ReleaseLabels on l.Id equals rl.LabelId into rld
-                                       from rl in rld.DefaultIfEmpty()
-                                       join r in this.DbContext.Releases on rl.ReleaseId equals r.Id
-                                       join rm in this.DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                       join t in this.DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                       where (l.Id == label.Id)
-                                       select new
-                                       {
-                                           t.Duration,
-                                           t.FileSize
-                                       });
+                    var labelTracks = from l in DbContext.Labels
+                                      join rl in DbContext.ReleaseLabels on l.Id equals rl.LabelId into rld
+                                      from rl in rld.DefaultIfEmpty()
+                                      join r in DbContext.Releases on rl.ReleaseId equals r.Id
+                                      join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                      join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                      where l.Id == label.Id
+                                      select new
+                                      {
+                                          t.Duration,
+                                          t.FileSize
+                                      };
                     result.Duration = labelTracks.Sum(x => x.Duration);
 
-                    result.Statistics = new Library.Models.Statistics.ReleaseGroupingStatistics
+                    result.Statistics = new ReleaseGroupingStatistics
                     {
                         TrackCount = label.TrackCount,
                         ArtistCount = label.ArtistCount,
@@ -265,25 +275,31 @@ namespace Roadie.Api.Services
                         FileSize = labelTracks.Sum(x => (long?)x.FileSize).ToFileSize()
                     };
                 }
+
                 if (includes.Contains("comments"))
                 {
-                    var labelComments = this.DbContext.Comments.Include(x => x.User).Where(x => x.LabelId == label.Id).OrderByDescending(x => x.CreatedDate).ToArray();
+                    var labelComments = DbContext.Comments.Include(x => x.User).Where(x => x.LabelId == label.Id)
+                        .OrderByDescending(x => x.CreatedDate).ToArray();
                     if (labelComments.Any())
                     {
                         var comments = new List<Comment>();
                         var commentIds = labelComments.Select(x => x.Id).ToArray();
-                        var userCommentReactions = (from cr in this.DbContext.CommentReactions
+                        var userCommentReactions = (from cr in DbContext.CommentReactions
                                                     where commentIds.Contains(cr.CommentId)
                                                     select cr).ToArray();
                         foreach (var labelComment in labelComments)
                         {
                             var comment = labelComment.Adapt<Comment>();
                             comment.DatabaseId = labelComment.Id;
-                            comment.User = UserList.FromDataUser(labelComment.User, this.MakeUserThumbnailImage(labelComment.User.RoadieId));
-                            comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Dislike);
-                            comment.LikedCount = userCommentReactions.Count(x => x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Like);
+                            comment.User = UserList.FromDataUser(labelComment.User,
+                                MakeUserThumbnailImage(labelComment.User.RoadieId));
+                            comment.DislikedCount = userCommentReactions.Count(x =>
+                                x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Dislike);
+                            comment.LikedCount = userCommentReactions.Count(x =>
+                                x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Like);
                             comments.Add(comment);
                         }
+
                         result.Comments = comments;
                     }
                 }
@@ -298,16 +314,13 @@ namespace Roadie.Api.Services
             });
         }
 
-        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
+        private async Task<OperationResult<Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
         {
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
-            var label = this.DbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
-            if (label == null)
-            {
-                return new OperationResult<Library.Models.Image>(true, string.Format("Label Not Found [{0}]", id));
-            }
+            var label = DbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
+            if (label == null) return new OperationResult<Image>(true, string.Format("Label Not Found [{0}]", id));
             try
             {
                 var now = DateTime.UtcNow;
@@ -318,24 +331,28 @@ namespace Roadie.Api.Services
                     label.Thumbnail = ImageHelper.ConvertToJpegFormat(label.Thumbnail);
 
                     // Resize to store in database as thumbnail
-                    label.Thumbnail = ImageHelper.ResizeImage(label.Thumbnail, this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height);
+                    label.Thumbnail = ImageHelper.ResizeImage(label.Thumbnail, Configuration.MediumImageSize.Width,
+                        Configuration.MediumImageSize.Height);
                 }
+
                 label.LastUpdated = now;
-                await this.DbContext.SaveChangesAsync();
-                this.CacheManager.ClearRegion(label.CacheRegion);
-                this.Logger.LogInformation($"UploadLabelImage `{ label }` By User `{ user }`");
+                await DbContext.SaveChangesAsync();
+                CacheManager.ClearRegion(label.CacheRegion);
+                Logger.LogInformation($"UploadLabelImage `{label}` By User `{user}`");
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
                 errors.Add(ex);
             }
+
             sw.Stop();
 
-            return new OperationResult<Library.Models.Image>
+            return new OperationResult<Image>
             {
                 IsSuccess = !errors.Any(),
-                Data = base.MakeThumbnailImage(id, "label", this.Configuration.MediumImageSize.Width, this.Configuration.MediumImageSize.Height, true),
+                Data = MakeThumbnailImage(id, "label", Configuration.MediumImageSize.Width,
+                    Configuration.MediumImageSize.Height, true),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };

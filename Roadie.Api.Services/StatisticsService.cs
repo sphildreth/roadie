@@ -18,11 +18,11 @@ namespace Roadie.Api.Services
     public class StatisticsService : ServiceBase, IStatisticsService
     {
         public StatisticsService(IRoadieSettings configuration,
-                             IHttpEncoder httpEncoder,
-                             IHttpContext httpContext,
-                             data.IRoadieDbContext context,
-                             ICacheManager cacheManager,
-                             ILogger<StatisticsService> logger)
+            IHttpEncoder httpEncoder,
+            IHttpContext httpContext,
+            data.IRoadieDbContext context,
+            ICacheManager cacheManager,
+            ILogger<StatisticsService> logger)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
         }
@@ -34,7 +34,7 @@ namespace Roadie.Api.Services
             sw.Start();
             try
             {
-                using (var conn = new MySqlConnection(this.Configuration.ConnectionString))
+                using (var conn = new MySqlConnection(Configuration.ConnectionString))
                 {
                     conn.Open();
                     var sql = @"SELECT rm.releaseMediaCount AS releaseMediaCount, COUNT(r.roadieId) AS releaseCount,
@@ -75,9 +75,7 @@ namespace Roadie.Api.Services
                             using (var rdr = await cmd.ExecuteReaderAsync())
                             {
                                 if (rdr.HasRows)
-                                {
                                     while (rdr.Read())
-                                    {
                                         result = new LibraryStats
                                         {
                                             UserCount = SafeParser.ToNumber<int?>(rdr["UserCount"]),
@@ -92,13 +90,11 @@ namespace Roadie.Api.Services
                                             TotalTrackDuration = SafeParser.ToNumber<long?>(rdr["TotalTrackDuration"]),
                                             TotalTrackSize = SafeParser.ToNumber<long?>(rdr["TotalTrackSize"])
                                         };
-                                    }
-                                }
                             }
                         }
                         catch (Exception ex)
                         {
-                            this.Logger.LogError(ex);
+                            Logger.LogError(ex);
                         }
                         finally
                         {
@@ -106,17 +102,16 @@ namespace Roadie.Api.Services
                         }
                     }
                 }
-                var lastScan = this.DbContext.ScanHistories.OrderByDescending(x => x.CreatedDate).FirstOrDefault();
-                if (lastScan != null)
-                {
-                    result.LastScan = lastScan.CreatedDate;
-                }
+
+                var lastScan = DbContext.ScanHistories.OrderByDescending(x => x.CreatedDate).FirstOrDefault();
+                if (lastScan != null) result.LastScan = lastScan.CreatedDate;
                 sw.Stop();
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return new OperationResult<LibraryStats>
             {
                 IsSuccess = result != null,
@@ -132,7 +127,7 @@ namespace Roadie.Api.Services
 
             var result = new List<DateAndCount>();
 
-            using (var conn = new MySqlConnection(this.Configuration.ConnectionString))
+            using (var conn = new MySqlConnection(Configuration.ConnectionString))
             {
                 conn.Open();
                 var sql = @"SELECT DATE_FORMAT(createdDate, '%Y-%m-%d') as date, count(1) as count
@@ -146,21 +141,17 @@ namespace Roadie.Api.Services
                         using (var rdr = cmd.ExecuteReader())
                         {
                             if (rdr.HasRows)
-                            {
                                 while (rdr.Read())
-                                {
                                     result.Add(new DateAndCount
                                     {
                                         Date = SafeParser.ToString(rdr["date"]),
                                         Count = SafeParser.ToNumber<int?>(rdr["count"])
                                     });
-                                }
-                            }
                         }
                     }
                     catch (Exception ex)
                     {
-                        this.Logger.LogError(ex);
+                        Logger.LogError(ex);
                     }
                     finally
                     {
