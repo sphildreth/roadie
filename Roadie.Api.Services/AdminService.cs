@@ -667,8 +667,8 @@ namespace Roadie.Api.Services
                             {
                                 CollectionId = collection.Id,
                                 Position = csvRelease.Position,
-                                Artist = csvRelease.Artist,
-                                Release = searchName
+                                Artist = searchName,
+                                Release = csvRelease.Release.NormalizeName()
                             });
                             continue;
                         }

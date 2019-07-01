@@ -1269,7 +1269,7 @@ namespace Roadie.Api.Services
         public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetSimliarSongs(subsonic.Request request,
             User roadieUser, subsonic.SimilarSongsVersion version, int? count = 50)
         {
-            // TODO How to determine similiar songs? Perhaps by genre?
+            // TODO How to determine similar songs? Perhaps by genre?
 
             switch (version)
             {

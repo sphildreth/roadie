@@ -25,8 +25,8 @@ namespace Roadie.Library.Tests
             Assert.True(secondHash > 0);
             Assert.Equal(hash, secondHash);
 
-            var similiar = ImageHasher.Similarity(imageFilename, secondImagFilename);
-            Assert.Equal(100d, similiar);
+            var similar = ImageHasher.Similarity(imageFilename, secondImagFilename);
+            Assert.Equal(100d, similar);
 
             Assert.True(ImageHasher.ImagesAreSame(imageFilename, secondImagFilename));
 

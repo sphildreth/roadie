@@ -375,6 +375,7 @@ namespace Roadie.Library.Factories
 
             var artistGenreTables = Artist.Genres.Select(x => new ArtistGenre { ArtistId = Artist.Id, GenreId = x.GenreId }).ToList();
             var artistAssociatedWith = Artist.AssociatedArtists.Select(x => new ArtistAssociation { ArtistId = Artist.Id, AssociatedArtistId = x.AssociatedArtistId }).ToList();
+            var similarArtists = Artist.SimilarArtists.Select(x => new ArtistSimilar { ArtistId = Artist.Id, SimilarArtistId = x.SimilarArtistId }).ToList();
             var result = true;
 
             var now = DateTime.UtcNow;
@@ -393,6 +394,7 @@ namespace Roadie.Library.Factories
                                                            where at.ArtistId == Artist.Id
                                                            select at));
             Artist.AssociatedArtists = artistAssociatedWith;
+            Artist.SimilarArtists = similarArtists;
             await this.DbContext.SaveChangesAsync();
 
             var existingImageIds = (from ai in ArtistImages

@@ -557,10 +557,48 @@ namespace Roadie.Api.Services
                                 });
                         }
                     }
+
                 }
                 else if (model.AssociatedArtistsTokens == null || !model.AssociatedArtistsTokens.Any())
                 {
-                    artist.AssociatedArtists.Clear();
+                    var associatedArtists = DbContext.ArtistAssociations.Include(x => x.AssociatedArtist).Where(x => x.ArtistId == artist.Id || x.AssociatedArtistId == artist.Id).ToList();
+                    DbContext.ArtistAssociations.RemoveRange(associatedArtists);
+                }
+
+                if(model.SimilarArtistsTokens != null && model.SimilarArtistsTokens.Any())
+                {
+                    var similarArtists = DbContext.ArtistSimilar.Include(x => x.SimilarArtist)
+                        .Where(x => x.ArtistId == artist.Id).ToList();
+
+                    // Remove existing AssociatedArtists not in model list
+                    foreach (var similarArtist in similarArtists)
+                    {
+                        var doesExistInModel = model.SimilarArtistsTokens.Any(x =>
+                            SafeParser.ToGuid(x.Value) == similarArtist.SimilarArtist.RoadieId);
+                        if (!doesExistInModel) DbContext.ArtistSimilar.Remove(similarArtist);
+                    }
+
+                    // Add new SimilarArtists in model not in data
+                    foreach (var similarArtist in model.SimilarArtistsTokens)
+                    {
+                        var similarArtistId = SafeParser.ToGuid(similarArtist.Value);
+                        var doesExistInData = similarArtists.Any(x => x.SimilarArtist.RoadieId == similarArtistId);
+                        if (!doesExistInData)
+                        {
+                            var a = DbContext.Artists.FirstOrDefault(x => x.RoadieId == similarArtistId);
+                            if (a != null)
+                                DbContext.ArtistSimilar.Add(new data.ArtistSimilar
+                                {
+                                    ArtistId = artist.Id,
+                                    SimilarArtistId = a.Id
+                                });
+                        }
+                    }
+                }
+                else if (model.SimilarArtistsTokens == null || !model.SimilarArtistsTokens.Any())
+                {
+                    var similarArtists = DbContext.ArtistSimilar.Include(x => x.SimilarArtist).Where(x => x.ArtistId == artist.Id || x.SimilarArtistId == artist.Id).ToList();
+                    DbContext.ArtistSimilar.RemoveRange(similarArtists);
                 }
 
                 if (model.Images != null && model.Images.Any())
@@ -814,6 +852,63 @@ namespace Roadie.Api.Services
                     result.AssociatedArtistsTokens = result.AssociatedArtists.Select(x => x.Artist).ToArray();
                     tsw.Stop();
                     timings.Add("associatedartists", tsw.ElapsedMilliseconds);
+                }
+
+                if (includes.Contains("similarartists"))
+                {
+                    tsw.Restart();
+                    var similarWithArtists = (from aa in DbContext.ArtistSimilar
+                                                 join a in DbContext.Artists on aa.SimilarArtistId equals a.Id
+                                                 where aa.ArtistId == artist.Id
+                                                 select new ArtistList
+                                                 {
+                                                     DatabaseId = a.Id,
+                                                     Id = a.RoadieId,
+                                                     Artist = new DataToken
+                                                     {
+                                                         Text = a.Name,
+                                                         Value = a.RoadieId.ToString()
+                                                     },
+                                                     Thumbnail = MakeArtistThumbnailImage(a.RoadieId),
+                                                     Rating = a.Rating,
+                                                     Rank = a.Rank,
+                                                     CreatedDate = a.CreatedDate,
+                                                     LastUpdated = a.LastUpdated,
+                                                     LastPlayed = a.LastPlayed,
+                                                     PlayedCount = a.PlayedCount,
+                                                     ReleaseCount = a.ReleaseCount,
+                                                     TrackCount = a.TrackCount,
+                                                     SortName = a.SortName
+                                                 }).ToArray();
+
+                    var similarArtists = (from aa in DbContext.ArtistSimilar
+                                           join a in DbContext.Artists on aa.ArtistId equals a.Id
+                                             where aa.SimilarArtistId == artist.Id
+                                             select new ArtistList
+                                             {
+                                                 DatabaseId = a.Id,
+                                                 Id = a.RoadieId,
+                                                 Artist = new DataToken
+                                                 {
+                                                     Text = a.Name,
+                                                     Value = a.RoadieId.ToString()
+                                                 },
+                                                 Thumbnail = MakeArtistThumbnailImage(a.RoadieId),
+                                                 Rating = a.Rating,
+                                                 Rank = a.Rank,
+                                                 CreatedDate = a.CreatedDate,
+                                                 LastUpdated = a.LastUpdated,
+                                                 LastPlayed = a.LastPlayed,
+                                                 PlayedCount = a.PlayedCount,
+                                                 ReleaseCount = a.ReleaseCount,
+                                                 TrackCount = a.TrackCount,
+                                                 SortName = a.SortName
+                                             }).ToArray();
+                    result.SimilarArtists = similarWithArtists.Union(similarArtists, new ArtistListComparer())
+                        .OrderBy(x => x.SortName);
+                    result.SimilarArtistsTokens = result.SimilarArtists.Select(x => x.Artist).ToArray();
+                    tsw.Stop();
+                    timings.Add("similarartists", tsw.ElapsedMilliseconds);
                 }
 
                 if (includes.Contains("collections"))

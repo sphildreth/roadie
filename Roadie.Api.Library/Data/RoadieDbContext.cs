@@ -8,6 +8,7 @@ namespace Roadie.Library.Data
     public class RoadieDbContext : DbContext, IRoadieDbContext
     {
         public DbSet<ArtistAssociation> ArtistAssociations { get; set; }
+        public DbSet<ArtistSimilar> ArtistSimilar { get; set; }
         public DbSet<ArtistGenre> ArtistGenres { get; set; }
         public DbSet<Artist> Artists { get; set; }
         public DbSet<Bookmark> Bookmarks { get; set; }
