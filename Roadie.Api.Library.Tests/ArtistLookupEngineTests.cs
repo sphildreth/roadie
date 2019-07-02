@@ -80,7 +80,7 @@ namespace Roadie.Library.Tests
         //    using (var context = new RoadieDbContext(optionsBuilder.Options))
         //    {
         //        var now = DateTime.UtcNow;
-        //        foreach(var release in context.Releases)
+        //        foreach (var release in context.Releases)
         //        {
         //            var releaseModel = release.Adapt<Roadie.Library.Models.Releases.Release>();
         //            var specialReleaseTitle = release.Title.ToAlphanumericName();

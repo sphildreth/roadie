@@ -1,9 +1,11 @@
-﻿using Roadie.Library.Configuration;
+﻿using HtmlAgilityPack;
+using Roadie.Library.Configuration;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -11,6 +13,29 @@ namespace Roadie.Library.Extensions
 {
     public static class StringExt
     {
+        private static readonly Dictionary<char, string> UnicodeAccents = new Dictionary<char, string>() {
+            {'À', "A"}, {'Á', "A"}, {'Â', "A"}, {'Ã', "A"}, {'Ä', "Ae"}, {'Å', "A"}, {'Æ', "Ae"},
+            {'Ç', "C"},
+            {'È', "E"}, {'É', "E"}, {'Ê', "E"}, {'Ë', "E"},
+            {'Ì', "I"}, {'Í', "I"}, {'Î', "I"}, {'Ï', "I"},
+            {'Ð', "Dh"}, {'Þ', "Th"},
+            {'Ñ', "N"},
+            {'Ò', "O"}, {'Ó', "O"}, {'Ô', "O"}, {'Õ', "O"}, {'Ö', "Oe"}, {'Ø', "Oe"},
+            {'Ù', "U"}, {'Ú', "U"}, {'Û', "U"}, {'Ü', "Ue"},
+            {'Ý', "Y"},
+            {'ß', "ss"},
+            {'à', "a"}, {'á', "a"}, {'â', "a"}, {'ã', "a"}, {'ä', "ae"}, {'å', "a"}, {'æ', "ae"},
+            {'ç', "c"},
+            {'è', "e"}, {'é', "e"}, {'ê', "e"}, {'ë', "e"},
+            {'ì', "i"}, {'í', "i"}, {'î', "i"}, {'ï', "i"},
+            {'ð', "dh"}, {'þ', "th"},
+            {'ñ', "n"},
+            {'ò', "o"}, {'ó', "o"}, {'ô', "o"}, {'õ', "o"}, {'ö', "oe"}, {'ø', "oe"},
+            {'ù', "u"}, {'ú', "u"}, {'û', "u"}, {'ü', "ue"},
+            {'ý', "y"}, {'ÿ', "y"}
+        };
+
+
         public static string AddToDelimitedList(this string input, IEnumerable<string> values, char delimiter = '|')
         {
             if (string.IsNullOrEmpty(input) && (values == null || !values.Any()))
@@ -201,6 +226,20 @@ namespace Roadie.Library.Extensions
             return input;
         }
 
+        public static string RemoveUnicodeAccents(this string text)
+        {
+            return text.Aggregate(
+              new StringBuilder(),
+              (sb, c) => {
+                  string r;
+                  if (UnicodeAccents.TryGetValue(c, out r))
+                  {
+                      return sb.Append(r);
+                  }
+                  return sb.Append(c);
+              }).ToString();
+        }
+
         public static String RemoveDiacritics(this string s)
         {
             String normalizedString = s.Normalize(NormalizationForm.FormD);
@@ -216,16 +255,41 @@ namespace Roadie.Library.Extensions
             return stringBuilder.ToString();
         }
 
+        public static string Translit(this string str)
+        {
+            string[] lat_up = { "A", "B", "V", "G", "D", "E", "Yo", "Zh", "Z", "I", "Y", "K", "L", "M", "N", "O", "P", "R", "S", "T", "U", "F", "Kh", "Ts", "Ch", "Sh", "Shch", "\"", "Y", "'", "E", "Yu", "Ya" };
+            string[] lat_low = { "a", "b", "v", "g", "d", "e", "yo", "zh", "z", "i", "y", "k", "l", "m", "n", "o", "p", "r", "s", "t", "u", "f", "kh", "ts", "ch", "sh", "shch", "\"", "y", "'", "e", "yu", "ya" };
+            string[] rus_up = { "А", "Б", "В", "Г", "Д", "Е", "Ё", "Ж", "З", "И", "Й", "К", "Л", "М", "Н", "О", "П", "Р", "С", "Т", "У", "Ф", "Х", "Ц", "Ч", "Ш", "Щ", "Ъ", "Ы", "Ь", "Э", "Ю", "Я" };
+            string[] rus_low = { "а", "б", "в", "г", "д", "е", "ё", "ж", "з", "и", "й", "к", "л", "м", "н", "о", "п", "р", "с", "т", "у", "ф", "х", "ц", "ч", "ш", "щ", "ъ", "ы", "ь", "э", "ю", "я" };
+            for (int i = 0; i <= 32; i++)
+            {
+                str = str.Replace(rus_up[i], lat_up[i]);
+                str = str.Replace(rus_low[i], lat_low[i]);
+            }
+            return str;
+        }
+
         public static string ToAlphanumericName(this string input)
         {
             if (string.IsNullOrEmpty(input))
             {
                 return input;
             }
-            input = input.ToLower().Trim().Replace("&", "and");
+            input = WebUtility.HtmlDecode(input);
+            input = input.ScrubHtml().ToLower().Trim().Replace("&", "and");
             char[] arr = input.ToCharArray();
             arr = Array.FindAll<char>(arr, (c => (char.IsLetterOrDigit(c))));
-            return new string(arr).RemoveDiacritics();
+            input = new string(arr).RemoveDiacritics().RemoveUnicodeAccents().Translit();
+            input = Regex.Replace(input, @"[^A-Za-z0-9]+", "");
+            return input;
+        }
+
+
+        public static string ScrubHtml(this string value)
+        {
+            var step1 = Regex.Replace(value, @"<[^>]+>|&nbsp;", "").Trim();
+            var step2 = Regex.Replace(step1, @"\s{2,}", " ");
+            return step2;
         }
 
         public static string ToContentDispositionFriendly(this string input)

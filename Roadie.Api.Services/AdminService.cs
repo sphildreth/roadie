@@ -648,27 +648,29 @@ namespace Roadie.Api.Services
                         data.Artist artist = null;
                         data.Release release = null;
 
-                        var searchName = csvRelease.Artist.NormalizeName();
-                        var specialSearchName = csvRelease.Artist.ToAlphanumericName();
+                        var artistSearchName = csvRelease.Artist.NormalizeName();
+                        var artistSpecialSearchName = csvRelease.Artist.ToAlphanumericName();
+                        var releaseSearchName = csvRelease.Release.NormalizeName().ToLower();
+                        var releaseSpecialSearchName = csvRelease.Release.ToAlphanumericName();
 
                         var artistResults = (from a in DbContext.Artists
-                                             where a.Name.Contains(searchName) ||
-                                                   a.SortName.Contains(searchName) ||
-                                                   a.AlternateNames.Contains(searchName) ||
-                                                   a.AlternateNames.Contains(specialSearchName)
+                                             where a.Name.Contains(artistSearchName) ||
+                                                   a.SortName.Contains(artistSearchName) ||
+                                                   a.AlternateNames.Contains(artistSearchName) ||
+                                                   a.AlternateNames.Contains(artistSpecialSearchName)
                                              select a).ToArray();
                         if (!artistResults.Any())
                         {
                             await LogAndPublish(
-                                $"Unable To Find Artist [{csvRelease.Artist}], SearchName [{searchName}]",
+                                $"Unable To Find Artist [{csvRelease.Artist}], SearchName [{artistSpecialSearchName}]",
                                 LogLevel.Warning);
                             csvRelease.Status = Statuses.Missing;
                             DbContext.CollectionMissings.Add(new data.CollectionMissing
                             {
                                 CollectionId = collection.Id,
                                 Position = csvRelease.Position,
-                                Artist = searchName,
-                                Release = csvRelease.Release.NormalizeName()
+                                Artist = artistSpecialSearchName,
+                                Release = releaseSpecialSearchName
                             });
                             continue;
                         }
@@ -676,13 +678,11 @@ namespace Roadie.Api.Services
                         foreach (var artistResult in artistResults)
                         {
                             artist = artistResult;
-                            searchName = csvRelease.Release.NormalizeName().ToLower();
-                            specialSearchName = csvRelease.Release.ToAlphanumericName();
                             release = (from r in DbContext.Releases
                                        where r.ArtistId == artist.Id
-                                       where r.Title.Contains(searchName) ||
-                                             r.AlternateNames.Contains(searchName) ||
-                                             r.AlternateNames.Contains(specialSearchName)
+                                       where r.Title.Contains(releaseSearchName) ||
+                                             r.AlternateNames.Contains(releaseSearchName) ||
+                                             r.AlternateNames.Contains(releaseSpecialSearchName)
                                        select r
                                 ).FirstOrDefault();
                             if (release != null) break;
@@ -691,7 +691,7 @@ namespace Roadie.Api.Services
                         if (release == null)
                         {
                             await LogAndPublish(
-                                $"Unable To Find Release [{csvRelease.Release}] for Artist [{csvRelease.Artist}], SearchName [{searchName}]",
+                                $"Unable To Find Release [{csvRelease.Release}] for Artist [{csvRelease.Artist}], SearchName [{artistSearchName}]",
                                 LogLevel.Warning);
                             csvRelease.Status = Statuses.Missing;
                             DbContext.CollectionMissings.Add(new data.CollectionMissing
@@ -699,8 +699,8 @@ namespace Roadie.Api.Services
                                 CollectionId = collection.Id,
                                 IsArtistFound = true,
                                 Position = csvRelease.Position,
-                                Artist = csvRelease.Artist,
-                                Release = searchName
+                                Artist = artistSpecialSearchName,
+                                Release = releaseSpecialSearchName
                             });
                             continue;
                         }
