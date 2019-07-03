@@ -1,5 +1,4 @@
-﻿using Roadie.Library.Extensions;
-using System;
+﻿using System;
 
 namespace Roadie.Library.Utility
 {
@@ -11,10 +10,7 @@ namespace Roadie.Library.Utility
         {
             get
             {
-                if (this.Days > -1)
-                {
-                    return this.Days.ToString("000");
-                }
+                if (Days > -1) return Days.ToString("000");
                 return "--";
             }
         }
@@ -25,10 +21,7 @@ namespace Roadie.Library.Utility
         {
             get
             {
-                if (this.Hours > -1)
-                {
-                    return this.Hours.ToString("00");
-                }
+                if (Hours > -1) return Hours.ToString("00");
                 return "--";
             }
         }
@@ -39,10 +32,7 @@ namespace Roadie.Library.Utility
         {
             get
             {
-                if (this.Minutes > -1)
-                {
-                    return this.Minutes.ToString("00");
-                }
+                if (Minutes > -1) return Minutes.ToString("00");
                 return "--";
             }
         }
@@ -53,10 +43,7 @@ namespace Roadie.Library.Utility
         {
             get
             {
-                if (this.Seconds > -1)
-                {
-                    return this.Seconds.ToString("00");
-                }
+                if (Seconds > -1) return Seconds.ToString("00");
                 return "--";
             }
         }
@@ -67,48 +54,41 @@ namespace Roadie.Library.Utility
         {
             get
             {
-                if (this.Years.HasValue && this.Years.Value > 0)
-                {
-                    return this.Years.Value.ToString("0");
-                }
+                if (Years.HasValue && Years.Value > 0) return Years.Value.ToString("0");
                 return null;
             }
         }
 
         public TimeInfo(decimal milliseconds)
         {
-
             var secondsTotal = milliseconds / 1000;
             var minutesTotal = Math.Floor(secondsTotal / 60);
             var hoursTotal = Math.Floor(minutesTotal / 60);
             var daysTotal = Math.Floor(hoursTotal / 24);
             var yearsTotal = Math.Floor(daysTotal / 365);
 
-            this.Seconds = Math.Floor(secondsTotal - (minutesTotal * 60));
-            this.Minutes = minutesTotal - (hoursTotal * 60);
-            this.Hours = hoursTotal - (daysTotal * 24);
-            this.Days = daysTotal - (yearsTotal * 365);
-            this.Years = Math.Floor(daysTotal / 365);
+            Seconds = Math.Floor(secondsTotal - minutesTotal * 60);
+            Minutes = minutesTotal - hoursTotal * 60;
+            Hours = hoursTotal - daysTotal * 24;
+            Days = daysTotal - yearsTotal * 365;
+            Years = Math.Floor(daysTotal / 365);
         }
 
         public string ToFullFormattedString()
         {
-            var yearsFormatted = this.YearsFormatted;
-            return $"{ (string.IsNullOrEmpty(yearsFormatted) ? string.Empty : yearsFormatted + ":") }{ this.ToString() }";
+            var yearsFormatted = YearsFormatted;
+            return $"{(string.IsNullOrEmpty(yearsFormatted) ? string.Empty : yearsFormatted + ":")}{ToString()}";
         }
 
         public string ToShortFormattedString()
         {
-            return $"{ MinutesFormatted }:{ SecondsFormatted }";
+            return $"{MinutesFormatted}:{SecondsFormatted}";
         }
 
         public override string ToString()
         {
-            if(this.Days > 0)
-            {
-                return $"{ DaysFormatted}:{ HoursFormatted}:{ MinutesFormatted}:{ SecondsFormatted }";
-            }
-            return $"{ HoursFormatted}:{ MinutesFormatted }:{ SecondsFormatted }";
+            if (Days > 0) return $"{DaysFormatted}:{HoursFormatted}:{MinutesFormatted}:{SecondsFormatted}";
+            return $"{HoursFormatted}:{MinutesFormatted}:{SecondsFormatted}";
         }
     }
 }

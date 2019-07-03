@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 
 namespace Roadie.Library.Models
 {
@@ -11,24 +10,16 @@ namespace Roadie.Library.Models
     public class ArtistList : EntityInfoModelBase
     {
         public DataToken Artist { get; set; }
-        public short? Rating { get; set; }
-        public decimal? Rank { get; set; }
-        public UserArtist UserRating { get; set; }
-        public int? ReleaseCount { get; set; }
-        public int? TrackCount { get; set; }
-        public int? PlayedCount { get; set; }
-        public Image Thumbnail { get; set; }
+        public bool IsValid => Id != Guid.Empty;
         public DateTime? LastPlayed { get; set; }
-
         public IEnumerable<string> MissingReleasesForCollection { get; set; }
-
-        public bool IsValid
-        {
-            get
-            {
-                return this.Id != Guid.Empty;
-            }
-        }
+        public int? PlayedCount { get; set; }
+        public decimal? Rank { get; set; }
+        public short? Rating { get; set; }
+        public int? ReleaseCount { get; set; }
+        public Image Thumbnail { get; set; }
+        public int? TrackCount { get; set; }
+        public UserArtist UserRating { get; set; }
 
         public static ArtistList FromDataArtist(Data.Artist artist, Image thumbnail)
         {
@@ -41,7 +32,7 @@ namespace Roadie.Library.Models
                     Text = artist.Name,
                     Value = artist.RoadieId.ToString()
                 },
-                Thumbnail = thumbnail, 
+                Thumbnail = thumbnail,
                 Rating = artist.Rating,
                 Rank = artist.Rank,
                 CreatedDate = artist.CreatedDate,
@@ -60,13 +51,8 @@ namespace Roadie.Library.Models
         public bool Equals(ArtistList x, ArtistList y)
         {
             if (x == null && y == null)
-            {
                 return true;
-            }
-            else if ((x != null && y == null) || (x == null && y != null))
-            {
-                return false;
-            }
+            if (x != null && y == null || x == null && y != null) return false;
             return x.DatabaseId.Equals(y.DatabaseId) && x.Id.Equals(y.Id);
         }
 

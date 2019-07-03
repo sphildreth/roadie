@@ -7,10 +7,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Roadie.Library.Identity
 {
     [Table("userrole")]
-    public partial class ApplicationRole : IdentityRole<int>
+    public class ApplicationRole : IdentityRole<int>
     {
-        [Column("createdDate")]
-        public DateTime? CreatedDate { get; set; }
+        [Column("createdDate")] public DateTime? CreatedDate { get; set; }
 
         [Column("description")]
         [StringLength(200)]
@@ -20,11 +19,9 @@ namespace Roadie.Library.Identity
         //[Key]
         //public override int Id { get; set; }
 
-        [Column("isLocked")]
-        public bool? IsLocked { get; set; }
+        [Column("isLocked")] public bool? IsLocked { get; set; }
 
-        [Column("lastUpdated")]
-        public DateTime? LastUpdated { get; set; }
+        [Column("lastUpdated")] public DateTime? LastUpdated { get; set; }
 
         [Column("name")]
         [Required]
@@ -37,8 +34,7 @@ namespace Roadie.Library.Identity
 
         public virtual ICollection<ApplicationRoleClaim> RoleClaims { get; set; }
 
-        [Column("status")]
-        public short? Status { get; set; }
+        [Column("status")] public short? Status { get; set; }
 
         public virtual ICollection<ApplicationUserRole> UserRoles { get; set; }
     }

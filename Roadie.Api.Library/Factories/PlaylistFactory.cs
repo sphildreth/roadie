@@ -14,7 +14,9 @@ namespace Roadie.Library.Factories
 {
     public class PlaylistFactory : FactoryBase, IPlaylistFactory
     {
-        public PlaylistFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine)
+        public PlaylistFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
+            ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine,
+            IReleaseLookupEngine releaseLookupEngine)
             : base(configuration, context, cacheManager, logger, httpEncoder, artistLookupEngine, releaseLookupEngine)
         {
         }
@@ -28,28 +30,26 @@ namespace Roadie.Library.Factories
             var result = false;
             var now = DateTime.UtcNow;
 
-            var existingTracksForPlaylist = (from plt in this.DbContext.PlaylistTracks
-                                             join t in this.DbContext.Tracks on plt.TrackId equals t.Id
-                                             where plt.PlayListId == playlist.Id
-                                             select t);
-            var newTracksForPlaylist = (from t in this.DbContext.Tracks
+            var existingTracksForPlaylist = from plt in DbContext.PlaylistTracks
+                                            join t in DbContext.Tracks on plt.TrackId equals t.Id
+                                            where plt.PlayListId == playlist.Id
+                                            select t;
+            var newTracksForPlaylist = (from t in DbContext.Tracks
                                         where (from x in trackIds select x).Contains(t.RoadieId)
                                         where !(from x in existingTracksForPlaylist select x.RoadieId).Contains(t.RoadieId)
                                         select t).ToArray();
             foreach (var newTrackForPlaylist in newTracksForPlaylist)
-            {
-                this.DbContext.PlaylistTracks.Add(new PlaylistTrack
+                DbContext.PlaylistTracks.Add(new PlaylistTrack
                 {
                     TrackId = newTrackForPlaylist.Id,
                     PlayListId = playlist.Id,
                     CreatedDate = now
                 });
-            }
             playlist.LastUpdated = now;
-            await this.DbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync();
             result = true;
 
-            var r = await this.ReorderPlaylist(playlist);
+            var r = await ReorderPlaylist(playlist);
             result = result && r.IsSuccess;
 
             return new OperationResult<bool>
@@ -70,13 +70,15 @@ namespace Roadie.Library.Factories
             if (playlist != null)
             {
                 var looper = 0;
-                foreach (var playlistTrack in this.DbContext.PlaylistTracks.Where(x => x.PlayListId == playlist.Id).OrderBy(x => x.CreatedDate))
+                foreach (var playlistTrack in DbContext.PlaylistTracks.Where(x => x.PlayListId == playlist.Id)
+                    .OrderBy(x => x.CreatedDate))
                 {
                     looper++;
                     playlistTrack.ListNumber = looper;
                     playlistTrack.LastUpdated = now;
                 }
-                await this.DbContext.SaveChangesAsync();
+
+                await DbContext.SaveChangesAsync();
                 result = true;
             }
 

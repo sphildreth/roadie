@@ -15,39 +15,36 @@ namespace Roadie.Library.Models
     {
         public const string DefaultIncludes = "comments,stats";
 
-        [MaxLength(50)]
-        public string AmgId { get; set; }
+        private IEnumerable<string> _partTitles;
+
+        [MaxLength(50)] public string AmgId { get; set; }
 
         public ArtistList Artist { get; set; }
 
         public Image ArtistThumbnail { get; set; }
-        public long FileSize { get; set; }
+        public IEnumerable<Comment> Comments { get; set; }
         public int Duration { get; set; }
+
         public string DurationTime
         {
             get
             {
-                if (this.Duration < 1)
-                {
-                    return "--:--";
-                }
-                return new TimeInfo(this.Duration).ToFullFormattedString();
+                if (Duration < 1) return "--:--";
+                return new TimeInfo(Duration).ToFullFormattedString();
             }
         }
 
-        [MaxLength(32)]
-        public string Hash { get; set; }
+        public long FileSize { get; set; }
+        [MaxLength(32)] public string Hash { get; set; }
 
-        [MaxLength(15)]
-        public string ISRC { get; set; }
+        [MaxLength(15)] public string ISRC { get; set; }
 
-        [MaxLength(50)]
-        public string LastFMId { get; set; }
+        [MaxLength(50)] public string LastFMId { get; set; }
 
         public DateTime? LastPlayed { get; set; }
 
-        [MaxLength(100)]
-        public string MusicBrainzId { get; set; }
+        public Image MediumThumbnail { get; set; }
+        [MaxLength(100)] public string MusicBrainzId { get; set; }
 
         // When populated a "data:image" base64 byte array of an image to use as new Thumbnail
         public string NewThumbnailData { get; set; }
@@ -57,25 +54,19 @@ namespace Roadie.Library.Models
         [IgnoreDataMember]
         public string PartTitles { get; set; }
 
-        private IEnumerable<string> _partTitles = null;
         public IEnumerable<string> PartTitlesList
         {
             get
             {
-                if (this._partTitles == null)
+                if (_partTitles == null)
                 {
-                    if (string.IsNullOrEmpty(this.PartTitles))
-                    {
-                        return null;
-                    }
-                    return this.PartTitles.Replace("|", "\n").Split("\n");
+                    if (string.IsNullOrEmpty(PartTitles)) return null;
+                    return PartTitles.Replace("|", "\n").Split("\n");
                 }
-                return this._partTitles;
+
+                return _partTitles;
             }
-            set
-            {
-                this._partTitles = value;
-            }
+            set => _partTitles = value;
         }
 
         public int PlayedCount { get; set; }
@@ -86,34 +77,23 @@ namespace Roadie.Library.Models
 
         public Image ReleaseThumbnail { get; set; }
 
-        [MaxLength(100)]
-        public string SpotifyId { get; set; }
+        [MaxLength(100)] public string SpotifyId { get; set; }
 
         public TrackStatistics Statistics { get; set; }
 
         public Image Thumbnail { get; set; }
-        public Image MediumThumbnail { get; set; }
-
-        [MaxLength(250)]
-        [Required]
-        public string Title { get; set; }
+        [MaxLength(250)] [Required] public string Title { get; set; }
 
         /// <summary>
-        /// Track Artist, not release artist. If this is present then the track has an artist different than the release.
+        ///     Track Artist, not release artist. If this is present then the track has an artist different than the release.
         /// </summary>
         public ArtistList TrackArtist { get; set; }
 
-        public DataToken TrackArtistToken { get; set; }
-
         public Image TrackArtistThumbnail { get; set; }
-
-        [Required]
-        public short TrackNumber { get; set; }
-
-        public UserTrack UserRating { get; set; }
+        public DataToken TrackArtistToken { get; set; }
+        [Required] public short TrackNumber { get; set; }
 
         public string TrackPlayUrl { get; set; }
-
-        public IEnumerable<Comment> Comments { get; set; }
+        public UserTrack UserRating { get; set; }
     }
 }

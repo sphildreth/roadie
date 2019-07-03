@@ -6,14 +6,8 @@ namespace Roadie.Library.Extensions
     {
         public static DateTime? FormatDateTime(this DateTime? value)
         {
-            if (!value.HasValue)
-            {
-                return null;
-            }
-            if (value.Value.Year == 0 || value.Value.Year == 1)
-            {
-                return null;
-            }
+            if (!value.HasValue) return null;
+            if (value.Value.Year == 0 || value.Value.Year == 1) return null;
             return value;
         }
 
@@ -31,10 +25,10 @@ namespace Roadie.Library.Extensions
 
         public static int ToUnixTimeSinceEpoch(this DateTime dateTime)
         {
-            DateTime utcDateTime = dateTime.ToUniversalTime();
+            var utcDateTime = dateTime.ToUniversalTime();
             var jan1St1970 = new DateTime(1970, 1, 1, 0, 0, 0);
 
-            TimeSpan timeSinceJan1St1970 = utcDateTime.Subtract(jan1St1970);
+            var timeSinceJan1St1970 = utcDateTime.Subtract(jan1St1970);
             return (int)timeSinceJan1St1970.TotalSeconds;
         }
     }

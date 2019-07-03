@@ -8,19 +8,19 @@ namespace Roadie.Library.Extensions
     {
         public static IEnumerable<T> Randomize<T>(this IEnumerable<T> source)
         {
-            Random rnd = new Random();
-            return source.OrderBy<T, int>((item) => rnd.Next());
+            var rnd = new Random();
+            return source.OrderBy(item => rnd.Next());
         }
 
         public static void Shuffle<T>(this IList<T> list)
         {
-            int n = list.Count;
-            Random rnd = new Random();
+            var n = list.Count;
+            var rnd = new Random();
             while (n > 1)
             {
-                int k = (rnd.Next(0, n) % n);
+                var k = rnd.Next(0, n) % n;
                 n--;
-                T value = list[k];
+                var value = list[k];
                 list[k] = list[n];
                 list[n] = value;
             }
@@ -33,10 +33,7 @@ namespace Roadie.Library.Extensions
 
         public static string ToDelimitedList<T>(this IEnumerable<T> list, char delimiter = '|')
         {
-            if (list == null || !list.Any())
-            {
-                return null;
-            }
+            if (list == null || !list.Any()) return null;
             return string.Join(delimiter.ToString(), list);
         }
     }

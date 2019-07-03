@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using MySql.Data.MySqlClient;
+﻿using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
@@ -21,10 +19,11 @@ namespace Roadie.Library.Engines
     {
         private ILabelSearchEngine DiscogsLabelSearchEngine { get; }
 
-        public LabelLookupEngine(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger)
+        public LabelLookupEngine(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
+                    ICacheManager cacheManager, ILogger logger)
             : base(configuration, httpEncoder, context, cacheManager, logger)
         {
-            this.DiscogsLabelSearchEngine = new discogs.DiscogsHelper(this.Configuration, this.CacheManager, this.Logger);
+            DiscogsLabelSearchEngine = new discogs.DiscogsHelper(Configuration, CacheManager, Logger);
         }
 
         public async Task<OperationResult<Label>> Add(Label label)
@@ -34,29 +33,28 @@ namespace Roadie.Library.Engines
             try
             {
                 var now = DateTime.UtcNow;
-                label.AlternateNames = label.AlternateNames.AddToDelimitedList(new string[] { label.Name.ToAlphanumericName() });
+                label.AlternateNames = label.AlternateNames.AddToDelimitedList(new[] { label.Name.ToAlphanumericName() });
                 if (!label.IsValid)
-                {
                     return new OperationResult<Label>
                     {
                         Errors = new Exception[1] { new Exception("Label is Invalid") }
                     };
-                }
-                this.DbContext.Labels.Add(label);
-                int inserted = 0;
+                DbContext.Labels.Add(label);
+                var inserted = 0;
                 try
                 {
-                    inserted = await this.DbContext.SaveChangesAsync();
+                    inserted = await DbContext.SaveChangesAsync();
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.LogError(ex);
+                    Logger.LogError(ex);
                 }
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return new OperationResult<Label>
             {
                 IsSuccess = label.Id > 0,
@@ -70,9 +68,9 @@ namespace Roadie.Library.Engines
             {
                 var sw = new Stopwatch();
                 sw.Start();
-                var cacheRegion = (new Label { Name = labelName }).CacheRegion;
+                var cacheRegion = new Label { Name = labelName }.CacheRegion;
                 var cacheKey = string.Format("urn:Label_by_name:{0}", labelName);
-                var resultInCache = this.CacheManager.Get<Label>(cacheKey, cacheRegion);
+                var resultInCache = CacheManager.Get<Label>(cacheKey, cacheRegion);
                 if (resultInCache != null)
                 {
                     sw.Stop();
@@ -83,34 +81,36 @@ namespace Roadie.Library.Engines
                         Data = resultInCache
                     };
                 }
+
                 var searchName = labelName.NormalizeName();
                 var specialSearchName = labelName.ToAlphanumericName();
-                var label = (from l in this.DbContext.Labels
-                             where (l.Name.Contains(searchName) ||
+                var label = (from l in DbContext.Labels
+                             where l.Name.Contains(searchName) ||
                                    l.SortName.Contains(searchName) ||
                                    l.AlternateNames.Contains(searchName) ||
-                                   l.AlternateNames.Contains(specialSearchName))
-                            select l
-                            ).FirstOrDefault();
+                                   l.AlternateNames.Contains(specialSearchName)
+                             select l
+                    ).FirstOrDefault();
                 sw.Stop();
                 if (label == null || !label.IsValid)
                 {
-                    this.Logger.LogInformation("LabelFactory: Label Not Found By Name [{0}]", labelName);
+                    Logger.LogInformation("LabelFactory: Label Not Found By Name [{0}]", labelName);
                     if (doFindIfNotInDatabase)
                     {
                         OperationResult<Label> LabelSearch = null;
                         try
                         {
-                            LabelSearch = await this.PerformMetaDataProvidersLabelSearch(labelName);
+                            LabelSearch = await PerformMetaDataProvidersLabelSearch(labelName);
                         }
                         catch (Exception ex)
                         {
-                            this.Logger.LogError(ex);
+                            Logger.LogError(ex);
                         }
+
                         if (LabelSearch.IsSuccess)
                         {
                             label = LabelSearch.Data;
-                            var addResult = await this.Add(label);
+                            var addResult = await Add(label);
                             if (!addResult.IsSuccess)
                             {
                                 sw.Stop();
@@ -125,8 +125,9 @@ namespace Roadie.Library.Engines
                 }
                 else
                 {
-                    this.CacheManager.Add(cacheKey, label);
+                    CacheManager.Add(cacheKey, label);
                 }
+
                 return new OperationResult<Label>
                 {
                     IsSuccess = label != null,
@@ -136,8 +137,9 @@ namespace Roadie.Library.Engines
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return new OperationResult<Label>();
         }
 
@@ -153,36 +155,28 @@ namespace Roadie.Library.Engines
             };
             var resultsExceptions = new List<Exception>();
 
-            if (this.DiscogsLabelSearchEngine.IsEnabled)
+            if (DiscogsLabelSearchEngine.IsEnabled)
             {
-                var discogsResult = await this.DiscogsLabelSearchEngine.PerformLabelSearch(result.Name, 1);
+                var discogsResult = await DiscogsLabelSearchEngine.PerformLabelSearch(result.Name, 1);
                 if (discogsResult.IsSuccess)
                 {
                     var d = discogsResult.Data.First();
-                    if (d.Urls != null)
-                    {
-                        result.URLs = result.URLs.AddToDelimitedList(d.Urls);
-                    }
+                    if (d.Urls != null) result.URLs = result.URLs.AddToDelimitedList(d.Urls);
                     if (d.AlternateNames != null)
-                    {
                         result.AlternateNames = result.AlternateNames.AddToDelimitedList(d.AlternateNames);
-                    }
-                    if (!string.IsNullOrEmpty(d.LabelName) && !d.LabelName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        result.AlternateNames.AddToDelimitedList(new string[] { d.LabelName });
-                    }
+                    if (!string.IsNullOrEmpty(d.LabelName) &&
+                        !d.LabelName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
+                        result.AlternateNames.AddToDelimitedList(new[] { d.LabelName });
                     result.CopyTo(new Label
                     {
-                        Profile = this.HttpEncoder.HtmlEncode(d.Profile),
+                        Profile = HttpEncoder.HtmlEncode(d.Profile),
                         DiscogsId = d.DiscogsId,
                         Name = result.Name ?? d.LabelName.ToTitleCase(),
                         Thumbnail = d.LabelImageUrl != null ? WebHelper.BytesForImageUrl(d.LabelImageUrl) : null
                     });
                 }
-                if (discogsResult.Errors != null)
-                {
-                    resultsExceptions.AddRange(discogsResult.Errors);
-                }
+
+                if (discogsResult.Errors != null) resultsExceptions.AddRange(discogsResult.Errors);
             }
 
             sw.Stop();

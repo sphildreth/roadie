@@ -14,20 +14,25 @@ using data = Roadie.Library.Data;
 namespace Roadie.Library.Scrobble
 {
     /// <summary>
-    /// Handles NowPlaying and Scrobbling for all integrations
+    ///     Handles NowPlaying and Scrobbling for all integrations
     /// </summary>
     public class ScrobbleHandler : IScrobbleHandler
     {
         private IRoadieSettings Configuration { get; }
+
         private data.IRoadieDbContext DbContext { get; }
-        private ILogger Logger { get; }
-        private IHttpEncoder HttpEncoder { get; }
+
         private IHttpContext HttpContext { get; }
+
+        private IHttpEncoder HttpEncoder { get; }
+
+        private ILogger Logger { get; }
 
         private IEnumerable<IScrobblerIntegration> Scrobblers { get; }
 
-        public ScrobbleHandler(IRoadieSettings configuration, ILogger<ScrobbleHandler> logger, data.IRoadieDbContext dbContext, 
-                               ICacheManager cacheManager, IHttpEncoder httpEncoder, IHttpContext httpContext)
+        public ScrobbleHandler(IRoadieSettings configuration, ILogger<ScrobbleHandler> logger,
+                                                            data.IRoadieDbContext dbContext,
+            ICacheManager cacheManager, IHttpEncoder httpEncoder, IHttpContext httpContext)
         {
             Logger = logger;
             Configuration = configuration;
@@ -39,22 +44,17 @@ namespace Roadie.Library.Scrobble
                 new RoadieScrobbler(configuration, logger, dbContext, cacheManager, httpContext)
             };
             if (configuration.Integrations.LastFmProviderEnabled)
-            {
                 scrobblers.Add(new LastFmHelper(configuration, cacheManager, logger, dbContext, httpEncoder));
-            }
             Scrobblers = scrobblers;
         }
 
         /// <summary>
-        /// Send Now Playing Requests
+        ///     Send Now Playing Requests
         /// </summary>
         public async Task<OperationResult<bool>> NowPlaying(User user, ScrobbleInfo scrobble)
         {
             var s = GetScrobbleInfoDetails(scrobble);
-            foreach (var scrobbler in Scrobblers)
-            {
-                await Task.Run(async () => await scrobbler.NowPlaying(user, s));
-            }
+            foreach (var scrobbler in Scrobblers) await Task.Run(async () => await scrobbler.NowPlaying(user, s));
             return new OperationResult<bool>
             {
                 Data = true,
@@ -63,15 +63,12 @@ namespace Roadie.Library.Scrobble
         }
 
         /// <summary>
-        /// Send any Scrobble Requests
+        ///     Send any Scrobble Requests
         /// </summary>
         public async Task<OperationResult<bool>> Scrobble(User user, ScrobbleInfo scrobble)
         {
             var s = GetScrobbleInfoDetails(scrobble);
-            foreach (var scrobbler in Scrobblers)
-            {
-                await Task.Run(async () => await scrobbler.Scrobble(user, s));
-            }
+            foreach (var scrobbler in Scrobblers) await Task.Run(async () => await scrobbler.Scrobble(user, s));
             return new OperationResult<bool>
             {
                 Data = true,
@@ -81,10 +78,10 @@ namespace Roadie.Library.Scrobble
 
         private ScrobbleInfo GetScrobbleInfoDetails(ScrobbleInfo scrobble)
         {
-            var scrobbleInfo = (from t in this.DbContext.Tracks
-                                join rm in this.DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                join r in this.DbContext.Releases on rm.ReleaseId equals r.Id
-                                join a in this.DbContext.Artists on r.ArtistId equals a.Id
+            var scrobbleInfo = (from t in DbContext.Tracks
+                                join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                join r in DbContext.Releases on rm.ReleaseId equals r.Id
+                                join a in DbContext.Artists on r.ArtistId equals a.Id
                                 where t.RoadieId == scrobble.TrackId
                                 select new
                                 {
@@ -99,7 +96,7 @@ namespace Roadie.Library.Scrobble
             scrobble.ReleaseTitle = scrobbleInfo.ReleaseTitle;
             scrobble.TrackTitle = scrobbleInfo.TrackTitle;
             scrobble.TrackNumber = scrobbleInfo.TrackNumber.ToString();
-            scrobble.TrackDuration = TimeSpan.FromMilliseconds((double)(scrobbleInfo.Duration ?? 0));
+            scrobble.TrackDuration = TimeSpan.FromMilliseconds(scrobbleInfo.Duration ?? 0);
             return scrobble;
         }
     }

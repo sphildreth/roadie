@@ -2,7 +2,6 @@
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
-
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.Utility;
 using System.IO;
@@ -15,50 +14,55 @@ namespace Roadie.Library.MetaData.FileName
     {
         public FileNameHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger)
             : base(configuration, cacheManager, logger)
-        { }
+        {
+        }
 
         /// <summary>
-        /// GUID~TALB~TPOS TPE1 - TRCK - TIT2
+        ///     GUID~TALB~TPOS TPE1 - TRCK - TIT2
         /// </summary>
         public static bool IsTalbTposTpe1TrckTit2(string filename)
         {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!-]+[\s\w()'&]~[0-9]{2}[-\w\s,$/.'`#&()!]+[-\s~]\s[0-9]{1,2}[-\s~]+[\w\s,$/.'-`#&()!]+");
+            var regex = new Regex(
+                @"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!-]+[\s\w()'&]~[0-9]{2}[-\w\s,$/.'`#&()!]+[-\s~]\s[0-9]{1,2}[-\s~]+[\w\s,$/.'-`#&()!]+");
             return regex.IsMatch(filename);
         }
 
         /// <summary>
-        /// GUID~TPE1 - [TYER] - TALB~TRCK. TIT2
+        ///     GUID~TPE1 - [TYER] - TALB~TRCK. TIT2
         /// </summary>
         public static bool IsTalbTyerTalbTrckTit2(string filename)
         {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!]+-\s\[[0-9]{4}]\s-\s[\w\s,$/.'`#&()!]+~[0-9]{2}.[\w\s,$/.'`#&()!]+");
+            var regex = new Regex(
+                @"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!]+-\s\[[0-9]{4}]\s-\s[\w\s,$/.'`#&()!]+~[0-9]{2}.[\w\s,$/.'`#&()!]+");
             return regex.IsMatch(filename);
         }
 
         /// <summary>
-        /// GUID~TPE1-TALB (TYER)~TRCK-TIT2
+        ///     GUID~TPE1-TALB (TYER)~TRCK-TIT2
         /// </summary>
         /// <param name="filename"></param>
         /// <returns></returns>
         public static bool IsTpe1TalbTyerTrckTit2(string filename)
         {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!]+-[\w\s,$/.'`#&()!]+~[\w\s,$/.'`#&()!]+-\s[0-9]{2}\s-[\w\s,$/.'`#&()!]+");
+            var regex = new Regex(
+                @"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!]+-[\w\s,$/.'`#&()!]+~[\w\s,$/.'`#&()!]+-\s[0-9]{2}\s-[\w\s,$/.'`#&()!]+");
             return regex.IsMatch(filename);
         }
 
         /// <summary>
-        /// GUID~TPE1-TALB-TYER~TRCK-TPE1-TIT2
+        ///     GUID~TPE1-TALB-TYER~TRCK-TPE1-TIT2
         /// </summary>
         /// <param name="filename"></param>
         /// <returns></returns>
         public static bool IsTpe1TalbTyerTrckTpe1Tit2(string filename)
         {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!]+-[\w\s,$/.'`#&()!]+-[0-9]{4}[\]\)]*~[\w\s,$/.'`#&()!]+-[\w\s,$/.'`#&()!]+");
+            var regex = new Regex(
+                @"[-a-zA-Z0-9]{36}~[\w\s,$/.'`#&()!]+-[\w\s,$/.'`#&()!]+-[0-9]{4}[\]\)]*~[\w\s,$/.'`#&()!]+-[\w\s,$/.'`#&()!]+");
             return regex.IsMatch(filename);
         }
 
         /// <summary>
-        /// GUID~TPE1~TIT2
+        ///     GUID~TPE1~TIT2
         /// </summary>
         public static bool IsTpe1Tit2(string filename)
         {
@@ -67,7 +71,7 @@ namespace Roadie.Library.MetaData.FileName
         }
 
         /// <summary>
-        /// GUID~TPE1~TRCK TIT2
+        ///     GUID~TPE1~TRCK TIT2
         /// </summary>
         /// <param name="filename"></param>
         /// <returns></returns>
@@ -78,7 +82,7 @@ namespace Roadie.Library.MetaData.FileName
         }
 
         /// <summary>
-        /// TRCK TIT2
+        ///     TRCK TIT2
         /// </summary>
         public static bool IsTrckTit2(string filename)
         {
@@ -87,7 +91,7 @@ namespace Roadie.Library.MetaData.FileName
         }
 
         /// <summary>
-        /// GUID~TYER - TALB~TPE1 - TIT2
+        ///     GUID~TYER - TALB~TPE1 - TIT2
         /// </summary>
         public static bool IsTyerTalbTpe1Tit2(string filename)
         {
@@ -96,27 +100,26 @@ namespace Roadie.Library.MetaData.FileName
         }
 
         /// <summary>
-        /// GUID~[TYER] TALB~TRCK - TIT2
+        ///     GUID~[TYER] TALB~TRCK - TIT2
         /// </summary>
         public static bool IsTyerTalbTrckTit2(string filename)
         {
-            var regex = new Regex(@"[-a-zA-Z0-9]{36}~[\[\(]*[0-9]{4}[\]\)]*[\w\s,$/.'-`#&()!]+[~-]*((\\)*(/)*([0-9]{2})*)[\s~-]*[\w\s,$/.'-`#&()!]+");
+            var regex = new Regex(
+                @"[-a-zA-Z0-9]{36}~[\[\(]*[0-9]{4}[\]\)]*[\w\s,$/.'-`#&()!]+[~-]*((\\)*(/)*([0-9]{2})*)[\s~-]*[\w\s,$/.'-`#&()!]+");
             return regex.IsMatch(filename);
         }
 
         public static bool IsValidAudioFileName(string filename)
         {
-            var regex = new Regex(@"[a-zA-Z]:\\[\\\w\s,\$\/\.'`#&()!\‐\-]+\[[0-9]{4}\]\s[\[\]\w\s,\$\/\.'`#&()!\‐\-]+[\\CD0-9]*\\[0-9]{2,}\s[\[\]\w\s,\$\/\.'`#&()!\‐\-]+\.(mp3|flac)");
+            var regex = new Regex(
+                @"[a-zA-Z]:\\[\\\w\s,\$\/\.'`#&()!\‐\-]+\[[0-9]{4}\]\s[\[\]\w\s,\$\/\.'`#&()!\‐\-]+[\\CD0-9]*\\[0-9]{2,}\s[\[\]\w\s,\$\/\.'`#&()!\‐\-]+\.(mp3|flac)");
             return regex.IsMatch(filename);
         }
 
         public string CleanString(string input)
         {
-            if (string.IsNullOrEmpty(input))
-            {
-                return input;
-            }
-            return input.CleanString(this.Configuration);
+            if (string.IsNullOrEmpty(input)) return input;
+            return input.CleanString(Configuration);
         }
 
         public AudioMetaData MetaDataFromFileInfo(FileInfo fileInfo)
@@ -126,17 +129,16 @@ namespace Roadie.Library.MetaData.FileName
             {
                 var Release = fileInfo.Directory.Name;
                 var ReleaseYear = SafeParser.ToYear(Release.Substring(0, 4));
-                if (ReleaseYear.HasValue)
-                {
-                    Release = Release.Substring(5, Release.Length - 5);
-                }
+                if (ReleaseYear.HasValue) Release = Release.Substring(5, Release.Length - 5);
                 var artist = fileInfo.Directory.Parent.Name;
 
                 var title = justFilename.Substring(2, justFilename.Length - 2);
                 var artistYearRelease = CleanString(string.Format("{0} {1} {2}", artist, ReleaseYear, Release));
-                if (justFilename.StartsWith(artistYearRelease) || CleanString(justFilename.Replace("The ", "")).StartsWith(CleanString(artistYearRelease.Replace("The ", ""))))
+                if (justFilename.StartsWith(artistYearRelease) || CleanString(justFilename.Replace("The ", ""))
+                        .StartsWith(CleanString(artistYearRelease.Replace("The ", ""))))
                 {
-                    title = CleanString(CleanString(justFilename.Replace("The ", "")).Replace(CleanString(artistYearRelease.Replace("The ", "")), ""));
+                    title = CleanString(CleanString(justFilename.Replace("The ", ""))
+                        .Replace(CleanString(artistYearRelease.Replace("The ", "")), ""));
                 }
                 else
                 {
@@ -148,6 +150,7 @@ namespace Roadie.Library.MetaData.FileName
                         title = Regex.Replace(title, @"(\B[A-Z]+?(?=[A-Z][^A-Z])|\B[A-Z]+?(?=[^A-Z]))", " $1");
                     }
                 }
+
                 var trackNumber = SafeParser.ToNumber<short>(title.Substring(0, 2));
                 return new AudioMetaData
                 {
@@ -158,6 +161,7 @@ namespace Roadie.Library.MetaData.FileName
                     Title = CleanString(title.Replace(trackNumber.ToString("D2") + " ", ""))
                 };
             }
+
             return new AudioMetaData();
         }
 
@@ -186,7 +190,8 @@ namespace Roadie.Library.MetaData.FileName
                     Title = CleanString(title)
                 };
             }
-            else if (IsTpe1TalbTyerTrckTpe1Tit2(filename))
+
+            if (IsTpe1TalbTyerTrckTpe1Tit2(filename))
             {
                 // GUID~TPE1-TALB-TYER~TRCK-TPE1-TIT2
                 var parts = filename.Split('~');
@@ -209,7 +214,8 @@ namespace Roadie.Library.MetaData.FileName
                     Title = CleanString(title)
                 };
             }
-            else if (IsTpe1TalbTyerTrckTit2(filename))
+
+            if (IsTpe1TalbTyerTrckTit2(filename))
             {
                 // GUID~TPE1-TALB (TYER)~TRCK-TIT2
                 var parts = filename.Split('~');
@@ -232,7 +238,8 @@ namespace Roadie.Library.MetaData.FileName
                     Title = CleanString(title)
                 };
             }
-            else if (IsTalbTposTpe1TrckTit2(filename))
+
+            if (IsTalbTposTpe1TrckTit2(filename))
             {
                 // GUID~TALB~TPOS TPE1 - TRCK - TIT2
                 var parts = filename.Split('~');
@@ -254,18 +261,17 @@ namespace Roadie.Library.MetaData.FileName
                     Title = CleanString(title)
                 };
             }
-            else if (IsTyerTalbTrckTit2(filename))
+
+            if (IsTyerTalbTrckTit2(filename))
             {
                 // GUID~[TYER] TALB~TRCK - TIT2
                 var parts = filename.Split('~');
-                var year = parts[1].Split(' ').First().Replace("[", "").Replace("]", "").Replace("(", "").Replace(")", "");
+                var year = parts[1].Split(' ').First().Replace("[", "").Replace("]", "").Replace("(", "")
+                    .Replace(")", "");
                 var Release = string.Join(" ", parts[1].Split(' ').Skip(1));
 
                 var secondParts = parts[2];
-                if (secondParts.StartsWith("-"))
-                {
-                    secondParts = secondParts.Substring(1, secondParts.Length - 1);
-                }
+                if (secondParts.StartsWith("-")) secondParts = secondParts.Substring(1, secondParts.Length - 1);
                 var track = secondParts.Split('-').First();
                 var title = string.Join(" ", secondParts.Split('-').Skip(1));
                 return new AudioMetaData
@@ -276,7 +282,8 @@ namespace Roadie.Library.MetaData.FileName
                     Title = CleanString(title)
                 };
             }
-            else if (IsTyerTalbTpe1Tit2(filename))
+
+            if (IsTyerTalbTpe1Tit2(filename))
             {
                 // GUID~TYER - TALB~TPE1 - TIT2
                 var parts = filename.Split('~');
@@ -297,7 +304,8 @@ namespace Roadie.Library.MetaData.FileName
                     Title = CleanString(title)
                 };
             }
-            else if (IsTpe1TrckTit2(filename))
+
+            if (IsTpe1TrckTit2(filename))
             {
                 // GUID~TPE1~TRCK TIT2
                 var parts = filename.Split('~');
@@ -310,7 +318,8 @@ namespace Roadie.Library.MetaData.FileName
                     Title = CleanString(title)
                 };
             }
-            else if (IsTpe1Tit2(filename))
+
+            if (IsTpe1Tit2(filename))
             {
                 var parts = filename.Split('~');
                 return new AudioMetaData

@@ -20,4 +20,4 @@ CREATE TABLE `artistSimilar` (
   KEY `idx_artistSimilar` (`artistId`,`similarArtistId`),
   CONSTRAINT `artistSimilar_ibfk_1` FOREIGN KEY (`artistId`) REFERENCES `artist` (`id`) ON DELETE CASCADE,
   CONSTRAINT `artistSimilar_ibfk_2` FOREIGN KEY (`similarArtistId`) REFERENCES `artist` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

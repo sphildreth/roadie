@@ -12,6 +12,7 @@ namespace Roadie.Library.MetaData.Audio
         bool DoParseFromMusicBrainz { get; set; }
 
         Task<AudioMetaData> GetInfo(FileInfo fileInfo, bool doJustInfo = false);
+
         bool WriteTags(AudioMetaData metaData, FileInfo fileInfo);
     }
 }

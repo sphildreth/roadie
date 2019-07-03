@@ -1,50 +1,43 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace Roadie.Library.Utility
 {
     /// <summary>
-    /// Cleans paths of invalid characters.
+    ///     Cleans paths of invalid characters.
     /// </summary>
     public static class PathSanitizer
     {
         /// <summary>
-        /// The set of invalid filename characters, kept sorted for fast binary search
+        ///     The set of invalid filename characters, kept sorted for fast binary search
         /// </summary>
-        private readonly static char[] invalidFilenameChars;
+        private static readonly char[] invalidFilenameChars;
 
         /// <summary>
-        /// The set of invalid path characters, kept sorted for fast binary search
+        ///     The set of invalid path characters, kept sorted for fast binary search
         /// </summary>
-        private readonly static char[] invalidPathChars;
+        private static readonly char[] invalidPathChars;
 
         static PathSanitizer()
         {
             // set up the two arrays -- sorted once for speed.
             var c = new List<char>();
-            c.AddRange(System.IO.Path.GetInvalidFileNameChars());
+            c.AddRange(Path.GetInvalidFileNameChars());
 
             // Some Roadie instances run in Linux to Windows SMB clients via Samba this helps with Windows clients and invalid characters in Windows
             var badWindowsFileAndFoldercharacters = new List<char> { '\\', '/', ':', '*', '?', '\'', '<', '>', '|', '*' };
             foreach (var badWindowsFilecharacter in badWindowsFileAndFoldercharacters)
-            {
                 if (!c.Contains(badWindowsFilecharacter))
-                {
                     c.Add(badWindowsFilecharacter);
-                }
-            }
             invalidFilenameChars = c.ToArray();
 
             var f = new List<char>();
-            f.AddRange(System.IO.Path.GetInvalidPathChars());
+            f.AddRange(Path.GetInvalidPathChars());
             foreach (var badWindowsFilecharacter in badWindowsFileAndFoldercharacters)
-            {
                 if (!f.Contains(badWindowsFilecharacter))
-                {
                     f.Add(badWindowsFilecharacter);
-                }
-            }
             invalidFilenameChars = c.ToArray();
             invalidPathChars = f.ToArray();
 
@@ -53,7 +46,7 @@ namespace Roadie.Library.Utility
         }
 
         /// <summary>
-        /// Cleans a filename of invalid characters
+        ///     Cleans a filename of invalid characters
         /// </summary>
         /// <param name="input">the string to clean</param>
         /// <param name="errorChar">the character which replaces bad characters</param>
@@ -64,7 +57,7 @@ namespace Roadie.Library.Utility
         }
 
         /// <summary>
-        /// Cleans a path of invalid characters
+        ///     Cleans a path of invalid characters
         /// </summary>
         /// <param name="input">the string to clean</param>
         /// <param name="errorChar">the character which replaces bad characters</param>
@@ -75,7 +68,7 @@ namespace Roadie.Library.Utility
         }
 
         /// <summary>
-        /// Cleans a string of invalid characters.
+        ///     Cleans a string of invalid characters.
         /// </summary>
         /// <param name="input"></param>
         /// <param name="invalidChars"></param>
@@ -84,22 +77,16 @@ namespace Roadie.Library.Utility
         private static string Sanitize(string input, char[] invalidChars, char errorChar)
         {
             // null always sanitizes to null
-            if (input == null) { return null; }
-            StringBuilder result = new StringBuilder();
+            if (input == null) return null;
+            var result = new StringBuilder();
             foreach (var characterToTest in input)
-            {
                 // we binary search for the character in the invalid set. This should be lightning fast.
                 if (Array.BinarySearch(invalidChars, characterToTest) >= 0)
-                {
                     // we found the character in the array of
                     result.Append(errorChar);
-                }
                 else
-                {
                     // the character was not found in invalid, so it is valid.
                     result.Append(characterToTest);
-                }
-            }
 
             // we're done.
             return result.ToString();

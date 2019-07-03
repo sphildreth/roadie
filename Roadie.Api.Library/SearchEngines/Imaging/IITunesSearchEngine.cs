@@ -15,6 +15,7 @@ namespace Roadie.Library.SearchEngines.Imaging
 
         Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount);
 
-        Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount);
+        Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query,
+            int resultsCount);
     }
 }

@@ -7,9 +7,7 @@ namespace Roadie.Library.Models
     [Serializable]
     public class Genre : EntityModelBase
     {
-        [MaxLength(100)]
-        public string Name { get; set; }
-
         public IEnumerable<Comment> Comments { get; set; }
+        [MaxLength(100)] public string Name { get; set; }
     }
 }

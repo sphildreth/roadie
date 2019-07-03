@@ -11,9 +11,9 @@ namespace Roadie.Library.Models.Releases
 
         public ReleaseLabel()
         {
-            this.CreatedDate = null;
-            this.Id = null;
-            this.Status = null;
+            CreatedDate = null;
+            Id = null;
+            Status = null;
         }
     }
 }

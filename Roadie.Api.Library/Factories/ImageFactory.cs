@@ -18,13 +18,15 @@ namespace Roadie.Library.Factories
 {
     public sealed class ImageFactory : FactoryBase, IImageFactory
     {
-        public ImageFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine)
+        public ImageFactory(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
+            ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine,
+            IReleaseLookupEngine releaseLookupEngine)
             : base(configuration, context, cacheManager, logger, httpEncoder, artistLookupEngine, releaseLookupEngine)
         {
         }
 
         /// <summary>
-        /// Get image data from all sources for either fileanme or MetaData
+        ///     Get image data from all sources for either fileanme or MetaData
         /// </summary>
         /// <param name="filename">Name of the File (ie a CUE file)</param>
         /// <param name="metaData">Populated MetaData</param>
@@ -34,11 +36,11 @@ namespace Roadie.Library.Factories
             SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(filename), "Invalid Filename");
             SimpleContract.Requires<ArgumentException>(metaData != null, "Invalid MetaData");
 
-            return this.ImageForFilename(filename);
+            return ImageForFilename(filename);
         }
 
         /// <summary>
-        /// Does image exist with the same filename
+        ///     Does image exist with the same filename
         /// </summary>
         /// <param name="filename">Name of the File (ie a CUE file)</param>
         /// <returns>Null if not found else populated image</returns>
@@ -46,17 +48,14 @@ namespace Roadie.Library.Factories
         {
             AudioMetaDataImage imageMetaData = null;
 
-            if (string.IsNullOrEmpty(filename))
-            {
-                return imageMetaData;
-            }
+            if (string.IsNullOrEmpty(filename)) return imageMetaData;
             try
             {
                 var fileInfo = new FileInfo(filename);
                 var ReleaseCover = Path.ChangeExtension(filename, "jpg");
                 if (File.Exists(ReleaseCover))
                 {
-                    using (var processor = new ImageProcessor(this.Configuration))
+                    using (var processor = new ImageProcessor(Configuration))
                     {
                         imageMetaData = new AudioMetaDataImage
                         {
@@ -75,18 +74,14 @@ namespace Roadie.Library.Factories
                     {
                         FileInfo picture = null;
                         // See if there is a "cover" or "front" jpg file if so use it
-                        picture = pictures.FirstOrDefault(x => x.Name.Equals("cover", StringComparison.OrdinalIgnoreCase));
+                        picture = pictures.FirstOrDefault(x =>
+                            x.Name.Equals("cover", StringComparison.OrdinalIgnoreCase));
                         if (picture == null)
-                        {
-                            picture = pictures.FirstOrDefault(x => x.Name.Equals("front", StringComparison.OrdinalIgnoreCase));
-                        }
-                        if (picture == null)
-                        {
-                            picture = pictures.First();
-                        }
+                            picture = pictures.FirstOrDefault(x =>
+                                x.Name.Equals("front", StringComparison.OrdinalIgnoreCase));
+                        if (picture == null) picture = pictures.First();
                         if (picture != null)
-                        {
-                            using (var processor = new ImageProcessor(this.Configuration))
+                            using (var processor = new ImageProcessor(Configuration))
                             {
                                 imageMetaData = new AudioMetaDataImage
                                 {
@@ -95,17 +90,17 @@ namespace Roadie.Library.Factories
                                     MimeType = FileProcessor.DetermineFileType(picture)
                                 };
                             }
-                        }
                     }
                 }
             }
-            catch (System.IO.FileNotFoundException)
+            catch (FileNotFoundException)
             {
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex, ex.Serialize());
+                Logger.LogError(ex, ex.Serialize());
             }
+
             return imageMetaData;
         }
     }

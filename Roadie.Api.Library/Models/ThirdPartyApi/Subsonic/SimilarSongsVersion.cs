@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
+﻿namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 {
     public enum SimilarSongsVersion
     {
         One,
-        Two        
+        Two
     }
 }

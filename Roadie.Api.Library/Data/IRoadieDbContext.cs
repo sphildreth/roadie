@@ -10,20 +10,21 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.Data
 {
-    public interface IRoadieDbContext : IDisposable, IInfrastructure<IServiceProvider>, IDbContextDependencies, IDbSetCache, IDbQueryCache, IDbContextPoolable
+    public interface IRoadieDbContext : IDisposable, IInfrastructure<IServiceProvider>, IDbContextDependencies,
+        IDbSetCache, IDbQueryCache, IDbContextPoolable
     {
         DbSet<ArtistAssociation> ArtistAssociations { get; set; }
-        DbSet<ArtistSimilar> ArtistSimilar { get; set; }
         DbSet<ArtistGenre> ArtistGenres { get; set; }
         DbSet<Artist> Artists { get; set; }
+        DbSet<ArtistSimilar> ArtistSimilar { get; set; }
         DbSet<Bookmark> Bookmarks { get; set; }
         ChangeTracker ChangeTracker { get; }
         DbSet<ChatMessage> ChatMessages { get; set; }
         DbSet<CollectionMissing> CollectionMissings { get; set; }
         DbSet<CollectionRelease> CollectionReleases { get; set; }
         DbSet<Collection> Collections { get; set; }
-        DbSet<Comment> Comments { get; set; }
         DbSet<CommentReaction> CommentReactions { get; set; }
+        DbSet<Comment> Comments { get; set; }
         DatabaseFacade Database { get; }
         DbSet<Genre> Genres { get; set; }
         DbSet<Image> Images { get; set; }
@@ -51,13 +52,15 @@ namespace Roadie.Library.Data
 
         Task<EntityEntry> AddAsync(object entity, CancellationToken cancellationToken = default(CancellationToken));
 
-        Task<EntityEntry<TEntity>> AddAsync<TEntity>(TEntity entity, CancellationToken cancellationToken = default(CancellationToken)) where TEntity : class;
+        Task<EntityEntry<TEntity>> AddAsync<TEntity>(TEntity entity,
+            CancellationToken cancellationToken = default(CancellationToken)) where TEntity : class;
 
         void AddRange(IEnumerable<object> entities);
 
         void AddRange(params object[] entities);
 
-        Task AddRangeAsync(IEnumerable<object> entities, CancellationToken cancellationToken = default(CancellationToken));
+        Task AddRangeAsync(IEnumerable<object> entities,
+            CancellationToken cancellationToken = default(CancellationToken));
 
         Task AddRangeAsync(params object[] entities);
 
@@ -103,7 +106,8 @@ namespace Roadie.Library.Data
 
         int SaveChanges();
 
-        Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default(CancellationToken));
+        Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
+            CancellationToken cancellationToken = default(CancellationToken));
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
@@ -118,7 +122,5 @@ namespace Roadie.Library.Data
         void UpdateRange(params object[] entities);
 
         void UpdateRange(IEnumerable<object> entities);
-
-
     }
 }

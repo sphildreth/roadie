@@ -9,9 +9,11 @@ namespace Roadie.Library.Inspect.Plugins.File
     public class CleanUpComments : FilePluginBase
     {
         public override string Description => "Clean: Clear Comments (COMM)";
+
         public override int Order => 5;
 
-        public CleanUpComments(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
+        public CleanUpComments(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger,
+                            IID3TagsHelper tagsHelper)
             : base(configuration, cacheManager, logger, tagsHelper)
         {
         }
@@ -19,13 +21,9 @@ namespace Roadie.Library.Inspect.Plugins.File
         public override OperationResult<AudioMetaData> Process(AudioMetaData metaData)
         {
             var result = new OperationResult<AudioMetaData>();
-            if (this.Configuration.Processing.DoAudioCleanup)
-            {
-                if (this.Configuration.Processing.DoClearComments)
-                {
+            if (Configuration.Processing.DoAudioCleanup)
+                if (Configuration.Processing.DoClearComments)
                     metaData.Comments = null;
-                }
-            }
             result.Data = metaData;
             result.IsSuccess = true;
             return result;

@@ -8,7 +8,6 @@ namespace Roadie.Library.Data
         [Column("beginDate", TypeName = "date")]
         public DateTime? BeginDate { get; set; }
 
-        [Column("endDate", TypeName = "date")]
-        public DateTime? EndDate { get; set; }
+        [Column("endDate", TypeName = "date")] public DateTime? EndDate { get; set; }
     }
 }

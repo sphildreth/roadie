@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Runtime.Serialization;
-using System.Text;
+using Release = Roadie.Library.Data.Release;
 
 namespace Roadie.Library.Models
 {
@@ -15,54 +15,19 @@ namespace Roadie.Library.Models
     [DebuggerDisplay("Trackid [{ TrackId }], Track Name [{ TrackName }}")]
     public class TrackList : EntityInfoModelBase
     {
-        [JsonIgnore]
-        public string TrackId
-        {
-            get
-            {
-                return this.Track?.Value;
-            }
-        }
-
-        [JsonIgnore]
-        public string TrackName
-        {
-            get
-            {
-                return this.Track?.Text;
-            }
-        }
-
-        public int? MediaNumber { get; set; }
-        public int? TrackNumber { get; set; }
-        public DataToken Track { get; set; }
-        public ReleaseList Release { get; set; }
         public ArtistList Artist { get; set; }
-        public ArtistList TrackArtist { get; set; }
-        public string Title { get; set; }
         public int? Duration { get; set; }
-        public string DurationTime
-        {
-            get
-            {
-                return this.Duration.HasValue ? new TimeInfo((decimal)this.Duration.Value).ToFullFormattedString() : "--:--";
-            }
-        }
-        public string DurationTimeShort
-        {
-            get
-            {
-                return this.Duration.HasValue ? new TimeInfo((decimal)this.Duration.Value).ToShortFormattedString() : "--:--";
-            }
-        }
-        public DateTime? LastPlayed { get; set; }
-        public short? ReleaseRating { get; set; }
-        public short? Rating { get; set; }
-        public UserTrack UserRating { get; set; }
-        public int? PlayedCount { get; set; }
+
+        public string DurationTime =>
+            Duration.HasValue ? new TimeInfo(Duration.Value).ToFullFormattedString() : "--:--";
+
+        public string DurationTimeShort =>
+            Duration.HasValue ? new TimeInfo(Duration.Value).ToShortFormattedString() : "--:--";
+
         public int? FavoriteCount { get; set; }
-        public Image Thumbnail { get; set; }
-        public string TrackPlayUrl { get; set; }
+        public int? FileSize { get; set; }
+        public DateTime? LastPlayed { get; set; }
+        public int? MediaNumber { get; set; }
 
         [MaxLength(65535)]
         [JsonIgnore]
@@ -73,41 +38,47 @@ namespace Roadie.Library.Models
         {
             get
             {
-                if (string.IsNullOrEmpty(this.PartTitles))
-                {
-                    return null;
-                }
-                return this.PartTitles.Split('\n');
+                if (string.IsNullOrEmpty(PartTitles)) return null;
+                return PartTitles.Split('\n');
             }
         }
 
-        [JsonIgnore]
-        public DateTime? ReleaseDate { get; set; }
+        public int? PlayedCount { get; set; }
+        public short? Rating { get; set; }
+        public ReleaseList Release { get; set; }
+        [JsonIgnore] public DateTime? ReleaseDate { get; set; }
+        public short? ReleaseRating { get; set; }
+        public Image Thumbnail { get; set; }
+        public string Title { get; set; }
+        public DataToken Track { get; set; }
+        public ArtistList TrackArtist { get; set; }
+        [JsonIgnore] public string TrackId => Track?.Value;
+
+        [JsonIgnore] public string TrackName => Track?.Text;
+        public int? TrackNumber { get; set; }
+        public string TrackPlayUrl { get; set; }
+        public UserTrack UserRating { get; set; }
+
         public int? Year
         {
             get
             {
-                if(this.ReleaseDate.HasValue)
-                {
-                    return this.ReleaseDate.Value.Year;
-                }
-                return null; 
+                if (ReleaseDate.HasValue) return ReleaseDate.Value.Year;
+                return null;
             }
         }
-        public int? FileSize { get; set; }
 
-
-        public static TrackList FromDataTrack(string trackPlayUrl, 
-                                              Data.Track track, 
-                                              int releaseMediaNumber,
-                                              Data.Release release, 
-                                              Data.Artist artist, 
-                                              Data.Artist trackArtist,
-                                              string baseUrl,
-                                              Image trackThumbnail,
-                                              Image releaseThumbnail,
-                                              Image artistThumbnail,
-                                              Image trackArtistThumbnail)
+        public static TrackList FromDataTrack(string trackPlayUrl,
+            Data.Track track,
+            int releaseMediaNumber,
+            Release release,
+            Data.Artist artist,
+            Data.Artist trackArtist,
+            string baseUrl,
+            Image trackThumbnail,
+            Image releaseThumbnail,
+            Image artistThumbnail,
+            Image trackArtistThumbnail)
         {
             return new TrackList
             {
@@ -135,8 +106,6 @@ namespace Roadie.Library.Models
                 TrackPlayUrl = trackPlayUrl,
                 Thumbnail = trackThumbnail
             };
-
         }
-    
     }
 }

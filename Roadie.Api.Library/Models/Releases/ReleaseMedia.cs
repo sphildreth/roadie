@@ -10,8 +10,7 @@ namespace Roadie.Library.Models.Releases
         public int MediaNumber { get; set; }
         public string SubTitle { get; set; }
 
-        [Required]
-        public short TrackCount { get; set; }
+        [Required] public short TrackCount { get; set; }
 
         public List<TrackList> Tracks { get; set; }
     }

@@ -22,9 +22,6 @@
         ColoredFish = 17,
         Illustration = 18,
         BandLogo = 19,
-        PublisherLogo = 20,
+        PublisherLogo = 20
     }
-
-
-
 }

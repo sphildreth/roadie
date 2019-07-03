@@ -9,13 +9,9 @@ namespace Roadie.Library.Data
         [MaxLength(65535)]
         public string AlternateNames { get; set; }
 
-        [MaxLength(250)]
-        [Column("name")]
-        public string Name { get; set; }
+        [MaxLength(250)] [Column("name")] public string Name { get; set; }
 
-        [Column("sortName")]
-        [MaxLength(250)]
-        public string SortName { get; set; }
+        [Column("sortName")] [MaxLength(250)] public string SortName { get; set; }
 
         [Column("tags", TypeName = "text")]
         [MaxLength(65535)]

@@ -2,7 +2,6 @@
 using Microsoft.AspNet.OData;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Roadie.Api.Services;
@@ -13,7 +12,6 @@ using Roadie.Library.Scrobble;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -25,79 +23,75 @@ namespace Roadie.Api.Controllers
     {
         public const string ControllerCacheRegionUrn = "urn:controller_cache";
 
-        private models.User _currentUser = null;
+        private models.User _currentUser;
+
         protected ICacheManager CacheManager { get; }
+
         protected ILogger Logger { get; set; }
+
         protected IRoadieSettings RoadieSettings { get; }
+
         protected UserManager<ApplicationUser> UserManager { get; }
 
-        public EntityControllerBase(ICacheManager cacheManager, IRoadieSettings roadieSettings, UserManager<ApplicationUser> userManager)
+        public EntityControllerBase(ICacheManager cacheManager, IRoadieSettings roadieSettings,
+                                            UserManager<ApplicationUser> userManager)
         {
-            this.CacheManager = cacheManager;
-            this.RoadieSettings = roadieSettings;
-            this.UserManager = userManager;
+            CacheManager = cacheManager;
+            RoadieSettings = roadieSettings;
+            UserManager = userManager;
         }
 
         protected async Task<models.User> CurrentUserModel()
         {
-            if (this._currentUser == null)
-            {
-                if (this.User.Identity.IsAuthenticated)
-                {
-                    this._currentUser = await this.CacheManager.GetAsync($"urn:controller_user:{ this.User.Identity.Name }", async () =>
-                    {
-                        return this.UserModelForUser(await this.UserManager.GetUserAsync(User));
-                    }, ControllerCacheRegionUrn);
-                }
-            }
-            if (this._currentUser == null)
-            {
-                throw new UnauthorizedAccessException("Access Denied");
-            }
-            return this._currentUser;
+            if (_currentUser == null)
+                if (User.Identity.IsAuthenticated)
+                    _currentUser = await CacheManager.GetAsync($"urn:controller_user:{User.Identity.Name}",
+                        async () => { return UserModelForUser(await UserManager.GetUserAsync(User)); },
+                        ControllerCacheRegionUrn);
+            if (_currentUser == null) throw new UnauthorizedAccessException("Access Denied");
+            return _currentUser;
         }
 
-        protected async Task<IActionResult> StreamTrack(Guid id, ITrackService trackService, IPlayActivityService playActivityService, models.User currentUser = null)
+        protected async Task<IActionResult> StreamTrack(Guid id, ITrackService trackService,
+            IPlayActivityService playActivityService, models.User currentUser = null)
         {
             var sw = Stopwatch.StartNew();
             var timings = new Dictionary<string, long>();
             var tsw = new Stopwatch();
 
             tsw.Restart();
-            var user = currentUser ?? await this.CurrentUserModel();
+            var user = currentUser ?? await CurrentUserModel();
             var track = trackService.StreamCheckAndInfo(user, id);
             if (track == null || (track?.IsNotFoundResult ?? false))
             {
                 if (track?.Errors != null && (track?.Errors.Any() ?? false))
-                {
-                    this.Logger.LogCritical($"StreamTrack: ById Invalid For TrackId [{ id }] OperationResult Errors [{ string.Join('|', track?.Errors ?? new Exception[0]) }], For User [{ currentUser }]");
-                }
+                    Logger.LogCritical(
+                        $"StreamTrack: ById Invalid For TrackId [{id}] OperationResult Errors [{string.Join('|', track?.Errors ?? new Exception[0])}], For User [{currentUser}]");
                 else
-                {
-                    this.Logger.LogCritical($"StreamTrack: ById Invalid For TrackId [{ id }] OperationResult Messages [{ string.Join('|', track?.Messages ?? new string[0]) }], For User [{ currentUser }]");
-                }
+                    Logger.LogCritical(
+                        $"StreamTrack: ById Invalid For TrackId [{id}] OperationResult Messages [{string.Join('|', track?.Messages ?? new string[0])}], For User [{currentUser}]");
                 return NotFound("Unknown TrackId");
             }
+
             tsw.Stop();
             timings.Add("TrackService.StreamCheckAndInfo", tsw.ElapsedMilliseconds);
             tsw.Restart();
 
             var info = await trackService.TrackStreamInfo(id,
-                                                        TrackService.DetermineByteStartFromHeaders(this.Request.Headers),
-                                                        TrackService.DetermineByteEndFromHeaders(this.Request.Headers, track.Data.FileSize),
-                                                        user);
+                TrackService.DetermineByteStartFromHeaders(Request.Headers),
+                TrackService.DetermineByteEndFromHeaders(Request.Headers, track.Data.FileSize),
+                user);
             if (!info?.IsSuccess ?? false || info?.Data == null)
             {
                 if (info?.Errors != null && (info?.Errors.Any() ?? false))
-                {
-                    this.Logger.LogCritical($"StreamTrack: TrackStreamInfo Invalid For TrackId [{ id }] OperationResult Errors [{ string.Join('|', info?.Errors ?? new Exception[0]) }], For User [{ currentUser }]");
-                }
+                    Logger.LogCritical(
+                        $"StreamTrack: TrackStreamInfo Invalid For TrackId [{id}] OperationResult Errors [{string.Join('|', info?.Errors ?? new Exception[0])}], For User [{currentUser}]");
                 else
-                {
-                    this.Logger.LogCritical($"StreamTrack: TrackStreamInfo Invalid For TrackId [{ id }] OperationResult Messages [{ string.Join('|', info?.Messages ?? new string[0]) }], For User [{ currentUser }]");
-                }
+                    Logger.LogCritical(
+                        $"StreamTrack: TrackStreamInfo Invalid For TrackId [{id}] OperationResult Messages [{string.Join('|', info?.Messages ?? new string[0])}], For User [{currentUser}]");
                 return NotFound("Unknown TrackId");
             }
+
             tsw.Stop();
             timings.Add("TrackStreamInfo", tsw.ElapsedMilliseconds);
 
@@ -110,9 +104,11 @@ namespace Roadie.Api.Controllers
                 Response.Headers.Add("Accept-Ranges", info.Data.AcceptRanges);
                 Response.Headers.Add("Content-Range", info.Data.ContentRange);
             }
+
             Response.Headers.Add("Content-Length", info.Data.ContentLength);
             Response.ContentType = info.Data.ContentType;
-            Response.StatusCode = info.Data.IsFullRequest ? (int)HttpStatusCode.OK : (int)HttpStatusCode.PartialContent;
+            Response.StatusCode =
+                info.Data.IsFullRequest ? (int)HttpStatusCode.OK : (int)HttpStatusCode.PartialContent;
             Response.Headers.Add("Last-Modified", info.Data.LastModified);
             Response.Headers.Add("ETag", info.Data.Etag);
             Response.Headers.Add("Cache-Control", info.Data.CacheControl);
@@ -126,18 +122,16 @@ namespace Roadie.Api.Controllers
                 TimePlayed = DateTime.UtcNow,
                 TrackId = id
             };
-            await playActivityService.NowPlaying(user, scrobble);            
+            await playActivityService.NowPlaying(user, scrobble);
             sw.Stop();
-            this.Logger.LogInformation($"StreamTrack ElapsedTime [{ sw.ElapsedMilliseconds }], Timings [{ JsonConvert.SerializeObject(timings) }], StreamInfo `{ info?.Data.ToString() }`");
+            Logger.LogInformation(
+                $"StreamTrack ElapsedTime [{sw.ElapsedMilliseconds}], Timings [{JsonConvert.SerializeObject(timings)}], StreamInfo `{info?.Data}`");
             return new EmptyResult();
         }
 
         protected models.User UserModelForUser(ApplicationUser user)
         {
-            if (user == null)
-            {
-                return null;
-            }
+            if (user == null) return null;
             var result = user.Adapt<models.User>();
             result.IsAdmin = User.IsInRole("Admin");
             result.IsEditor = User.IsInRole("Editor") || result.IsAdmin;

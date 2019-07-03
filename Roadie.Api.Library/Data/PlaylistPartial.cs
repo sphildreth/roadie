@@ -1,11 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Roadie.Library.Data
 {
     public partial class Playlist
     {
+        public string CacheKey => CacheUrn(RoadieId);
+
+        public string CacheRegion => CacheRegionUrn(RoadieId);
+
         public static string CacheRegionUrn(Guid Id)
         {
             return string.Format("urn:playlist:{0}", Id);
@@ -13,28 +15,12 @@ namespace Roadie.Library.Data
 
         public static string CacheUrn(Guid Id)
         {
-            return $"urn:playlist_by_id:{ Id }";
-        }
-
-        public string CacheKey
-        {
-            get
-            {
-                return Playlist.CacheUrn(this.RoadieId);
-            }
-        }
-
-        public string CacheRegion
-        {
-            get
-            {
-                return Playlist.CacheRegionUrn(this.RoadieId);
-            }
+            return $"urn:playlist_by_id:{Id}";
         }
 
         public override string ToString()
         {
-            return $"Id [{this.Id}], Name [{this.Name}], RoadieId [{ this.RoadieId}]";
+            return $"Id [{Id}], Name [{Name}], RoadieId [{RoadieId}]";
         }
     }
 }

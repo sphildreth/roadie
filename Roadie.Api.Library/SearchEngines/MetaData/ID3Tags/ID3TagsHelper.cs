@@ -30,38 +30,19 @@ namespace Roadie.Library.MetaData.ID3Tags
         {
             var maxDiscNumber = 500; // Damnit Karajan
             for (var i = maxDiscNumber; i > 0; i--)
-            {
                 if (Regex.IsMatch(metaData.Filename, @"(cd\s*(0*" + i + "))", RegexOptions.IgnoreCase))
-                {
                     return i;
-                }
-            }
             return 1;
         }
 
         public static string DetermineMissingRequiredMetaData(AudioMetaData metaData)
         {
             var result = new List<string>();
-            if(string.IsNullOrEmpty(metaData.Artist))
-            {
-                result.Add("Artist Name (TPE1)");
-            }
-            if(string.IsNullOrEmpty(metaData.Release))
-            {
-                result.Add("Release Title (TALB)");
-            }
-            if (string.IsNullOrEmpty(metaData.Title))
-            {
-                result.Add("Track Title (TIT2)");
-            }
-            if ((metaData.Year ?? 0) < 1)
-            {
-                result.Add("Release Year (TYER | TDRC | TORY | TDOR)");
-            }
-            if ((metaData.TrackNumber ?? 0) < 1)
-            {
-                result.Add("TrackNumber (TRCK)");
-            }
+            if (string.IsNullOrEmpty(metaData.Artist)) result.Add("Artist Name (TPE1)");
+            if (string.IsNullOrEmpty(metaData.Release)) result.Add("Release Title (TALB)");
+            if (string.IsNullOrEmpty(metaData.Title)) result.Add("Track Title (TIT2)");
+            if ((metaData.Year ?? 0) < 1) result.Add("Release Year (TYER | TDRC | TORY | TDOR)");
+            if ((metaData.TrackNumber ?? 0) < 1) result.Add("TrackNumber (TRCK)");
             return string.Join(", ", result);
         }
 
@@ -73,6 +54,7 @@ namespace Roadie.Library.MetaData.ID3Tags
                 var n = DetermineDiscNumber(metaData);
                 result = result > n ? result : n;
             }
+
             return result;
         }
 
@@ -85,51 +67,43 @@ namespace Roadie.Library.MetaData.ID3Tags
                 var directoryName = fileInfo.DirectoryName;
 
                 // See if CUE sheet exists if so read tracks from that and return latest track number
-                var cueFiles = Directory.GetFiles(directoryName, ("*.cue"));
+                var cueFiles = Directory.GetFiles(directoryName, "*.cue");
                 if (cueFiles != null && cueFiles.Any())
-                {
                     try
                     {
-                        ICatalogDataReader theReader = CatalogDataReaderFactory.GetInstance().GetCatalogDataReader(cueFiles.First());
+                        var theReader = CatalogDataReaderFactory.GetInstance().GetCatalogDataReader(cueFiles.First());
                         result = (short)theReader.Tracks.Max(x => x.TrackNumber);
                     }
                     catch (Exception ex)
                     {
-                        Trace.Write("Error Reading Cue: " + ex.ToString());
+                        Trace.Write("Error Reading Cue: " + ex);
                     }
-                }
+
                 if (!result.HasValue)
                 {
                     // See if M3U sheet exists if so read tracks from that and return latest track number
-                    var m3uFiles = Directory.GetFiles(directoryName, ("*.m3u"));
+                    var m3uFiles = Directory.GetFiles(directoryName, "*.m3u");
                     if (m3uFiles != null && m3uFiles.Any())
-                    {
                         try
                         {
-                            IPlaylistReader theReader = PlaylistReaderFactory.GetInstance().GetPlaylistReader(m3uFiles.First());
+                            var theReader = PlaylistReaderFactory.GetInstance().GetPlaylistReader(m3uFiles.First());
                             result = (short)theReader.GetFiles().Count();
                         }
                         catch (Exception ex)
                         {
-                            Trace.Write("Error Reading m3u: " + ex.ToString());
+                            Trace.Write("Error Reading m3u: " + ex);
                         }
-                    }
                 }
             }
+
             // Try to parse from TrackNumber
-            if (!result.HasValue)
-            {
-                result = ID3TagsHelper.ParseTotalTrackNumber(trackNumber);
-            }
+            if (!result.HasValue) result = ParseTotalTrackNumber(trackNumber);
             return result;
         }
 
         public static short? DetermineTrackNumber(string filename)
         {
-            if(string.IsNullOrEmpty(filename) || filename.Length < 2)
-            {
-                return null;
-            }
+            if (string.IsNullOrEmpty(filename) || filename.Length < 2) return null;
             filename = filename.Replace("(", "");
             filename = filename.Replace("[", "");
             var part = filename.Substring(0, 2);
@@ -137,12 +111,13 @@ namespace Roadie.Library.MetaData.ID3Tags
             part = part.Replace("-", "");
             part = part.Replace(" ", "");
             var result = SafeParser.ToNumber<short?>(part);
-            if((result ?? 0) == 0)
+            if ((result ?? 0) == 0)
             {
                 var firstNumber = filename.IndexOfAny("0123456789".ToCharArray());
                 part = filename.Substring(firstNumber, 2);
                 result = SafeParser.ToNumber<short?>(part);
             }
+
             return result;
         }
 
@@ -158,40 +133,25 @@ namespace Roadie.Library.MetaData.ID3Tags
                 input = input.ToUpper().Replace("E", "5");
                 discNumber = SafeParser.ToNumber<int?>(input);
                 if (!discNumber.HasValue && input.Contains("/"))
-                {
                     discNumber = SafeParser.ToNumber<int?>(input.Split("/")[0]);
-                }
                 if (!discNumber.HasValue && input.Contains("\\"))
-                {
                     discNumber = SafeParser.ToNumber<int?>(input.Split("\\")[0]);
-                }
                 if (!discNumber.HasValue && input.Contains(":"))
-                {
                     discNumber = SafeParser.ToNumber<int?>(input.Split(":")[0]);
-                }
                 if (!discNumber.HasValue && input.Contains(","))
-                {
                     discNumber = SafeParser.ToNumber<int?>(input.Split(",")[0]);
-                }
                 if (!discNumber.HasValue && input.Contains("|"))
-                {
                     discNumber = SafeParser.ToNumber<int?>(input.Split("|")[0]);
-                }
             }
+
             return discNumber;
         }
 
         public static short? ParseTotalTrackNumber(string input)
         {
-            if (string.IsNullOrEmpty(input))
-            {
-                return null;
-            }
+            if (string.IsNullOrEmpty(input)) return null;
             var trackparts = input.Split('/');
-            if (trackparts.Length < 2)
-            {
-                return null;
-            }
+            if (trackparts.Length < 2) return null;
             var r = trackparts[1];
             r = r.ToUpper().Replace("A", "");
             r = r.ToUpper().Replace("B", "");
@@ -203,10 +163,7 @@ namespace Roadie.Library.MetaData.ID3Tags
 
         public static short? ParseTrackNumber(string input)
         {
-            if (string.IsNullOrEmpty(input))
-            {
-                return null;
-            }
+            if (string.IsNullOrEmpty(input)) return null;
             var trackparts = input.Split('/');
             var r = trackparts[0];
             r = r.ToUpper().Replace("A", "");
@@ -219,55 +176,41 @@ namespace Roadie.Library.MetaData.ID3Tags
 
         public static short? ParseYear(string input)
         {
-            if (string.IsNullOrEmpty(input))
-            {
-                return null;
-            }
+            if (string.IsNullOrEmpty(input)) return null;
             var date = SafeParser.ToDateTime(input);
-            short? year = (short?)date?.Year ?? SafeParser.ToNumber<short?>(input);
+            var year = (short?)date?.Year ?? SafeParser.ToNumber<short?>(input);
             return year > 2200 || year < 1900 ? null : year;
+        }
+
+        public static ICollection<string> SplitGenre(string genre)
+        {
+            if (string.IsNullOrEmpty(genre)) return null;
+            genre = genre.Replace(" / ", "/").Replace(" \\ ", "/").Replace("\\", "/");
+            return genre?.Split(',', ';', '|', '/');
         }
 
         public OperationResult<AudioMetaData> MetaDataForFile(string fileName, bool returnEvenIfInvalid = false)
         {
             var r = new OperationResult<AudioMetaData>();
-            var result = this.MetaDataForFileFromIdSharp(fileName);
+            var result = MetaDataForFileFromIdSharp(fileName);
             if (result.Messages != null && result.Messages.Any())
-            {
                 foreach (var m in result.Messages)
-                {
                     r.AddMessage(m);
-                }
-            }
-            if(result.Errors != null && result.Errors.Any())
-            {
-                foreach(var e in result.Errors)
-                {
+            if (result.Errors != null && result.Errors.Any())
+                foreach (var e in result.Errors)
                     r.AddError(e);
-                }
-            }
             if (!result.IsSuccess)
             {
-                result =  this.MetaDataForFileFromATL(fileName);
+                result = MetaDataForFileFromATL(fileName);
                 if (result.Messages != null && result.Messages.Any())
-                {
                     foreach (var m in result.Messages)
-                    {
                         r.AddMessage(m);
-                    }
-                }
                 if (result.Errors != null && result.Errors.Any())
-                {
                     foreach (var e in result.Errors)
-                    {
                         r.AddError(e);
-                    }
-                }
             }
-            if(!result.IsSuccess)
-            {
-                r.AddMessage($"Missing Data `[{ ID3TagsHelper.DetermineMissingRequiredMetaData(result.Data) }]`");
-            }
+
+            if (!result.IsSuccess) r.AddMessage($"Missing Data `[{DetermineMissingRequiredMetaData(result.Data)}]`");
             r.Data = result.Data;
             r.IsSuccess = result.IsSuccess;
             return r;
@@ -278,12 +221,10 @@ namespace Roadie.Library.MetaData.ID3Tags
             var result = new List<AudioMetaData>();
             foreach (var fileName in fileNames)
             {
-                var r = this.MetaDataForFileFromIdSharp(fileName);
-                if (r.IsSuccess)
-                {
-                    result.Add(r.Data);
-                }
+                var r = MetaDataForFileFromIdSharp(fileName);
+                if (r.IsSuccess) result.Add(r.Data);
             }
+
             return new OperationResult<IEnumerable<AudioMetaData>>
             {
                 IsSuccess = result.Any(),
@@ -293,7 +234,8 @@ namespace Roadie.Library.MetaData.ID3Tags
 
         public OperationResult<IEnumerable<AudioMetaData>> MetaDataForFolder(string folderName)
         {
-            return this.MetaDataForFiles(Directory.EnumerateFiles(folderName, "*.mp3", SearchOption.AllDirectories).ToArray());
+            return MetaDataForFiles(
+                Directory.EnumerateFiles(folderName, "*.mp3", SearchOption.AllDirectories).ToArray());
         }
 
         public bool WriteTags(AudioMetaData metaData, string filename, bool force = false)
@@ -302,9 +244,10 @@ namespace Roadie.Library.MetaData.ID3Tags
             {
                 if (!metaData.IsValid)
                 {
-                    this.Logger.LogWarning($"Invalid MetaData `{ metaData }` to save to file [{ filename }]");
+                    Logger.LogWarning($"Invalid MetaData `{metaData}` to save to file [{filename}]");
                     return false;
                 }
+
                 ID3v1Tag.RemoveTag(filename);
 
                 var trackNumber = metaData.TrackNumber ?? 1;
@@ -319,25 +262,24 @@ namespace Roadie.Library.MetaData.ID3Tags
                     Album = metaData.Release,
                     Title = metaData.Title,
                     Year = metaData.Year.Value.ToString(),
-                    Genre = metaData.Genres == null || !metaData.Genres.Any() ? null : string.Join("/", metaData.Genres),
-                    TrackNumber = totalTrackNumber < 99 ? $"{trackNumber.ToString("00")}/{totalTrackNumber.ToString("00")}" : $"{trackNumber.ToString()}/{totalTrackNumber.ToString()}",
-                    DiscNumber = discCount < 99 ? $"{disc.ToString("00")}/{discCount.ToString("00")}" : $"{disc.ToString()}/{discCount.ToString()}"
+                    Genre =
+                        metaData.Genres == null || !metaData.Genres.Any() ? null : string.Join("/", metaData.Genres),
+                    TrackNumber = totalTrackNumber < 99
+                        ? $"{trackNumber.ToString("00")}/{totalTrackNumber.ToString("00")}"
+                        : $"{trackNumber.ToString()}/{totalTrackNumber.ToString()}",
+                    DiscNumber = discCount < 99
+                        ? $"{disc.ToString("00")}/{discCount.ToString("00")}"
+                        : $"{disc.ToString()}/{discCount.ToString()}"
                 };
-                if (metaData.TrackArtists.Any())
-                {
-                    id3v2.OriginalArtist = string.Join("/", metaData.TrackArtists);
-                }
-                if (this.Configuration.Processing.DoClearComments)
-                {
+                if (metaData.TrackArtists.Any()) id3v2.OriginalArtist = string.Join("/", metaData.TrackArtists);
+                if (Configuration.Processing.DoClearComments)
                     if (id3v2.CommentsList.Any())
-                    {
                         for (var i = 0; i < id3v2.CommentsList.Count; i++)
                         {
                             id3v2.CommentsList[i].Description = null;
                             id3v2.CommentsList[i].Value = null;
                         }
-                    }
-                }
+
                 id3v2.Save(filename);
 
                 //// Delete first embedded picture (let's say it exists)
@@ -363,8 +305,9 @@ namespace Roadie.Library.MetaData.ID3Tags
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex, string.Format("MetaData [{0}], Filename [{1}]", metaData.ToString(), filename));
+                Logger.LogError(ex, string.Format("MetaData [{0}], Filename [{1}]", metaData, filename));
             }
+
             return false;
         }
 
@@ -372,31 +315,31 @@ namespace Roadie.Library.MetaData.ID3Tags
         {
             var sw = new Stopwatch();
             sw.Start();
-            AudioMetaData result = new AudioMetaData();
+            var result = new AudioMetaData();
             var isSuccess = false;
             try
             {
                 result.Filename = fileName;
-                var theTrack = new ATL.Track(fileName);
+                var theTrack = new Track(fileName);
                 result.Release = theTrack.Album;
                 result.Artist = theTrack.AlbumArtist ?? theTrack.Artist;
                 result.ArtistRaw = theTrack.AlbumArtist ?? theTrack.Artist;
-                result.Genres = ID3TagsHelper.SplitGenre(theTrack.Genre);
+                result.Genres = SplitGenre(theTrack.Genre);
                 result.TrackArtist = theTrack.OriginalArtist ?? theTrack.Artist ?? theTrack.AlbumArtist;
                 result.TrackArtistRaw = theTrack.OriginalArtist ?? theTrack.Artist ?? theTrack.AlbumArtist;
-                result.AudioBitrate = (int?)theTrack.Bitrate;
-                result.AudioSampleRate = (int)theTrack.Bitrate;
+                result.AudioBitrate = theTrack.Bitrate;
+                result.AudioSampleRate = theTrack.Bitrate;
                 result.Disc = theTrack.DiscNumber;
                 if (theTrack.AdditionalFields.ContainsKey("TSST"))
-                {
                     result.DiscSubTitle = theTrack.AdditionalFields["TSST"];
-                }
                 result.Images = theTrack.EmbeddedPictures?.Select(x => new AudioMetaDataImage
                 {
                     Data = x.PictureData,
                     Description = x.Description,
                     MimeType = "image/jpg",
-                    Type = x.PicType == PictureInfo.PIC_TYPE.Front || x.PicType == PictureInfo.PIC_TYPE.Generic ? AudioMetaDataImageType.FrontCover : AudioMetaDataImageType.Other
+                    Type = x.PicType == PictureInfo.PIC_TYPE.Front || x.PicType == PictureInfo.PIC_TYPE.Generic
+                        ? AudioMetaDataImageType.FrontCover
+                        : AudioMetaDataImageType.Other
                 }).ToArray();
                 result.Time = theTrack.DurationMs > 0 ? ((decimal?)theTrack.DurationMs).ToTimeSpan() : null;
                 result.Title = theTrack.Title.ToTitleCase(false);
@@ -406,8 +349,10 @@ namespace Roadie.Library.MetaData.ID3Tags
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex, "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
+                Logger.LogError(ex,
+                    "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
             }
+
             sw.Stop();
             return new OperationResult<AudioMetaData>
             {
@@ -417,28 +362,17 @@ namespace Roadie.Library.MetaData.ID3Tags
             };
         }
 
-        public static ICollection<string> SplitGenre(string genre)
-        {
-            if(string.IsNullOrEmpty(genre))
-            {
-                return null;
-            }
-            genre = genre.Replace(" / ", "/").Replace(" \\ ", "/").Replace("\\", "/");
-            return genre?.Split(new char[] { ',', ';', '|', '/' });
-        }
-
-
         private OperationResult<AudioMetaData> MetaDataForFileFromIdSharp(string fileName)
         {
             var sw = new Stopwatch();
             sw.Start();
-            AudioMetaData result = new AudioMetaData();
+            var result = new AudioMetaData();
             string message = null;
             var isSuccess = false;
             try
             {
                 result.Filename = fileName;
-                IAudioFile audioFile = AudioFile.Create(fileName, true);
+                var audioFile = AudioFile.Create(fileName, true);
                 if (ID3v2Tag.DoesTagExist(fileName))
                 {
                     IID3v2Tag id3v2 = new ID3v2Tag(fileName);
@@ -447,10 +381,12 @@ namespace Roadie.Library.MetaData.ID3Tags
                     result.AudioBitrate = (int?)audioFile.Bitrate;
                     result.AudioChannels = audioFile.Channels;
                     result.AudioSampleRate = (int)audioFile.Bitrate;
-                    result.Comments = id3v2.CommentsList != null ? string.Join("|", id3v2.CommentsList?.Select(x => x.Value)) : null;
-                    result.Disc = ID3TagsHelper.ParseDiscNumber(id3v2.DiscNumber);
+                    result.Comments = id3v2.CommentsList != null
+                        ? string.Join("|", id3v2.CommentsList?.Select(x => x.Value))
+                        : null;
+                    result.Disc = ParseDiscNumber(id3v2.DiscNumber);
                     result.DiscSubTitle = id3v2.SetSubtitle;
-                    result.Genres = ID3TagsHelper.SplitGenre(id3v2.Genre);
+                    result.Genres = SplitGenre(id3v2.Genre);
                     result.Release = id3v2.Album;
                     result.TrackArtist = id3v2.OriginalArtist ?? id3v2.Artist ?? id3v2.AlbumArtist;
                     result.TrackArtistRaw = id3v2.OriginalArtist ?? id3v2.Artist ?? id3v2.AlbumArtist;
@@ -463,15 +399,15 @@ namespace Roadie.Library.MetaData.ID3Tags
                     }).ToArray();
                     result.Time = audioFile.TotalSeconds > 0 ? ((decimal?)audioFile.TotalSeconds).ToTimeSpan() : null;
                     result.Title = id3v2.Title.ToTitleCase(false);
-                    result.TrackNumber = ID3TagsHelper.ParseTrackNumber(id3v2.TrackNumber);
-                    result.TotalTrackNumbers = ID3TagsHelper.ParseTotalTrackNumber(id3v2.TrackNumber);
-                    var year = id3v2.Year ?? id3v2.RecordingTimestamp ?? id3v2.ReleaseTimestamp ?? id3v2.OriginalReleaseTimestamp;
-                    result.Year = ID3TagsHelper.ParseYear(year);
+                    result.TrackNumber = ParseTrackNumber(id3v2.TrackNumber);
+                    result.TotalTrackNumbers = ParseTotalTrackNumber(id3v2.TrackNumber);
+                    var year = id3v2.Year ?? id3v2.RecordingTimestamp ??
+                               id3v2.ReleaseTimestamp ?? id3v2.OriginalReleaseTimestamp;
+                    result.Year = ParseYear(year);
                     isSuccess = result.IsValid;
                 }
 
                 if (!isSuccess)
-                {
                     if (ID3v1Tag.DoesTagExist(fileName))
                     {
                         IID3v1Tag id3v1 = new ID3v1Tag(fileName);
@@ -481,20 +417,23 @@ namespace Roadie.Library.MetaData.ID3Tags
                         result.AudioBitrate = (int?)audioFile.Bitrate;
                         result.AudioChannels = audioFile.Channels;
                         result.AudioSampleRate = (int)audioFile.Bitrate;
-                        result.Time = audioFile.TotalSeconds > 0 ? ((decimal?)audioFile.TotalSeconds).ToTimeSpan() : null;
+                        result.Time = audioFile.TotalSeconds > 0
+                            ? ((decimal?)audioFile.TotalSeconds).ToTimeSpan()
+                            : null;
                         result.Title = id3v1.Title.ToTitleCase(false);
                         result.TrackNumber = SafeParser.ToNumber<short?>(id3v1.TrackNumber);
                         var date = SafeParser.ToDateTime(id3v1.Year);
                         result.Year = date?.Year ?? SafeParser.ToNumber<int?>(id3v1.Year);
                         isSuccess = result.IsValid;
                     }
-                }
             }
             catch (Exception ex)
             {
                 message = ex.ToString();
-                this.Logger.LogError(ex, "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
+                Logger.LogError(ex,
+                    "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
             }
+
             sw.Stop();
             return new OperationResult<AudioMetaData>(message)
             {

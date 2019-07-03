@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 {
@@ -27,7 +25,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
         }
 
-        public SubsonicFileOperationResult(bool isNotFoundResult, IEnumerable<string> messages = null) 
+        public SubsonicFileOperationResult(bool isNotFoundResult, IEnumerable<string> messages = null)
             : base(isNotFoundResult, messages)
         {
         }
@@ -35,7 +33,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         public SubsonicFileOperationResult(ErrorCodes error, string message = null)
             : base(message)
         {
-            this.ErrorCode = error;
+            ErrorCode = error;
         }
     }
 }

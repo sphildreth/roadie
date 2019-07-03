@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
@@ -21,12 +20,12 @@ namespace Roadie.Api.Controllers
     {
         private IStatisticsService StatisticsService { get; }
 
-        public StatsController(IStatisticsService statisticsService, ILoggerFactory logger, ICacheManager cacheManager, 
-                               UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+        public StatsController(IStatisticsService statisticsService, ILoggerFactory logger, ICacheManager cacheManager,
+                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            this.Logger = logger.CreateLogger("RoadieApi.Controllers.StatsController");
-            this.StatisticsService = statisticsService;
+            Logger = logger.CreateLogger("RoadieApi.Controllers.StatsController");
+            StatisticsService = statisticsService;
         }
 
         [HttpGet("info")]
@@ -39,11 +38,11 @@ namespace Roadie.Api.Controllers
             var cpu = proc.TotalProcessorTime;
             var messages = new List<string>();
             messages.Add("▜ Memory Information: ");
-            messages.Add(string.Format("My process used working set {0:n3} K of working set and CPU {1:n} msec", mem / 1024.0, cpu.TotalMilliseconds));
+            messages.Add(string.Format("My process used working set {0:n3} K of working set and CPU {1:n} msec",
+                mem / 1024.0, cpu.TotalMilliseconds));
             foreach (var aProc in Process.GetProcesses())
-            {
-                messages.Add(string.Format("Proc {0,30}  CPU {1,-20:n} msec", aProc.ProcessName, cpu.TotalMilliseconds));
-            }
+                messages.Add(string.Format("Proc {0,30}  CPU {1,-20:n} msec", aProc.ProcessName,
+                    cpu.TotalMilliseconds));
             messages.Add("▟ Memory Information: ");
 
             return Ok(messages);
@@ -53,7 +52,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> Library()
         {
-            return Ok(await this.StatisticsService.LibraryStatistics());
+            return Ok(await StatisticsService.LibraryStatistics());
         }
 
         [HttpGet("ping")]
@@ -68,7 +67,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ReleasesByDate()
         {
-            return Ok(await this.StatisticsService.ReleasesByDate());
+            return Ok(await StatisticsService.ReleasesByDate());
         }
     }
 }

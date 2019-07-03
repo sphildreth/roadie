@@ -1,17 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
+using Roadie.Library.Models.Collections;
 using Roadie.Library.Models.Pagination;
 using System;
 using System.Net;
 using System.Threading.Tasks;
-using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
 {
@@ -23,12 +22,13 @@ namespace Roadie.Api.Controllers
     {
         private ICollectionService CollectionService { get; }
 
-        public CollectionController(ICollectionService collectionService, ILoggerFactory logger, ICacheManager cacheManager, 
-                                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+        public CollectionController(ICollectionService collectionService, ILoggerFactory logger,
+                    ICacheManager cacheManager,
+            UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            this.Logger = logger.CreateLogger("RoadieApi.Controllers.CollectionController");
-            this.CollectionService = collectionService;
+            Logger = logger.CreateLogger("RoadieApi.Controllers.CollectionController");
+            CollectionService = collectionService;
         }
 
         [HttpGet("add")]
@@ -36,11 +36,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Add()
         {
-            var result = this.CollectionService.Add(await this.CurrentUserModel());
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = CollectionService.Add(await CurrentUserModel());
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -50,11 +47,8 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> DeleteCollection(Guid id)
         {
-            var result = await this.CollectionService.DeleteCollection(await this.CurrentUserModel(), id);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await CollectionService.DeleteCollection(await CurrentUserModel(), id);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -63,30 +57,22 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await this.CollectionService.ById(await this.CurrentUserModel(), id, (inc ?? models.Collections.Collection.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await CollectionService.ById(await CurrentUserModel(), id,
+                (inc ?? Collection.DefaultIncludes).ToLower().Split(","));
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List([FromQuery]PagedRequest request)
+        public async Task<IActionResult> List([FromQuery] PagedRequest request)
         {
             try
             {
-                var result = await this.CollectionService.List(roadieUser: await this.CurrentUserModel(),
-                                                       request: request);
-                if (!result.IsSuccess)
-                {
-                    return StatusCode((int)HttpStatusCode.InternalServerError);
-                }
+                var result = await CollectionService.List(await CurrentUserModel(),
+                    request);
+                if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -95,8 +81,9 @@ namespace Roadie.Api.Controllers
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return StatusCode((int)HttpStatusCode.InternalServerError);
         }
 
@@ -104,21 +91,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         [Authorize(Policy = "Editor")]
-        public async Task<IActionResult> Update(models.Collections.Collection collection)
+        public async Task<IActionResult> Update(Collection collection)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-            var result = await this.CollectionService.UpdateCollection(await this.CurrentUserModel(), collection);
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var result = await CollectionService.UpdateCollection(await CurrentUserModel(), collection);
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
     }

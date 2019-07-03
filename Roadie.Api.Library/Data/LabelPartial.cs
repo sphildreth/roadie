@@ -1,10 +1,31 @@
 ﻿using System;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace Roadie.Library.Data
 {
     public partial class Label
     {
+        public string CacheKey => CacheUrn(RoadieId);
+
+        public string CacheRegion => CacheRegionUrn(RoadieId);
+
+        public string Etag
+        {
+            get
+            {
+                using (var md5 = MD5.Create())
+                {
+                    return string.Concat(md5
+                        .ComputeHash(
+                            System.Text.Encoding.Default.GetBytes(string.Format("{0}{1}", RoadieId, LastUpdated)))
+                        .Select(x => x.ToString("D2")));
+                }
+            }
+        }
+
+        public bool IsValid => !string.IsNullOrEmpty(Name);
+
         public static string CacheRegionUrn(Guid Id)
         {
             return string.Format("urn:label:{0}", Id);
@@ -12,42 +33,7 @@ namespace Roadie.Library.Data
 
         public static string CacheUrn(Guid Id)
         {
-            return $"urn:label_by_id:{ Id }";
-        }
-
-        public string CacheKey
-        {
-            get
-            {
-                return Label.CacheUrn(this.RoadieId);
-            }
-        }
-
-        public string CacheRegion
-        {
-            get
-            {
-                return Label.CacheRegionUrn(this.RoadieId);
-            }
-        }
-
-        public string Etag
-        {
-            get
-            {
-                using (var md5 = System.Security.Cryptography.MD5.Create())
-                {
-                    return String.Concat(md5.ComputeHash(System.Text.Encoding.Default.GetBytes(string.Format("{0}{1}", this.RoadieId, this.LastUpdated))).Select(x => x.ToString("D2")));
-                }
-            }
-        }
-
-        public bool IsValid
-        {
-            get
-            {
-                return !string.IsNullOrEmpty(this.Name);
-            }
+            return $"urn:label_by_id:{Id}";
         }
     }
 }

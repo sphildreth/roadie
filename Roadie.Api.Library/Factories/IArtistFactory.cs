@@ -11,14 +11,17 @@ namespace Roadie.Library.Factories
 
         Task<OperationResult<bool>> Delete(Guid RoadieId);
 
-        OperationResult<Artist> GetByExternalIds(string musicBrainzId = null, string iTunesId = null, string amgId = null, string spotifyId = null);
+        OperationResult<Artist> GetByExternalIds(string musicBrainzId = null, string iTunesId = null,
+            string amgId = null, string spotifyId = null);
 
-        Task<OperationResult<Artist>> MergeArtists(Artist ArtistToMerge, Artist artistToMergeInto, bool doDbUpdates = false);
+        Task<OperationResult<Artist>> MergeArtists(Artist ArtistToMerge, Artist artistToMergeInto,
+            bool doDbUpdates = false);
 
         Task<OperationResult<bool>> RefreshArtistMetadata(Guid ArtistId);
 
         Task<OperationResult<bool>> ScanArtistReleasesFolders(Guid artistId, string destinationFolder, bool doJustInfo);
 
-        Task<OperationResult<Artist>> Update(Artist Artist, IEnumerable<Image> ArtistImages, string destinationFolder = null);
+        Task<OperationResult<Artist>> Update(Artist Artist, IEnumerable<Image> ArtistImages,
+            string destinationFolder = null);
     }
 }

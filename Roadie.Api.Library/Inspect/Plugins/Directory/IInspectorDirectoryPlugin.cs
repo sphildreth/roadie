@@ -4,9 +4,9 @@ namespace Roadie.Library.Inspect.Plugins.Directory
 {
     public interface IInspectorDirectoryPlugin
     {
+        string Description { get; }
         bool IsEnabled { get; }
         bool IsPostProcessingPlugin { get; }
-        string Description { get; }
         int Order { get; }
 
         OperationResult<string> Process(DirectoryInfo directory);

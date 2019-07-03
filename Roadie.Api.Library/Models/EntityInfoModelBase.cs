@@ -9,8 +9,13 @@ namespace Roadie.Library.Models
     [Serializable]
     public abstract class EntityInfoModelBase
     {
+        public DateTime? CreatedDate { get; set; }
+
+        public string CssClass { get; set; }
+
         /// <summary>
-        /// This is the "id" of the record in the database and is only used during composition, not stored in cache and not returned in results.
+        ///     This is the "id" of the record in the database and is only used during composition, not stored in cache and not
+        ///     returned in results.
         /// </summary>
         [AdaptIgnore]
         [JsonIgnore]
@@ -21,25 +26,20 @@ namespace Roadie.Library.Models
         [AdaptMember("RoadieId")]
         public Guid Id { get; set; }
 
-        public string CssClass { get; set; }
-
-        [MaxLength(250)]
-        public string SortName { get; set; }
-
-        public DateTime? CreatedDate { get; set; }
-
         public DateTime? LastUpdated { get; set; }
 
         /// <summary>
-        /// Random int to sort when Random Request
+        ///     Random int to sort when Random Request
         /// </summary>
         [AdaptIgnore]
         [JsonIgnore]
         public int RandomSortId { get; set; }
 
+        [MaxLength(250)] public string SortName { get; set; }
+
         public EntityInfoModelBase()
         {
-            this.RandomSortId = StaticRandom.Instance.Next();
+            RandomSortId = StaticRandom.Instance.Next();
         }
     }
 }

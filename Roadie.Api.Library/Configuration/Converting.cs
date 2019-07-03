@@ -8,8 +8,8 @@ namespace Roadie.Library.Configuration
         public string APEConvertCommand { get; set; }
         public bool ConvertingEnabled { get; set; }
         public bool DoDeleteAfter { get; set; }
+        public string FLACConvertCommand { get; set; }
         public string M4AConvertCommand { get; set; }
         public string OGGConvertCommand { get; set; }
-        public string FLACConvertCommand { get; set; }
     }
 }

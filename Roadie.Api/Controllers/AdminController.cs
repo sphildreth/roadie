@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
@@ -20,20 +19,20 @@ namespace Roadie.Api.Controllers
     {
         private IAdminService AdminService { get; }
 
-        public AdminController(IAdminService adminService, ILoggerFactory logger, ICacheManager cacheManager, 
-                               UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+        public AdminController(IAdminService adminService, ILoggerFactory logger, ICacheManager cacheManager,
+                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            this.Logger = logger.CreateLogger("RoadieApi.Controllers.AdminController");
-            this.AdminService = adminService;
+            Logger = logger.CreateLogger("RoadieApi.Controllers.AdminController");
+            AdminService = adminService;
         }
 
         [HttpGet("clearcache")]
         [ProducesResponseType(200)]
         public IActionResult ClearCache()
         {
-            this.CacheManager.Clear();
-            this.Logger.LogInformation("Cache Cleared");
+            CacheManager.Clear();
+            Logger.LogInformation("Cache Cleared");
             return Ok();
         }
 
@@ -41,11 +40,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteArtist(Guid id)
         {
-            var result = await this.AdminService.DeleteArtist(await this.UserManager.GetUserAsync(User), id);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.DeleteArtist(await UserManager.GetUserAsync(User), id);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -53,11 +49,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteArtistReleases(Guid id)
         {
-            var result = await this.AdminService.DeleteArtistReleases(await this.UserManager.GetUserAsync(User), id);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.DeleteArtistReleases(await UserManager.GetUserAsync(User), id);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -65,11 +58,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteArtistSecondaryImage(Guid id, int index)
         {
-            var result = await this.AdminService.DeleteArtistSecondaryImage(await this.UserManager.GetUserAsync(User), id, index);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.DeleteArtistSecondaryImage(await UserManager.GetUserAsync(User), id, index);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -77,11 +67,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteRelease(Guid id, bool? doDeleteFiles)
         {
-            var result = await this.AdminService.DeleteRelease(await this.UserManager.GetUserAsync(User), id, doDeleteFiles);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.DeleteRelease(await UserManager.GetUserAsync(User), id, doDeleteFiles);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -89,24 +76,18 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteReleaseSecondaryImage(Guid id, int index)
         {
-            var result = await this.AdminService.DeleteReleaseSecondaryImage(await this.UserManager.GetUserAsync(User), id, index);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result =
+                await AdminService.DeleteReleaseSecondaryImage(await UserManager.GetUserAsync(User), id, index);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
-
 
         [HttpPost("delete/track/{id}")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteTrack(Guid id, bool? doDeleteFile)
         {
-            var result = await this.AdminService.DeleteTrack(await this.UserManager.GetUserAsync(User), id, doDeleteFile);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.DeleteTrack(await UserManager.GetUserAsync(User), id, doDeleteFile);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -114,11 +95,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
-            var result = await this.AdminService.DeleteUser(await this.UserManager.GetUserAsync(User), id);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.DeleteUser(await UserManager.GetUserAsync(User), id);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -126,11 +104,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> MissingCollectionReleases()
         {
-            var result = await this.AdminService.MissingCollectionReleases(await this.UserManager.GetUserAsync(User));
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.MissingCollectionReleases(await UserManager.GetUserAsync(User));
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -138,11 +113,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanAllCollections()
         {
-            var result = await this.AdminService.ScanAllCollections(await this.UserManager.GetUserAsync(User));
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.ScanAllCollections(await UserManager.GetUserAsync(User));
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -150,11 +122,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanArtist(Guid id)
         {
-            var result = await this.AdminService.ScanArtist(await this.UserManager.GetUserAsync(User), id);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.ScanArtist(await UserManager.GetUserAsync(User), id);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -162,11 +131,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanCollection(Guid id)
         {
-            var result = await this.AdminService.ScanCollection(await this.UserManager.GetUserAsync(User), id);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.ScanCollection(await UserManager.GetUserAsync(User), id);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -174,11 +140,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanInbound()
         {
-            var result = await this.AdminService.ScanInboundFolder(await this.UserManager.GetUserAsync(User));
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.ScanInboundFolder(await UserManager.GetUserAsync(User));
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -186,11 +149,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanLibrary()
         {
-            var result = await this.AdminService.ScanLibraryFolder(await this.UserManager.GetUserAsync(User));
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.ScanLibraryFolder(await UserManager.GetUserAsync(User));
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -198,11 +158,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanRelease(Guid id)
         {
-            var result = await this.AdminService.ScanRelease(await this.UserManager.GetUserAsync(User), id);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await AdminService.ScanRelease(await UserManager.GetUserAsync(User), id);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
     }

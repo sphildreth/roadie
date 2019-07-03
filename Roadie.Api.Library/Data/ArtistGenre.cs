@@ -4,19 +4,15 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Roadie.Library.Data
 {
     [Table("artistGenreTable")]
-    public partial class ArtistGenre
+    public class ArtistGenre
     {
         public Artist Artist { get; set; }
 
-        [Column("artistId")]
-        [Required]
-        public int ArtistId { get; set; }
+        [Column("artistId")] [Required] public int ArtistId { get; set; }
 
         public Genre Genre { get; set; }
 
-        [Column("genreId")]
-        [Required]
-        public int? GenreId { get; set; }
+        [Column("genreId")] [Required] public int? GenreId { get; set; }
 
         [Column("id")]
         [Key]

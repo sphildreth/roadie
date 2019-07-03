@@ -1,4 +1,5 @@
-﻿using Roadie.Library.Data;
+﻿using HtmlAgilityPack;
+using Roadie.Library.Data;
 using Roadie.Library.Enums;
 using Roadie.Library.Imaging;
 using System;
@@ -11,14 +12,12 @@ namespace Roadie.Library.Utility
 {
     public static class WebHelper
     {
-        public const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36";
+        public const string UserAgent =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36";
 
         public static byte[] BytesForImageUrl(string url)
         {
-            if (string.IsNullOrEmpty(url))
-            {
-                return null;
-            }
+            if (string.IsNullOrEmpty(url)) return null;
             try
             {
                 using (var webClient = new WebClient())
@@ -35,19 +34,22 @@ namespace Roadie.Library.Utility
                     {
                         err = sr.ReadToEnd();
                     }
-                    var htmlDoc = new HtmlAgilityPack.HtmlDocument();
+
+                    var htmlDoc = new HtmlDocument();
                     htmlDoc.LoadHtml(err);
                     err = (htmlDoc.DocumentNode.InnerText ?? string.Empty).Trim();
                 }
                 catch (Exception)
                 {
                 }
+
                 throw new Exception(err);
             }
             catch (Exception ex)
             {
-                Trace.WriteLine(string.Format("Error with url [{0}] Exception [{1}]", url, ex.ToString()));
+                Trace.WriteLine(string.Format("Error with url [{0}] Exception [{1}]", url, ex));
             }
+
             return null;
         }
 
@@ -58,13 +60,14 @@ namespace Roadie.Library.Utility
             {
                 using (var webClient = new WebClient())
                 {
-                    webClient.Headers.Add("user-agent", WebHelper.UserAgent);
+                    webClient.Headers.Add("user-agent", UserAgent);
                     imageBytes = await webClient.DownloadDataTaskAsync(new Uri(url));
                 }
             }
             catch
             {
             }
+
             if (imageBytes != null)
             {
                 var signature = ImageHasher.AverageHash(imageBytes).ToString();
@@ -77,6 +80,7 @@ namespace Roadie.Library.Utility
                     Bytes = ib
                 };
             }
+
             return null;
         }
 
@@ -84,16 +88,14 @@ namespace Roadie.Library.Utility
         {
             try
             {
-                if (string.IsNullOrEmpty(uriName))
-                {
-                    return false;
-                }
+                if (string.IsNullOrEmpty(uriName)) return false;
                 return uriName.ToLower().StartsWith("http://") || uriName.ToLower().StartsWith("https://");
             }
             catch (Exception ex)
             {
                 Trace.WriteLine(ex.ToString());
             }
+
             return false;
         }
     }

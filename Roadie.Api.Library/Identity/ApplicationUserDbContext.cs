@@ -53,20 +53,11 @@ namespace Roadie.Library.Identity
                     .IsRequired();
             });
 
-            builder.Entity<ApplicationUserClaim>(b =>
-            {
-                b.ToTable("userClaims");
-            });
+            builder.Entity<ApplicationUserClaim>(b => { b.ToTable("userClaims"); });
 
-            builder.Entity<ApplicationUserRole>(b =>
-            {
-                b.ToTable("usersInRoles");
-            });
+            builder.Entity<ApplicationUserRole>(b => { b.ToTable("usersInRoles"); });
 
-            builder.Entity<ApplicationRoleClaim>(b =>
-            {
-                b.ToTable("userRoleClaims");
-            });
+            builder.Entity<ApplicationRoleClaim>(b => { b.ToTable("userRoleClaims"); });
         }
     }
 }

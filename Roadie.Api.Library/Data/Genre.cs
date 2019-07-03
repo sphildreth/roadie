@@ -7,20 +7,19 @@ namespace Roadie.Library.Data
     [Table("genre")]
     public partial class Genre : EntityBase
     {
-        [Column("name")]
-        [MaxLength(100)]
-        public string Name { get; set; }
-
-        public ICollection<ReleaseGenre> Releases { get; set; }
         public ICollection<ArtistGenre> Artists { get; set; }
 
         public ICollection<Comment> Comments { get; set; }
 
+        [Column("name")] [MaxLength(100)] public string Name { get; set; }
+
+        public ICollection<ReleaseGenre> Releases { get; set; }
+
         public Genre()
         {
-            this.Releases = new HashSet<ReleaseGenre>();
-            this.Artists = new HashSet<ArtistGenre>();
-            this.Comments = new HashSet<Comment>();
+            Releases = new HashSet<ReleaseGenre>();
+            Artists = new HashSet<ArtistGenre>();
+            Comments = new HashSet<Comment>();
         }
     }
 }

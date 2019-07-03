@@ -12,7 +12,8 @@ namespace Roadie.Library.Inspect.Plugins.Directory
 
         public virtual bool IsPostProcessingPlugin => false;
 
-        public FolderPluginBase(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
+        public FolderPluginBase(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger,
+                            IID3TagsHelper tagsHelper)
             : base(configuration, cacheManager, logger, tagsHelper)
         {
         }

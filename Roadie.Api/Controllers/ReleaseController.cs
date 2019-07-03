@@ -2,18 +2,17 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
+using Roadie.Library.Models.Releases;
 using System;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web;
-using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
 {
@@ -25,12 +24,13 @@ namespace Roadie.Api.Controllers
     {
         private IReleaseService ReleaseService { get; }
 
-        public ReleaseController(IReleaseService releaseService, ILoggerFactory logger, ICacheManager cacheManager, 
-                                 UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+        public ReleaseController(IReleaseService releaseService, ILoggerFactory logger, ICacheManager cacheManager,
+                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            this.Logger = logger.CreateLogger("RoadieApi.Controllers.ReleaseController"); ;
-            this.ReleaseService = releaseService;
+            Logger = logger.CreateLogger("RoadieApi.Controllers.ReleaseController");
+            ;
+            ReleaseService = releaseService;
         }
 
         [HttpGet("{id}")]
@@ -38,32 +38,24 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await this.ReleaseService.ById(await this.CurrentUserModel(), id, (inc ?? models.Releases.Release.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await ReleaseService.ById(await CurrentUserModel(), id,
+                (inc ?? Release.DefaultIncludes).ToLower().Split(","));
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc, bool? doRandomize = false)
+        public async Task<IActionResult> List([FromQuery] PagedRequest request, string inc, bool? doRandomize = false)
         {
             try
             {
-                var result = await this.ReleaseService.List(user: await this.CurrentUserModel(),
-                                                           request: request,
-                                                           doRandomize: doRandomize ?? false,
-                                                           includes: (inc ?? models.Releases.Release.DefaultListIncludes).ToLower().Split(","));
-                if (!result.IsSuccess)
-                {
-                    return StatusCode((int)HttpStatusCode.InternalServerError);
-                }
+                var result = await ReleaseService.List(await CurrentUserModel(),
+                    request,
+                    doRandomize ?? false,
+                    (inc ?? Release.DefaultListIncludes).ToLower().Split(","));
+                if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -72,8 +64,9 @@ namespace Roadie.Api.Controllers
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return StatusCode((int)HttpStatusCode.InternalServerError);
         }
 
@@ -81,17 +74,13 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         [Authorize(Policy = "Editor")]
-        public async Task<IActionResult> MergeReleases(Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
+        public async Task<IActionResult> MergeReleases(Guid releaseToMergeId, Guid releaseToMergeIntoId,
+            bool addAsMedia)
         {
-            var result = await this.ReleaseService.MergeReleases(await this.CurrentUserModel(), releaseToMergeId, releaseToMergeIntoId, addAsMedia);
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await ReleaseService.MergeReleases(await CurrentUserModel(), releaseToMergeId,
+                releaseToMergeIntoId, addAsMedia);
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -101,15 +90,11 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> SetReleaseImageByUrl(Guid id, string imageUrl)
         {
-            var result = await this.ReleaseService.SetReleaseImageByUrl(await this.CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result =
+                await ReleaseService.SetReleaseImageByUrl(await CurrentUserModel(), id,
+                    HttpUtility.UrlDecode(imageUrl));
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -117,21 +102,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         [Authorize(Policy = "Editor")]
-        public async Task<IActionResult> Update(models.Releases.Release release)
+        public async Task<IActionResult> Update(Release release)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-            var result = await this.ReleaseService.UpdateRelease(await this.CurrentUserModel(), release);
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var result = await ReleaseService.UpdateRelease(await CurrentUserModel(), release);
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -141,15 +117,9 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
         {
-            var result = await this.ReleaseService.UploadReleaseImage(await this.CurrentUserModel(), id, file);
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await ReleaseService.UploadReleaseImage(await CurrentUserModel(), id, file);
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
     }

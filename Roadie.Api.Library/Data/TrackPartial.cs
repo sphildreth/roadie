@@ -5,11 +5,36 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace Roadie.Library.Data
 {
     public partial class Track
     {
+        public string CacheKey => CacheUrn(RoadieId);
+
+        public string CacheRegion => CacheRegionUrn(RoadieId);
+
+        public string Etag
+        {
+            get
+            {
+                using (var md5 = MD5.Create())
+                {
+                    return string.Concat(md5
+                        .ComputeHash(
+                            System.Text.Encoding.Default.GetBytes(string.Format("{0}{1}", RoadieId, LastUpdated)))
+                        .Select(x => x.ToString("D2")));
+                }
+            }
+        }
+
+        public bool IsValid => !string.IsNullOrEmpty(Hash);
+
+        public Artist TrackArtist { get; set; }
+
+        [NotMapped] public IEnumerable<string> TrackArtists { get; set; }
+
         public static string CacheRegionUrn(Guid Id)
         {
             return string.Format("urn:track:{0}", Id);
@@ -17,51 +42,11 @@ namespace Roadie.Library.Data
 
         public static string CacheUrn(Guid Id)
         {
-            return $"urn:track_by_id:{ Id }";
+            return $"urn:track_by_id:{Id}";
         }
-
-        public string CacheKey
-        {
-            get
-            {
-                return Track.CacheUrn(this.RoadieId);
-            }
-        }
-
-        public string CacheRegion
-        {
-            get
-            {
-                return Track.CacheRegionUrn(this.RoadieId);
-            }
-        }
-
-        public string Etag
-        {
-            get
-            {
-                using (var md5 = System.Security.Cryptography.MD5.Create())
-                {
-                    return String.Concat(md5.ComputeHash(System.Text.Encoding.Default.GetBytes(string.Format("{0}{1}", this.RoadieId, this.LastUpdated))).Select(x => x.ToString("D2")));
-                }
-            }
-        }
-
-        public bool IsValid
-        {
-            get
-            {
-                return !string.IsNullOrEmpty(this.Hash);
-            }
-        }
-
-        public Artist TrackArtist { get; set; }
-
-        [NotMapped]
-        public IEnumerable<string> TrackArtists { get; set; }
 
         /// <summary>
-        /// Returns a full file path to the current track
+        ///     Returns a full file path to the current track
         /// </summary>
         public string PathToTrack(IRoadieSettings configuration, string libraryFolder)
         {
@@ -69,31 +54,30 @@ namespace Roadie.Library.Data
         }
 
         /// <summary>
-        /// Returns a full file path to the current track thumbnail (if any)
+        ///     Returns a full file path to the current track thumbnail (if any)
         /// </summary>
         public string PathToTrackThumbnail(IRoadieSettings configuration, string libraryFolder)
         {
             return FolderPathHelper.PathForTrackThumbnail(configuration, this, libraryFolder);
         }
 
-
         public override string ToString()
         {
-            return string.Format("Id [{0}], TrackNumber [{1}], Title [{2}]", this.Id, this.TrackNumber, this.Title);
+            return string.Format("Id [{0}], TrackNumber [{1}], Title [{2}]", Id, TrackNumber, Title);
         }
 
         /// <summary>
-        /// Update any file related columns to indicate this track file is missing
+        ///     Update any file related columns to indicate this track file is missing
         /// </summary>
         /// <param name="now">Optional datetime to mark for Updated, if missing defaults to UtcNow</param>
         public void UpdateTrackMissingFile(DateTime? now = null)
         {
-            this.Hash = null;
-            this.Status = Statuses.Missing;
-            this.FileName = null;
-            this.FileSize = null;
-            this.FilePath = null;
-            this.LastUpdated = now ?? DateTime.UtcNow;
+            Hash = null;
+            Status = Statuses.Missing;
+            FileName = null;
+            FileSize = null;
+            FilePath = null;
+            LastUpdated = now ?? DateTime.UtcNow;
         }
     }
 }

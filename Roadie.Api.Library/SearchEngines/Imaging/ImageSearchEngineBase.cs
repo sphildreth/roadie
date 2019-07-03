@@ -4,66 +4,43 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace Roadie.Library.SearchEngines.Imaging
 {
     public abstract class ImageSearchEngineBase : IImageSearchEngine
     {
-        protected readonly RestClient _client = null;
-        protected readonly IRoadieSettings _configuratio = null;
-        protected readonly string _referrer = null;
-        protected readonly string _requestIp = null;
+        protected readonly RestClient _client;
+        protected readonly IRoadieSettings _configuratio;
+        protected readonly string _referrer;
+        protected readonly string _requestIp;
         protected IApiKey _apiKey = null;
-        protected ILogger _logger = null;
+        protected ILogger _logger;
 
-        protected IApiKey ApiKey
-        {
-            get
-            {
-                return this._apiKey;
-            }
-        }
+        protected IApiKey ApiKey => _apiKey;
 
-        protected IRoadieSettings Configuration
-        {
-            get
-            {
-                return this._configuratio;
-            }
-        }
+        protected IRoadieSettings Configuration => _configuratio;
 
-        protected ILogger Logger
-        {
-            get
-            {
-                return this._logger;
-            }
-        }
+        protected ILogger Logger => _logger;
 
-        public ImageSearchEngineBase(IRoadieSettings configuration, ILogger logger, string baseUrl, string requestIp = null, string referrer = null)
+        public ImageSearchEngineBase(IRoadieSettings configuration, ILogger logger, string baseUrl,
+                                    string requestIp = null, string referrer = null)
         {
-            this._configuratio = configuration;
+            _configuratio = configuration;
             if (string.IsNullOrEmpty(referrer) || referrer.StartsWith("http://localhost"))
-            {
                 referrer = "http://github.com/sphildreth/Roadie";
-            }
-            this._referrer = referrer;
-            if (string.IsNullOrEmpty(requestIp) || requestIp == "::1")
-            {
-                requestIp = "192.30.252.128";
-            }
-            this._requestIp = requestIp;
-            this._logger = logger;
+            _referrer = referrer;
+            if (string.IsNullOrEmpty(requestIp) || requestIp == "::1") requestIp = "192.30.252.128";
+            _requestIp = requestIp;
+            _logger = logger;
 
-            this._client = new RestClient(baseUrl)
+            _client = new RestClient(baseUrl)
             {
                 UserAgent = WebHelper.UserAgent
             };
 
-            System.Net.ServicePointManager.ServerCertificateValidationCallback += delegate (object sender, System.Security.Cryptography.X509Certificates.X509Certificate certificate,
-                        System.Security.Cryptography.X509Certificates.X509Chain chain,
-                        System.Net.Security.SslPolicyErrors sslPolicyErrors)
+            ServicePointManager.ServerCertificateValidationCallback += delegate
             {
                 return true; // **** Always accept
             };

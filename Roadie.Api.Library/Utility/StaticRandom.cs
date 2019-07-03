@@ -1,22 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 
 namespace Roadie.Library.Utility
 {
     public static class StaticRandom
     {
-        private static int seed;
-
-        private static ThreadLocal<Random> threadLocal = new ThreadLocal<Random>
+        private static readonly ThreadLocal<Random> threadLocal = new ThreadLocal<Random>
             (() => new Random(Interlocked.Increment(ref seed)));
+
+        private static int seed;
+        public static Random Instance => threadLocal.Value;
 
         static StaticRandom()
         {
             seed = Environment.TickCount;
         }
-
-        public static Random Instance { get { return threadLocal.Value; } }
     }
 }

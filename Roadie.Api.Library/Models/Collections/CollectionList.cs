@@ -1,35 +1,32 @@
-﻿using Roadie.Library.Enums;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
 
 namespace Roadie.Library.Models.Collections
 {
     [Serializable]
     public class CollectionList : EntityInfoModelBase
     {
+        public DataToken Artist { get; set; }
         public DataToken Collection { get; set; }
+        public int? CollectionCount { get; set; }
         public int? CollectionFoundCount { get; set; }
         public int? CollectionPosition { get; set; }
-        public DataToken Release { get; set; }
-        public DataToken Artist { get; set; }
-        public int? CollectionCount { get; set; }
         public string CollectionType { get; set; }
-        public Image Thumbnail { get; set; }
+        public bool? IsLocked { get; set; }
+
         public int PercentComplete
         {
             get
             {
-                if (this.CollectionCount == 0 || this.CollectionFoundCount == 0)
-                {
-                    return 0;
-                }
-                return (int)Math.Floor((decimal)this.CollectionFoundCount / (decimal)this.CollectionCount * 100);
+                if (CollectionCount == 0 || CollectionFoundCount == 0) return 0;
+                return (int)Math.Floor((decimal)CollectionFoundCount / (decimal)CollectionCount * 100);
             }
         }
-        public bool? IsLocked { get; set; }
 
-        public static CollectionList FromDataCollection(Data.Collection collection, int foundCount, Image collectionThumbnail)
+        public DataToken Release { get; set; }
+        public Image Thumbnail { get; set; }
+
+        public static CollectionList FromDataCollection(Data.Collection collection, int foundCount,
+            Image collectionThumbnail)
         {
             return new CollectionList
             {
@@ -41,7 +38,7 @@ namespace Roadie.Library.Models.Collections
                 },
                 Id = collection.RoadieId,
                 CollectionCount = collection.CollectionCount,
-                CollectionType = (collection.CollectionType ?? Roadie.Library.Enums.CollectionType.Unknown).ToString(),
+                CollectionType = (collection.CollectionType ?? Enums.CollectionType.Unknown).ToString(),
                 CollectionFoundCount = foundCount,
                 CreatedDate = collection.CreatedDate,
                 IsLocked = collection.IsLocked,

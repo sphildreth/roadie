@@ -9,22 +9,20 @@ namespace Roadie.Library.Utility
     {
         public static int Download(string ftpHost, string ftpDirectory, NetworkCredential credentials, string localPath)
         {
-            int result = 0;
-            using (FtpClient client = new FtpClient(ftpHost))
+            var result = 0;
+            using (var client = new FtpClient(ftpHost))
             {
                 client.Credentials = credentials;
                 client.Connect();
 
                 var foundFiles = new List<string>();
-                foreach (FtpListItem item in client.GetListing(ftpDirectory, FtpListOption.Recursive))
-                {
+                foreach (var item in client.GetListing(ftpDirectory, FtpListOption.Recursive))
                     switch (item.Type)
                     {
                         case FtpFileSystemObjectType.File:
                             foundFiles.Add(item.FullName);
                             break;
                     }
-                }
 
                 foreach (var file in foundFiles)
                 {
@@ -41,6 +39,7 @@ namespace Roadie.Library.Utility
 
                 client.Disconnect();
             }
+
             return result;
         }
     }

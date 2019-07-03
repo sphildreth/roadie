@@ -10,11 +10,20 @@ namespace Roadie.Api
 {
     public class Program
     {
+        public static IConfiguration Configuration { get; } = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", false, true)
+            .AddJsonFile(
+                $"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json",
+                true)
+            .AddEnvironmentVariables()
+            .Build();
+
         public static void Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
-                            .ReadFrom.Configuration(Configuration)
-                            .CreateLogger();
+                .ReadFrom.Configuration(Configuration)
+                .CreateLogger();
 
             try
             {
@@ -24,12 +33,14 @@ namespace Roadie.Api
 
 #if DEBUG
                 // Logging Output tests
-                Log.Verbose(":: Log Test: Verbose (Trace,None)");                           // Microsoft.Extensions.Logging.LogLevel.Trace and Microsoft.Extensions.Logging.LogLevel.None
-                Log.Debug(":: Log Test: Debug");                                            // Microsoft.Extensions.Logging.LogLevel.Debug 
-                Log.Information(":: Log Test: Information");                                // Microsoft.Extensions.Logging.LogLevel.Information
-                Log.Warning(":: Log Test: Warning");                                        // Microsoft.Extensions.Logging.LogLevel.Warning
-                Log.Error(new Exception("Log Test Exception"), "Log Test Error Message");   // Microsoft.Extensions.Logging.LogLevel.Error
-                Log.Fatal(":: Log Test: Fatal (Critial)");                                  // Microsoft.Extensions.Logging.LogLevel.Critical
+                Log.Verbose(
+                    ":: Log Test: Verbose (Trace,None)"); // Microsoft.Extensions.Logging.LogLevel.Trace and Microsoft.Extensions.Logging.LogLevel.None
+                Log.Debug(":: Log Test: Debug"); // Microsoft.Extensions.Logging.LogLevel.Debug
+                Log.Information(":: Log Test: Information"); // Microsoft.Extensions.Logging.LogLevel.Information
+                Log.Warning(":: Log Test: Warning"); // Microsoft.Extensions.Logging.LogLevel.Warning
+                Log.Error(new Exception("Log Test Exception"),
+                    "Log Test Error Message"); // Microsoft.Extensions.Logging.LogLevel.Error
+                Log.Fatal(":: Log Test: Fatal (Critial)"); // Microsoft.Extensions.Logging.LogLevel.Critical
                 Trace.WriteLine(":: Log Test: Trace WriteLine()");
 #endif
                 Console.WriteLine("");
@@ -40,7 +51,6 @@ namespace Roadie.Api
                 Console.WriteLine("");
 
                 CreateWebHostBuilder(args).Build().Run();
-
             }
             catch (Exception ex)
             {
@@ -52,23 +62,24 @@ namespace Roadie.Api
             }
         }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
+        public static IWebHostBuilder CreateWebHostBuilder(string[] args)
+        {
+            return WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
                 .UseSerilog();
-
-        public static IConfiguration Configuration { get; } = new ConfigurationBuilder()
-                   .SetBasePath(Directory.GetCurrentDirectory())
-                   .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                   .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
-                   .AddEnvironmentVariables()
-                   .Build();
+        }
     }
 
     public class LoggingTraceListener : TraceListener
     {
-        public override void Write(string message) => Log.Verbose(message);
+        public override void Write(string message)
+        {
+            Log.Verbose(message);
+        }
 
-        public override void WriteLine(string message) => Log.Verbose(message);
+        public override void WriteLine(string message)
+        {
+            Log.Verbose(message);
+        }
     }
 }

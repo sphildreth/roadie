@@ -1,4 +1,5 @@
-﻿using Roadie.Library.Utility;
+﻿using Newtonsoft.Json;
+using Roadie.Library.Utility;
 using System;
 using System.Net;
 using System.Threading;
@@ -25,7 +26,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
         }
 
         /// <summary>
-        /// Creates a webservice lookup template.
+        ///     Creates a webservice lookup template.
         /// </summary>
         internal static string CreateLookupUrl(string entity, string mbid, string inc)
         {
@@ -33,7 +34,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
         }
 
         /// <summary>
-        /// Creates a webservice search template.
+        ///     Creates a webservice search template.
         /// </summary>
         internal static string CreateSearchTemplate(string entity, string query, int limit, int offset)
         {
@@ -42,18 +43,18 @@ namespace Roadie.Library.MetaData.MusicBrainz
             return string.Format("{0}{1}", WebServiceUrl, string.Format(SearchTemplate, entity, query, limit, offset));
         }
 
-        internal async static Task<T> GetAsync<T>(string url, bool withoutMetadata = true)
+        internal static async Task<T> GetAsync<T>(string url, bool withoutMetadata = true)
         {
             var tryCount = 0;
-            T result = default(T);
+            var result = default(T);
             while (tryCount < MaxRetries && result == null)
-            {
                 try
                 {
                     using (var webClient = new WebClient())
                     {
                         webClient.Headers.Add("user-agent", WebHelper.UserAgent);
-                        result = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(await webClient.DownloadStringTaskAsync(new Uri(url)));
+                        result = JsonConvert.DeserializeObject<T>(
+                            await webClient.DownloadStringTaskAsync(new Uri(url)));
                     }
                 }
                 catch
@@ -64,7 +65,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
                 {
                     tryCount++;
                 }
-            }
+
             return result;
         }
     }

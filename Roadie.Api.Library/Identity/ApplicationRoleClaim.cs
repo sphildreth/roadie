@@ -8,7 +8,6 @@ namespace Roadie.Library.Identity
     {
         public virtual ApplicationRole Role { get; set; }
 
-        [Column("userRoleId")]
-        public override int RoleId { get; set; }
+        [Column("userRoleId")] public override int RoleId { get; set; }
     }
 }

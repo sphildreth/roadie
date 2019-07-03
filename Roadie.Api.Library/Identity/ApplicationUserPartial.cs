@@ -1,75 +1,34 @@
 ﻿using Roadie.Library.Data;
 using Roadie.Library.Enums;
-using Roadie.Library.Models.Statistics;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
 namespace Roadie.Library.Identity
 {
     public partial class ApplicationUser
     {
-        public static string CacheRegionUrn(Guid Id)
-        {
-            return string.Format("urn:user:{0}", Id);
-        }
+        public string CacheKey => CacheUrn(RoadieId);
 
-        public static string CacheUrn(Guid Id)
-        {
-            return $"urn:user_by_id:{ Id }";
-        }
+        public string CacheKeyByUsername => CacheUrnByUsername(UserName);
 
-        public static string CacheUrnByUsername(string Username)
-        {
-            return $"urn:user_by_username:{ Username }";
-        }
-
-        public string CacheRegion
-        {
-            get
-            {
-                return ApplicationUser.CacheRegionUrn(this.RoadieId);
-            }
-        }
-
-        public string CacheKeyByUsername
-        {
-            get
-            {
-                return ApplicationUser.CacheUrnByUsername(this.UserName);
-            }
-        }
-
-        public string CacheKey
-        {
-            get
-            {
-                return ApplicationUser.CacheUrn(this.RoadieId);
-            }
-        }
-
-        public override string ToString()
-        {
-            return $"Id [{ this.Id }], Username [{ this.UserName}]";
-        }
+        public string CacheRegion => CacheRegionUrn(RoadieId);
 
         public ApplicationUser()
         {
-            this.RoadieId = Guid.NewGuid();
-            this.Status = Statuses.Ok;
-            this.CreatedDate = DateTime.UtcNow;
-            this.IsLocked = false;
-            this.IsActive = true;
-            this.DoUseHtmlPlayer = true;
-            this.PlayerTrackLimit = 50;
-            this.Timeformat = "YYYY-MM-DD HH:mm:ss";
-            this.Timezone = "US/Central";
-            this.IsPrivate = false;
-            this.RecentlyPlayedLimit = 20;
-            this.RandomReleaseLimit = 20;
+            RoadieId = Guid.NewGuid();
+            Status = Statuses.Ok;
+            CreatedDate = DateTime.UtcNow;
+            IsLocked = false;
+            IsActive = true;
+            DoUseHtmlPlayer = true;
+            PlayerTrackLimit = 50;
+            Timeformat = "YYYY-MM-DD HH:mm:ss";
+            Timezone = "US/Central";
+            IsPrivate = false;
+            RecentlyPlayedLimit = 20;
+            RandomReleaseLimit = 20;
 
-          //  Collections = new HashSet<Collection>();
+            //  Collections = new HashSet<Collection>();
             Playlists = new HashSet<Playlist>();
             UserRoles = new HashSet<ApplicationUserRole>();
             Requests = new HashSet<Request>();
@@ -79,7 +38,26 @@ namespace Roadie.Library.Identity
             ReleaseRatings = new HashSet<UserRelease>();
             TrackRatings = new HashSet<UserTrack>();
             Comments = new HashSet<Comment>();
+        }
 
+        public static string CacheRegionUrn(Guid Id)
+        {
+            return string.Format("urn:user:{0}", Id);
+        }
+
+        public static string CacheUrn(Guid Id)
+        {
+            return $"urn:user_by_id:{Id}";
+        }
+
+        public static string CacheUrnByUsername(string Username)
+        {
+            return $"urn:user_by_username:{Username}";
+        }
+
+        public override string ToString()
+        {
+            return $"Id [{Id}], Username [{UserName}]";
         }
     }
 }

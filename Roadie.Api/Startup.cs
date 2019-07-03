@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Roadie.Api.Hubs;
 using Roadie.Api.ModelBinding;
 using Roadie.Api.Services;
@@ -22,11 +23,11 @@ using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
-using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.Scrobble;
 using Roadie.Library.Utility;
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Roadie.Api
 {
@@ -39,17 +40,17 @@ namespace Roadie.Api
 
         public Startup(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
-            this._configuration = configuration;
-            this._loggerFactory = loggerFactory;
+            _configuration = configuration;
+            _loggerFactory = loggerFactory;
 
-            this.Logger = this._loggerFactory.CreateLogger<Startup>();
+            Logger = _loggerFactory.CreateLogger<Startup>();
 
-            TypeAdapterConfig<Roadie.Library.Data.Image, Roadie.Library.Models.Image>
+            TypeAdapterConfig<Image, Library.Models.Image>
                 .NewConfig()
                 .Map(i => i.ArtistId,
-                     src => src.Artist == null ? null : (Guid?)src.Artist.RoadieId)
+                    src => src.Artist == null ? null : (Guid?)src.Artist.RoadieId)
                 .Map(i => i.ReleaseId,
-                     src => src.Release == null ? null : (Guid?)src.Release.RoadieId)
+                    src => src.Release == null ? null : (Guid?)src.Release.RoadieId)
                 .Compile();
 
             TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
@@ -58,10 +59,7 @@ namespace Roadie.Api
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, ILoggerFactory loggerFactory, IHostingEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
+            if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
 
             app.UseCors("CORSPolicy");
 
@@ -90,32 +88,33 @@ namespace Roadie.Api
             services.AddSingleton<IHttpEncoder, HttpEncoder>();
             services.AddSingleton<IEmailSender, EmailSenderService>();
 
-            var cacheManager = new DictionaryCacheManager(this._loggerFactory.CreateLogger<DictionaryCacheManager>(), new CachePolicy(TimeSpan.FromHours(4)));
+            var cacheManager = new DictionaryCacheManager(_loggerFactory.CreateLogger<DictionaryCacheManager>(),
+                new CachePolicy(TimeSpan.FromHours(4)));
             services.AddSingleton<ICacheManager>(cacheManager);
 
             services.AddDbContextPool<ApplicationUserDbContext>(
-                options => options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection"),
-                mySqlOptions =>
-                {
-                    mySqlOptions.ServerVersion(new Version(5, 5), Pomelo.EntityFrameworkCore.MySql.Infrastructure.ServerType.MariaDb);
-                    mySqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 10,
-                        maxRetryDelay: TimeSpan.FromSeconds(30),
-                        errorNumbersToAdd: null);
-                }
-            ));
+                options => options.UseMySql(_configuration.GetConnectionString("RoadieDatabaseConnection"),
+                    mySqlOptions =>
+                    {
+                        mySqlOptions.ServerVersion(new Version(5, 5), ServerType.MariaDb);
+                        mySqlOptions.EnableRetryOnFailure(
+                            10,
+                            TimeSpan.FromSeconds(30),
+                            null);
+                    }
+                ));
 
             services.AddDbContextPool<IRoadieDbContext, RoadieDbContext>(
-                options => options.UseMySql(this._configuration.GetConnectionString("RoadieDatabaseConnection"),
-                mySqlOptions =>
-                {
-                    mySqlOptions.ServerVersion(new Version(5, 5), Pomelo.EntityFrameworkCore.MySql.Infrastructure.ServerType.MariaDb);
-                    mySqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 10,
-                        maxRetryDelay: TimeSpan.FromSeconds(30),
-                        errorNumbersToAdd: null);
-                }
-            ));
+                options => options.UseMySql(_configuration.GetConnectionString("RoadieDatabaseConnection"),
+                    mySqlOptions =>
+                    {
+                        mySqlOptions.ServerVersion(new Version(5, 5), ServerType.MariaDb);
+                        mySqlOptions.EnableRetryOnFailure(
+                            10,
+                            TimeSpan.FromSeconds(30),
+                            null);
+                    }
+                ));
 
             services.AddIdentity<ApplicationUser, ApplicationRole>()
                 .AddRoles<ApplicationRole>()
@@ -128,17 +127,17 @@ namespace Roadie.Api
                 options.AddPolicy("Editor", policy => policy.RequireRole("Admin", "Editor"));
             });
 
-            services.Configure<IConfiguration>(this._configuration);
-            var corsOrigins = (this._configuration["CORSOrigins"] ?? "http://localhost:8080").Split('|');
-            this.Logger.LogDebug("Setting Up CORS Policy [{0}]", string.Join(", ", corsOrigins));
+            services.Configure<IConfiguration>(_configuration);
+            var corsOrigins = (_configuration["CORSOrigins"] ?? "http://localhost:8080").Split('|');
+            Logger.LogDebug("Setting Up CORS Policy [{0}]", string.Join(", ", corsOrigins));
 
             services.AddCors(options => options.AddPolicy("CORSPolicy", builder =>
             {
                 builder
-                .WithOrigins(corsOrigins)
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
+                    .WithOrigins(corsOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
             }));
 
             services.AddSingleton<IRoadieSettings, RoadieSettings>(ctx =>
@@ -148,14 +147,13 @@ namespace Roadie.Api
                 configuration.GetSection("RoadieSettings").Bind(settings);
                 var hostingEnvironment = ctx.GetService<IHostingEnvironment>();
                 settings.ContentPath = hostingEnvironment.WebRootPath;
-                settings.ConnectionString = this._configuration.GetConnectionString("RoadieDatabaseConnection");
+                settings.ConnectionString = _configuration.GetConnectionString("RoadieDatabaseConnection");
 
                 // This is so 'User Secrets' can be used in Debugging
-                var integrationKeys = this._configuration.GetSection("IntegrationKeys")
-                                                         .Get<IntegrationKey>();
+                var integrationKeys = _configuration.GetSection("IntegrationKeys")
+                    .Get<IntegrationKey>();
                 if (integrationKeys != null)
-                {
-                    settings.Integrations.ApiKeys = new System.Collections.Generic.List<ApiKey>
+                    settings.Integrations.ApiKeys = new List<ApiKey>
                     {
                         new ApiKey
                         {
@@ -175,7 +173,6 @@ namespace Roadie.Api
                             Key = integrationKeys.BingImageSearch
                         }
                     };
-                }
                 return settings;
             });
 
@@ -200,7 +197,7 @@ namespace Roadie.Api
             services.AddScoped<ILookupService, LookupService>();
             services.AddScoped<ICommentService, CommentService>();
 
-            var securityKey = new SymmetricSecurityKey(System.Text.Encoding.Default.GetBytes(this._configuration["Tokens:PrivateKey"]));
+            var securityKey = new SymmetricSecurityKey(Encoding.Default.GetBytes(_configuration["Tokens:PrivateKey"]));
 
             services.AddAuthentication(options =>
             {
@@ -210,14 +207,14 @@ namespace Roadie.Api
             {
                 config.RequireHttpsMetadata = false;
                 config.SaveToken = true;
-                config.TokenValidationParameters = new TokenValidationParameters()
+                config.TokenValidationParameters = new TokenValidationParameters
                 {
                     IssuerSigningKey = securityKey,
 
                     ValidateAudience = true,
-                    ValidAudience = this._configuration["Tokens:Audience"],
+                    ValidAudience = _configuration["Tokens:Audience"],
                     ValidateIssuer = true,
-                    ValidIssuer = this._configuration["Tokens:Issuer"],
+                    ValidIssuer = _configuration["Tokens:Issuer"],
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true
                 };
@@ -235,17 +232,17 @@ namespace Roadie.Api
             services.AddSignalR();
 
             services.AddMvc(options =>
-            {
-                options.RespectBrowserAcceptHeader = true; // false by default
-                options.ModelBinderProviders.Insert(0, new SubsonicRequestBinderProvider());
-            })
-            .AddJsonOptions(options =>
-            {
-                options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
-                options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-            })
-            .AddXmlSerializerFormatters()
-            .SetCompatibilityVersion(CompatibilityVersion.Latest);
+                {
+                    options.RespectBrowserAcceptHeader = true; // false by default
+                    options.ModelBinderProviders.Insert(0, new SubsonicRequestBinderProvider());
+                })
+                .AddJsonOptions(options =>
+                {
+                    options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
+                    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                })
+                .AddXmlSerializerFormatters()
+                .SetCompatibilityVersion(CompatibilityVersion.Latest);
 
             services.Configure<IdentityOptions>(options =>
             {
@@ -261,8 +258,8 @@ namespace Roadie.Api
             services.AddScoped<IHttpContext>(factory =>
             {
                 var actionContext = factory.GetService<IActionContextAccessor>()
-                                           .ActionContext;
-                
+                    .ActionContext;
+
                 return new HttpContext(factory.GetService<IRoadieSettings>(), new UrlHelper(actionContext));
             });
         }

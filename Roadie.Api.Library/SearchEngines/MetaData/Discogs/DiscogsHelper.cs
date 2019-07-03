@@ -16,26 +16,23 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
 {
     public class DiscogsHelper : MetaDataProviderBase, IArtistSearchEngine, IReleaseSearchEngine, ILabelSearchEngine
     {
-        public override bool IsEnabled
+        public override bool IsEnabled => Configuration.Integrations.DiscogsProviderEnabled;
+
+        public DiscogsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger) : base(
+                    configuration, cacheManager, logger)
         {
-            get
-            {
-                return this.Configuration.Integrations.DiscogsProviderEnabled;
-            }
+            _apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey") ??
+                      new ApiKey();
         }
 
-        public DiscogsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger) : base(configuration, cacheManager, logger)
-        {
-            this._apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey") ?? new ApiKey();
-        }
-
-        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
+        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query,
+            int resultsCount)
         {
             ArtistSearchResult data = null;
             try
             {
-                this.Logger.LogTrace("DiscogsHelper:PerformArtistSearch:{0}", query);
-                var request = this.BuildSearchRequest(query, 1, "artist");
+                Logger.LogTrace("DiscogsHelper:PerformArtistSearch:{0}", query);
+                var request = BuildSearchRequest(query, 1, "artist");
 
                 var client = new RestClient("https://api.discogs.com/database");
                 client.UserAgent = WebHelper.UserAgent;
@@ -45,19 +42,21 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 if (response.ResponseStatus == ResponseStatus.Error)
                 {
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
-                    {
                         throw new AuthenticationException("Unauthorized");
-                    }
-                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
+                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.",
+                        response.ErrorMessage, response.Content));
                 }
-                Result responseData = response.Data.results != null && response.Data.results.Any() ? response.Data.results.First() : null;
+
+                var responseData = response.Data.results != null && response.Data.results.Any()
+                    ? response.Data.results.First()
+                    : null;
                 if (responseData != null)
                 {
-                    request = this.BuildArtistRequest(responseData.id);
+                    request = BuildArtistRequest(responseData.id);
                     var c2 = new RestClient("https://api.discogs.com/");
                     c2.UserAgent = WebHelper.UserAgent;
                     var artistResponse = await c2.ExecuteTaskAsync<DiscogArtistResponse>(request);
-                    DiscogArtistResponse artist = artistResponse.Data;
+                    var artist = artistResponse.Data;
                     if (artist != null)
                     {
                         var urls = new List<string>();
@@ -65,27 +64,17 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         var alternateNames = new List<string>();
                         string artistThumbnailUrl = null;
                         urls.Add(artist.uri);
-                        if (artist.urls != null)
-                        {
-                            urls.AddRange(artist.urls);
-                        }
+                        if (artist.urls != null) urls.AddRange(artist.urls);
                         if (artist.images != null)
                         {
                             images.AddRange(artist.images.Where(x => x.type != "primary").Select(x => x.uri));
                             var primaryImage = artist.images.FirstOrDefault(x => x.type == "primary");
-                            if (primaryImage != null)
-                            {
-                                artistThumbnailUrl = primaryImage.uri;
-                            }
+                            if (primaryImage != null) artistThumbnailUrl = primaryImage.uri;
                             if (string.IsNullOrEmpty(artistThumbnailUrl))
-                            {
                                 artistThumbnailUrl = artist.images.First(x => !string.IsNullOrEmpty(x.uri)).uri;
-                            }
                         }
-                        if (artist.namevariations != null)
-                        {
-                            alternateNames.AddRange(artist.namevariations.Distinct());
-                        }
+
+                        if (artist.namevariations != null) alternateNames.AddRange(artist.namevariations.Distinct());
                         data = new ArtistSearchResult
                         {
                             ArtistName = artist.name,
@@ -102,21 +91,23 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return new OperationResult<IEnumerable<ArtistSearchResult>>
             {
                 IsSuccess = data != null,
-                Data = new ArtistSearchResult[] { data }
+                Data = new[] { data }
             };
         }
 
-        public async Task<OperationResult<IEnumerable<LabelSearchResult>>> PerformLabelSearch(string labelName, int resultsCount)
+        public async Task<OperationResult<IEnumerable<LabelSearchResult>>> PerformLabelSearch(string labelName,
+            int resultsCount)
         {
             LabelSearchResult data = null;
             try
             {
-                var request = this.BuildSearchRequest(labelName, 1, "label");
+                var request = BuildSearchRequest(labelName, 1, "label");
 
                 var client = new RestClient("https://api.discogs.com/database");
                 client.UserAgent = WebHelper.UserAgent;
@@ -126,19 +117,21 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 if (response.ResponseStatus == ResponseStatus.Error)
                 {
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
-                    {
                         throw new AuthenticationException("Unauthorized");
-                    }
-                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
+                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.",
+                        response.ErrorMessage, response.Content));
                 }
-                Result responseData = response.Data.results != null && response.Data.results.Any() ? response.Data.results.First() : null;
+
+                var responseData = response.Data.results != null && response.Data.results.Any()
+                    ? response.Data.results.First()
+                    : null;
                 if (responseData != null)
                 {
-                    request = this.BuildLabelRequest(responseData.id);
+                    request = BuildLabelRequest(responseData.id);
                     var c2 = new RestClient("https://api.discogs.com/");
                     c2.UserAgent = WebHelper.UserAgent;
                     var labelResponse = await c2.ExecuteTaskAsync<DiscogsLabelResult>(request);
-                    DiscogsLabelResult label = labelResponse.Data;
+                    var label = labelResponse.Data;
                     if (label != null)
                     {
                         var urls = new List<string>();
@@ -146,23 +139,16 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         var alternateNames = new List<string>();
                         string labelThumbnailUrl = null;
                         urls.Add(label.uri);
-                        if (label.urls != null)
-                        {
-                            urls.AddRange(label.urls);
-                        }
+                        if (label.urls != null) urls.AddRange(label.urls);
                         if (label.images != null)
                         {
                             images.AddRange(label.images.Where(x => x.type != "primary").Select(x => x.uri));
                             var primaryImage = label.images.FirstOrDefault(x => x.type == "primary");
-                            if (primaryImage != null)
-                            {
-                                labelThumbnailUrl = primaryImage.uri;
-                            }
+                            if (primaryImage != null) labelThumbnailUrl = primaryImage.uri;
                             if (string.IsNullOrEmpty(labelThumbnailUrl))
-                            {
                                 labelThumbnailUrl = label.images.First(x => !string.IsNullOrEmpty(x.uri)).uri;
-                            }
                         }
+
                         data = new LabelSearchResult
                         {
                             LabelName = label.name,
@@ -178,27 +164,29 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return new OperationResult<IEnumerable<LabelSearchResult>>
             {
                 IsSuccess = data != null,
-                Data = new LabelSearchResult[] { data }
+                Data = new[] { data }
             };
         }
 
-        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
+        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName,
+            string query, int resultsCount)
         {
             ReleaseSearchResult data = null;
             try
             {
-                var request = this.BuildSearchRequest(query, 10, "release", artistName);
+                var request = BuildSearchRequest(query, 10, "release", artistName);
 
                 var client = new RestClient("https://api.discogs.com/database")
                 {
                     UserAgent = WebHelper.UserAgent,
-                    ReadWriteTimeout = (int)this.Configuration.Integrations.DiscogsReadWriteTimeout,
-                    Timeout = (int)this.Configuration.Integrations.DiscogsTimeout
+                    ReadWriteTimeout = (int)Configuration.Integrations.DiscogsReadWriteTimeout,
+                    Timeout = (int)Configuration.Integrations.DiscogsTimeout
                 };
 
                 var response = await client.ExecuteTaskAsync<DiscogsReleaseSearchResult>(request);
@@ -206,15 +194,17 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 if (response.ResponseStatus == ResponseStatus.Error)
                 {
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
-                    {
                         throw new AuthenticationException("Unauthorized");
-                    }
-                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
+                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.",
+                        response.ErrorMessage, response.Content));
                 }
-                var responseData = response.Data != null && response.Data.results.Any() ? response.Data.results.OrderBy(x => x.year).First() : null;
+
+                var responseData = response.Data != null && response.Data.results.Any()
+                    ? response.Data.results.OrderBy(x => x.year).First()
+                    : null;
                 if (responseData != null)
                 {
-                    request = this.BuildReleaseRequest(responseData.id);
+                    request = BuildReleaseRequest(responseData.id);
                     var c2 = new RestClient("https://api.discogs.com/");
                     c2.UserAgent = WebHelper.UserAgent;
                     var releaseResult = await c2.ExecuteTaskAsync<DiscogReleaseDetail>(request);
@@ -229,15 +219,11 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         {
                             images.AddRange(release.images.Where(x => x.type != "primary").Select(x => x.uri));
                             var primaryImage = release.images.FirstOrDefault(x => x.type == "primary");
-                            if (primaryImage != null)
-                            {
-                                releaseThumbnailUrl = primaryImage.uri;
-                            }
+                            if (primaryImage != null) releaseThumbnailUrl = primaryImage.uri;
                             if (string.IsNullOrEmpty(releaseThumbnailUrl))
-                            {
                                 releaseThumbnailUrl = release.images.First(x => !string.IsNullOrEmpty(x.uri)).uri;
-                            }
                         }
+
                         data = new ReleaseSearchResult
                         {
                             DiscogsId = release.id.ToString(),
@@ -248,12 +234,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                             Urls = urls,
                             ImageUrls = images
                         };
-                        if (release.genres != null)
-                        {
-                            data.ReleaseGenres = release.genres.ToList();
-                        }
+                        if (release.genres != null) data.ReleaseGenres = release.genres.ToList();
                         if (release.labels != null)
-                        {
                             data.ReleaseLabel = release.labels.Select(x => new ReleaseLabelSearchResult
                             {
                                 CatalogNumber = x.catno,
@@ -263,7 +245,6 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                                     DiscogsId = x.id.ToString()
                                 }
                             }).ToList();
-                        }
                         if (release.tracklist != null)
                         {
                             var releaseMediaCount = 1;
@@ -283,6 +264,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                                         TrackType = dTrack.type_
                                     });
                                 }
+
                                 releaseMedias.Add(new ReleaseMediaSearchResult
                                 {
                                     ReleaseMediaNumber = i,
@@ -290,27 +272,28 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                                     Tracks = releaseTracks
                                 });
                             }
+
                             data.ReleaseMedia = releaseMedias;
                         }
+
                         if (release.identifiers != null)
                         {
                             var barcode = release.identifiers.FirstOrDefault(x => x.type == "Barcode");
                             if (barcode != null && !string.IsNullOrEmpty(barcode.value))
-                            {
-                                data.Tags = new string[] { "barcode:" + barcode.value };
-                            }
+                                data.Tags = new[] { "barcode:" + barcode.value };
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return new OperationResult<IEnumerable<ReleaseSearchResult>>
             {
                 IsSuccess = data != null,
-                Data = new ReleaseSearchResult[] { data }
+                Data = new[] { data }
             };
         }
 
@@ -326,13 +309,13 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             request.AddParameter(new Parameter
             {
                 Name = "key",
-                Value = this.ApiKey.Key,
+                Value = ApiKey.Key,
                 Type = ParameterType.GetOrPost
             });
             request.AddParameter(new Parameter
             {
                 Name = "secret",
-                Value = this.ApiKey.KeySecret,
+                Value = ApiKey.KeySecret,
                 Type = ParameterType.GetOrPost
             });
 
@@ -351,13 +334,13 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             request.AddParameter(new Parameter
             {
                 Name = "key",
-                Value = this.ApiKey.Key,
+                Value = ApiKey.Key,
                 Type = ParameterType.GetOrPost
             });
             request.AddParameter(new Parameter
             {
                 Name = "secret",
-                Value = this.ApiKey.KeySecret,
+                Value = ApiKey.KeySecret,
                 Type = ParameterType.GetOrPost
             });
 
@@ -376,13 +359,13 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             request.AddParameter(new Parameter
             {
                 Name = "key",
-                Value = this.ApiKey.Key,
+                Value = ApiKey.Key,
                 Type = ParameterType.GetOrPost
             });
             request.AddParameter(new Parameter
             {
                 Name = "secret",
-                Value = this.ApiKey.KeySecret,
+                Value = ApiKey.KeySecret,
                 Type = ParameterType.GetOrPost
             });
 
@@ -412,6 +395,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                     Type = ParameterType.GetOrPost
                 });
             }
+
             request.AddParameter(new Parameter
             {
                 Name = "type",
@@ -425,24 +409,22 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 Type = ParameterType.GetOrPost
             });
             if (!string.IsNullOrEmpty(artist))
-            {
                 request.AddParameter(new Parameter
                 {
                     Name = "artist",
                     Value = string.Format("'{0}'", artist.Trim()),
                     Type = ParameterType.GetOrPost
                 });
-            }
             request.AddParameter(new Parameter
             {
                 Name = "key",
-                Value = this.ApiKey.Key,
+                Value = ApiKey.Key,
                 Type = ParameterType.GetOrPost
             });
             request.AddParameter(new Parameter
             {
                 Name = "secret",
-                Value = this.ApiKey.KeySecret,
+                Value = ApiKey.KeySecret,
                 Type = ParameterType.GetOrPost
             });
 

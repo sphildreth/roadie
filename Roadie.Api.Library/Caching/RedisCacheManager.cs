@@ -9,62 +9,47 @@ using System.Threading.Tasks;
 namespace Roadie.Library.Caching
 {
     /// <summary>
-    /// Redis Cache implemention
+    ///     Redis Cache implemention
     /// </summary>
     /// <typeparam name="TCacheValue"></typeparam>
     public class RedisCacheManager : CacheManagerBase
     {
-        private static Lazy<ConnectionMultiplexer> lazyConnection = new Lazy<ConnectionMultiplexer>(() =>
+        private static readonly Lazy<ConnectionMultiplexer> lazyConnection = new Lazy<ConnectionMultiplexer>(() =>
         {
             return ConnectionMultiplexer.Connect("192.168.1.253:6379,allowAdmin=true");
         });
 
-        private bool _doTraceLogging = true;
-        private IDatabase _redis = null;
+        private readonly bool _doTraceLogging = true;
+        private IDatabase _redis;
 
-        public static ConnectionMultiplexer Connection
-        {
-            get
-            {
-                return lazyConnection.Value;
-            }
-        }
+        public static ConnectionMultiplexer Connection => lazyConnection.Value;
 
-        private IDatabase Redis
-        {
-            get
-            {
-                return this._redis ?? (this._redis = Connection.GetDatabase());
-            }
-        }
+        private IDatabase Redis => _redis ?? (_redis = Connection.GetDatabase());
 
         public RedisCacheManager(ILogger logger, CachePolicy defaultPolicy)
-            : base(logger, defaultPolicy)
+                            : base(logger, defaultPolicy)
         {
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value)
         {
-            return this.Add(key, value, null, this._defaultPolicy);
+            return Add(key, value, null, _defaultPolicy);
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value, string region)
         {
-            return this.Add(key, value, region, null);
+            return Add(key, value, region, null);
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value, CachePolicy policy)
         {
-            return this.Add(key, value, null, this._defaultPolicy);
+            return Add(key, value, null, _defaultPolicy);
         }
 
         public override bool Add<TCacheValue>(string key, TCacheValue value, string region, CachePolicy policy)
         {
-            if (this._doTraceLogging)
-            {
-                this.Logger.LogTrace("Added [{0}], Region [{1}]", key, region);
-            }
-            return this.Redis.StringSet(key, this.Serialize(value));
+            if (_doTraceLogging) Logger.LogTrace("Added [{0}], Region [{1}]", key, region);
+            return Redis.StringSet(key, Serialize(value));
         }
 
         public override void Clear()
@@ -72,71 +57,70 @@ namespace Roadie.Library.Caching
             var endpoints = Connection.GetEndPoints();
             var server = Connection.GetServer(endpoints[0]);
             server.FlushAllDatabases();
-            if (this._doTraceLogging)
-            {
-                this.Logger.LogTrace("Cleared Cache");
-            }
+            if (_doTraceLogging) Logger.LogTrace("Cleared Cache");
         }
 
         public override void ClearRegion(string region)
         {
-            this.Clear();
+            Clear();
         }
 
         public override bool Exists<TOut>(string key)
         {
-            return this.Exists<TOut>(key, null);
+            return Exists<TOut>(key, null);
         }
 
         public override bool Exists<TOut>(string key, string region)
         {
-            return this.Redis.KeyExists(key);
+            return Redis.KeyExists(key);
         }
 
         public override TOut Get<TOut>(string key)
         {
-            return this.Get<TOut>(key, null);
+            return Get<TOut>(key, null);
         }
 
         public override TOut Get<TOut>(string key, string region)
         {
-            return this.Get<TOut>(key, region, this._defaultPolicy);
+            return Get<TOut>(key, region, _defaultPolicy);
         }
 
         public override TOut Get<TOut>(string key, Func<TOut> getItem, string region)
         {
-            return this.Get<TOut>(key, getItem, region, this._defaultPolicy);
+            return Get(key, getItem, region, _defaultPolicy);
         }
 
         public override TOut Get<TOut>(string key, Func<TOut> getItem, string region, CachePolicy policy)
         {
-            var r = this.Get<TOut>(key, region);
+            var r = Get<TOut>(key, region);
             if (r == null)
             {
                 r = getItem();
-                this.Add(key, r, region, policy);
+                Add(key, r, region, policy);
             }
+
             return r;
+        }
+
+        public override Task<TOut> GetAsync<TOut>(string key, Func<Task<TOut>> getItem, string region)
+        {
+            throw new NotImplementedException();
         }
 
         public override bool Remove(string key)
         {
-            return this.Remove(key, null);
+            return Remove(key, null);
         }
 
         public override bool Remove(string key, string region)
         {
-            if (this.Redis.KeyExists(key))
-            {
-                this.Redis.KeyDelete(key);
-            }
+            if (Redis.KeyExists(key)) Redis.KeyDelete(key);
             return false;
         }
 
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
-            {
                 try
                 {
                     Connection.Close();
@@ -145,30 +129,23 @@ namespace Roadie.Library.Caching
                 catch
                 {
                 }
-            }
+
             // free native resources here if there are any
         }
 
         private TOut Get<TOut>(string key, string region, CachePolicy policy)
         {
-            var result = this.Deserialize<TOut>(this.Redis.StringGet(key));
+            var result = Deserialize<TOut>(Redis.StringGet(key));
             if (result == null)
             {
-                if (this._doTraceLogging)
-                {
-                    this.Logger.LogTrace("Get Cache Miss Key [{0}], Region [{1}]", key, region);
-                }
+                if (_doTraceLogging) Logger.LogTrace("Get Cache Miss Key [{0}], Region [{1}]", key, region);
             }
-            else if (this._doTraceLogging)
+            else if (_doTraceLogging)
             {
-                this.Logger.LogTrace("Get Cache Hit Key [{0}], Region [{1}]", key, region);
+                Logger.LogTrace("Get Cache Hit Key [{0}], Region [{1}]", key, region);
             }
-            return result;
-        }
 
-        public override Task<TOut> GetAsync<TOut>(string key, Func<Task<TOut>> getItem, string region)
-        {
-            throw new NotImplementedException();
+            return result;
         }
     }
 
@@ -176,13 +153,14 @@ namespace Roadie.Library.Caching
     {
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {
-            IList<JsonProperty> props = base.CreateProperties(type, memberSerialization);
+            var props = base.CreateProperties(type, memberSerialization);
             foreach (var prop in props)
             {
-                prop.Ignored = false;   // Ignore [JsonIgnore]
-                prop.Converter = null;  // Ignore [JsonConverter]
-                prop.PropertyName = prop.UnderlyingName;  // restore original property name
+                prop.Ignored = false; // Ignore [JsonIgnore]
+                prop.Converter = null; // Ignore [JsonConverter]
+                prop.PropertyName = prop.UnderlyingName; // restore original property name
             }
+
             return props;
         }
     }

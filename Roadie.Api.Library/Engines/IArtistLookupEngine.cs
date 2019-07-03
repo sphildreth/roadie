@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Roadie.Library.Data;
+﻿using Roadie.Library.Data;
 using Roadie.Library.MetaData.Audio;
-using Roadie.Library.SearchEngines.Imaging;
 using Roadie.Library.SearchEngines.MetaData;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Roadie.Library.Engines
 {
@@ -18,8 +17,11 @@ namespace Roadie.Library.Engines
         IArtistSearchEngine WikipediaArtistSearchEngine { get; }
 
         Task<OperationResult<Artist>> Add(Artist artist);
-        Task<OperationResult<Artist>> GetByName(AudioMetaData metaData, bool doFindIfNotInDatabase = false);
-        Task<OperationResult<Artist>> PerformMetaDataProvidersArtistSearch(AudioMetaData metaData);
+
         Artist DatabaseQueryForArtistName(string name, string sortName = null);
+
+        Task<OperationResult<Artist>> GetByName(AudioMetaData metaData, bool doFindIfNotInDatabase = false);
+
+        Task<OperationResult<Artist>> PerformMetaDataProvidersArtistSearch(AudioMetaData metaData);
     }
 }

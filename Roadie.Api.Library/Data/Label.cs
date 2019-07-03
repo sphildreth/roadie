@@ -8,13 +8,13 @@ namespace Roadie.Library.Data
     [Table("label")]
     public partial class Label : BeginAndEndNamedEntityBase
     {
-        [Column("discogsId")]
-        [MaxLength(50)]
-        public string DiscogsId { get; set; }
+        [Column("artistCount")] public int? ArtistCount { get; set; }
 
-        [Column("imageUrl")]
-        [MaxLength(500)]
-        public string ImageUrl { get; set; }
+        public ICollection<Comment> Comments { get; set; }
+
+        [Column("discogsId")] [MaxLength(50)] public string DiscogsId { get; set; }
+
+        [Column("imageUrl")] [MaxLength(500)] public string ImageUrl { get; set; }
 
         [Column("musicBrainzId")]
         [MaxLength(100)]
@@ -24,24 +24,17 @@ namespace Roadie.Library.Data
         [MaxLength(65535)]
         public string Profile { get; set; }
 
-        [Column("artistCount")]
-        public int? ArtistCount { get; set; } 
-
-        [Column("releaseCount")]
-        public int? ReleaseCount { get; set; } 
-
-        [Column("trackCount")]
-        public int? TrackCount { get; set; } 
+        [Column("releaseCount")] public int? ReleaseCount { get; set; }
 
         public ICollection<ReleaseLabel> ReleaseLabels { get; set; }
 
-        public ICollection<Comment> Comments { get; set; }
+        [Column("trackCount")] public int? TrackCount { get; set; }
 
         public Label()
         {
-            this.ReleaseLabels = new HashSet<ReleaseLabel>();
-            this.Comments = new HashSet<Comment>();
-            this.Status = Statuses.Ok;
+            ReleaseLabels = new HashSet<ReleaseLabel>();
+            Comments = new HashSet<Comment>();
+            Status = Statuses.Ok;
         }
     }
 }

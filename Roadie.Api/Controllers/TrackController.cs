@@ -1,18 +1,15 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
-using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using System;
 using System.Net;
 using System.Threading.Tasks;
-
 using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Controllers
@@ -25,12 +22,12 @@ namespace Roadie.Api.Controllers
     {
         private ITrackService TrackService { get; }
 
-        public TrackController(ITrackService trackService, ILoggerFactory logger, ICacheManager cacheManager, 
-                               UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+        public TrackController(ITrackService trackService, ILoggerFactory logger, ICacheManager cacheManager,
+                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            this.Logger = logger.CreateLogger("RoadieApi.Controllers.TrackController");
-            this.TrackService = trackService;
+            Logger = logger.CreateLogger("RoadieApi.Controllers.TrackController");
+            TrackService = trackService;
         }
 
         [HttpGet("{id}")]
@@ -38,31 +35,23 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await this.TrackService.ById(await this.CurrentUserModel(), id, (inc ?? models.Track.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await TrackService.ById(await CurrentUserModel(), id,
+                (inc ?? models.Track.DefaultIncludes).ToLower().Split(","));
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc, bool? doRandomize = false)
+        public async Task<IActionResult> List([FromQuery] PagedRequest request, string inc, bool? doRandomize = false)
         {
             try
             {
-                var result = await this.TrackService.List(request: request,
-                                                  doRandomize: doRandomize,
-                                                  roadieUser: await this.CurrentUserModel());
-                if (!result.IsSuccess)
-                {
-                    return StatusCode((int)HttpStatusCode.InternalServerError);
-                }
+                var result = await TrackService.List(request,
+                    doRandomize: doRandomize,
+                    roadieUser: await CurrentUserModel());
+                if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -71,8 +60,9 @@ namespace Roadie.Api.Controllers
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return StatusCode((int)HttpStatusCode.InternalServerError);
         }
 
@@ -80,21 +70,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         [Authorize(Policy = "Editor")]
-        public async Task<IActionResult> Update(Track track)
+        public async Task<IActionResult> Update(models.Track track)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-            var result = await this.TrackService.UpdateTrack(await this.CurrentUserModel(), track);
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var result = await TrackService.UpdateTrack(await CurrentUserModel(), track);
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
     }

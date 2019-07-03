@@ -6,12 +6,13 @@ namespace Roadie.Library.Configuration
     public class ImageSize : IImageSize
     {
         public short Height { get; set; }
+
         public short Width { get; set; }
 
         public ImageSize()
         {
-            this.Height = 80;
-            this.Width = 80;
+            Height = 80;
+            Width = 80;
         }
     }
 }

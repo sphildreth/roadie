@@ -10,17 +10,12 @@ namespace Roadie.Library.Inspect.Plugins.Directory
 {
     public class EnsureYearConsistent : FolderPluginBase
     {
-        public override string Description
-        {
-            get
-            {
-                return "Consistent: Ensure all MP3 files in folder have same Year (TYER)";
-            }
-        }
+        public override string Description => "Consistent: Ensure all MP3 files in folder have same Year (TYER)";
 
         public override int Order { get; } = 1;
 
-        public EnsureYearConsistent(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
+        public EnsureYearConsistent(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger,
+                            IID3TagsHelper tagsHelper)
             : base(configuration, cacheManager, logger, tagsHelper)
         {
         }
@@ -40,15 +35,15 @@ namespace Roadie.Library.Inspect.Plugins.Directory
                 foreach (var metaData in metaDatasForFilesInFolder.Where(x => x.Year != year))
                 {
                     modified++;
-                    Console.WriteLine($"╟ Setting Year to [{ year }], was [{ metaData.Year}] on file [{ metaData.FileInfo.Name}");
+                    Console.WriteLine(
+                        $"╟ Setting Year to [{year}], was [{metaData.Year}] on file [{metaData.FileInfo.Name}");
                     metaData.Year = year;
-                    if (!Configuration.Inspector.IsInReadOnlyMode)
-                    {
-                        TagsHelper.WriteTags(metaData, metaData.Filename);
-                    }
+                    if (!Configuration.Inspector.IsInReadOnlyMode) TagsHelper.WriteTags(metaData, metaData.Filename);
                 }
-                data = $"Found [{ found }] files, Modified [{ modified }] files";
+
+                data = $"Found [{found}] files, Modified [{modified}] files";
             }
+
             result.Data = data;
             result.IsSuccess = true;
             return result;

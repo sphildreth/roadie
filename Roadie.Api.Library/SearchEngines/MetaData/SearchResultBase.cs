@@ -5,7 +5,7 @@ namespace Roadie.Library.SearchEngines.MetaData
 {
     public abstract class SearchResultBase
     {
-        private string _RoadieId = null;
+        private string _RoadieId;
 
         public ICollection<string> AlternateNames { get; set; }
         public string AmgId { get; set; }
@@ -21,14 +21,8 @@ namespace Roadie.Library.SearchEngines.MetaData
 
         public string RoadieId
         {
-            get
-            {
-                return this._RoadieId ?? (this._RoadieId = Guid.NewGuid().ToString());
-            }
-            set
-            {
-                this._RoadieId = value;
-            }
+            get => _RoadieId ?? (_RoadieId = Guid.NewGuid().ToString());
+            set => _RoadieId = value;
         }
 
         public string SpotifyId { get; set; }

@@ -4,13 +4,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Roadie.Library.Data
 {
     [Table("releaseGenreTable")]
-    public partial class ReleaseGenre
+    public class ReleaseGenre
     {
         public Genre Genre { get; set; }
 
-        [Column("genreId")]
-        [Required]
-        public int? GenreId { get; set; }
+        [Column("genreId")] [Required] public int? GenreId { get; set; }
 
         [Column("id")]
         [Key]
@@ -19,8 +17,6 @@ namespace Roadie.Library.Data
 
         public Release Release { get; set; }
 
-        [Column("releaseId")]
-        [Required]
-        public int ReleaseId { get; set; }
+        [Column("releaseId")] [Required] public int ReleaseId { get; set; }
     }
 }

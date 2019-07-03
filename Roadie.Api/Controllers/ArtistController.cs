@@ -2,13 +2,11 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
-using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using System;
 using System.Net;
@@ -26,12 +24,12 @@ namespace Roadie.Api.Controllers
     {
         private IArtistService ArtistService { get; }
 
-        public ArtistController(IArtistService artistService, ILoggerFactory logger, ICacheManager cacheManager, 
-                                UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+        public ArtistController(IArtistService artistService, ILoggerFactory logger, ICacheManager cacheManager,
+                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            this.Logger = logger.CreateLogger("RoadieApi.Controllers.ArtistController");
-            this.ArtistService = artistService;
+            Logger = logger.CreateLogger("RoadieApi.Controllers.ArtistController");
+            ArtistService = artistService;
         }
 
         [HttpGet("{id}")]
@@ -40,33 +38,25 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var user = await this.CurrentUserModel();
-            var result = await this.ArtistService.ById(user, id, (inc ?? models.Artist.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var user = await CurrentUserModel();
+            var result =
+                await ArtistService.ById(user, id, (inc ?? models.Artist.DefaultIncludes).ToLower().Split(","));
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List([FromQuery]PagedRequest request, string inc, bool? doRandomize = false)
+        public async Task<IActionResult> List([FromQuery] PagedRequest request, string inc, bool? doRandomize = false)
         {
             try
             {
-                var result = await this.ArtistService.List(roadieUser: await this.CurrentUserModel(),
-                                                    request: request,
-                                                    doRandomize: doRandomize ?? false,
-                                                    onlyIncludeWithReleases: false);
-                if (!result.IsSuccess)
-                {
-                    return StatusCode((int)HttpStatusCode.InternalServerError);
-                }
+                var result = await ArtistService.List(await CurrentUserModel(),
+                    request,
+                    doRandomize ?? false,
+                    false);
+                if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -75,8 +65,9 @@ namespace Roadie.Api.Controllers
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return StatusCode((int)HttpStatusCode.InternalServerError);
         }
 
@@ -86,15 +77,10 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> MergeArtists(Guid artistToMergeId, Guid artistToMergeIntoId)
         {
-            var result = await this.ArtistService.MergeArtists(await this.CurrentUserModel(), artistToMergeId, artistToMergeIntoId);
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result =
+                await ArtistService.MergeArtists(await CurrentUserModel(), artistToMergeId, artistToMergeIntoId);
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -104,15 +90,10 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> SetArtistImageByUrl(Guid id, string imageUrl)
         {
-            var result = await this.ArtistService.SetReleaseImageByUrl(await this.CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result =
+                await ArtistService.SetReleaseImageByUrl(await CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -122,19 +103,10 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> Update(models.Artist artist)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-            var result = await this.ArtistService.UpdateArtist(await this.CurrentUserModel(), artist);
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var result = await ArtistService.UpdateArtist(await CurrentUserModel(), artist);
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -144,15 +116,9 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
         {
-            var result = await this.ArtistService.UploadArtistImage(await this.CurrentUserModel(), id, file);
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await ArtistService.UploadArtistImage(await CurrentUserModel(), id, file);
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
     }

@@ -1,14 +1,11 @@
 ﻿using Mapster;
 using Newtonsoft.Json;
 using Roadie.Library.Enums;
-using Roadie.Library.Extensions;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 
 namespace Roadie.Library.Models.Releases
 {
@@ -16,89 +13,67 @@ namespace Roadie.Library.Models.Releases
     [DebuggerDisplay("DatabaseId [{ DatabaseId }] Name [{ ReleaseName }] IsValid [{ IsValid }]")]
     public class ReleaseList : EntityInfoModelBase
     {
-        public DataToken Release { get; set; }
         public DataToken Artist { get; set; }
         public Image ArtistThumbnail { get; set; }
-        public LibraryStatus? LibraryStatus { get; set; }
-        public IEnumerable<ReleaseMediaList> Media { get; set; }
-        public short? Rating { get; set; }
-        public decimal? Rank { get; set; }
-
-        [JsonIgnore]
-        [AdaptIgnore]
-        public string ReleaseName
-        {
-            get
-            {
-                return this.Release?.Text;
-            }
-        }
-
-        public string ReleaseDate
-        {
-            get
-            {
-                return this.ReleaseDateDateTime.HasValue ? this.ReleaseDateDateTime.Value.ToUniversalTime().ToString("yyyy-MM-dd") : null;
-            }
-        }
-
-        [JsonIgnore]
-        public DateTime? ReleaseDateDateTime { get; set; }
-
-        public string ReleasePlayUrl { get; set; }
-
-        public string ReleaseYear
-        {
-            get
-            {
-                return this.ReleaseDateDateTime.HasValue ? this.ReleaseDateDateTime.Value.ToUniversalTime().ToString("yyyy") : null;
-            }
-        }
-
-        public Image Thumbnail { get; set; }
-        public int? TrackCount { get; set; }
-        public int? TrackPlayedCount { get; set; }
-        public UserRelease UserRating { get; set; }
-        public Statuses? Status { get; set; }
-        public DataToken Genre { get; set; }
-        public DateTime? LastPlayed { get; set; }
         public decimal? Duration { get; set; }
+
         public string DurationTime
         {
             get
             {
-                if(!this.Duration.HasValue)
-                {
-                    return "--:--";
-                }
-                return new TimeInfo(this.Duration.Value).ToFullFormattedString();
+                if (!Duration.HasValue) return "--:--";
+                return new TimeInfo(Duration.Value).ToFullFormattedString();
             }
         }
-        public int? MediaCount { get; set; }
+
+        public DataToken Genre { get; set; }
 
         public bool IsValid
         {
             get
             {
-                var artistName = this.Artist?.Text;
-                var releaseName = this.Release?.Text;
-                return this.Id != Guid.Empty &&
+                var artistName = Artist?.Text;
+                var releaseName = Release?.Text;
+                return Id != Guid.Empty &&
                        !string.IsNullOrEmpty(artistName) &&
                        !string.IsNullOrEmpty(releaseName);
             }
         }
 
+        public DateTime? LastPlayed { get; set; }
+        public LibraryStatus? LibraryStatus { get; set; }
+
         /// <summary>
-        /// This is populated on a request to get the list of releases for a collection.
+        ///     This is populated on a request to get the list of releases for a collection.
         /// </summary>
         public int? ListNumber { get; set; }
 
-        public ReleaseList ShallowCopy()
-        {
-            return (ReleaseList)this.MemberwiseClone();
-        }
+        public IEnumerable<ReleaseMediaList> Media { get; set; }
+        public int? MediaCount { get; set; }
+        public decimal? Rank { get; set; }
+        public short? Rating { get; set; }
+        public DataToken Release { get; set; }
 
-        public static ReleaseList FromDataRelease(Data.Release release, Data.Artist artist, string baseUrl, Image artistThumbnail, Image thumbnail)
+        public string ReleaseDate => ReleaseDateDateTime.HasValue
+            ? ReleaseDateDateTime.Value.ToUniversalTime().ToString("yyyy-MM-dd")
+            : null;
+
+        [JsonIgnore] public DateTime? ReleaseDateDateTime { get; set; }
+        [JsonIgnore] [AdaptIgnore] public string ReleaseName => Release?.Text;
+        public string ReleasePlayUrl { get; set; }
+
+        public string ReleaseYear => ReleaseDateDateTime.HasValue
+            ? ReleaseDateDateTime.Value.ToUniversalTime().ToString("yyyy")
+            : null;
+
+        public Statuses? Status { get; set; }
+        public Image Thumbnail { get; set; }
+        public int? TrackCount { get; set; }
+        public int? TrackPlayedCount { get; set; }
+        public UserRelease UserRating { get; set; }
+
+        public static ReleaseList FromDataRelease(Data.Release release, Data.Artist artist, string baseUrl,
+            Image artistThumbnail, Image thumbnail)
         {
             return new ReleaseList
             {
@@ -124,12 +99,17 @@ namespace Roadie.Library.Models.Releases
                 Rating = release.Rating,
                 Rank = release.Rank,
                 ReleaseDateDateTime = release.ReleaseDate,
-                ReleasePlayUrl = $"{ baseUrl }/play/release/{ release.RoadieId}",
+                ReleasePlayUrl = $"{baseUrl}/play/release/{release.RoadieId}",
                 Status = release.Status,
                 Thumbnail = thumbnail,
                 TrackCount = release.TrackCount,
                 TrackPlayedCount = release.PlayedCount
             };
+        }
+
+        public ReleaseList ShallowCopy()
+        {
+            return (ReleaseList)MemberwiseClone();
         }
     }
 }

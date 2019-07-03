@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.Caching
 {
-    public interface ICacheManager 
+    public interface ICacheManager
     {
         bool Add<TCacheValue>(string key, TCacheValue value);
 
@@ -25,11 +25,11 @@ namespace Roadie.Library.Caching
 
         TOut Get<TOut>(string key);
 
-        Task<TOut> GetAsync<TOut>(string key, Func<Task<TOut>> getItem, string region);
-
         TOut Get<TOut>(string key, Func<TOut> getItem, string region);
 
         TOut Get<TOut>(string key, Func<TOut> getItem, string region, CachePolicy policy);
+
+        Task<TOut> GetAsync<TOut>(string key, Func<Task<TOut>> getItem, string region);
 
         bool Remove(string key);
 

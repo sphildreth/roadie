@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
@@ -12,6 +11,7 @@ using Roadie.Library.Utility;
 using System;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Controllers
@@ -23,93 +23,78 @@ namespace Roadie.Api.Controllers
     public class PlayController : EntityControllerBase
     {
         private IPlayActivityService PlayActivityService { get; }
+
         private IReleaseService ReleaseService { get; }
+
         private ITrackService TrackService { get; }
 
-        public PlayController(ITrackService trackService, IReleaseService releaseService, IPlayActivityService playActivityService, 
-                              ILoggerFactory logger, ICacheManager cacheManager, UserManager<ApplicationUser> userManager,
-                              IRoadieSettings roadieSettings)
-                            : base(cacheManager, roadieSettings, userManager)
+        public PlayController(ITrackService trackService, IReleaseService releaseService,
+                                    IPlayActivityService playActivityService,
+            ILoggerFactory logger, ICacheManager cacheManager, UserManager<ApplicationUser> userManager,
+            IRoadieSettings roadieSettings)
+            : base(cacheManager, roadieSettings, userManager)
         {
-            this.Logger = logger.CreateLogger("RoadieApi.Controllers.PlayController");
-            this.TrackService = trackService;
-            this.PlayActivityService = playActivityService;
-            this.ReleaseService = releaseService;
+            Logger = logger.CreateLogger("RoadieApi.Controllers.PlayController");
+            TrackService = trackService;
+            PlayActivityService = playActivityService;
+            ReleaseService = releaseService;
         }
 
         [HttpGet("release/m3u/{id}.{m3u?}")]
         public async Task<FileResult> M3uForRelease(Guid id)
         {
-            var user = await this.CurrentUserModel();
-            var release = await this.ReleaseService.ById(user, id, new string[1] { "tracks" });
-            if (release == null || release.IsNotFoundResult)
-            {
-                Response.StatusCode = (int)HttpStatusCode.NotFound;
-            }
+            var user = await CurrentUserModel();
+            var release = await ReleaseService.ById(user, id, new string[1] { "tracks" });
+            if (release == null || release.IsNotFoundResult) Response.StatusCode = (int)HttpStatusCode.NotFound;
             var m3u = M3uHelper.M3uContentForTracks(release.Data.Medias.SelectMany(x => x.Tracks));
-            return File(System.Text.Encoding.Default.GetBytes(m3u), "audio/mpeg-url");
+            return File(Encoding.Default.GetBytes(m3u), "audio/mpeg-url");
         }
 
         [HttpGet("track/m3u/{id}.{m3u?}")]
         public async Task<FileResult> M3uForTrack(Guid id)
         {
-            var user = await this.CurrentUserModel();
-            var track = await this.TrackService.ById(user, id, null);
-            if (track == null || track.IsNotFoundResult)
-            {
-                Response.StatusCode = (int)HttpStatusCode.NotFound;
-            }
-            var release = await this.ReleaseService.ById(user, track.Data.Release.Id, new string[1] { "tracks" });
-            if (release == null || release.IsNotFoundResult)
-            {
-                Response.StatusCode = (int)HttpStatusCode.NotFound;
-            }
-            var m3u = M3uHelper.M3uContentForTracks(release.Data.Medias.SelectMany(x => x.Tracks).Where(x => x.Id == id));
-            return File(System.Text.Encoding.Default.GetBytes(m3u), "audio/mpeg-url");
+            var user = await CurrentUserModel();
+            var track = await TrackService.ById(user, id, null);
+            if (track == null || track.IsNotFoundResult) Response.StatusCode = (int)HttpStatusCode.NotFound;
+            var release = await ReleaseService.ById(user, track.Data.Release.Id, new string[1] { "tracks" });
+            if (release == null || release.IsNotFoundResult) Response.StatusCode = (int)HttpStatusCode.NotFound;
+            var m3u = M3uHelper.M3uContentForTracks(
+                release.Data.Medias.SelectMany(x => x.Tracks).Where(x => x.Id == id));
+            return File(Encoding.Default.GetBytes(m3u), "audio/mpeg-url");
         }
 
         /// <summary>
-        /// A scrobble is done at the end of a Track being played and is not exactly the same as a track activity (user can fetch a track and not play it in its entirety).
+        ///     A scrobble is done at the end of a Track being played and is not exactly the same as a track activity (user can
+        ///     fetch a track and not play it in its entirety).
         /// </summary>
         [HttpPost("track/scrobble/{id}/{startedPlaying}/{isRandom}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> Scrobble(Guid id, string startedPlaying, bool isRandom)
         {
-            var result = await this.PlayActivityService.Scrobble(await this.CurrentUserModel(), new ScrobbleInfo
+            var result = await PlayActivityService.Scrobble(await CurrentUserModel(), new ScrobbleInfo
             {
                 TrackId = id,
                 TimePlayed = SafeParser.ToDateTime(startedPlaying) ?? DateTime.UtcNow,
                 IsRandomizedScrobble = isRandom
-            }); 
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            });
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
         /// <summary>
-        /// This was done to use a URL based token as many clients don't support adding Auth Bearer tokens to audio requests.
+        ///     This was done to use a URL based token as many clients don't support adding Auth Bearer tokens to audio requests.
         /// </summary>
         [HttpGet("track/{userId}/{trackPlayToken}/{id}.{mp3?}")]
         [AllowAnonymous]
         public async Task<IActionResult> StreamTrack(int userId, string trackPlayToken, Guid id)
         {
-            var user = this.UserManager.Users.FirstOrDefault(x => x.Id == userId);
-            if (user == null)
-            {
-                return StatusCode((int)HttpStatusCode.Unauthorized);
-            }
+            var user = UserManager.Users.FirstOrDefault(x => x.Id == userId);
+            if (user == null) return StatusCode((int)HttpStatusCode.Unauthorized);
             if (!ServiceBase.ConfirmTrackPlayToken(user, id, trackPlayToken))
-            {
                 return StatusCode((int)HttpStatusCode.Unauthorized);
-            }
-            return await base.StreamTrack(id, this.TrackService, this.PlayActivityService, this.UserModelForUser(user));
+            return await base.StreamTrack(id, TrackService, PlayActivityService, UserModelForUser(user));
         }
     }
 }

@@ -12,41 +12,27 @@ namespace Roadie.Library.Data
         [MaxLength(65535)]
         public string AlternateNames { get; set; }
 
-        [Column("amgId")]
-        [MaxLength(50)]
-        public string AmgId { get; set; }
+        [Column("amgId")] [MaxLength(50)] public string AmgId { get; set; }
 
-        [Column("artistId")]
-        public int? ArtistId { get; set; }
+        [Column("artistId")] public int? ArtistId { get; set; }
 
-        [Column("duration")]
-        public int? Duration { get; set; }
+        public ICollection<Comment> Comments { get; set; }
 
-        [Column("fileName")]
-        [MaxLength(500)]
-        public string FileName { get; set; }
+        [Column("duration")] public int? Duration { get; set; }
 
-        [Column("filePath")]
-        [MaxLength(1000)]
-        public string FilePath { get; set; }
+        [Column("fileName")] [MaxLength(500)] public string FileName { get; set; }
 
-        [Column("fileSize")]
-        public int? FileSize { get; set; }
+        [Column("filePath")] [MaxLength(1000)] public string FilePath { get; set; }
 
-        [Column("hash")]
-        [MaxLength(32)]
-        public string Hash { get; set; }
+        [Column("fileSize")] public int? FileSize { get; set; }
 
-        [Column("isrc")]
-        [MaxLength(15)]
-        public string ISRC { get; set; }
+        [Column("hash")] [MaxLength(32)] public string Hash { get; set; }
 
-        [Column("lastFMId")]
-        [MaxLength(50)]
-        public string LastFMId { get; set; }
+        [Column("isrc")] [MaxLength(15)] public string ISRC { get; set; }
 
-        [Column("lastPlayed")]
-        public DateTime? LastPlayed { get; set; }
+        [Column("lastFMId")] [MaxLength(50)] public string LastFMId { get; set; }
+
+        [Column("lastPlayed")] public DateTime? LastPlayed { get; set; }
 
         [Column("musicBrainzId")]
         [MaxLength(100)]
@@ -56,20 +42,15 @@ namespace Roadie.Library.Data
         [MaxLength(65535)]
         public string PartTitles { get; set; }
 
-        [Column("playedCount")]
-        public int? PlayedCount { get; set; }
+        [Column("playedCount")] public int? PlayedCount { get; set; }
 
-        [Column("rating")]
-        public short Rating { get; set; }
+        [Column("rating")] public short Rating { get; set; }
 
         public ReleaseMedia ReleaseMedia { get; set; }
 
-        [Column("releaseMediaId")]
-        public int ReleaseMediaId { get; set; }
+        [Column("releaseMediaId")] public int ReleaseMediaId { get; set; }
 
-        [Column("spotifyId")]
-        [MaxLength(100)]
-        public string SpotifyId { get; set; }
+        [Column("spotifyId")] [MaxLength(100)] public string SpotifyId { get; set; }
 
         [Column("tags", TypeName = "text")]
         [MaxLength(65535)]
@@ -83,16 +64,12 @@ namespace Roadie.Library.Data
         [Required]
         public string Title { get; set; }
 
-        [Column("trackNumber")]
-        [Required]
-        public short TrackNumber { get; set; }
-
-        public ICollection<Comment> Comments { get; set; }
+        [Column("trackNumber")] [Required] public short TrackNumber { get; set; }
 
         public Track()
         {
-            this.Comments = new HashSet<Comment>();
-            this.Rating = 0;
+            Comments = new HashSet<Comment>();
+            Rating = 0;
         }
     }
 }

@@ -8,40 +8,68 @@ namespace Roadie.Library.Data
     public class RoadieDbContext : DbContext, IRoadieDbContext
     {
         public DbSet<ArtistAssociation> ArtistAssociations { get; set; }
-        public DbSet<ArtistSimilar> ArtistSimilar { get; set; }
+
         public DbSet<ArtistGenre> ArtistGenres { get; set; }
+
         public DbSet<Artist> Artists { get; set; }
+
+        public DbSet<ArtistSimilar> ArtistSimilar { get; set; }
+
         public DbSet<Bookmark> Bookmarks { get; set; }
+
         public DbSet<ChatMessage> ChatMessages { get; set; }
-        public DbSet<Comment> Comments { get; set; }
+
         public DbSet<CollectionMissing> CollectionMissings { get; set; }
-        public DbSet<CommentReaction> CommentReactions { get; set; }
+
         public DbSet<CollectionRelease> CollectionReleases { get; set; }
+
         public DbSet<Collection> Collections { get; set; }
+
+        public DbSet<CommentReaction> CommentReactions { get; set; }
+
+        public DbSet<Comment> Comments { get; set; }
+
         public DbSet<Genre> Genres { get; set; }
+
         public DbSet<Image> Images { get; set; }
+
         public DbSet<Label> Labels { get; set; }
+
         public DbSet<Playlist> Playlists { get; set; }
+
         public DbSet<PlaylistTrack> PlaylistTracks { get; set; }
+
         public DbSet<ReleaseGenre> ReleaseGenres { get; set; }
+
         public DbSet<ReleaseLabel> ReleaseLabels { get; set; }
+
         public DbSet<ReleaseMedia> ReleaseMedias { get; set; }
+
         public DbSet<Release> Releases { get; set; }
+
         public DbSet<Request> Requests { get; set; }
+
         public DbSet<ScanHistory> ScanHistories { get; set; }
+
         public DbSet<Submission> Submissions { get; set; }
+
         public DbSet<Track> Tracks { get; set; }
+
         public DbSet<UserArtist> UserArtists { get; set; }
+
         public DbSet<UserQue> UserQues { get; set; }
+
         public DbSet<UserRelease> UserReleases { get; set; }
+
         public DbSet<ApplicationRole> UserRoles { get; set; }
+
         public DbSet<ApplicationUser> Users { get; set; }
+
         public DbSet<UserTrack> UserTracks { get; set; }
 
         public RoadieDbContext(DbContextOptions<RoadieDbContext> options)
-            : base(options)
+                                                                                                                                                                                                                                                            : base(options)
         {
-            
         }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -56,7 +84,6 @@ namespace Roadie.Library.Data
             //        v => string.IsNullOrEmpty(v) ? Statuses.Ok : (Statuses)Enum.Parse(typeof(Statuses), v))
             //    .HasDefaultValue(Statuses.Ok);
 
-
             //builder
             //    .Entity<Artist>()
             //    .Property(e => e.Status)
@@ -70,7 +97,9 @@ namespace Roadie.Library.Data
                 .Property(e => e.ReleaseType)
                 .HasConversion(
                     v => v.ToString(),
-                    v => string.IsNullOrEmpty(v) ? ReleaseType.Unknown : (ReleaseType)Enum.Parse(typeof(ReleaseType), v))
+                    v => string.IsNullOrEmpty(v)
+                        ? ReleaseType.Unknown
+                        : (ReleaseType)Enum.Parse(typeof(ReleaseType), v))
                 .HasDefaultValue(ReleaseType.Release);
 
             builder
@@ -78,7 +107,9 @@ namespace Roadie.Library.Data
                 .Property(e => e.LibraryStatus)
                 .HasConversion(
                     v => v.ToString(),
-                    v => string.IsNullOrEmpty(v) ? LibraryStatus.Incomplete : (LibraryStatus)Enum.Parse(typeof(LibraryStatus), v))
+                    v => string.IsNullOrEmpty(v)
+                        ? LibraryStatus.Incomplete
+                        : (LibraryStatus)Enum.Parse(typeof(LibraryStatus), v))
                 .HasDefaultValue(LibraryStatus.Incomplete);
 
             builder
@@ -86,7 +117,9 @@ namespace Roadie.Library.Data
                 .Property(e => e.CollectionType)
                 .HasConversion(
                     v => v.ToString(),
-                    v => string.IsNullOrEmpty(v) ? CollectionType.Unknown : (CollectionType)Enum.Parse(typeof(CollectionType), v))
+                    v => string.IsNullOrEmpty(v)
+                        ? CollectionType.Unknown
+                        : (CollectionType)Enum.Parse(typeof(CollectionType), v))
                 .HasDefaultValue(CollectionType.Unknown);
 
             builder

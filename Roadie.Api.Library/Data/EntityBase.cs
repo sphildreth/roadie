@@ -1,5 +1,4 @@
-﻿using Mapster;
-using Roadie.Library.Enums;
+﻿using Roadie.Library.Enums;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -8,9 +7,7 @@ namespace Roadie.Library.Data
 {
     public abstract class EntityBase
     {
-        [Column("createdDate")]
-        [Required]
-        public DateTime CreatedDate { get; set; }
+        [Column("createdDate")] [Required] public DateTime CreatedDate { get; set; }
 
         [Column("id")]
         [Key]
@@ -19,23 +16,18 @@ namespace Roadie.Library.Data
 
         public bool? IsLocked { get; set; }
 
-        [Column("lastUpdated")]
-        public DateTime? LastUpdated { get; set; }
+        [Column("lastUpdated")] public DateTime? LastUpdated { get; set; }
 
-        [Column("RoadieId")]
-        [Required]
-        public Guid RoadieId { get; set; }
+        [Column("RoadieId")] [Required] public Guid RoadieId { get; set; }
 
-        
-        [Column("status")]
-        public Statuses? Status { get; set; }
+        [Column("status")] public Statuses? Status { get; set; }
 
         public EntityBase()
         {
-            this.RoadieId = Guid.NewGuid();
-            this.Status = Statuses.Incomplete;
-            this.CreatedDate = DateTime.UtcNow;
-            this.IsLocked = false;
+            RoadieId = Guid.NewGuid();
+            Status = Statuses.Incomplete;
+            CreatedDate = DateTime.UtcNow;
+            IsLocked = false;
         }
     }
 }

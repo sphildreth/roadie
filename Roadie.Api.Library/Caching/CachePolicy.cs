@@ -4,20 +4,17 @@ namespace Roadie.Library.Caching
 {
     public sealed class CachePolicy
     {
-        private readonly TimeSpan expiresAfter;
-        private readonly bool renewLeaseOnAccess;
-
-        public TimeSpan ExpiresAfter { get { return this.expiresAfter; } }
+        public TimeSpan ExpiresAfter { get; }
 
         /// <summary>
-        /// If specified, each read of the item from the cache will reset the expiration time
+        ///     If specified, each read of the item from the cache will reset the expiration time
         /// </summary>
-        public bool RenewLeaseOnAccess { get { return this.renewLeaseOnAccess; } }
+        public bool RenewLeaseOnAccess { get; }
 
         public CachePolicy(TimeSpan expiresAfter, bool renewLeaseOnAccess = false)
         {
-            this.expiresAfter = expiresAfter;
-            this.renewLeaseOnAccess = renewLeaseOnAccess;
+            ExpiresAfter = expiresAfter;
+            RenewLeaseOnAccess = renewLeaseOnAccess;
         }
     }
 }

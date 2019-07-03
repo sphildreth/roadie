@@ -10,17 +10,13 @@ namespace Roadie.Library.Inspect.Plugins.Directory
 {
     public class EnsureReleaseConsistent : FolderPluginBase
     {
-        public override string Description
-        {
-            get
-            {
-                return "Consistent: Ensure all MP3 files in folder have same Release Title (TALB)";
-            }
-        }
+        public override string Description =>
+            "Consistent: Ensure all MP3 files in folder have same Release Title (TALB)";
 
         public override int Order { get; } = 1;
 
-        public EnsureReleaseConsistent(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
+        public EnsureReleaseConsistent(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger,
+                            IID3TagsHelper tagsHelper)
             : base(configuration, cacheManager, logger, tagsHelper)
         {
         }
@@ -40,15 +36,15 @@ namespace Roadie.Library.Inspect.Plugins.Directory
                 foreach (var metaData in metaDatasForFilesInFolder.Where(x => x.Release != release))
                 {
                     modified++;
-                    Console.WriteLine($"╟ Setting Release to [{ release }], was [{ metaData.Release }] on file [{ metaData.FileInfo.Name}");
+                    Console.WriteLine(
+                        $"╟ Setting Release to [{release}], was [{metaData.Release}] on file [{metaData.FileInfo.Name}");
                     metaData.Release = release;
-                    if (!Configuration.Inspector.IsInReadOnlyMode)
-                    {
-                        TagsHelper.WriteTags(metaData, metaData.Filename);
-                    }
+                    if (!Configuration.Inspector.IsInReadOnlyMode) TagsHelper.WriteTags(metaData, metaData.Filename);
                 }
-                data = $"Found [{ found }] files, Modified [{ modified }] files";
+
+                data = $"Found [{found}] files, Modified [{modified}] files";
             }
+
             result.Data = data;
             result.IsSuccess = true;
             return result;

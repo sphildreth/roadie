@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
@@ -23,42 +22,34 @@ namespace Roadie.Api.Controllers
     {
         private IPlayActivityService PlayActivityService { get; }
 
-        public PlayActivityController(IPlayActivityService playActivityService, ILoggerFactory logger, ICacheManager cacheManager, 
-                                      UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+        public PlayActivityController(IPlayActivityService playActivityService, ILoggerFactory logger,
+                    ICacheManager cacheManager,
+            UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            this.Logger = logger.CreateLogger("RoadieApi.Controllers.PlayActivityController");
-            this.PlayActivityService = playActivityService;
+            Logger = logger.CreateLogger("RoadieApi.Controllers.PlayActivityController");
+            PlayActivityService = playActivityService;
         }
 
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> PlayActivity([FromQuery]PagedRequest request)
+        public async Task<IActionResult> PlayActivity([FromQuery] PagedRequest request)
         {
-            var result = await this.PlayActivityService.List(request);
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await PlayActivityService.List(request);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
         [HttpGet("{userId}")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> PlayActivity([FromQuery]PagedRequest request, Guid userId)
+        public async Task<IActionResult> PlayActivity([FromQuery] PagedRequest request, Guid userId)
         {
-            var user = this.UserManager.Users.FirstOrDefault(x => x.RoadieId == userId);
-            if (user == null)
-            {
-                return NotFound();
-            }
-            var result = await this.PlayActivityService.List(request,
-                                                            roadieUser: this.UserModelForUser(user));
+            var user = UserManager.Users.FirstOrDefault(x => x.RoadieId == userId);
+            if (user == null) return NotFound();
+            var result = await PlayActivityService.List(request,
+                UserModelForUser(user));
 
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
     }

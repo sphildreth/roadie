@@ -12,81 +12,65 @@ namespace Roadie.Library.Models
 {
     public abstract class EntityModelBase
     {
+        private IEnumerable<string> _alternateNamesList;
+
+        private IEnumerable<string> _tagsList;
+
+        private IEnumerable<string> _urlsList;
+
         [MaxLength(65535)]
         [JsonIgnore]
         [IgnoreDataMember]
         public string AlternateNames { get; set; }
 
-        private IEnumerable<string> _alternateNamesList = null;
         public IEnumerable<string> AlternateNamesList
         {
             get
             {
-                if (this._alternateNamesList == null)
-                {
-                    if (!string.IsNullOrEmpty(this.AlternateNames))
-                    {
-                        this._alternateNamesList = this.AlternateNames.Split('|');
-                    }
-                }
-                return this._alternateNamesList ?? Enumerable.Empty<string>();
+                if (_alternateNamesList == null)
+                    if (!string.IsNullOrEmpty(AlternateNames))
+                        _alternateNamesList = AlternateNames.Split('|');
+                return _alternateNamesList ?? Enumerable.Empty<string>();
             }
-            set
-            {
-                this._alternateNamesList = value;
-            }
+            set => _alternateNamesList = value;
         }
 
         public DateTime? BeginDate { get; set; }
 
-        [Required]
-        public virtual DateTime? CreatedDate { get; set; }
+        [Required] public virtual DateTime? CreatedDate { get; set; }
 
         public DateTime? EndDate { get; set; }
 
-        [AdaptMember("RoadieId")]
-        public virtual Guid? Id { get; set; }
+        [AdaptMember("RoadieId")] public virtual Guid? Id { get; set; }
 
         public bool? IsLocked { get; set; }
+
         public DateTime? LastUpdated { get; set; }
 
-        [MaxLength(250)]
-        public string SortName { get; set; }
+        [MaxLength(250)] public string SortName { get; set; }
 
         public int? Status { get; set; }
 
-        public string StatusVerbose
-        {
-            get
-            {
-                return SafeParser.ToEnum<Statuses>(this.Status).ToString();
-            }
-        }
+        public string StatusVerbose => SafeParser.ToEnum<Statuses>(Status).ToString();
 
         [MaxLength(65535)]
         [JsonIgnore]
         [IgnoreDataMember]
         public string Tags { get; set; }
 
-        private IEnumerable<string> _tagsList = null;
         public IEnumerable<string> TagsList
         {
             get
             {
-                if (this._tagsList == null)
+                if (_tagsList == null)
                 {
-                    if (string.IsNullOrEmpty(this.Tags))
-                    {
-                        return null;
-                    }
-                    return this.Tags.Split('|');
+                    if (string.IsNullOrEmpty(Tags)) return null;
+                    return Tags.Split('|');
                 }
-                return this._tagsList;
+
+                return _tagsList;
             }
-            set
-            {
-                this._tagsList = value;
-            }
+            set => _tagsList = value;
         }
 
         [MaxLength(65535)]
@@ -94,34 +78,28 @@ namespace Roadie.Library.Models
         [IgnoreDataMember]
         public string URLs { get; set; }
 
-        private IEnumerable<string> _urlsList = null;
         public IEnumerable<string> URLsList
         {
             get
             {
-                if (this._urlsList == null)
+                if (_urlsList == null)
                 {
-                    if (string.IsNullOrEmpty(this.URLs))
-                    {
-                        return null;
-                    }
-                    return this.URLs.Split('|');
+                    if (string.IsNullOrEmpty(URLs)) return null;
+                    return URLs.Split('|');
                 }
-                return this._urlsList;
+
+                return _urlsList;
             }
-            set
-            {
-                this._urlsList = value;
-            }
+            set => _urlsList = value;
         }
 
         public bool UserBookmarked { get; set; }
 
         public EntityModelBase()
         {
-            this.Id = Guid.NewGuid();
-            this.CreatedDate = DateTime.UtcNow;
-            this.Status = 0;
+            Id = Guid.NewGuid();
+            CreatedDate = DateTime.UtcNow;
+            Status = 0;
         }
     }
 }

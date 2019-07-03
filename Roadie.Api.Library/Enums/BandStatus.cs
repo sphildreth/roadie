@@ -6,6 +6,6 @@
         Active,
         OnHold,
         SplitUp,
-        Deceased,
+        Deceased
     }
 }

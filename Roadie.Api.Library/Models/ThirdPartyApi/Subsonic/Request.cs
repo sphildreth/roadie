@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Roadie.Library.Extensions;
+using Roadie.Library.Models.Pagination;
 using Roadie.Library.Utility;
 using System;
 
@@ -19,35 +20,19 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
             get
             {
-                if (string.IsNullOrEmpty(this.id))
-                {
-                    return null;
-                }
-                if (this.id.StartsWith(Request.ArtistIdIdentifier))
-                {
-                    return SafeParser.ToGuid(this.id);
-                }
+                if (string.IsNullOrEmpty(id)) return null;
+                if (id.StartsWith(ArtistIdIdentifier)) return SafeParser.ToGuid(id);
                 return null;
             }
         }
 
         /// <summary>
-        /// A unique string identifying the client application.
+        ///     A unique string identifying the client application.
         /// </summary>
         public string c { get; set; }
 
         /// <summary>
-        /// The time (in milliseconds since 1 Jan 1970) at which the song was listened to.
-        /// </summary>
-        public string time { get; set; }
-
-        /// <summary>
-        /// Whether this is a "submission" or a "now playing" notification.
-        /// </summary>
-        public string submission { get; set; }
-
-        /// <summary>
-        /// <seealso cref="f"/>
+        ///     <seealso cref="f" />
         /// </summary>
         public string callback { get; set; }
 
@@ -55,59 +40,47 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
             get
             {
-                if (string.IsNullOrEmpty(this.id))
-                {
-                    return null;
-                }
-                if (this.id.StartsWith(Request.CollectionIdentifier))
-                {
-                    return SafeParser.ToGuid(this.id);
-                }
+                if (string.IsNullOrEmpty(id)) return null;
+                if (id.StartsWith(CollectionIdentifier)) return SafeParser.ToGuid(id);
                 return null;
             }
         }
 
         /// <summary>
-        /// Request data to be returned in this format. Supported values are "xml", "json" (since 1.4.0) and "jsonp" (since 1.6.0). If using jsonp, specify name of javascript callback function using a callback parameter.
+        ///     Request data to be returned in this format. Supported values are "xml", "json" (since 1.4.0) and "jsonp" (since
+        ///     1.6.0). If using jsonp, specify name of javascript callback function using a callback parameter.
         /// </summary>
         public string f { get; set; }
 
         /// <summary>
-        /// A string which uniquely identifies the music folder. Obtained by calls to getIndexes or getMusicDirectory.
+        ///     A string which uniquely identifies the music folder. Obtained by calls to getIndexes or getMusicDirectory.
         /// </summary>
         public string id { get; set; }
 
         /// <summary>
-        /// Some operations have an array of ids, see savePlayQue
+        ///     Some operations have an array of ids, see savePlayQue
         /// </summary>
         public string[] ids { get; set; }
 
-        public bool IsCallbackSet
-        {
-            get
-            {
-                return !string.IsNullOrEmpty(this.callback);
-            }
-        }
+        public bool IsCallbackSet => !string.IsNullOrEmpty(callback);
 
         /// <summary>
-        /// Request data to be returned in this format. Supported values are "xml", "json" (since 1.4.0) and "jsonp" (since 1.6.0). If using jsonp, specify name of javascript callback function using a callback parameter.
+        ///     Request data to be returned in this format. Supported values are "xml", "json" (since 1.4.0) and "jsonp" (since
+        ///     1.6.0). If using jsonp, specify name of javascript callback function using a callback parameter.
         /// </summary>
         public bool IsJSONRequest
         {
             // Default should be false (XML)
             get
             {
-                if (string.IsNullOrEmpty(this.f))
-                {
-                    return false;
-                }
-                return this.f.ToLower().StartsWith("j");
+                if (string.IsNullOrEmpty(f)) return false;
+                return f.ToLower().StartsWith("j");
             }
         }
 
         /// <summary>
-        /// The password, either in clear text or hex-encoded with a "enc:" prefix. Since 1.13.0 this should only be used for testing purposes.
+        ///     The password, either in clear text or hex-encoded with a "enc:" prefix. Since 1.13.0 this should only be used for
+        ///     testing purposes.
         /// </summary>
         [JsonIgnore]
         public string p { get; set; }
@@ -117,15 +90,9 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
             get
             {
-                if (string.IsNullOrEmpty(this.p))
-                {
-                    return null;
-                }
-                if (this.p.StartsWith("enc:"))
-                {
-                    return this.p.ToLower().Replace("enc:", "").FromHexString();
-                }
-                return this.p;
+                if (string.IsNullOrEmpty(p)) return null;
+                if (p.StartsWith("enc:")) return p.ToLower().Replace("enc:", "").FromHexString();
+                return p;
             }
         }
 
@@ -133,20 +100,14 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
             get
             {
-                if (string.IsNullOrEmpty(this.id))
-                {
-                    return null;
-                }
-                if (this.id.StartsWith(Request.PlaylistdIdentifier))
-                {
-                    return SafeParser.ToGuid(this.id);
-                }
+                if (string.IsNullOrEmpty(id)) return null;
+                if (id.StartsWith(PlaylistdIdentifier)) return SafeParser.ToGuid(id);
                 return null;
             }
         }
 
         /// <summary>
-        /// Search query.
+        ///     Search query.
         /// </summary>
         public string Query { get; set; }
 
@@ -154,113 +115,112 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
             get
             {
-                if (string.IsNullOrEmpty(this.id))
-                {
-                    return null;
-                }
-                if (this.id.StartsWith(Request.ReleaseIdIdentifier))
-                {
-                    return SafeParser.ToGuid(this.id);
-                }
+                if (string.IsNullOrEmpty(id)) return null;
+                if (id.StartsWith(ReleaseIdIdentifier)) return SafeParser.ToGuid(id);
                 return null;
             }
         }
 
         /// <summary>
-        /// A random string ("salt") used as input for computing the password hash. See below for details.
+        ///     A random string ("salt") used as input for computing the password hash. See below for details.
         /// </summary>
         public string s { get; set; }
 
         /// <summary>
-        /// The authentication token computed as md5(password + salt). See below for details
+        ///     Whether this is a "submission" or a "now playing" notification.
+        /// </summary>
+        public string submission { get; set; }
+
+        /// <summary>
+        ///     The authentication token computed as md5(password + salt). See below for details
         /// </summary>
         public string t { get; set; }
+
+        /// <summary>
+        ///     The time (in milliseconds since 1 Jan 1970) at which the song was listened to.
+        /// </summary>
+        public string time { get; set; }
 
         public Guid? TrackId
         {
             get
             {
-                if (string.IsNullOrEmpty(this.id))
-                {
-                    return null;
-                }
-                if (this.id.StartsWith(Request.TrackIdIdentifier))
-                {
-                    return SafeParser.ToGuid(this.id);
-                }
+                if (string.IsNullOrEmpty(id)) return null;
+                if (id.StartsWith(TrackIdIdentifier)) return SafeParser.ToGuid(id);
                 return null;
             }
         }
 
         /// <summary>
-        /// The username
+        ///     The username
         /// </summary>
         public string u { get; set; }
 
         /// <summary>
-        /// The protocol version implemented by the client, i.e., the version of the subsonic-rest-api.xsd schema used (see below).
+        ///     The protocol version implemented by the client, i.e., the version of the subsonic-rest-api.xsd schema used (see
+        ///     below).
         /// </summary>
         public string v { get; set; }
 
         #region Paging and List Related
 
         /// <summary>
-        /// Maximum number of albums to return.
+        ///     Maximum number of albums to return.
         /// </summary>
         public short? AlbumCount { get; set; }
 
         /// <summary>
-        /// Search result offset for albums. Used for paging.
+        ///     Search result offset for albums. Used for paging.
         /// </summary>
         public int? AlbumOffset { get; set; }
 
         /// <summary>
-        /// Maximum number of artists to return.
+        ///     Maximum number of artists to return.
         /// </summary>
         public short? ArtistCount { get; set; }
 
         /// <summary>
-        /// Search result offset for artists. Used for paging.
-        /// </summary>
-        public int? ArtistOffset { get; set; }
-
-        /// <summary>
-        /// The artist name.
-        /// <see cref="getTopSongs"/>
+        ///     The artist name.
+        ///     <see cref="getTopSongs" />
         /// </summary>
         public string ArtistName { get; set; }
 
         /// <summary>
-        /// The first year in the range. If fromYear > toYear a reverse chronological list is returned.
+        ///     Search result offset for artists. Used for paging.
+        /// </summary>
+        public int? ArtistOffset { get; set; }
+
+        /// <summary>
+        ///     The first year in the range. If fromYear > toYear a reverse chronological list is returned.
         /// </summary>
         public int? FromYear { get; set; }
 
         /// <summary>
-        /// The name of the genre, e.g., "Rock".
+        ///     The name of the genre, e.g., "Rock".
         /// </summary>
         public string Genre { get; set; }
-
-        /// <summary>
-        /// Only return albums in the music folder with the given ID. See getMusicFolders.
-        /// </summary>
-        public int? MusicFolderId { get; set; }
 
         // When adding a chat message this is the message to add
         public string Message { get; set; }
 
         /// <summary>
-        /// The list offset. Useful if you for example want to page through the list of newest albums.
+        ///     Only return albums in the music folder with the given ID. See getMusicFolders.
+        /// </summary>
+        public int? MusicFolderId { get; set; }
+
+        /// <summary>
+        ///     The list offset. Useful if you for example want to page through the list of newest albums.
         /// </summary>
         public int? Offset { get; set; }
 
-        public Library.Models.Pagination.PagedRequest PagedRequest
+        public PagedRequest PagedRequest
         {
             get
             {
-                var limit = this.Size ?? Request.MaxPageSize;
-                var page = this.Offset > 0 ? (int)Math.Ceiling((decimal)this.Offset.Value / (decimal)limit) : 1;
-                var pagedRequest = new Pagination.PagedRequest();
-                switch (this.Type)
+                var limit = Size ?? MaxPageSize;
+                var page = Offset > 0 ? (int)Math.Ceiling(Offset.Value / (decimal)limit) : 1;
+                var pagedRequest = new PagedRequest();
+                switch (Type)
                 {
                     case ListType.Newest:
                         pagedRequest.Sort = "CreatedDate";
@@ -300,16 +260,17 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
                         break;
 
                     case ListType.ByGenre:
-                        pagedRequest.FilterByGenre = this.Genre;
+                        pagedRequest.FilterByGenre = Genre;
                         break;
 
                     case ListType.ByYear:
-                        pagedRequest.FilterFromYear = this.FromYear;
-                        pagedRequest.FilterToYear = this.ToYear;
+                        pagedRequest.FilterFromYear = FromYear;
+                        pagedRequest.FilterToYear = ToYear;
                         pagedRequest.Sort = "ReleaseDate";
-                        pagedRequest.Order = this.FromYear > this.ToYear ? "DESC" : "ASC";
+                        pagedRequest.Order = FromYear > ToYear ? "DESC" : "ASC";
                         break;
                 }
+
                 pagedRequest.Limit = limit;
                 pagedRequest.Page = page;
                 return pagedRequest;
@@ -317,31 +278,29 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         }
 
         /// <summary>
-        /// The number of albums to return. Max 500.
-        /// <see>Various *Count properties depending on objects being searched and client version.</see>
-        /// <remark>Something this value is posted as 'count' versus 'size'</remark>
+        ///     The number of albums to return. Max 500.
+        ///     <see>Various *Count properties depending on objects being searched and client version.</see>
+        ///     <remark>Something this value is posted as 'count' versus 'size'</remark>
         /// </summary>
         public short? Size { get; set; }
 
         /// <summary>
-        /// Maximum number of songs to return.
+        ///     Maximum number of songs to return.
         /// </summary>
         public short? SongCount { get; set; }
 
         /// <summary>
-        /// Search result offset for songs. Used for paging.
+        ///     Search result offset for songs. Used for paging.
         /// </summary>
         public int? SongOffset { get; set; }
 
         /// <summary>
-        /// The last year in the range.
+        ///     The last year in the range.
         /// </summary>
         public int? ToYear { get; set; }
 
         public ListType Type { get; set; }
 
         #endregion Paging and List Related
-
-
     }
 }

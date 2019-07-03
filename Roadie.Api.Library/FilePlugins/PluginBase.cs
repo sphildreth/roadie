@@ -4,13 +4,9 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Factories;
-using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.Utility;
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Threading.Tasks;
 
 namespace Roadie.Library.FilePlugins
@@ -19,16 +15,11 @@ namespace Roadie.Library.FilePlugins
     {
         public abstract string[] HandlesTypes { get; }
 
-        public int MinWeightToDelete
-        {
-            get
-            {
-                return this.Configuration.FilePlugins.MinWeightToDelete;
-            }
-        }
+        public int MinWeightToDelete => Configuration.FilePlugins.MinWeightToDelete;
 
         protected IArtistFactory ArtistFactory { get; }
 
+        protected IArtistLookupEngine ArtistLookupEngine { get; }
 
         protected ICacheManager CacheManager { get; }
 
@@ -42,25 +33,25 @@ namespace Roadie.Library.FilePlugins
 
         protected IReleaseFactory ReleaseFactory { get; }
 
-        protected IArtistLookupEngine ArtistLookupEngine { get; }
         protected IReleaseLookupEngine ReleaseLookupEngine { get; }
 
-        public PluginBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, IArtistFactory artistFactory, IReleaseFactory releaseFactory, IImageFactory imageFactory, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine)
+        public PluginBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, IArtistFactory artistFactory,
+                                                                                                    IReleaseFactory releaseFactory, IImageFactory imageFactory, ICacheManager cacheManager, ILogger logger,
+            IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine)
         {
-            this.Configuration = configuration;
-            this.HttpEncoder = httpEncoder;
-            this.ArtistFactory = artistFactory;
-            this.ReleaseFactory = releaseFactory;
-            this.ImageFactory = imageFactory;
-            this.CacheManager = cacheManager;
-            this.Logger = logger;
-            this.ArtistLookupEngine = artistLookupEngine;
-            this.ReleaseLookupEngine = releaseLookupEngine;
-
+            Configuration = configuration;
+            HttpEncoder = httpEncoder;
+            ArtistFactory = artistFactory;
+            ReleaseFactory = releaseFactory;
+            ImageFactory = imageFactory;
+            CacheManager = cacheManager;
+            Logger = logger;
+            ArtistLookupEngine = artistLookupEngine;
+            ReleaseLookupEngine = releaseLookupEngine;
         }
 
         /// <summary>
-        /// Check if exists if not make given folder
+        ///     Check if exists if not make given folder
         /// </summary>
         /// <param name="folder">Folder To Check</param>
         /// <returns>False if Exists, True if Made</returns>
@@ -73,11 +64,12 @@ namespace Roadie.Library.FilePlugins
                 Directory.CreateDirectory(folder);
                 return true;
             }
-            return false;
 
+            return false;
         }
 
-        public abstract Task<OperationResult<bool>> Process(string destinationRoot, FileInfo fileInfo, bool doJustInfo, int? submissionId);
+        public abstract Task<OperationResult<bool>> Process(string destinationRoot, FileInfo fileInfo, bool doJustInfo,
+                    int? submissionId);
 
         protected virtual bool IsFileLocked(FileInfo file)
         {
@@ -93,10 +85,7 @@ namespace Roadie.Library.FilePlugins
             }
             finally
             {
-                if (stream != null)
-                {
-                    stream.Close();
-                }
+                if (stream != null) stream.Close();
             }
 
             //file is not locked

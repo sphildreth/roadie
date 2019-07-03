@@ -12,14 +12,16 @@ using System.Threading.Tasks;
 namespace Roadie.Library.SearchEngines.Imaging
 {
     /// <summary>
-    /// https://msdn.microsoft.com/en-us/library/dn760791(v=bsynd.50).aspx
+    ///     https://msdn.microsoft.com/en-us/library/dn760791(v=bsynd.50).aspx
     /// </summary>
     public class BingImageSearchEngine : ImageSearchEngineBase
     {
-        public BingImageSearchEngine(IRoadieSettings configuration, ILogger logger, string requestIp = null, string referrer = null)
+        public BingImageSearchEngine(IRoadieSettings configuration, ILogger logger, string requestIp = null,
+            string referrer = null)
             : base(configuration, logger, "https://api.cognitive.microsoft.com", requestIp, referrer)
         {
-            this._apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "BingImageSearch") ?? new ApiKey();
+            _apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "BingImageSearch") ??
+                      new ApiKey();
         }
 
         public override RestRequest BuildRequest(string query, int resultsCount)
@@ -31,7 +33,7 @@ namespace Roadie.Library.SearchEngines.Imaging
                 RequestFormat = DataFormat.Json
             };
 
-            request.AddHeader("Ocp-Apim-Subscription-Key", this.ApiKey.Key);
+            request.AddHeader("Ocp-Apim-Subscription-Key", ApiKey.Key);
 
             request.AddParameter(new Parameter
             {
@@ -66,24 +68,22 @@ namespace Roadie.Library.SearchEngines.Imaging
 
         public override async Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount)
         {
-            var request = this.BuildRequest(query, resultsCount);
+            var request = BuildRequest(query, resultsCount);
 
             var response = await _client.ExecuteTaskAsync<BingImageResult>(request);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
-            {
                 throw new AuthenticationException("Api Key is not correct");
-            }
 
             if (response.ResponseStatus == ResponseStatus.Error)
-            {
-                throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
-            }
+                throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage,
+                    response.Content));
             if (response.Data == null || response.Data.value == null)
             {
-                this.Logger.LogWarning("Response Is Null on PerformImageSearch [" + response.ErrorMessage + "]");
+                Logger.LogWarning("Response Is Null on PerformImageSearch [" + response.ErrorMessage + "]");
                 return null;
             }
+
             return response.Data.value.Select(x => new ImageSearchResult
             {
                 Width = (x.width ?? 0).ToString(),

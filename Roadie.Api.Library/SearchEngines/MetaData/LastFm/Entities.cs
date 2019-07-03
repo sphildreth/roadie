@@ -1,450 +1,128 @@
 ﻿using System.Collections.Generic;
+using System.Xml.Serialization;
 
 namespace Roadie.Library.SearchEngines.MetaData.LastFm
 {
-    /// <remarks/>
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
-    public partial class lfm
+    /// <remarks />
+    [XmlType(AnonymousType = true)]
+    [XmlRoot(Namespace = "", IsNullable = false)]
+    public class lfm
     {
-        private lfmAlbum albumField;
+        /// <remarks />
+        public lfmAlbum album { get; set; }
 
-        private string statusField;
-
-        /// <remarks/>
-        public lfmAlbum album
-        {
-            get
-            {
-                return this.albumField;
-            }
-            set
-            {
-                this.albumField = value;
-            }
-        }
-
-        /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute()]
-        public string status
-        {
-            get
-            {
-                return this.statusField;
-            }
-            set
-            {
-                this.statusField = value;
-            }
-        }
-
-        public lfm()
-        {
-        }
+        /// <remarks />
+        [XmlAttribute]
+        public string status { get; set; }
     }
 
-    /// <remarks/>
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class lfmAlbum
+    /// <remarks />
+    [XmlType(AnonymousType = true)]
+    public class lfmAlbum
     {
-        private string artistField;
-        private List<lfmAlbumImage> imageField;
-        private ushort listenersField;
-        private string mbidField;
-        private string nameField;
-        private uint playcountField;
-        private List<lfmAlbumTag> tagsField;
-        private List<lfmAlbumTrack> tracksField;
-        private string urlField;
+        /// <remarks />
+        public string artist { get; set; }
 
-        /// <remarks/>
-        public string artist
-        {
-            get
-            {
-                return this.artistField;
-            }
-            set
-            {
-                this.artistField = value;
-            }
-        }
+        /// <remarks />
+        [XmlElement("image")]
+        public List<lfmAlbumImage> image { get; set; }
 
-        /// <remarks/>
-        [System.Xml.Serialization.XmlElementAttribute("image")]
-        public List<lfmAlbumImage> image
-        {
-            get
-            {
-                return this.imageField;
-            }
-            set
-            {
-                this.imageField = value;
-            }
-        }
+        /// <remarks />
+        public ushort listeners { get; set; }
 
-        /// <remarks/>
-        public ushort listeners
-        {
-            get
-            {
-                return this.listenersField;
-            }
-            set
-            {
-                this.listenersField = value;
-            }
-        }
+        /// <remarks />
+        public string mbid { get; set; }
 
-        /// <remarks/>
-        public string mbid
-        {
-            get
-            {
-                return this.mbidField;
-            }
-            set
-            {
-                this.mbidField = value;
-            }
-        }
+        /// <remarks />
+        public string name { get; set; }
 
-        /// <remarks/>
-        public string name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-            }
-        }
+        /// <remarks />
+        public uint playcount { get; set; }
 
-        /// <remarks/>
-        public uint playcount
-        {
-            get
-            {
-                return this.playcountField;
-            }
-            set
-            {
-                this.playcountField = value;
-            }
-        }
+        /// <remarks />
+        [XmlArrayItem("tag", IsNullable = false)]
+        public List<lfmAlbumTag> tags { get; set; }
 
-        /// <remarks/>
-        [System.Xml.Serialization.XmlArrayItemAttribute("tag", IsNullable = false)]
-        public List<lfmAlbumTag> tags
-        {
-            get
-            {
-                return this.tagsField;
-            }
-            set
-            {
-                this.tagsField = value;
-            }
-        }
+        /// <remarks />
+        [XmlArrayItem("track", IsNullable = false)]
+        public List<lfmAlbumTrack> tracks { get; set; }
 
-        /// <remarks/>
-        [System.Xml.Serialization.XmlArrayItemAttribute("track", IsNullable = false)]
-        public List<lfmAlbumTrack> tracks
-        {
-            get
-            {
-                return this.tracksField;
-            }
-            set
-            {
-                this.tracksField = value;
-            }
-        }
-
-        /// <remarks/>
-        public string url
-        {
-            get
-            {
-                return this.urlField;
-            }
-            set
-            {
-                this.urlField = value;
-            }
-        }
-
-        public lfmAlbum()
-        { }
+        /// <remarks />
+        public string url { get; set; }
     }
 
-    /// <remarks/>
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class lfmAlbumImage
+    /// <remarks />
+    [XmlType(AnonymousType = true)]
+    public class lfmAlbumImage
     {
-        private string sizeField;
+        /// <remarks />
+        [XmlAttribute]
+        public string size { get; set; }
 
-        private string valueField;
-
-        /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute()]
-        public string size
-        {
-            get
-            {
-                return this.sizeField;
-            }
-            set
-            {
-                this.sizeField = value;
-            }
-        }
-
-        /// <remarks/>
-        [System.Xml.Serialization.XmlTextAttribute()]
-        public string Value
-        {
-            get
-            {
-                return this.valueField;
-            }
-            set
-            {
-                this.valueField = value;
-            }
-        }
-
-        public lfmAlbumImage()
-        { }
+        /// <remarks />
+        [XmlText]
+        public string Value { get; set; }
     }
 
-    /// <remarks/>
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class lfmAlbumTag
+    /// <remarks />
+    [XmlType(AnonymousType = true)]
+    public class lfmAlbumTag
     {
-        private string nameField;
+        /// <remarks />
+        public string name { get; set; }
 
-        private string urlField;
-
-        /// <remarks/>
-        public string name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-            }
-        }
-
-        /// <remarks/>
-        public string url
-        {
-            get
-            {
-                return this.urlField;
-            }
-            set
-            {
-                this.urlField = value;
-            }
-        }
-
-        public lfmAlbumTag()
-        {
-        }
+        /// <remarks />
+        public string url { get; set; }
     }
 
-    /// <remarks/>
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class lfmAlbumTrack
+    /// <remarks />
+    [XmlType(AnonymousType = true)]
+    public class lfmAlbumTrack
     {
-        private lfmAlbumTrackArtist artistField;
-        private ushort durationField;
-        private string nameField;
+        /// <remarks />
+        public lfmAlbumTrackArtist artist { get; set; }
 
-        private byte rankField;
-        private lfmAlbumTrackStreamable streamableField;
-        private string urlField;
+        /// <remarks />
+        public ushort duration { get; set; }
 
-        /// <remarks/>
-        public lfmAlbumTrackArtist artist
-        {
-            get
-            {
-                return this.artistField;
-            }
-            set
-            {
-                this.artistField = value;
-            }
-        }
+        /// <remarks />
+        public string name { get; set; }
 
-        /// <remarks/>
-        public ushort duration
-        {
-            get
-            {
-                return this.durationField;
-            }
-            set
-            {
-                this.durationField = value;
-            }
-        }
+        /// <remarks />
+        [XmlAttribute]
+        public byte rank { get; set; }
 
-        /// <remarks/>
-        public string name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-            }
-        }
+        /// <remarks />
+        public lfmAlbumTrackStreamable streamable { get; set; }
 
-        /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute()]
-        public byte rank
-        {
-            get
-            {
-                return this.rankField;
-            }
-            set
-            {
-                this.rankField = value;
-            }
-        }
-
-        /// <remarks/>
-        public lfmAlbumTrackStreamable streamable
-        {
-            get
-            {
-                return this.streamableField;
-            }
-            set
-            {
-                this.streamableField = value;
-            }
-        }
-
-        /// <remarks/>
-        public string url
-        {
-            get
-            {
-                return this.urlField;
-            }
-            set
-            {
-                this.urlField = value;
-            }
-        }
-
-        public lfmAlbumTrack()
-        {
-        }
+        /// <remarks />
+        public string url { get; set; }
     }
 
-    /// <remarks/>
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class lfmAlbumTrackArtist
+    /// <remarks />
+    [XmlType(AnonymousType = true)]
+    public class lfmAlbumTrackArtist
     {
-        private string mbidField;
-        private string nameField;
-        private string urlField;
+        /// <remarks />
+        public string mbid { get; set; }
 
-        /// <remarks/>
-        public string mbid
-        {
-            get
-            {
-                return this.mbidField;
-            }
-            set
-            {
-                this.mbidField = value;
-            }
-        }
+        /// <remarks />
+        public string name { get; set; }
 
-        /// <remarks/>
-        public string name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-            }
-        }
-
-        /// <remarks/>
-        public string url
-        {
-            get
-            {
-                return this.urlField;
-            }
-            set
-            {
-                this.urlField = value;
-            }
-        }
-
-        public lfmAlbumTrackArtist()
-        {
-        }
+        /// <remarks />
+        public string url { get; set; }
     }
 
-    /// <remarks/>
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class lfmAlbumTrackStreamable
+    /// <remarks />
+    [XmlType(AnonymousType = true)]
+    public class lfmAlbumTrackStreamable
     {
-        private byte fulltrackField;
+        /// <remarks />
+        [XmlAttribute]
+        public byte fulltrack { get; set; }
 
-        private byte valueField;
-
-        /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute()]
-        public byte fulltrack
-        {
-            get
-            {
-                return this.fulltrackField;
-            }
-            set
-            {
-                this.fulltrackField = value;
-            }
-        }
-
-        /// <remarks/>
-        [System.Xml.Serialization.XmlTextAttribute()]
-        public byte Value
-        {
-            get
-            {
-                return this.valueField;
-            }
-            set
-            {
-                this.valueField = value;
-            }
-        }
-
-        public lfmAlbumTrackStreamable()
-        { }
+        /// <remarks />
+        [XmlText]
+        public byte Value { get; set; }
     }
 }

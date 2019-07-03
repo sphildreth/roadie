@@ -9,15 +9,16 @@ namespace Roadie.Library.Caching
     {
         public const string SystemCacheRegionUrn = "urn:system";
 
-        protected readonly CachePolicy _defaultPolicy = null;
+        protected readonly CachePolicy _defaultPolicy;
+        protected readonly JsonSerializerSettings _serializerSettings;
+
         protected ILogger Logger { get; }
-        protected readonly JsonSerializerSettings _serializerSettings = null;
 
         public CacheManagerBase(ILogger logger, CachePolicy defaultPolicy)
         {
-            this.Logger = logger;
-            this._defaultPolicy = defaultPolicy;
-            this._serializerSettings = new JsonSerializerSettings
+            Logger = logger;
+            _defaultPolicy = defaultPolicy;
+            _serializerSettings = new JsonSerializerSettings
             {
                 ContractResolver = new IgnoreJsonAttributesResolver(),
                 Formatting = Formatting.Indented
@@ -56,26 +57,22 @@ namespace Roadie.Library.Caching
 
         protected TOut Deserialize<TOut>(string s)
         {
-            if (string.IsNullOrEmpty(s))
-            {
-                return default(TOut);
-            }
+            if (string.IsNullOrEmpty(s)) return default(TOut);
             try
             {
-                return JsonConvert.DeserializeObject<TOut>(s, this._serializerSettings);
+                return JsonConvert.DeserializeObject<TOut>(s, _serializerSettings);
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return default(TOut);
         }
 
         protected string Serialize(object o)
         {
-            return JsonConvert.SerializeObject(o, this._serializerSettings);
+            return JsonConvert.SerializeObject(o, _serializerSettings);
         }
-       
-
     }
 }

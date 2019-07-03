@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
@@ -22,12 +21,12 @@ namespace Roadie.Api.Controllers
     {
         private IGenreService GenreService { get; }
 
-        public GenreController(IGenreService genreService, ILoggerFactory logger, ICacheManager cacheManager, 
-                               UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+        public GenreController(IGenreService genreService, ILoggerFactory logger, ICacheManager cacheManager,
+                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            this.Logger = logger.CreateLogger("RoadieApi.Controllers.GenreController");
-            this.GenreService = genreService;
+            Logger = logger.CreateLogger("RoadieApi.Controllers.GenreController");
+            GenreService = genreService;
         }
 
         //[EnableQuery]
@@ -60,17 +59,14 @@ namespace Roadie.Api.Controllers
 
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List([FromQuery]PagedRequest request, bool? doRandomize = false)
+        public async Task<IActionResult> List([FromQuery] PagedRequest request, bool? doRandomize = false)
         {
             try
             {
-                var result = await this.GenreService.List(roadieUser: await this.CurrentUserModel(),
-                                                  request: request,
-                                                  doRandomize: doRandomize);
-                if (!result.IsSuccess)
-                {
-                    return StatusCode((int)HttpStatusCode.InternalServerError);
-                }
+                var result = await GenreService.List(await CurrentUserModel(),
+                    request,
+                    doRandomize);
+                if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -79,8 +75,9 @@ namespace Roadie.Api.Controllers
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return StatusCode((int)HttpStatusCode.InternalServerError);
         }
     }

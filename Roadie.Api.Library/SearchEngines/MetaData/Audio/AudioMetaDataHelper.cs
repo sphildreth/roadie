@@ -22,8 +22,6 @@ namespace Roadie.Library.MetaData.Audio
 {
     public sealed class AudioMetaDataHelper : IAudioMetaDataHelper
     {
-        private IArtistLookupEngine ArtistLookupEngine { get; }
-
         private IntPtr nativeResource = Marshal.AllocHGlobal(100);
 
         public bool DoParseFromDiscogsDB { get; set; }
@@ -36,11 +34,13 @@ namespace Roadie.Library.MetaData.Audio
 
         public bool DoParseFromMusicBrainz { get; set; }
 
+        private IArtistLookupEngine ArtistLookupEngine { get; }
+
         private ICacheManager CacheManager { get; }
 
         private IRoadieSettings Configuration { get; }
 
-        private IFileNameHelper FileNameHelper { get; } 
+        private IFileNameHelper FileNameHelper { get; }
 
         private IHttpEncoder HttpEncoder { get; }
 
@@ -54,33 +54,35 @@ namespace Roadie.Library.MetaData.Audio
 
         private IMusicBrainzProvider MusicBrainzProvider { get; }
 
-        public AudioMetaDataHelper(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context, IMusicBrainzProvider musicBrainzHelper, 
-                                   ILastFmHelper lastFmHelper, ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine, 
-                                   IImageFactory imageFactory, IFileNameHelper filenameHelper, IID3TagsHelper id3TagsHelper)
+        public AudioMetaDataHelper(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
+                                                                                                                                    IMusicBrainzProvider musicBrainzHelper,
+            ILastFmHelper lastFmHelper, ICacheManager cacheManager, ILogger logger,
+            IArtistLookupEngine artistLookupEngine,
+            IImageFactory imageFactory, IFileNameHelper filenameHelper, IID3TagsHelper id3TagsHelper)
         {
-            this.Configuration = configuration;
-            this.HttpEncoder = httpEncoder;
-            this.CacheManager = cacheManager;
-            this.Logger = logger;
-            this.ImageFactory = ImageFactory;
-            this.FileNameHelper = filenameHelper;
-            this.ID3TagsHelper = id3TagsHelper;
+            Configuration = configuration;
+            HttpEncoder = httpEncoder;
+            CacheManager = cacheManager;
+            Logger = logger;
+            ImageFactory = ImageFactory;
+            FileNameHelper = filenameHelper;
+            ID3TagsHelper = id3TagsHelper;
 
-            this.MusicBrainzProvider = musicBrainzHelper;
-            this.LastFmHelper = lastFmHelper;
+            MusicBrainzProvider = musicBrainzHelper;
+            LastFmHelper = lastFmHelper;
 
-            this.ArtistLookupEngine = artistLookupEngine;
+            ArtistLookupEngine = artistLookupEngine;
 
-            this.DoParseFromFileName = configuration.Processing.DoParseFromFileName;
-            this.DoParseFromDiscogsDBFindingTrackForArtist = configuration.Processing.DoParseFromDiscogsDBFindingTrackForArtist;
-            this.DoParseFromDiscogsDB = configuration.Processing.DoParseFromDiscogsDB;
-            this.DoParseFromMusicBrainz = configuration.Processing.DoParseFromMusicBrainz;
-            this.DoParseFromLastFM = configuration.Processing.DoParseFromLastFM;
+            DoParseFromFileName = configuration.Processing.DoParseFromFileName;
+            DoParseFromDiscogsDBFindingTrackForArtist =
+                configuration.Processing.DoParseFromDiscogsDBFindingTrackForArtist;
+            DoParseFromDiscogsDB = configuration.Processing.DoParseFromDiscogsDB;
+            DoParseFromMusicBrainz = configuration.Processing.DoParseFromMusicBrainz;
+            DoParseFromLastFM = configuration.Processing.DoParseFromLastFM;
         }
 
-
         /// <summary>
-        /// For the given File extract out all the information if successfully pulled out then return true
+        ///     For the given File extract out all the information if successfully pulled out then return true
         /// </summary>
         /// <param name="fileInfo">FileInfo to Process</param>
         /// <param name="doJustInfo">Toggle To Only Print Info Not Modify Files</param>
@@ -88,36 +90,37 @@ namespace Roadie.Library.MetaData.Audio
         public async Task<AudioMetaData> GetInfo(FileInfo fileInfo, bool doJustInfo = false)
         {
             var tagSources = new List<string> { "Tags" };
-            var result = this.ParseFromTags(fileInfo);
+            var result = ParseFromTags(fileInfo);
             result.Filename = fileInfo.FullName;
             if (!result.IsValid)
             {
                 tagSources.Add("Filename");
-                result = this.ParseFromFilename(result, fileInfo);
+                result = ParseFromFilename(result, fileInfo);
                 if (string.IsNullOrEmpty(result.Artist) || string.IsNullOrEmpty(result.Release))
-                {
                     if (string.IsNullOrEmpty(result.Artist) || string.IsNullOrEmpty(result.Release))
                     {
-                        this.Logger.LogWarning("File [{0}] MetaData [{1}]: Unable to Determine Artist and Release; aborting getting info.", fileInfo.FullName, result.ToString());
+                        Logger.LogWarning(
+                            "File [{0}] MetaData [{1}]: Unable to Determine Artist and Release; aborting getting info.",
+                            fileInfo.FullName, result.ToString());
                         return result;
                     }
-                }
+
                 if (!result.IsValid)
-                {
                     if (!result.IsValid)
                     {
                         tagSources.Add("MusicBrainz");
-                        result = await this.ParseFromMusicBrainz(result);
+                        result = await ParseFromMusicBrainz(result);
                         if (!result.IsValid)
                         {
                             tagSources.Add("LastFm");
-                            result = await this.GetFromLastFmIntegration(result);
+                            result = await GetFromLastFmIntegration(result);
                         }
                     }
-                }
+
                 if (!result.IsValid)
                 {
-                    this.Logger.LogWarning("File [{0}] MetaData Invalid, TagSources [{1}] MetaData [{2}]", fileInfo.FullName, string.Join(",", tagSources), result.ToString());
+                    Logger.LogWarning("File [{0}] MetaData Invalid, TagSources [{1}] MetaData [{2}]", fileInfo.FullName,
+                        string.Join(",", tagSources), result.ToString());
                 }
                 else
                 {
@@ -125,48 +128,44 @@ namespace Roadie.Library.MetaData.Audio
                     {
                         if (result.Images == null || !result.Images.Any())
                         {
-                            var imageMetaData = this.ImageFactory.GetPictureForMetaData(fileInfo.FullName, result);
+                            var imageMetaData = ImageFactory.GetPictureForMetaData(fileInfo.FullName, result);
                             var tagImages = imageMetaData == null ? null : new List<AudioMetaDataImage> { imageMetaData };
                             result.Images = tagImages != null && tagImages.Any() ? tagImages : null;
                             if (result.Images == null || !result.Images.Any())
-                            {
-                                this.Logger.LogTrace("File [{0} No Images Set and Unable to Find Images", fileInfo.FullName);
-                            }
+                                Logger.LogTrace("File [{0} No Images Set and Unable to Find Images", fileInfo.FullName);
                         }
-                        this.WriteTags(result, fileInfo);
+
+                        WriteTags(result, fileInfo);
                     }
                 }
             }
-            var artistNameReplacements = this.Configuration.ArtistNameReplace;
+
+            var artistNameReplacements = Configuration.ArtistNameReplace;
             if (artistNameReplacements != null)
             {
-                var artistNameReplaceKp = artistNameReplacements.FirstOrDefault(x => x.Value.Any(v => v.Equals(result.ArtistRaw, StringComparison.OrdinalIgnoreCase)));
+                var artistNameReplaceKp = artistNameReplacements.FirstOrDefault(x =>
+                    x.Value.Any(v => v.Equals(result.ArtistRaw, StringComparison.OrdinalIgnoreCase)));
                 if (artistNameReplaceKp.Key != null && artistNameReplaceKp.Key != result.Artist)
-                {
                     result.SetArtistName(artistNameReplaceKp.Key);
-                }
             }
-            this.Logger.LogInformation("File [{0}], TagSources [{1}] MetaData [{2}]", fileInfo.Name, string.Join(",", tagSources), result.ToString());
+
+            Logger.LogInformation("File [{0}], TagSources [{1}] MetaData [{2}]", fileInfo.Name,
+                string.Join(",", tagSources), result.ToString());
             return result;
         }
 
         public bool WriteTags(AudioMetaData metaData, FileInfo fileInfo)
         {
-            return this.ID3TagsHelper.WriteTags(metaData, fileInfo.FullName);
+            return ID3TagsHelper.WriteTags(metaData, fileInfo.FullName);
         }
 
         private static AudioMetaData MergeAudioData(IRoadieSettings settings, AudioMetaData left, AudioMetaData right)
         {
             var result = new AudioMetaData();
-            if (left == null)
-            {
-                return right;
-            }
-            if (right == null)
-            {
-                return left;
-            }
-            result.Release = left.Release.Or(right.Release).SafeReplace("_").SafeReplace("~", ",").CleanString(settings);
+            if (left == null) return right;
+            if (right == null) return left;
+            result.Release = left.Release.Or(right.Release).SafeReplace("_").SafeReplace("~", ",")
+                .CleanString(settings);
             result.ArtistRaw = left.ArtistRaw.Or(right.ArtistRaw);
             result.TrackArtistRaw = left.TrackArtistRaw.Or(right.TrackArtistRaw);
             result.Artist = left.Artist.Or(right.Artist).SafeReplace("_").SafeReplace("~", ",").CleanString(settings);
@@ -180,17 +179,10 @@ namespace Roadie.Library.MetaData.Audio
             result.AudioChannels = left.AudioChannels.Or(right.AudioChannels);
             result.AudioSampleRate = left.AudioSampleRate.Or(right.AudioSampleRate);
             if (left.Images != null && right.Images == null)
-            {
                 result.Images = left.Images;
-            }
             else if (left.Images == null && right.Images != null)
-            {
                 result.Images = right.Images;
-            }
-            else if (left.Images != null && right.Images != null)
-            {
-                result.Images = left.Images.Union(right.Images);
-            }
+            else if (left.Images != null && right.Images != null) result.Images = left.Images.Union(right.Images);
             return result;
         }
 
@@ -199,62 +191,58 @@ namespace Roadie.Library.MetaData.Audio
             var artistName = metaData.Artist;
             var ReleaseName = metaData.Release;
 
-            if (this.DoParseFromLastFM)
+            if (DoParseFromLastFM)
             {
-                if (string.IsNullOrEmpty(artistName) && string.IsNullOrEmpty(ReleaseName))
-                {
-                    return metaData;
-                }
-                var lastFmReleaseTracks = await this.LastFmHelper.TracksForRelease(artistName, ReleaseName);
+                if (string.IsNullOrEmpty(artistName) && string.IsNullOrEmpty(ReleaseName)) return metaData;
+                var lastFmReleaseTracks = await LastFmHelper.TracksForRelease(artistName, ReleaseName);
                 if (lastFmReleaseTracks != null)
                 {
-                    var lastFmReleaseTrack = lastFmReleaseTracks.FirstOrDefault(x => x.TrackNumber == metaData.TrackNumber || x.Title.Equals(metaData.Title, StringComparison.InvariantCultureIgnoreCase));
-                    if (lastFmReleaseTrack != null)
-                    {
-                        return MergeAudioData(this.Configuration, metaData, lastFmReleaseTrack);
-                    }
+                    var lastFmReleaseTrack = lastFmReleaseTracks.FirstOrDefault(x =>
+                        x.TrackNumber == metaData.TrackNumber || x.Title.Equals(metaData.Title,
+                            StringComparison.InvariantCultureIgnoreCase));
+                    if (lastFmReleaseTrack != null) return MergeAudioData(Configuration, metaData, lastFmReleaseTrack);
                 }
             }
+
             return metaData;
         }
 
         private AudioMetaData ParseFromFilename(AudioMetaData metaData, FileInfo fileInfo)
         {
-            if (this.DoParseFromFileName)
+            if (DoParseFromFileName)
             {
                 var filename = fileInfo.Name.Replace(fileInfo.Extension, "");
-                var mdFromFilename = this.FileNameHelper.MetaDataFromFilename(filename);
+                var mdFromFilename = FileNameHelper.MetaDataFromFilename(filename);
                 if (mdFromFilename.ValidWeight < 32)
                 {
                     var mdFromFileInfo = FileNameHelper.MetaDataFromFileInfo(fileInfo);
-                    if (mdFromFileInfo.ValidWeight > mdFromFilename.ValidWeight)
-                    {
-                        mdFromFilename = mdFromFileInfo;
-                    }
+                    if (mdFromFileInfo.ValidWeight > mdFromFilename.ValidWeight) mdFromFilename = mdFromFileInfo;
                 }
+
                 if ((mdFromFilename.Year ?? 0) < 1)
-                {
                     mdFromFilename.Year = SafeParser.ToYear(fileInfo.Directory.Name.Substring(0, 4));
-                }
-                return MergeAudioData(this.Configuration, metaData, mdFromFilename);
+                return MergeAudioData(Configuration, metaData, mdFromFilename);
             }
+
             return metaData;
         }
 
         private async Task<AudioMetaData> ParseFromMusicBrainz(AudioMetaData metaData)
         {
-            if (this.DoParseFromMusicBrainz)
+            if (DoParseFromMusicBrainz)
             {
-                var musicBrainzReleaseTracks = await this.MusicBrainzProvider.MusicBrainzReleaseTracks(metaData.Artist, metaData.Release);
+                var musicBrainzReleaseTracks =
+                    await MusicBrainzProvider.MusicBrainzReleaseTracks(metaData.Artist, metaData.Release);
                 if (musicBrainzReleaseTracks != null)
                 {
-                    var musicBrainzReleaseTrack = musicBrainzReleaseTracks.FirstOrDefault(x => x.TrackNumber == metaData.TrackNumber || x.Title.Equals(metaData.Title, StringComparison.InvariantCultureIgnoreCase));
+                    var musicBrainzReleaseTrack = musicBrainzReleaseTracks.FirstOrDefault(x =>
+                        x.TrackNumber == metaData.TrackNumber || x.Title.Equals(metaData.Title,
+                            StringComparison.InvariantCultureIgnoreCase));
                     if (musicBrainzReleaseTrack != null)
-                    {
-                        return MergeAudioData(this.Configuration, metaData, musicBrainzReleaseTrack);
-                    }
+                        return MergeAudioData(Configuration, metaData, musicBrainzReleaseTrack);
                 }
             }
+
             return metaData;
         }
 
@@ -262,16 +250,15 @@ namespace Roadie.Library.MetaData.Audio
         {
             try
             {
-                var metaDataFromFile = this.ID3TagsHelper.MetaDataForFile(fileInfo.FullName);
-                if (metaDataFromFile.IsSuccess)
-                {
-                    return metaDataFromFile.Data;
-                }
+                var metaDataFromFile = ID3TagsHelper.MetaDataForFile(fileInfo.FullName);
+                if (metaDataFromFile.IsSuccess) return metaDataFromFile.Data;
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex, string.Format("Error With ID3TagsHelper.MetaDataForFile From File [{0}]", fileInfo.FullName));
+                Logger.LogError(ex,
+                    string.Format("Error With ID3TagsHelper.MetaDataForFile From File [{0}]", fileInfo.FullName));
             }
+
             return new AudioMetaData
             {
                 Filename = fileInfo.FullName

@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Microsoft.Extensions.Logging;
+using System;
 
 namespace Roadie.Library
 {
     [Serializable]
-    public class EventMessage 
+    public class EventMessage
     {
-        public Microsoft.Extensions.Logging.LogLevel Level { get; set; } = Microsoft.Extensions.Logging.LogLevel.Trace;
+        public LogLevel Level { get; set; } = LogLevel.Trace;
         public string Message { get; set; }
     }
-
 }

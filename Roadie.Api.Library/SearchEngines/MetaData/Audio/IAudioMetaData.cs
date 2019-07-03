@@ -45,8 +45,11 @@ namespace Roadie.Library.MetaData.Audio
         int? Year { get; set; }
 
         bool Equals(object obj);
+
         int GetHashCode();
+
         void SetArtistName(string name);
+
         string ToString();
     }
 }

@@ -1,9 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Xml.Serialization;
-using Newtonsoft.Json;
 
 namespace Roadie.Library
 {
@@ -12,6 +11,44 @@ namespace Roadie.Library
     {
         private List<Exception> _errors;
         private List<string> _messages;
+
+        public Dictionary<string, object> AdditionalClientData { get; set; } = new Dictionary<string, object>();
+
+        [JsonIgnore]
+        [XmlIgnore]
+        public Dictionary<string, object> AdditionalData { get; set; } = new Dictionary<string, object>();
+
+        /// <summary>
+        ///     Client friendly exceptions
+        /// </summary>
+        [JsonProperty("errors")]
+        public IEnumerable<AppException> AppExceptions
+        {
+            get
+            {
+                if (Errors == null || !Errors.Any()) return null;
+
+                return Errors.Select(x => new AppException(x.Message));
+            }
+        }
+
+        public T Data { get; set; }
+
+        /// <summary>
+        ///     Server side visible exceptions
+        /// </summary>
+        [JsonIgnore]
+        public IEnumerable<Exception> Errors { get; set; }
+
+        [JsonIgnore] public bool IsAccessDeniedResult { get; set; }
+
+        [JsonIgnore] public bool IsNotFoundResult { get; set; }
+
+        public bool IsSuccess { get; set; }
+
+        public IEnumerable<string> Messages => _messages;
+
+        public long OperationTime { get; set; }
 
         public OperationResult()
         {
@@ -58,44 +95,6 @@ namespace Roadie.Library
             AddMessage(message);
             AddError(error);
         }
-
-        [JsonIgnore]
-        [XmlIgnore]
-        public Dictionary<string, object> AdditionalData { get; set; } = new Dictionary<string, object>();
-
-        public Dictionary<string, object> AdditionalClientData { get; set; } = new Dictionary<string, object>();
-
-        /// <summary>
-        ///     Client friendly exceptions
-        /// </summary>
-        [JsonProperty("errors")]
-        public IEnumerable<AppException> AppExceptions
-        {
-            get
-            {
-                if (Errors == null || !Errors.Any()) return null;
-
-                return Errors.Select(x => new AppException(x.Message));
-            }
-        }
-
-        public T Data { get; set; }
-
-        /// <summary>
-        ///     Server side visible exceptions
-        /// </summary>
-        [JsonIgnore]
-        public IEnumerable<Exception> Errors { get; set; }
-
-        [JsonIgnore] public bool IsNotFoundResult { get; set; }
-
-        [JsonIgnore] public bool IsAccessDeniedResult { get; set; }
-
-        public bool IsSuccess { get; set; }
-
-        public IEnumerable<string> Messages => _messages;
-
-        public long OperationTime { get; set; }
 
         public void AddError(Exception exception)
         {

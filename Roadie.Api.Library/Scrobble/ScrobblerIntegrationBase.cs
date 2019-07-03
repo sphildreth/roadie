@@ -11,13 +11,17 @@ namespace Roadie.Library.Scrobble
     public abstract class ScrobblerIntegrationBase : IScrobblerIntegration
     {
         protected ICacheManager CacheManager { get; }
+
         protected IRoadieSettings Configuration { get; }
+
         protected data.IRoadieDbContext DbContext { get; }
-        protected ILogger Logger { get; }
+
         protected IHttpContext HttpContext { get; }
 
-        public ScrobblerIntegrationBase(IRoadieSettings configuration, ILogger logger, data.IRoadieDbContext dbContext, 
-                                        ICacheManager cacheManager, IHttpContext httpContext)
+        protected ILogger Logger { get; }
+
+        public ScrobblerIntegrationBase(IRoadieSettings configuration, ILogger logger, data.IRoadieDbContext dbContext,
+                                                    ICacheManager cacheManager, IHttpContext httpContext)
         {
             Logger = logger;
             Configuration = configuration;

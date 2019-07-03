@@ -14,10 +14,7 @@ namespace Roadie.Library.Models.Statistics
         {
             get
             {
-                if ((this.ArtistCount ?? 0) > 0)
-                {
-                    return this.ArtistCount.Value.ToString("000000");
-                }
+                if ((ArtistCount ?? 0) > 0) return ArtistCount.Value.ToString("000000");
                 return "---";
             }
         }
@@ -26,10 +23,7 @@ namespace Roadie.Library.Models.Statistics
         {
             get
             {
-                if ((this.CollectionCount ?? 0) > 0)
-                {
-                    return this.CollectionCount.Value.ToString("000");
-                }
+                if ((CollectionCount ?? 0) > 0) return CollectionCount.Value.ToString("000");
                 return "--";
             }
         }
@@ -38,10 +32,7 @@ namespace Roadie.Library.Models.Statistics
         {
             get
             {
-                if ((this.LabelCount ?? 0) > 0)
-                {
-                    return this.LabelCount.Value.ToString("00000");
-                }
+                if ((LabelCount ?? 0) > 0) return LabelCount.Value.ToString("00000");
                 return "---";
             }
         }
@@ -50,10 +41,7 @@ namespace Roadie.Library.Models.Statistics
         {
             get
             {
-                if ((this.PlayedCount ?? 0) > 0)
-                {
-                    return this.PlayedCount.Value.ToString("000000");
-                }
+                if ((PlayedCount ?? 0) > 0) return PlayedCount.Value.ToString("000000");
                 return "---";
             }
         }
@@ -62,10 +50,7 @@ namespace Roadie.Library.Models.Statistics
         {
             get
             {
-                if ((this.PlaylistCount ?? 0) > 0)
-                {
-                    return this.PlaylistCount.Value.ToString("000");
-                }
+                if ((PlaylistCount ?? 0) > 0) return PlaylistCount.Value.ToString("000");
                 return "--";
             }
         }
@@ -74,10 +59,7 @@ namespace Roadie.Library.Models.Statistics
         {
             get
             {
-                if ((this.ReleaseCount ?? 0) > 0)
-                {
-                    return this.ReleaseCount.Value.ToString("000000");
-                }
+                if ((ReleaseCount ?? 0) > 0) return ReleaseCount.Value.ToString("000000");
                 return "---";
             }
         }
@@ -86,10 +68,7 @@ namespace Roadie.Library.Models.Statistics
         {
             get
             {
-                if ((this.ReleaseMediaCount ?? 0) > 0)
-                {
-                    return this.ReleaseMediaCount.Value.ToString("000000");
-                }
+                if ((ReleaseMediaCount ?? 0) > 0) return ReleaseMediaCount.Value.ToString("000000");
                 return "---";
             }
         }
@@ -98,12 +77,13 @@ namespace Roadie.Library.Models.Statistics
         {
             get
             {
-                if (this.TotalTrackDuration.HasValue)
+                if (TotalTrackDuration.HasValue)
                 {
-                    var ti = new TimeInfo(this.TotalTrackDuration.Value);
-                    var t= ti.ToFullFormattedString();
+                    var ti = new TimeInfo(TotalTrackDuration.Value);
+                    var t = ti.ToFullFormattedString();
                     return t;
                 }
+
                 return "--:--:--";
             }
         }
@@ -112,10 +92,7 @@ namespace Roadie.Library.Models.Statistics
         {
             get
             {
-                if (this.TotalTrackSize.HasValue)
-                {
-                    return this.TotalTrackSize.ToFileSize();
-                }
+                if (TotalTrackSize.HasValue) return TotalTrackSize.ToFileSize();
                 return "--";
             }
         }
@@ -124,10 +101,7 @@ namespace Roadie.Library.Models.Statistics
         {
             get
             {
-                if ((this.TrackCount ?? 0) > 0)
-                {
-                    return this.TrackCount.Value.ToString("0000000");
-                }
+                if ((TrackCount ?? 0) > 0) return TrackCount.Value.ToString("0000000");
                 return "---";
             }
         }
@@ -136,15 +110,13 @@ namespace Roadie.Library.Models.Statistics
         {
             get
             {
-                if ((this.UserCount ?? 0) > 0)
-                {
-                    return this.UserCount.Value.ToString("00");
-                }
+                if ((UserCount ?? 0) > 0) return UserCount.Value.ToString("00");
                 return "--";
             }
         }
 
         public int? LabelCount { get; set; }
+        public DateTime? LastScan { get; set; }
         public int? PlayedCount { get; set; }
         public int? PlaylistCount { get; set; }
         public int? ReleaseCount { get; set; }
@@ -153,7 +125,5 @@ namespace Roadie.Library.Models.Statistics
         public long? TotalTrackSize { get; set; }
         public int? TrackCount { get; set; }
         public int? UserCount { get; set; }
-
-        public DateTime? LastScan { get; set; }
     }
 }

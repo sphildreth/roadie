@@ -1,5 +1,4 @@
-﻿using Roadie.Library.Enums;
-using Roadie.Library.Models.Collections;
+﻿using Roadie.Library.Models.Collections;
 using System;
 
 namespace Roadie.Library.Models.Releases

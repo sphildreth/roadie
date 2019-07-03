@@ -6,12 +6,16 @@ using System.Runtime.InteropServices;
 namespace Roadie.Library.Imaging
 {
     /// <summary>
-    /// Processor that takes images and manipulates
+    ///     Processor that takes images and manipulates
     /// </summary>
     public sealed class ImageProcessor : IDisposable
     {
-        private readonly IRoadieSettings _configuration;
         private IntPtr nativeResource = Marshal.AllocHGlobal(100);
+
+        /// <summary>
+        ///     Read from Configuration maximum width; if not set uses default (500)
+        /// </summary>
+        public int MaxWidth => Configuration.Processing.MaxImageWidth;
 
         ///// <summary>
         ///// Read from Configuration image encoding; if not set uses default (Jpg Quality of 90)
@@ -28,59 +32,41 @@ namespace Roadie.Library.Imaging
         //        return ImageEncoding.Jpg90;
         //    }
         //}
+        private IRoadieSettings Configuration { get; }
 
         /// <summary>
-        /// Read from Configuration maximum width; if not set uses default (500)
-        /// </summary>
-        public int MaxWidth
-        {
-            get
-            {
-                return this.Configuration.Processing.MaxImageWidth;
-            }
-        }
-
-        private IRoadieSettings Configuration
-        {
-            get
-            {
-                return this._configuration;
-            }
-        }
-
-        /// <summary>
-        /// Processor that takes images and performs any manipulations
+        ///     Processor that takes images and performs any manipulations
         /// </summary>
         public ImageProcessor(IRoadieSettings configuration)
         {
-            this._configuration = configuration;
+            Configuration = configuration;
         }
 
         /// <summary>
-        /// Perform any necessary adjustments to file
+        ///     Perform any necessary adjustments to file
         /// </summary>
         /// <param name="file">Filename to modify</param>
         /// <returns>Success</returns>
         public bool Process(string file)
         {
-            File.WriteAllBytes(file, this.Process(File.ReadAllBytes(file)));
+            File.WriteAllBytes(file, Process(File.ReadAllBytes(file)));
             return true;
         }
 
         /// <summary>
-        /// Perform any necessary adjustments to byte array writing modified file to filename
+        ///     Perform any necessary adjustments to byte array writing modified file to filename
         /// </summary>
         /// <param name="filename">Filename to Write Modified Byte Array to</param>
         /// <param name="imageBytes">Byte Array of Image To Manipulate</param>
         /// <returns>Success</returns>
         public bool Process(string filename, byte[] imageBytes)
         {
-            File.WriteAllBytes(filename, this.Process(imageBytes));
+            File.WriteAllBytes(filename, Process(imageBytes));
             return true;
         }
 
         /// <summary>
-        /// Perform any necessary adjustments to byte array returning modified array
+        ///     Perform any necessary adjustments to byte array returning modified array
         /// </summary>
         /// <param name="imageBytes">Byte Array of Image To Manipulate</param>
         /// <returns>Modified Byte Array of Image</returns>
@@ -91,7 +77,7 @@ namespace Roadie.Library.Imaging
             //    return resizer.Resize(this.MaxWidth, this.ImageEncoding);
             //}
 
-            return ImageHelper.ResizeImage(imageBytes, this.MaxWidth, this.MaxWidth);
+            return ImageHelper.ResizeImage(imageBytes, MaxWidth, MaxWidth);
         }
 
         #region IDisposable Implementation
@@ -112,6 +98,7 @@ namespace Roadie.Library.Imaging
             if (disposing)
             {
             }
+
             if (nativeResource != IntPtr.Zero)
             {
                 Marshal.FreeHGlobal(nativeResource);

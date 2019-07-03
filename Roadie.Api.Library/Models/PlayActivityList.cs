@@ -10,25 +10,11 @@ namespace Roadie.Library.Models
         public DataToken Artist { get; set; }
         public Image ArtistThumbnail { get; set; }
 
-        public string PlayedDate
-        {
-            get
-            {
-                return this.PlayedDateDateTime.HasValue ? this.PlayedDateDateTime.Value.ToString("s") : null;
-            }
-        }
+        public bool IsNowPlaying { get; set; }
+        public string PlayedDate => PlayedDateDateTime.HasValue ? PlayedDateDateTime.Value.ToString("s") : null;
 
-        public string PlayedDay
-        {
-            get
-            {
-                return this.PlayedDateDateTime.HasValue ? this.PlayedDateDateTime.Value.ToString("MM/dd/yyyy") : null;
-            }
-        }
-
-        [JsonIgnore]
-        public DateTime? PlayedDateDateTime { get; set; }
-
+        [JsonIgnore] public DateTime? PlayedDateDateTime { get; set; }
+        public string PlayedDay => PlayedDateDateTime.HasValue ? PlayedDateDateTime.Value.ToString("MM/dd/yyyy") : null;
         public int? Rating { get; set; }
         public DataToken Release { get; set; }
         public string ReleasePlayUrl { get; set; }
@@ -41,11 +27,9 @@ namespace Roadie.Library.Models
         public Image UserThumbnail { get; set; }
         public UserTrack UserTrack { get; set; }
 
-        public bool IsNowPlaying { get; set; }
-
         public override string ToString()
         {
-            return $"User [{ this.User }], Artist [{ this.Artist }], Release [{ this.Release }], Track [{ this.Track}]";
+            return $"User [{User}], Artist [{Artist}], Release [{Release}], Track [{Track}]";
         }
     }
 }

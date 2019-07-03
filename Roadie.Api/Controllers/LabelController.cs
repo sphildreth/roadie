@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
@@ -25,12 +24,12 @@ namespace Roadie.Api.Controllers
     {
         private ILabelService LabelService { get; }
 
-        public LabelController(ILabelService labelService, ILoggerFactory logger, ICacheManager cacheManager, 
-                               UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+        public LabelController(ILabelService labelService, ILoggerFactory logger, ICacheManager cacheManager,
+                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            this.Logger = logger.CreateLogger("RoadieApi.Controllers.LabelController");
-            this.LabelService = labelService;
+            Logger = logger.CreateLogger("RoadieApi.Controllers.LabelController");
+            LabelService = labelService;
         }
 
         [HttpGet("{id}")]
@@ -38,31 +37,23 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await this.LabelService.ById(await this.CurrentUserModel(), id, (inc ?? models.Label.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await LabelService.ById(await CurrentUserModel(), id,
+                (inc ?? models.Label.DefaultIncludes).ToLower().Split(","));
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List([FromQuery]PagedRequest request, bool? doRandomize = false)
+        public async Task<IActionResult> List([FromQuery] PagedRequest request, bool? doRandomize = false)
         {
             try
             {
-                var result = await this.LabelService.List(roadieUser: await this.CurrentUserModel(),
-                                                    request: request,
-                                                    doRandomize: doRandomize);
-                if (!result.IsSuccess)
-                {
-                    return StatusCode((int)HttpStatusCode.InternalServerError);
-                }
+                var result = await LabelService.List(await CurrentUserModel(),
+                    request,
+                    doRandomize);
+                if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -71,8 +62,9 @@ namespace Roadie.Api.Controllers
             }
             catch (Exception ex)
             {
-                this.Logger.LogError(ex);
+                Logger.LogError(ex);
             }
+
             return StatusCode((int)HttpStatusCode.InternalServerError);
         }
 
@@ -82,15 +74,10 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> SetLabelImageByUrl(Guid id, string imageUrl)
         {
-            var result = await this.LabelService.SetLabelImageByUrl(await this.CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result =
+                await LabelService.SetLabelImageByUrl(await CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -100,19 +87,10 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> Update(models.Label label)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-            var result = await this.LabelService.UpdateLabel(await this.CurrentUserModel(), label);
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var result = await LabelService.UpdateLabel(await CurrentUserModel(), label);
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
@@ -122,15 +100,9 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
         {
-            var result = await this.LabelService.UploadLabelImage(await this.CurrentUserModel(), id, file);
-            if (result == null || result.IsNotFoundResult)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
+            var result = await LabelService.UploadLabelImage(await CurrentUserModel(), id, file);
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
     }
