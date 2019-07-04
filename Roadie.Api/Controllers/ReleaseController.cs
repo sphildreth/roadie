@@ -74,11 +74,9 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         [Authorize(Policy = "Editor")]
-        public async Task<IActionResult> MergeReleases(Guid releaseToMergeId, Guid releaseToMergeIntoId,
-            bool addAsMedia)
+        public async Task<IActionResult> MergeReleases(Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
         {
-            var result = await ReleaseService.MergeReleases(await CurrentUserModel(), releaseToMergeId,
-                releaseToMergeIntoId, addAsMedia);
+            var result = await ReleaseService.MergeReleases(await CurrentUserModel(), releaseToMergeId, releaseToMergeIntoId, addAsMedia);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
@@ -90,9 +88,7 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> SetReleaseImageByUrl(Guid id, string imageUrl)
         {
-            var result =
-                await ReleaseService.SetReleaseImageByUrl(await CurrentUserModel(), id,
-                    HttpUtility.UrlDecode(imageUrl));
+            var result = await ReleaseService.SetReleaseImageByUrl(await CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);

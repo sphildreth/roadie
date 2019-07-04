@@ -27,84 +27,30 @@ namespace Roadie.Api.Services
         {
         }
 
-        public async Task<OperationResult<LibraryStats>> LibraryStatistics()
+        public OperationResult<LibraryStats> LibraryStatistics()
         {
             LibraryStats result = null;
             var sw = new Stopwatch();
             sw.Start();
             try
             {
-                using (var conn = new MySqlConnection(Configuration.ConnectionString))
+                result = new LibraryStats
                 {
-                    conn.Open();
-                    var sql = @"SELECT rm.releaseMediaCount AS releaseMediaCount, COUNT(r.roadieId) AS releaseCount,
-                                ts.trackCount, ts.trackDuration as TotalTrackDuration, ts.trackSize as TotalTrackSize, ac.artistCount, lc.labelCount, pc.playedCount, uc.userCount, cc.collectionCount, pl.playlistCount
-                            FROM `release` r
-                            INNER JOIN (
-	                            SELECT COUNT(1) AS trackCount, SUM(t.duration) AS trackDuration, SUM(t.fileSize) AS trackSize
-	                            FROM `track` t
-	                            JOIN `releasemedia` rm ON rm.id = t.releaseMediaId
-	                            JOIN `release` r ON r.id = rm.releaseId
-	                            JOIN `artist` a ON a.id = r.artistId
-	                            WHERE t.hash IS NOT NULL) ts
-                            INNER JOIN (
-	                            SELECT COUNT(1) AS artistCount
-	                            FROM `artist`) ac
-                            INNER JOIN (
-	                            SELECT COUNT(1) AS labelCount
-	                            FROM `label`) lc
-                            INNER JOIN (
-	                            SELECT SUM(playedCount) as playedCount
-	                            FROM `usertrack`) pc
-                            INNER JOIN (
-	                            SELECT COUNT(1) as releaseMediaCount
-	                            FROM `releasemedia`) rm
-                            INNER JOIN (
-	                            SELECT COUNT(1) as userCount
-	                            FROM `user`) uc
-                            INNER JOIN (
-	                            SELECT COUNT(1) as collectionCount
-	                            FROM `collection`) cc
-                            INNER JOIN (
-	                            SELECT COUNT(1) as playlistCount
-	                            FROM `playlist`) pl;";
-                    using (var cmd = new MySqlCommand(sql, conn))
-                    {
-                        try
-                        {
-                            using (var rdr = await cmd.ExecuteReaderAsync())
-                            {
-                                if (rdr.HasRows)
-                                    while (rdr.Read())
-                                        result = new LibraryStats
-                                        {
-                                            UserCount = SafeParser.ToNumber<int?>(rdr["UserCount"]),
-                                            CollectionCount = SafeParser.ToNumber<int?>(rdr["CollectionCount"]),
-                                            PlaylistCount = SafeParser.ToNumber<int?>(rdr["PlaylistCount"]),
-                                            ArtistCount = SafeParser.ToNumber<int?>(rdr["ArtistCount"]),
-                                            LabelCount = SafeParser.ToNumber<int?>(rdr["LabelCount"]),
-                                            ReleaseCount = SafeParser.ToNumber<int?>(rdr["ReleaseCount"]),
-                                            ReleaseMediaCount = SafeParser.ToNumber<int?>(rdr["ReleaseMediaCount"]),
-                                            PlayedCount = SafeParser.ToNumber<int?>(rdr["PlayedCount"]),
-                                            TrackCount = SafeParser.ToNumber<int?>(rdr["TrackCount"]),
-                                            TotalTrackDuration = SafeParser.ToNumber<long?>(rdr["TotalTrackDuration"]),
-                                            TotalTrackSize = SafeParser.ToNumber<long?>(rdr["TotalTrackSize"])
-                                        };
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.LogError(ex);
-                        }
-                        finally
-                        {
-                            conn.Close();
-                        }
-                    }
-                }
-
+                    UserCount = DbContext.Users.Count(),
+                    CollectionCount = DbContext.Collections.Count(),
+                    PlayedCount = DbContext.Playlists.Count(),
+                    ArtistCount = DbContext.Artists.Count(),
+                    LabelCount = DbContext.Labels.Count(),
+                    ReleaseCount = DbContext.Releases.Count(),
+                    ReleaseMediaCount = DbContext.ReleaseMedias.Count()
+                };
+                result.PlayedCount = DbContext.UserTracks.Sum(x => x.PlayedCount);
+                var tracks = DbContext.Tracks.Where(x => x.Hash != null);
+                result.TrackCount = tracks.Count();
+                result.TotalTrackDuration = tracks.Sum(x => (long?)x.Duration);
+                result.TotalTrackSize = tracks.Sum(x => (long?)x.FileSize);
                 var lastScan = DbContext.ScanHistories.OrderByDescending(x => x.CreatedDate).FirstOrDefault();
-                if (lastScan != null) result.LastScan = lastScan.CreatedDate;
+                result.LastScan = lastScan?.CreatedDate;
                 sw.Stop();
             }
             catch (Exception ex)
@@ -124,46 +70,28 @@ namespace Roadie.Api.Services
         {
             var sw = new Stopwatch();
             sw.Start();
-
             var result = new List<DateAndCount>();
-
-            using (var conn = new MySqlConnection(Configuration.ConnectionString))
+            var dateInfos = (from r in DbContext.Releases
+                             orderby r.CreatedDate
+                             group r by r.CreatedDate.ToString("yyyy-MM-dd") into g
+                             select new
+                             {
+                                 date = g.Key,
+                                 count = g.Count()
+                             });
+            foreach (var dateInfo in dateInfos)
             {
-                conn.Open();
-                var sql = @"SELECT DATE_FORMAT(createdDate, '%Y-%m-%d') as date, count(1) as count
-                            FROM `release`
-                            group by DATE_FORMAT(createdDate, '%Y-%m-%d')
-                            order by createdDate;";
-                using (var cmd = new MySqlCommand(sql, conn))
+                result.Add(new DateAndCount
                 {
-                    try
-                    {
-                        using (var rdr = cmd.ExecuteReader())
-                        {
-                            if (rdr.HasRows)
-                                while (rdr.Read())
-                                    result.Add(new DateAndCount
-                                    {
-                                        Date = SafeParser.ToString(rdr["date"]),
-                                        Count = SafeParser.ToNumber<int?>(rdr["count"])
-                                    });
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogError(ex);
-                    }
-                    finally
-                    {
-                        conn.Close();
-                    }
-                }
+                    Date = dateInfo.date,
+                    Count = dateInfo.count
+                });
             }
-
             sw.Stop();
             return Task.FromResult(new OperationResult<IEnumerable<DateAndCount>>
             {
                 OperationTime = sw.ElapsedMilliseconds,
+                IsSuccess = result != null,
                 Data = result
             });
         }

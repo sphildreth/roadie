@@ -52,7 +52,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> Library()
         {
-            return Ok(await StatisticsService.LibraryStatistics());
+            return Ok(StatisticsService.LibraryStatistics());
         }
 
         [HttpGet("ping")]

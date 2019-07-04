@@ -116,7 +116,7 @@ namespace Roadie.Api.Services
                              {
                                  Text = l.Name,
                                  Value = l.RoadieId.ToString()
-                             },
+                             },                             
                              SortName = l.SortName,
                              CreatedDate = l.CreatedDate,
                              LastUpdated = l.LastUpdated,
@@ -131,12 +131,8 @@ namespace Roadie.Api.Services
             {
                 var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
                 request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
-                var sql = "SELECT l.Id FROM `label` l ORDER BY RAND() LIMIT {0}";
-                rows = (from rdn in DbContext.Labels.FromSql(sql, randomLimit)
-                        join rs in result on rdn.Id equals rs.DatabaseId
-                        select rs)
-                    .Take(request.LimitValue)
-                    .ToArray();
+                rows = result.OrderBy(x => x.RandomSortId).Take(request.LimitValue).ToArray();
+
             }
             else
             {

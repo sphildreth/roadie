@@ -164,24 +164,21 @@ namespace Roadie.Api.Services
             IQueryable<data.Collection> collections = null;
             if (artistId.HasValue)
             {
-                var sql = @"select DISTINCT c.*
-                            from `collectionrelease` cr
-                            join `collection` c on c.id = cr.collectionId
-                            join `release` r on r.id = cr.releaseId
-                            join `artist` a on r.artistId = a.id
-                            where a.roadieId = {0}";
+                collections = (from cr in DbContext.CollectionReleases
+                               join c in DbContext.Collections on cr.CollectionId equals c.Id
+                               join r in DbContext.Releases on cr.ReleaseId equals r.Id
+                               join a in DbContext.Artists on r.ArtistId equals a.Id
+                               where a.RoadieId == artistId
+                               select c).Distinct();
 
-                collections = DbContext.Collections.FromSql(sql, artistId);
             }
             else if (releaseId.HasValue)
             {
-                var sql = @"select DISTINCT c.*
-                            from `collectionrelease` cr
-                            join `collection` c on c.id = cr.collectionId
-                            join `release` r on r.id = cr.releaseId
-                            where r.roadieId = {0}";
-
-                collections = DbContext.Collections.FromSql(sql, releaseId);
+                collections = (from cr in DbContext.CollectionReleases
+                               join c in DbContext.Collections on cr.CollectionId equals c.Id
+                               join r in DbContext.Releases on cr.ReleaseId equals r.Id
+                               where r.RoadieId == releaseId
+                               select c).Distinct();
             }
             else
             {

@@ -134,23 +134,19 @@ namespace Roadie.Library.Engines
 
                             if (genre != null && genre.Id > 0)
                             {
-                                string sql = null;
-                                try
+                               DbContext.ReleaseGenres.Add(new ReleaseGenre
                                 {
-                                    await DbContext.Database.ExecuteSqlCommandAsync(
-                                        "INSERT INTO `releaseGenreTable` (releaseId, genreId) VALUES ({0}, {1});",
-                                        release.Id, genre.Id);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Logger.LogError(ex, "Sql [" + sql + "]");
-                                }
+                                    ReleaseId = release.Id,
+                                    GenreId = genre.Id
+                                });
+
                             }
                         }
 
                     if (releaseImages != null && releaseImages.Any(x => x.Status == Statuses.New))
                     {
                         foreach (var releaseImage in releaseImages)
+                        {
                             DbContext.Images.Add(new Image
                             {
                                 ReleaseId = release.Id,
@@ -158,6 +154,7 @@ namespace Roadie.Library.Engines
                                 Signature = releaseImage.Signature,
                                 Bytes = releaseImage.Bytes
                             });
+                        }
                         try
                         {
                             await DbContext.SaveChangesAsync();

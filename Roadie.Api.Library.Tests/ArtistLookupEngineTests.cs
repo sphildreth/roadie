@@ -72,6 +72,91 @@ namespace Roadie.Library.Tests
         }
 
         //[Fact]
+        //public void Update_Genre_Normalized_Name()
+        //{
+        //    var optionsBuilder = new DbContextOptionsBuilder<RoadieDbContext>();
+        //    optionsBuilder.UseMySql("server=viking;userid=roadie;password=MenAtW0rk668;persistsecurityinfo=True;database=roadie;ConvertZeroDateTime=true");
+
+        //    using (var context = new RoadieDbContext(optionsBuilder.Options))
+        //    {
+        //        var now = DateTime.UtcNow;
+        //        foreach (var genre in context.Genres)
+        //        {
+        //            genre.NormalizedName = genre.Name.ToAlphanumericName();
+        //            genre.LastUpdated = now;
+        //        }
+        //        context.SaveChanges();
+        //    }
+        //}
+
+        //[Fact]
+        //public void Merge_Genres()
+        //{
+        //    var optionsBuilder = new DbContextOptionsBuilder<RoadieDbContext>();
+        //    optionsBuilder.UseMySql("server=viking;userid=roadie;password=MenAtW0rk668;persistsecurityinfo=True;database=roadie;ConvertZeroDateTime=true");
+
+        //    using (var context = new RoadieDbContext(optionsBuilder.Options))
+        //    {
+        //        var addedArtistToGenre = new List<KeyValuePair<int, int>>();
+        //        var addedReleaseToGenre = new List<KeyValuePair<int, int>>();
+        //        var now = DateTime.UtcNow;
+        //        var groupedGenres = context.Genres.GroupBy(x => x.NormalizedName).ToArray();
+        //        foreach (var genreGroup in groupedGenres)
+        //        {
+        //            var genre = genreGroup.OrderBy(x => x.Id).First();
+        //            foreach (var gg in genreGroup.OrderBy(x => x.Id).Skip(1))
+        //            {
+        //                var artistIdsInDups = (from g in context.Genres
+        //                                        join ag in context.ArtistGenres on g.Id equals ag.GenreId
+        //                                        where g.Id == gg.Id
+        //                                        select ag.ArtistId).Distinct().ToArray();
+
+        //                var releaseIdsInDups = (from g in context.Genres
+        //                                        join rg in context.ReleaseGenres on g.Id equals rg.GenreId
+        //                                        where g.Id == gg.Id
+        //                                        select rg.ReleaseId).Distinct().ToArray();
+
+        //                if (artistIdsInDups != null && artistIdsInDups.Any())
+        //                {
+        //                    foreach (var artistIdsInDup in artistIdsInDups)
+        //                    {
+        //                        if (!addedArtistToGenre.Any(x => x.Key == artistIdsInDup && x.Value == genre.Id))
+        //                        {
+        //                            context.ArtistGenres.Add(new ArtistGenre
+        //                            {
+        //                                ArtistId = artistIdsInDup,
+        //                                GenreId = genre.Id
+        //                            });
+        //                            addedArtistToGenre.Add(new KeyValuePair<int, int>(artistIdsInDup, genre.Id));
+        //                        }
+        //                    }
+        //                }
+
+        //                if (releaseIdsInDups != null && releaseIdsInDups.Any())
+        //                {
+        //                    foreach (var releaseIdsInDup in releaseIdsInDups)
+        //                    {
+        //                        if (!addedReleaseToGenre.Any(x => x.Key == releaseIdsInDup && x.Value == genre.Id))
+        //                        {
+        //                            context.ReleaseGenres.Add(new ReleaseGenre
+        //                            {
+        //                                ReleaseId = releaseIdsInDup,
+        //                                GenreId = genre.Id
+        //                            });
+        //                            addedReleaseToGenre.Add(new KeyValuePair<int, int>(releaseIdsInDup, genre.Id));
+        //                        }
+        //                    }
+        //                }
+
+        //                context.Genres.Remove(gg);
+        //                context.SaveChanges();
+        //            }
+        //        }
+        //    }
+        //}
+
+
+        //[Fact]
         //public void Update_Releases_Special_Name()
         //{
         //    var optionsBuilder = new DbContextOptionsBuilder<RoadieDbContext>();

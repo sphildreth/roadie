@@ -13,6 +13,8 @@ namespace Roadie.Library.Data
 
         [Column("name")] [MaxLength(100)] public string Name { get; set; }
 
+        [Column("normalizedName")] [MaxLength(100)] public string NormalizedName { get; set; }
+
         public ICollection<ReleaseGenre> Releases { get; set; }
 
         public Genre()

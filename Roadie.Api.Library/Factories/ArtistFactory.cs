@@ -111,13 +111,13 @@ namespace Roadie.Library.Factories
         /// <summary>
         ///     Merge one Artist into another one
         /// </summary>
-        /// <param name="ArtistToMerge">The Artist to be merged</param>
+        /// <param name="artistToMerge">The Artist to be merged</param>
         /// <param name="artistToMergeInto">The Artist to merge into</param>
         /// <returns></returns>
-        public async Task<OperationResult<Artist>> MergeArtists(Artist ArtistToMerge, Artist artistToMergeInto,
+        public async Task<OperationResult<Artist>> MergeArtists(Artist artistToMerge, Artist artistToMergeInto,
             bool doDbUpdates = false)
         {
-            SimpleContract.Requires<ArgumentNullException>(ArtistToMerge != null, "Invalid Artist");
+            SimpleContract.Requires<ArgumentNullException>(artistToMerge != null, "Invalid Artist");
             SimpleContract.Requires<ArgumentNullException>(artistToMergeInto != null, "Invalid Artist");
 
             var result = false;
@@ -126,71 +126,97 @@ namespace Roadie.Library.Factories
             var sw = new Stopwatch();
             sw.Start();
 
-            artistToMergeInto.RealName = ArtistToMerge.RealName ?? artistToMergeInto.RealName;
-            artistToMergeInto.MusicBrainzId = ArtistToMerge.MusicBrainzId ?? artistToMergeInto.MusicBrainzId;
-            artistToMergeInto.ITunesId = ArtistToMerge.ITunesId ?? artistToMergeInto.ITunesId;
-            artistToMergeInto.AmgId = ArtistToMerge.AmgId ?? artistToMergeInto.AmgId;
-            artistToMergeInto.SpotifyId = ArtistToMerge.SpotifyId ?? artistToMergeInto.SpotifyId;
-            artistToMergeInto.Thumbnail = ArtistToMerge.Thumbnail ?? artistToMergeInto.Thumbnail;
-            artistToMergeInto.Profile = ArtistToMerge.Profile ?? artistToMergeInto.Profile;
-            artistToMergeInto.BirthDate = ArtistToMerge.BirthDate ?? artistToMergeInto.BirthDate;
-            artistToMergeInto.BeginDate = ArtistToMerge.BeginDate ?? artistToMergeInto.BeginDate;
-            artistToMergeInto.EndDate = ArtistToMerge.EndDate ?? artistToMergeInto.EndDate;
-            if (!string.IsNullOrEmpty(ArtistToMerge.ArtistType) &&
-                !ArtistToMerge.ArtistType.Equals("Other", StringComparison.OrdinalIgnoreCase))
-                artistToMergeInto.ArtistType = ArtistToMerge.ArtistType;
-            artistToMergeInto.BioContext = ArtistToMerge.BioContext ?? artistToMergeInto.BioContext;
-            artistToMergeInto.DiscogsId = ArtistToMerge.DiscogsId ?? artistToMergeInto.DiscogsId;
-
-            artistToMergeInto.Tags =
-                artistToMergeInto.Tags.AddToDelimitedList(ArtistToMerge.Tags.ToListFromDelimited());
-            var altNames = ArtistToMerge.AlternateNames.ToListFromDelimited().ToList();
-            altNames.Add(ArtistToMerge.Name);
-            altNames.Add(ArtistToMerge.SortName);
+            artistToMergeInto.RealName = artistToMerge.RealName ?? artistToMergeInto.RealName;
+            artistToMergeInto.MusicBrainzId = artistToMerge.MusicBrainzId ?? artistToMergeInto.MusicBrainzId;
+            artistToMergeInto.ITunesId = artistToMerge.ITunesId ?? artistToMergeInto.ITunesId;
+            artistToMergeInto.AmgId = artistToMerge.AmgId ?? artistToMergeInto.AmgId;
+            artistToMergeInto.SpotifyId = artistToMerge.SpotifyId ?? artistToMergeInto.SpotifyId;
+            artistToMergeInto.Thumbnail = artistToMerge.Thumbnail ?? artistToMergeInto.Thumbnail;
+            artistToMergeInto.Profile = artistToMerge.Profile ?? artistToMergeInto.Profile;
+            artistToMergeInto.BirthDate = artistToMerge.BirthDate ?? artistToMergeInto.BirthDate;
+            artistToMergeInto.BeginDate = artistToMerge.BeginDate ?? artistToMergeInto.BeginDate;
+            artistToMergeInto.EndDate = artistToMerge.EndDate ?? artistToMergeInto.EndDate;
+            if (!string.IsNullOrEmpty(artistToMerge.ArtistType) && !artistToMerge.ArtistType.Equals("Other", StringComparison.OrdinalIgnoreCase))
+            {
+                artistToMergeInto.ArtistType = artistToMerge.ArtistType;
+            }
+            artistToMergeInto.BioContext = artistToMerge.BioContext ?? artistToMergeInto.BioContext;
+            artistToMergeInto.DiscogsId = artistToMerge.DiscogsId ?? artistToMergeInto.DiscogsId;
+            artistToMergeInto.Tags = artistToMergeInto.Tags.AddToDelimitedList(artistToMerge.Tags.ToListFromDelimited());
+            var altNames = artistToMerge.AlternateNames.ToListFromDelimited().ToList();
+            altNames.Add(artistToMerge.Name);
+            altNames.Add(artistToMerge.SortName);
             artistToMergeInto.AlternateNames = artistToMergeInto.AlternateNames.AddToDelimitedList(altNames);
-            artistToMergeInto.URLs =
-                artistToMergeInto.URLs.AddToDelimitedList(ArtistToMerge.URLs.ToListFromDelimited());
-            artistToMergeInto.ISNI =
-                artistToMergeInto.ISNI.AddToDelimitedList(ArtistToMerge.ISNI.ToListFromDelimited());
+            artistToMergeInto.URLs = artistToMergeInto.URLs.AddToDelimitedList(artistToMerge.URLs.ToListFromDelimited());
+            artistToMergeInto.ISNI = artistToMergeInto.ISNI.AddToDelimitedList(artistToMerge.ISNI.ToListFromDelimited());
             artistToMergeInto.LastUpdated = now;
 
             if (doDbUpdates)
             {
-                string sql = null;
-
-                sql = "UPDATE `artistGenreTable` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " +
-                      ArtistToMerge.Id + ";";
-                await DbContext.Database.ExecuteSqlCommandAsync(sql);
-                sql = "UPDATE `image` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " +
-                      ArtistToMerge.Id + ";";
-                await DbContext.Database.ExecuteSqlCommandAsync(sql);
-                sql = "UPDATE `userartist` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " +
-                      ArtistToMerge.Id + ";";
-                await DbContext.Database.ExecuteSqlCommandAsync(sql);
-                sql = "UPDATE `track` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " +
-                      ArtistToMerge.Id + ";";
-                await DbContext.Database.ExecuteSqlCommandAsync(sql);
-
                 try
                 {
-                    sql = "UPDATE `release` set artistId = " + artistToMergeInto.Id + " WHERE artistId = " +
-                          ArtistToMerge.Id + ";";
-                    await DbContext.Database.ExecuteSqlCommandAsync(sql);
+                    var artistGenres = DbContext.ArtistGenres.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
+                    if (artistGenres != null)
+                    {
+                        foreach (var artistGenre in artistGenres)
+                        {
+                            artistGenre.ArtistId = artistToMergeInto.Id;
+                        }
+                    }
+                    var artistImages = DbContext.Images.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
+                    if (artistImages != null)
+                    {
+                        foreach (var artistImage in artistImages)
+                        {
+                            artistImage.ArtistId = artistToMergeInto.Id;
+                        }
+                    }
+                    var userArtists = DbContext.UserArtists.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
+                    if (artistImages != null)
+                    {
+                        foreach (var userArtist in userArtists)
+                        {
+                            userArtist.ArtistId = artistToMergeInto.Id;
+                        }
+                    }
+                    var artistTracks = DbContext.Tracks.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
+                    if (artistTracks != null)
+                    {
+                        foreach (var artistTrack in artistTracks)
+                        {
+                            artistTrack.ArtistId = artistToMergeInto.Id;
+                        }
+                    }
+                    var artistReleases = DbContext.Releases.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
+                    if (artistReleases != null)
+                    {
+                        foreach (var artistRelease in artistReleases)
+                        {
+                            // See if there is already a release by the same name for the artist to merge into, if so then merge releases
+                            var artistToMergeHasRelease = DbContext.Releases.FirstOrDefault(x => x.ArtistId == artistToMerge.Id && x.Title == artistRelease.Title);
+                            if (artistToMergeHasRelease != null)
+                            {
+                                await ReleaseFactory.MergeReleases(artistRelease, artistToMergeHasRelease, false);
+                            }
+                            else
+                            {
+                                artistRelease.ArtistId = artistToMerge.Id;
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
                     Logger.LogWarning(ex.ToString());
                 }
 
-                var artistFolder = ArtistToMerge.ArtistFileFolder(Configuration, Configuration.LibraryFolder);
-                foreach (var release in DbContext.Releases.Include("Artist").Where(x => x.ArtistId == ArtistToMerge.Id)
-                    .ToArray())
+                var artistFolder = artistToMerge.ArtistFileFolder(Configuration, Configuration.LibraryFolder);
+                foreach (var release in DbContext.Releases.Include("Artist").Where(x => x.ArtistId == artistToMerge.Id).ToArray())
                 {
                     var originalReleaseFolder = release.ReleaseFileFolder(artistFolder);
                     await ReleaseFactory.Update(release, null, originalReleaseFolder);
                 }
-
-                await Delete(ArtistToMerge);
+                await Delete(artistToMerge);
             }
 
             result = true;

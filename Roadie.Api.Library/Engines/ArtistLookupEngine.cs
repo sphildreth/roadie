@@ -65,7 +65,7 @@ namespace Roadie.Library.Engines
 
             try
             {
-                var ArtistGenreTables = artist.Genres;
+                var artistGenreTables = artist.Genres;
                 var ArtistImages = artist.Images;
                 var now = DateTime.UtcNow;
                 artist.AlternateNames =
@@ -106,34 +106,29 @@ namespace Roadie.Library.Engines
                 if (artist.Id < 1 && addArtistResult.Entity.Id > 0) artist.Id = addArtistResult.Entity.Id;
                 if (inserted > 0 && artist.Id > 0)
                 {
-                    if (ArtistGenreTables != null && ArtistGenreTables.Any(x => x.GenreId == null))
+                    if (artistGenreTables != null && artistGenreTables.Any(x => x.GenreId == null))
                     {
-                        string sql = null;
-                        try
+                        foreach (var artistGenreTable in artistGenreTables)
                         {
-                            foreach (var ArtistGenreTable in ArtistGenreTables)
+                            var genre = DbContext.Genres.FirstOrDefault(x => x.NormalizedName == artistGenreTable.Genre.Name.ToAlphanumericName());
+                            if (genre == null)
                             {
-                                var genre = DbContext.Genres.FirstOrDefault(x =>
-                                    x.Name.ToLower().Trim() == ArtistGenreTable.Genre.Name.ToLower().Trim());
-                                if (genre == null)
+                                genre = new Genre
                                 {
-                                    genre = new Genre
-                                    {
-                                        Name = ArtistGenreTable.Genre.Name
-                                    };
-                                    DbContext.Genres.Add(genre);
-                                    await DbContext.SaveChangesAsync();
-                                }
-
-                                if (genre != null && genre.Id > 0)
-                                    await DbContext.Database.ExecuteSqlCommandAsync(
-                                        "INSERT INTO `artistGenreTable` (artistId, genreId) VALUES ({0}, {1});",
-                                        artist.Id, genre.Id);
+                                    Name = artistGenreTable.Genre.Name,
+                                    NormalizedName = artistGenreTable.Genre.Name.ToAlphanumericName()
+                                };
+                                DbContext.Genres.Add(genre);
+                                await DbContext.SaveChangesAsync();
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.LogError(ex, "Sql [" + sql + "] Exception [" + ex.Serialize() + "]");
+                            if (genre != null && genre.Id > 0)
+                            {
+                                DbContext.ArtistGenres.Add(new ArtistGenre
+                                {
+                                    ArtistId = artist.Id,
+                                    GenreId = genre.Id
+                                });
+                            }
                         }
                     }
 
