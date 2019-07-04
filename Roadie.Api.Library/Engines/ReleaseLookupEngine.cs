@@ -111,22 +111,23 @@ namespace Roadie.Library.Engines
                     if (releaseGenreTables != null && releaseGenreTables.Any(x => x.GenreId == null))
                         foreach (var releaseGenreTable in releaseGenreTables)
                         {
-                            var genreName = releaseGenreTable.Genre?.Name?.ToLower().Trim();
+                            var genreName = releaseGenreTable.Genre?.Name?.ToAlphanumericName();
                             if (string.IsNullOrEmpty(genreName)) continue;
-                            if (genreName.Length > 100)
+                            if (releaseGenreTable.Genre.Name.Length > 100)
                             {
-                                var originalName = genreName;
+                                var originalName = releaseGenreTable.Genre.Name;
+                                releaseGenreTable.Genre.Name = releaseGenreTable.Genre.Name.Substring(0, 99);
                                 genreName = genreName.Substring(0, 99);
-                                Logger.LogWarning(
-                                    $"Genre Name Too long was [{originalName}] truncated to [{genreName}]");
+                                Logger.LogWarning($"Genre Name Too long was [{originalName}] truncated to [{releaseGenreTable.Genre.Name}]");
                             }
 
-                            var genre = DbContext.Genres.FirstOrDefault(x => x.Name.ToLower().Trim() == genreName);
+                            var genre = DbContext.Genres.FirstOrDefault(x => x.NormalizedName == genreName);
                             if (genre == null)
                             {
                                 genre = new Genre
                                 {
-                                    Name = releaseGenreTable.Genre.Name
+                                    Name = releaseGenreTable.Genre.Name,
+                                    NormalizedName = genreName
                                 };
                                 DbContext.Genres.Add(genre);
                                 await DbContext.SaveChangesAsync();
@@ -656,20 +657,24 @@ namespace Roadie.Library.Engines
             if (releaseGenres.Any())
             {
                 result.Genres = new List<ReleaseGenre>();
-                foreach (var releaseGenre in releaseGenres.Where(x => !string.IsNullOrEmpty(x)).GroupBy(x => x)
-                    .Select(x => x.First()))
+                foreach (var releaseGenre in releaseGenres.Where(x => !string.IsNullOrEmpty(x)).GroupBy(x => x).Select(x => x.First()))
                 {
                     var rg = releaseGenre.Trim();
                     if (!string.IsNullOrEmpty(rg))
+                    {
                         foreach (var g in ID3TagsHelper.SplitGenre(rg))
+                        {
                             result.Genres.Add(new ReleaseGenre
                             {
-                                Genre = DbContext.Genres.Where(x => x.Name.ToLower() == g.ToLower()).FirstOrDefault() ??
-                                        new Genre { Name = g }
+                                Genre = DbContext.Genres.Where(x => x.Name.ToLower() == g.ToLower()).FirstOrDefault() ?? new Genre
+                                {
+                                    Name = g,
+                                    NormalizedName = g.ToAlphanumericName()
+                                }
                             });
-                }
-
-                ;
+                        }
+                    }
+                };
             }
 
             if (releaseImageUrls.Any())

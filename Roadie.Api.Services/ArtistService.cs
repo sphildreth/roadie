@@ -499,8 +499,7 @@ namespace Roadie.Api.Services
                     // Remove existing Genres not in model list
                     foreach (var genre in artist.Genres.ToList())
                     {
-                        var doesExistInModel =
-                            model.Genres.Any(x => SafeParser.ToGuid(x.Value) == genre.Genre.RoadieId);
+                        var doesExistInModel = model.Genres.Any(x => SafeParser.ToGuid(x.Value) == genre.Genre.RoadieId);
                         if (!doesExistInModel) artist.Genres.Remove(genre);
                     }
 
@@ -517,7 +516,8 @@ namespace Roadie.Api.Services
                                 {
                                     ArtistId = artist.Id,
                                     GenreId = g.Id,
-                                    Genre = g
+                                    Genre = g                                   
+                                    
                                 });
                         }
                     }

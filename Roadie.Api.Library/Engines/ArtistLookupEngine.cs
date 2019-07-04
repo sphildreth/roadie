@@ -110,13 +110,22 @@ namespace Roadie.Library.Engines
                     {
                         foreach (var artistGenreTable in artistGenreTables)
                         {
-                            var genre = DbContext.Genres.FirstOrDefault(x => x.NormalizedName == artistGenreTable.Genre.Name.ToAlphanumericName());
+                            var genreName = artistGenreTable.Genre?.Name?.ToAlphanumericName();
+                            if (string.IsNullOrEmpty(genreName)) continue;
+                            if (artistGenreTable.Genre.Name.Length > 100)
+                            {
+                                var originalName = artistGenreTable.Genre.Name;
+                                artistGenreTable.Genre.Name = artistGenreTable.Genre.Name.Substring(0, 99);
+                                genreName = genreName.Substring(0, 99);
+                                Logger.LogWarning($"Genre Name Too long was [{originalName}] truncated to [{artistGenreTable.Genre.Name}]");
+                            }
+                            var genre = DbContext.Genres.FirstOrDefault(x => x.NormalizedName == genreName);
                             if (genre == null)
                             {
                                 genre = new Genre
                                 {
                                     Name = artistGenreTable.Genre.Name,
-                                    NormalizedName = artistGenreTable.Genre.Name.ToAlphanumericName()
+                                    NormalizedName = genreName
                                 };
                                 DbContext.Genres.Add(genre);
                                 await DbContext.SaveChangesAsync();
@@ -580,7 +589,9 @@ namespace Roadie.Library.Engines
                                 ? genreInfo.existingGenre
                                 : new Genre
                                 {
-                                    Name = genreInfo.newGenre
+                                    Name = genreInfo.newGenre,
+                                    NormalizedName = genreInfo.newGenre.ToAlphanumericName()
+
                                 }
                         });
                 }
