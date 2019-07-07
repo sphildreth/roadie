@@ -1,5 +1,7 @@
-﻿using Roadie.Library.Enums;
+﻿using Roadie.Library.Configuration;
+using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
+using Roadie.Library.MetaData.Audio;
 using Roadie.Library.SearchEngines.Imaging;
 using Roadie.Library.Utility;
 using SixLabors.ImageSharp;
@@ -219,5 +221,86 @@ namespace Roadie.Library.Imaging
 
             return null;
         }
+
+        /// <summary>
+        ///     Get image data from all sources for either fileanme or MetaData
+        /// </summary>
+        /// <param name="filename">Name of the File (ie a CUE file)</param>
+        /// <param name="metaData">Populated MetaData</param>
+        /// <returns></returns>
+        public static AudioMetaDataImage GetPictureForMetaData(IRoadieSettings configuration, string filename, AudioMetaData metaData)
+        {
+            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(filename), "Invalid Filename");
+            SimpleContract.Requires<ArgumentException>(metaData != null, "Invalid MetaData");
+
+            return ImageForFilename(configuration, filename);
+        }
+
+        /// <summary>
+        ///     Does image exist with the same filename
+        /// </summary>
+        /// <param name="filename">Name of the File (ie a CUE file)</param>
+        /// <returns>Null if not found else populated image</returns>
+        public static AudioMetaDataImage ImageForFilename(IRoadieSettings configuration, string filename)
+        {
+            AudioMetaDataImage imageMetaData = null;
+
+            if (string.IsNullOrEmpty(filename)) return imageMetaData;
+            try
+            {
+                var fileInfo = new FileInfo(filename);
+                var ReleaseCover = Path.ChangeExtension(filename, "jpg");
+                if (File.Exists(ReleaseCover))
+                {
+                    using (var processor = new ImageProcessor(configuration))
+                    {
+                        imageMetaData = new AudioMetaDataImage
+                        {
+                            Data = processor.Process(File.ReadAllBytes(ReleaseCover)),
+                            Type = AudioMetaDataImageType.FrontCover,
+                            MimeType = Library.Processors.FileProcessor.DetermineFileType(fileInfo)
+                        };
+                    }
+                }
+                else
+                {
+                    // Is there a picture in filename folder (for the Release)
+                    var pictures = fileInfo.Directory.GetFiles("*.jpg");
+                    var tagImages = new List<AudioMetaDataImage>();
+                    if (pictures != null && pictures.Any())
+                    {
+                        FileInfo picture = null;
+                        // See if there is a "cover" or "front" jpg file if so use it
+                        picture = pictures.FirstOrDefault(x =>
+                            x.Name.Equals("cover", StringComparison.OrdinalIgnoreCase));
+                        if (picture == null)
+                            picture = pictures.FirstOrDefault(x =>
+                                x.Name.Equals("front", StringComparison.OrdinalIgnoreCase));
+                        if (picture == null) picture = pictures.First();
+                        if (picture != null)
+                            using (var processor = new ImageProcessor(configuration))
+                            {
+                                imageMetaData = new AudioMetaDataImage
+                                {
+                                    Data = processor.Process(File.ReadAllBytes(picture.FullName)),
+                                    Type = AudioMetaDataImageType.FrontCover,
+                                    MimeType = Library.Processors.FileProcessor.DetermineFileType(picture)
+                                };
+                            }
+                    }
+                }
+            }
+            catch (FileNotFoundException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex, ex.Serialize());
+            }
+
+            return imageMetaData;
+        }
+
+
     }
 }

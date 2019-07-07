@@ -25,7 +25,7 @@ using data = Roadie.Library.Data;
 
 namespace Roadie.Library.MetaData.LastFm
 {
-    public class LastFmHelper : MetaDataProviderBase, IArtistSearchEngine, IReleaseSearchEngine, ILastFmHelper
+    public class LastFmHelper : MetaDataProviderBase, ILastFmHelper
     {
         private const string LastFmErrorCodeXPath = "/lfm/error/@code";
         private const string LastFmErrorXPath = "/lfm/error";
@@ -41,7 +41,7 @@ namespace Roadie.Library.MetaData.LastFm
 
         private IHttpEncoder HttpEncoder { get; }
 
-        public LastFmHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger,
+        public LastFmHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<LastFmHelper> logger,
                                     data.IRoadieDbContext dbContext, IHttpEncoder httpEncoder)
             : base(configuration, cacheManager, logger)
         {
@@ -121,43 +121,45 @@ namespace Roadie.Library.MetaData.LastFm
                 var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == roadieUser.UserId);
 
                 if (user == null || string.IsNullOrEmpty(user.LastFMSessionKey))
+                {
                     return new OperationResult<bool>("User does not have LastFM Integration setup");
-                var method = "track.updateNowPlaying";
-                var parameters = new RequestParameters
-                {
-                    {"artist", scrobble.ArtistName},
-                    {"track", scrobble.TrackTitle},
-                    {"album", scrobble.ReleaseTitle},
-                    {"duration", ((int) scrobble.TrackDuration.TotalSeconds).ToString()}
-                };
-                var url = "http://ws.audioscrobbler.com/2.0/";
-                var signature = GenerateMethodSignature(method, parameters, user.LastFMSessionKey);
-                parameters.Add("api_sig", signature);
-
-                ServicePointManager.Expect100Continue = false;
-                var request = WebRequest.Create(url);
-                request.Method = "POST";
-                var postData = parameters.ToString();
-                var byteArray = System.Text.Encoding.UTF8.GetBytes(postData);
-                request.ContentType = "application/x-www-form-urlencoded";
-                request.ContentLength = byteArray.Length;
-                using (var dataStream = request.GetRequestStream())
-                {
-                    dataStream.Write(byteArray, 0, byteArray.Length);
-                    dataStream.Close();
                 }
+                await Task.Run(() =>
+                {
+                    var method = "track.updateNowPlaying";
+                    var parameters = new RequestParameters
+                    {
+                        {"artist", scrobble.ArtistName},
+                        {"track", scrobble.TrackTitle},
+                        {"album", scrobble.ReleaseTitle},
+                        {"duration", ((int) scrobble.TrackDuration.TotalSeconds).ToString()}
+                    };
+                    var url = "http://ws.audioscrobbler.com/2.0/";
+                    var signature = GenerateMethodSignature(method, parameters, user.LastFMSessionKey);
+                    parameters.Add("api_sig", signature);
 
-                var xp = GetResponseAsXml(request);
-                Logger.LogInformation(
-                    $"LastFmHelper: RoadieUser `{roadieUser}` NowPlaying `{scrobble}` LastFmResult [{xp.InnerXml}]");
-                result = true;
+                    ServicePointManager.Expect100Continue = false;
+                    var request = WebRequest.Create(url);
+                    request.Method = "POST";
+                    var postData = parameters.ToString();
+                    var byteArray = System.Text.Encoding.UTF8.GetBytes(postData);
+                    request.ContentType = "application/x-www-form-urlencoded";
+                    request.ContentLength = byteArray.Length;
+                    using (var dataStream = request.GetRequestStream())
+                    {
+                        dataStream.Write(byteArray, 0, byteArray.Length);
+                        dataStream.Close();
+                    }
+                    var xp = GetResponseAsXml(request);
+                    Logger.LogInformation($"LastFmHelper: RoadieUser `{roadieUser}` NowPlaying `{scrobble}` LastFmResult [{xp.InnerXml}]");
+                    result = true;
+                });
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex,
                     $"Error in LastFmHelper NowPlaying: RoadieUser `{roadieUser}` Scrobble `{scrobble}`");
             }
-
             return new OperationResult<bool>
             {
                 IsSuccess = result,

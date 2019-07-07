@@ -120,7 +120,7 @@ namespace Roadie.Library.Inspect
         {
             Console.WriteLine("Roadie Media Inspector");
 
-            MessageLogger = new EventMessageLogger();
+            MessageLogger = new EventMessageLogger<Inspector>();
             MessageLogger.Messages += MessageLogger_Messages;
 
             var settings = new RoadieSettings();
@@ -131,18 +131,15 @@ namespace Roadie.Library.Inspect
             settings.ConnectionString = configuration.GetConnectionString("RoadieDatabaseConnection");
             Configuration = settings;
             CacheManager = new DictionaryCacheManager(Logger, new CachePolicy(TimeSpan.FromHours(4)));
-            TagsHelper = new ID3TagsHelper(Configuration, CacheManager, Logger);
+
+            var tagHelperLooper = new EventMessageLogger<ID3TagsHelper>();
+            tagHelperLooper.Messages += MessageLogger_Messages;
+            TagsHelper = new ID3TagsHelper(Configuration, CacheManager, tagHelperLooper);
         }
 
-        public static string ArtistInspectorToken(AudioMetaData metaData)
-        {
-            return ToToken(metaData.Artist);
-        }
+        public static string ArtistInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist);
 
-        public static string ReleaseInspectorToken(AudioMetaData metaData)
-        {
-            return ToToken(metaData.Artist + metaData.Release);
-        }
+        public static string ReleaseInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist + metaData.Release);
 
         public static string ToToken(string input)
         {
@@ -156,8 +153,7 @@ namespace Roadie.Library.Inspect
             return token;
         }
 
-        public void Inspect(bool doCopy, bool isReadOnly, string directoryToInspect, string destination,
-            bool dontAppendSubFolder, bool dontDeleteEmptyFolders)
+        public void Inspect(bool doCopy, bool isReadOnly, string directoryToInspect, string destination, bool dontAppendSubFolder, bool dontDeleteEmptyFolders)
         {
             Configuration.Inspector.IsInReadOnlyMode = isReadOnly;
             Configuration.Inspector.DoCopyFiles = doCopy;
@@ -570,10 +566,13 @@ namespace Roadie.Library.Inspect
             }
         }
 
-        private string RunScript(string scriptFilename, bool doCopy, bool isReadOnly, string directoryToInspect,
-                            string dest)
+        private string RunScript(string scriptFilename, bool doCopy, bool isReadOnly, string directoryToInspect, string dest)
         {
-            if (string.IsNullOrEmpty(scriptFilename)) return null;
+            if (string.IsNullOrEmpty(scriptFilename))
+            {
+                return null;
+            }
+
             try
             {
                 var script = File.ReadAllText(scriptFilename);
@@ -589,7 +588,6 @@ namespace Roadie.Library.Inspect
             {
                 Console.WriteLine($"📛 Error with Script File [{scriptFilename}], Error [{ex}] ");
             }
-
             return null;
         }
     }

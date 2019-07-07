@@ -6,16 +6,9 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.MetaData.LastFm
 {
-    public interface ILastFmHelper : IScrobblerIntegration
+    public interface ILastFmHelper : IScrobblerIntegration, IArtistSearchEngine, IReleaseSearchEngine
     {
-        bool IsEnabled { get; }
-
         Task<OperationResult<string>> GetSessionKeyForUserToken(string token);
-
-        Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount);
-
-        Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query,
-            int resultsCount);
 
         Task<IEnumerable<AudioMetaData>> TracksForRelease(string artist, string Release);
     }

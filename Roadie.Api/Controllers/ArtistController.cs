@@ -78,7 +78,7 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> MergeArtists(Guid artistToMergeId, Guid artistToMergeIntoId)
         {
             var result =
-                await ArtistService.MergeArtists(await CurrentUserModel(), artistToMergeId, artistToMergeIntoId);
+                await ArtistService.MergeArtists(await UserManager.GetUserAsync(User), artistToMergeId, artistToMergeIntoId);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
@@ -91,7 +91,7 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> SetArtistImageByUrl(Guid id, string imageUrl)
         {
             var result =
-                await ArtistService.SetReleaseImageByUrl(await CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
+                await ArtistService.SetReleaseImageByUrl(await UserManager.GetUserAsync(User), id, HttpUtility.UrlDecode(imageUrl));
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
@@ -104,7 +104,7 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Update(models.Artist artist)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var result = await ArtistService.UpdateArtist(await CurrentUserModel(), artist);
+            var result = await ArtistService.UpdateArtist(await UserManager.GetUserAsync(User), artist);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
@@ -116,7 +116,7 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
         {
-            var result = await ArtistService.UploadArtistImage(await CurrentUserModel(), id, file);
+            var result = await ArtistService.UploadArtistImage(await UserManager.GetUserAsync(User), id, file);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);

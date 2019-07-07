@@ -12,9 +12,9 @@ using data = Roadie.Library.Data;
 
 namespace Roadie.Library.Scrobble
 {
-    public class RoadieScrobbler : ScrobblerIntegrationBase
+    public class RoadieScrobbler : ScrobblerIntegrationBase, IRoadieScrobbler
     {
-        public RoadieScrobbler(IRoadieSettings configuration, ILogger logger, data.IRoadieDbContext dbContext,
+        public RoadieScrobbler(IRoadieSettings configuration, ILogger<RoadieScrobbler> logger, data.IRoadieDbContext dbContext,
             ICacheManager cacheManager, IHttpContext httpContext)
             : base(configuration, logger, dbContext, cacheManager, httpContext)
         {
@@ -25,11 +25,11 @@ namespace Roadie.Library.Scrobble
         /// </summary>
         public override async Task<OperationResult<bool>> NowPlaying(User roadieUser, ScrobbleInfo scrobble)
         {
-            return new OperationResult<bool>
+            return await Task.FromResult(new OperationResult<bool>
             {
                 Data = true,
                 IsSuccess = true
-            };
+            });
         }
 
         /// <summary>

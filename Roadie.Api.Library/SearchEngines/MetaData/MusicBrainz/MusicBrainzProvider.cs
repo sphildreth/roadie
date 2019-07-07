@@ -15,20 +15,18 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.MetaData.MusicBrainz
 {
-    public class MusicBrainzProvider : MetaDataProviderBase, IArtistSearchEngine, IReleaseSearchEngine,
-        IMusicBrainzProvider
+    public class MusicBrainzProvider : MetaDataProviderBase, IMusicBrainzProvider
     {
         public override bool IsEnabled => Configuration.Integrations.MusicBrainzProviderEnabled;
 
-        public MusicBrainzProvider(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger)
+        public MusicBrainzProvider(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<MusicBrainzProvider> logger)
                     : base(configuration, cacheManager, logger)
         {
         }
 
         public async Task<CoverArtArchivesResult> CoverArtForMusicBrainzReleaseById(string musicBrainzId)
         {
-            return await MusicBrainzRequestHelper.GetAsync<CoverArtArchivesResult>(
-                MusicBrainzRequestHelper.CreateCoverArtReleaseUrl(musicBrainzId));
+            return await MusicBrainzRequestHelper.GetAsync<CoverArtArchivesResult>(MusicBrainzRequestHelper.CreateCoverArtReleaseUrl(musicBrainzId));
         }
 
         public async Task<Release> MusicBrainzReleaseById(string musicBrainzId)

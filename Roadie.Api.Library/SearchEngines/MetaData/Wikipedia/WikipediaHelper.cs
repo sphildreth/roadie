@@ -10,11 +10,11 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
 {
-    public class WikipediaHelper : MetaDataProviderBase, IArtistSearchEngine, IReleaseSearchEngine
+    public class WikipediaHelper : MetaDataProviderBase, IWikipediaHelper
     {
         private IHttpEncoder HttpEncoder { get; }
 
-        public WikipediaHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger,
+        public WikipediaHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<WikipediaHelper> logger,
                     IHttpEncoder httpEncoder)
             : base(configuration, cacheManager, logger)
         {

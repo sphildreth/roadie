@@ -7,6 +7,6 @@ namespace Roadie.Library.FilePlugins
     {
         string[] HandlesTypes { get; }
 
-        Task<OperationResult<bool>> Process(string destinationRoot, FileInfo file, bool doJustInfo, int? submissionId);
+        Task<OperationResult<bool>> Process(FileInfo file, bool doJustInfo, int? submissionId);
     }
 }

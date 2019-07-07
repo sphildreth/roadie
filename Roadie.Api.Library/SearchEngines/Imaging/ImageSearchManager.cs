@@ -13,30 +13,44 @@ namespace Roadie.Library.SearchEngines.Imaging
         private readonly IImageSearchEngine _bingSearchEngine;
         private readonly IImageSearchEngine _itunesSearchEngine;
 
+        private IRoadieSettings Configuration { get; }
+
         private int DefaultResultsCount => 10;
 
-        public ImageSearchManager(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger,
-                    string requestIp = null, string referrer = null)
+        public ImageSearchManager(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<ImageSearchManager> logger, 
+                                  IBingImageSearchEngine bingImageSearchEngine, IITunesSearchEngine iTunesSearchEngine,
+                                  string requestIp = null, string referrer = null)
         {
-            _bingSearchEngine = new BingImageSearchEngine(configuration, logger, requestIp, referrer);
-            _itunesSearchEngine = new ITunesSearchEngine(configuration, cacheManager, logger, requestIp, referrer);
+            Configuration = configuration;
+            _bingSearchEngine = bingImageSearchEngine;
+            _itunesSearchEngine = iTunesSearchEngine;
         }
 
         public async Task<IEnumerable<ImageSearchResult>> ImageSearch(string query, int? resultsCount = null)
         {
             var count = resultsCount ?? DefaultResultsCount;
             var result = new List<ImageSearchResult>();
-
             if (WebHelper.IsStringUrl(query))
             {
                 var s = ImageHelper.ImageSearchResultForImageUrl(query);
                 if (s != null) result.Add(s);
             }
-
-            var bingResults = await _bingSearchEngine.PerformImageSearch(query, count);
-            if (bingResults != null) result.AddRange(bingResults);
-            var iTunesResults = await _itunesSearchEngine.PerformImageSearch(query, count);
-            if (iTunesResults != null) result.AddRange(iTunesResults);
+            if (Configuration.Integrations.BingImageSearchEngineEnabled)
+            {
+                var bingResults = await _bingSearchEngine.PerformImageSearch(query, count);
+                if (bingResults != null)
+                {
+                    result.AddRange(bingResults);
+                }
+            }
+            if (Configuration.Integrations.ITunesProviderEnabled)
+            {
+                var iTunesResults = await _itunesSearchEngine.PerformImageSearch(query, count);
+                if (iTunesResults != null)
+                {
+                    result.AddRange(iTunesResults);
+                }
+            }
             return result;
         }
     }

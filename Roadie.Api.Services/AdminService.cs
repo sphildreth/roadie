@@ -10,7 +10,6 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
-using Roadie.Library.Factories;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.Audio;
@@ -35,8 +34,6 @@ namespace Roadie.Api.Services
     {
         protected IHubContext<ScanActivityHub> ScanActivityHub { get; }
 
-        private IArtistFactory ArtistFactory { get; }
-
         private IArtistLookupEngine ArtistLookupEngine { get; }
 
         private IAudioMetaDataHelper AudioMetaDataHelper { get; }
@@ -47,10 +44,6 @@ namespace Roadie.Api.Services
 
         private IID3TagsHelper ID3TagsHelper { get; }
 
-        private IImageFactory ImageFactory { get; }
-
-        private ILabelFactory LabelFactory { get; }
-
         private ILabelLookupEngine LabelLookupEngine { get; }
 
         private ILastFmHelper LastFmHelper { get; }
@@ -59,9 +52,12 @@ namespace Roadie.Api.Services
 
         private IMusicBrainzProvider MusicBrainzProvider { get; }
 
-        private IReleaseFactory ReleaseFactory { get; }
-
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
+
+        private IArtistService ArtistService { get; }
+        private IReleaseService ReleaseService { get; }
+
+        private IFileDirectoryProcessorService FileDirectoryProcessorService { get; }
 
         public AdminService(IRoadieSettings configuration,
                                                                                                                                     IHttpEncoder httpEncoder,
@@ -69,35 +65,40 @@ namespace Roadie.Api.Services
             data.IRoadieDbContext context,
             ICacheManager cacheManager,
             ILogger<ArtistService> logger,
-            IHubContext<ScanActivityHub> scanActivityHub
+            IHubContext<ScanActivityHub> scanActivityHub,
+            IMusicBrainzProvider musicbrainzProvider,
+            ILastFmHelper lastFmHelper,
+            IFileNameHelper fileNameHelper,
+            IID3TagsHelper iD3TagsHelper,
+            IAudioMetaDataHelper audioMetaDataHelper,
+            IArtistService artistService,
+            IReleaseService releaseService,
+            IArtistLookupEngine artistLookupEngine,
+            IReleaseLookupEngine releaseLookupEngine,
+            ILabelLookupEngine labelLookupEngine,
+            IFileDirectoryProcessorService fileDirectoryProcessorService
         )
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
             ScanActivityHub = scanActivityHub;
-            EventMessageLogger = new EventMessageLogger();
+            EventMessageLogger = new EventMessageLogger<AdminService>();
             EventMessageLogger.Messages += EventMessageLogger_Messages;
 
-            MusicBrainzProvider = new MusicBrainzProvider(configuration, cacheManager, MessageLogger);
-            LastFmHelper = new LastFmHelper(configuration, cacheManager, MessageLogger, context, httpEncoder);
-            FileNameHelper = new FileNameHelper(configuration, cacheManager, MessageLogger);
-            ID3TagsHelper = new ID3TagsHelper(configuration, cacheManager, MessageLogger);
+            MusicBrainzProvider = musicbrainzProvider;
+            LastFmHelper = lastFmHelper;
+            FileNameHelper = fileNameHelper;
+            ID3TagsHelper = iD3TagsHelper;
 
-            ArtistLookupEngine =
-                new ArtistLookupEngine(configuration, httpEncoder, context, cacheManager, MessageLogger);
-            LabelLookupEngine = new LabelLookupEngine(configuration, httpEncoder, context, cacheManager, MessageLogger);
-            ReleaseLookupEngine = new ReleaseLookupEngine(configuration, httpEncoder, context, cacheManager,
-                MessageLogger, ArtistLookupEngine, LabelLookupEngine);
-            ImageFactory = new ImageFactory(configuration, httpEncoder, context, cacheManager, MessageLogger,
-                ArtistLookupEngine, ReleaseLookupEngine);
-            LabelFactory = new LabelFactory(configuration, httpEncoder, context, cacheManager, MessageLogger,
-                ArtistLookupEngine, ReleaseLookupEngine);
-            AudioMetaDataHelper = new AudioMetaDataHelper(configuration, httpEncoder, context, MusicBrainzProvider,
-                LastFmHelper, cacheManager,
-                MessageLogger, ArtistLookupEngine, ImageFactory, FileNameHelper, ID3TagsHelper);
-            ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, context, cacheManager, MessageLogger,
-                ArtistLookupEngine, LabelFactory, AudioMetaDataHelper, ReleaseLookupEngine);
-            ArtistFactory = new ArtistFactory(configuration, httpEncoder, context, cacheManager, MessageLogger,
-                ArtistLookupEngine, ReleaseFactory, ImageFactory, ReleaseLookupEngine, AudioMetaDataHelper);
+            ArtistLookupEngine = artistLookupEngine;
+            ReleaseLookupEngine = releaseLookupEngine;
+            LabelLookupEngine = labelLookupEngine;
+
+            AudioMetaDataHelper = audioMetaDataHelper;
+
+            ArtistService = artistService;
+            ReleaseService = releaseService;
+            FileDirectoryProcessorService = fileDirectoryProcessorService;
+
         }
 
         public async Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId)
@@ -114,7 +115,7 @@ namespace Roadie.Api.Services
 
             try
             {
-                var result = await ArtistFactory.Delete(artist);
+                var result = await ArtistService.Delete(user, artist);
                 if (!result.IsSuccess)
                     return new OperationResult<bool>
                     {
@@ -154,7 +155,7 @@ namespace Roadie.Api.Services
 
             try
             {
-                await ReleaseFactory.DeleteReleases(
+                await ReleaseService.DeleteReleases(user, 
                     DbContext.Releases.Where(x => x.ArtistId == artist.Id).Select(x => x.RoadieId).ToArray(),
                     doDeleteFiles);
                 await DbContext.SaveChangesAsync();
@@ -192,7 +193,7 @@ namespace Roadie.Api.Services
 
             try
             {
-                var artistFolder = artist.ArtistFileFolder(Configuration, Configuration.LibraryFolder);
+                var artistFolder = artist.ArtistFileFolder(Configuration);
                 var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder),
                     ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly);
                 var artistImageFilename = artistImagesInFolder.Skip(index).FirstOrDefault();
@@ -235,7 +236,7 @@ namespace Roadie.Api.Services
                     return new OperationResult<bool>(true, $"Release Not Found [{releaseId}]");
                 }
 
-                await ReleaseFactory.Delete(release, doDeleteFiles ?? false);
+                await ReleaseService.Delete(user, release, doDeleteFiles ?? false);
             }
             catch (Exception ex)
             {
@@ -272,8 +273,7 @@ namespace Roadie.Api.Services
             try
             {
                 var releaseFolder =
-                    release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration,
-                        Configuration.LibraryFolder));
+                    release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration));
                 var releaseImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder),
                     ImageType.ReleaseSecondary, SearchOption.TopDirectoryOnly);
                 var releaseImageFilename = releaseImagesInFolder.Skip(index).FirstOrDefault();
@@ -325,14 +325,14 @@ namespace Roadie.Api.Services
                     string trackPath = null;
                     try
                     {
-                        trackPath = track.PathToTrack(Configuration, Configuration.LibraryFolder);
+                        trackPath = track.PathToTrack(Configuration);
                         if (File.Exists(trackPath))
                         {
                             File.Delete(trackPath);
                             Logger.LogWarning($"x For Track `{track}`, Deleted File [{trackPath}]");
                         }
 
-                        var trackThumbnailName = track.PathToTrackThumbnail(Configuration, Configuration.LibraryFolder);
+                        var trackThumbnailName = track.PathToTrackThumbnail(Configuration);
                         if (File.Exists(trackThumbnailName))
                         {
                             File.Delete(trackThumbnailName);
@@ -347,8 +347,7 @@ namespace Roadie.Api.Services
                     }
                 }
 
-                await ReleaseFactory.ScanReleaseFolder(track.ReleaseMedia.Release.RoadieId, Configuration.LibraryFolder,
-                    false, track.ReleaseMedia.Release);
+                await ReleaseService.ScanReleaseFolder(user, track.ReleaseMedia.Release.RoadieId, false, track.ReleaseMedia.Release);
             }
             catch (Exception ex)
             {
@@ -576,9 +575,7 @@ namespace Roadie.Api.Services
 
             try
             {
-                var result =
-                    await ArtistFactory.ScanArtistReleasesFolders(artist.RoadieId, Configuration.LibraryFolder,
-                        isReadOnly);
+                var result = await ArtistService.ScanArtistReleasesFolders(user, artist.RoadieId, Configuration.LibraryFolder, isReadOnly);
                 CacheManager.ClearRegion(artist.CacheRegion);
             }
             catch (Exception ex)
@@ -593,7 +590,7 @@ namespace Roadie.Api.Services
                 UserId = user.Id,
                 ForArtistId = artist.Id,
                 NewReleases = ReleaseLookupEngine.AddedReleaseIds.Count(),
-                NewTracks = ReleaseFactory.AddedTrackIds.Count(),
+                NewTracks = ReleaseService.AddedTrackIds.Count(),
                 TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
             });
             await DbContext.SaveChangesAsync();
@@ -796,14 +793,14 @@ namespace Roadie.Api.Services
         {
             var d = new DirectoryInfo(Configuration.InboundFolder);
             var dest = new DirectoryInfo(Configuration.LibraryFolder);
-            return await ScanFolder(d, dest, user, isReadOnly);
+            return await ScanFolder(user, d, dest, isReadOnly);
         }
 
         public async Task<OperationResult<bool>> ScanLibraryFolder(ApplicationUser user, bool isReadOnly = false)
         {
             var d = new DirectoryInfo(Configuration.LibraryFolder);
             var dest = new DirectoryInfo(Configuration.LibraryFolder);
-            return await ScanFolder(d, dest, user, isReadOnly);
+            return await ScanFolder(user, d, dest, isReadOnly);
         }
 
         public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId,
@@ -825,8 +822,7 @@ namespace Roadie.Api.Services
 
             try
             {
-                var result = await ReleaseFactory.ScanReleaseFolder(release.RoadieId, Configuration.LibraryFolder,
-                    isReadOnly, release);
+                var result = await ReleaseService.ScanReleaseFolder(user, release.RoadieId, isReadOnly, release);
                 await UpdateReleaseRank(release.Id);
                 CacheManager.ClearRegion(release.CacheRegion);
             }
@@ -842,7 +838,7 @@ namespace Roadie.Api.Services
             {
                 UserId = user.Id,
                 ForReleaseId = release.Id,
-                NewTracks = ReleaseFactory.AddedTrackIds.Count(),
+                NewTracks = ReleaseService.AddedTrackIds.Count(),
                 TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
             });
             await DbContext.SaveChangesAsync();
@@ -891,8 +887,7 @@ namespace Roadie.Api.Services
             await ScanActivityHub.Clients.All.SendAsync("SendSystemActivity", message);
         }
 
-        private async Task<OperationResult<bool>> ScanFolder(DirectoryInfo d, DirectoryInfo dest, ApplicationUser user,
-            bool isReadOnly)
+        private async Task<OperationResult<bool>> ScanFolder(ApplicationUser user, DirectoryInfo d, DirectoryInfo dest, bool isReadOnly)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -901,43 +896,28 @@ namespace Roadie.Api.Services
             await LogAndPublish($"** Processing Folder: [{d.FullName}]");
 
             long processedFolders = 0;
-            var folderProcessor = new FolderProcessor(Configuration, HttpEncoder, Configuration.LibraryFolder,
-                DbContext, CacheManager, MessageLogger, ArtistLookupEngine, ArtistFactory, ReleaseFactory, ImageFactory,
-                ReleaseLookupEngine, AudioMetaDataHelper);
-
-            var newArtists = 0;
-            var newReleases = 0;
-            var newTracks = 0;
-            OperationResult<bool> result = null;
             foreach (var folder in Directory.EnumerateDirectories(d.FullName).ToArray())
             {
-                result = await folderProcessor.Process(new DirectoryInfo(folder), isReadOnly);
-                // Between folders flush cache, the caching for folder processing was intended for caching artist metadata lookups. Most of the time artists are in the same folder.
+                await FileDirectoryProcessorService.Process(user, new DirectoryInfo(folder), isReadOnly);
+                // Between folders flush cache, the caching for folder processing was intended for caching artist metadata lookups. Most of the time artists releases are in the same folder.
                 CacheManager.Clear();
-                processedFolders++;
             }
-
-            if (result.AdditionalData != null)
+            if (!isReadOnly)
             {
-                newArtists = SafeParser.ToNumber<int>(result.AdditionalData["newArtists"]);
-                newReleases = SafeParser.ToNumber<int>(result.AdditionalData["newReleases"]);
-                newTracks = SafeParser.ToNumber<int>(result.AdditionalData["newTracks"]);
+                Services.FileDirectoryProcessorService.DeleteEmptyFolders(d, Logger);
             }
-
-            if (!isReadOnly) FolderProcessor.DeleteEmptyFolders(d, Logger);
             sw.Stop();
-            DbContext.ScanHistories.Add(new data.ScanHistory
+            var newScanHistory = new data.ScanHistory
             {
                 UserId = user.Id,
-                NewArtists = newArtists,
-                NewReleases = newReleases,
-                NewTracks = newTracks,
+                NewArtists = FileDirectoryProcessorService.AddedArtistIds.Count(),
+                NewReleases = FileDirectoryProcessorService.AddedReleaseIds.Count(),
+                NewTracks = FileDirectoryProcessorService.AddedTrackIds.Count(),
                 TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
-            });
+            };
+            DbContext.ScanHistories.Add(newScanHistory);
             await DbContext.SaveChangesAsync();
-            CacheManager.Clear();
-            await LogAndPublish(
-                $"**Completed!Processed Folders[{processedFolders}], Processed Files[{processedFiles}] : Elapsed Time[{sw.Elapsed}]");
+            await LogAndPublish($"** Completed! Processed Folders [{processedFolders}], Processed Files [{processedFiles}], New Artists [{ newScanHistory.NewArtists }], New Releases [{ newScanHistory.NewReleases }], New Tracks [{ newScanHistory.NewTracks }] : Elapsed Time [{sw.Elapsed}]");
             return new OperationResult<bool>
             {
                 Data = true,

@@ -5,20 +5,13 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.MetaData.MusicBrainz
 {
-    public interface IMusicBrainzProvider
+    public interface IMusicBrainzProvider : IArtistSearchEngine, IReleaseSearchEngine
     {
-        bool IsEnabled { get; }
-
         Task<CoverArtArchivesResult> CoverArtForMusicBrainzReleaseById(string musicBrainzId);
 
         Task<Release> MusicBrainzReleaseById(string musicBrainzId);
 
         Task<IEnumerable<AudioMetaData>> MusicBrainzReleaseTracks(string artistName, string releaseTitle);
-
-        Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount);
-
-        Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query,
-            int resultsCount);
 
         Task<Data.Release> ReleaseForMusicBrainzReleaseById(string musicBrainzId);
 

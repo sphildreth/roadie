@@ -7,7 +7,6 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Engines;
 using Roadie.Library.Extensions;
-using Roadie.Library.Factories;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.Processors;
 using System;
@@ -39,7 +38,7 @@ namespace Roadie.Library.Tests
 
         public ArtistLookupEngineTests()
         {
-            this.MessageLogger = new EventMessageLogger();
+            this.MessageLogger = new EventMessageLogger<ArtistLookupEngineTests>();
             this.MessageLogger.Messages += MessageLogger_Messages;
 
             var settings = new RoadieSettings();
@@ -57,19 +56,6 @@ namespace Roadie.Library.Tests
             Console.WriteLine($"Log Level [{ e.Level }] Log Message [{ e.Message }] ");
         }
 
-        [Fact]
-        public void Get_Artist_By_Name()
-        {
-            var optionsBuilder = new DbContextOptionsBuilder<RoadieDbContext>();
-            optionsBuilder.UseMySql("server=voyager;userid=roadie;password=MenAtW0rk668;persistsecurityinfo=True;database=roadie;ConvertZeroDateTime=true");
-
-            using (var context = new RoadieDbContext(optionsBuilder.Options))
-            {
-                IArtistLookupEngine artistLookupEngine = new ArtistLookupEngine(this.Configuration, this.HttpEncoder, context, this.CacheManager, this.Logger);
-                var a = artistLookupEngine.DatabaseQueryForArtistName("Nas");
-            }
-
-        }
 
         //[Fact]
         //public void Update_Genre_Normalized_Name()

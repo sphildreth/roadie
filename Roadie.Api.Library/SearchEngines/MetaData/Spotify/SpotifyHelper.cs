@@ -14,11 +14,11 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.SearchEngines.MetaData.Spotify
 {
-    public class SpotifyHelper : MetaDataProviderBase, IArtistSearchEngine, IReleaseSearchEngine
+    public class SpotifyHelper : MetaDataProviderBase, ISpotifyHelper
     {
         public override bool IsEnabled => Configuration.Integrations.SpotifyProviderEnabled;
 
-        public SpotifyHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger)
+        public SpotifyHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<SpotifyHelper> logger)
                     : base(configuration, cacheManager, logger)
         {
         }

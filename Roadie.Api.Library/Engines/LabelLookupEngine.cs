@@ -20,10 +20,10 @@ namespace Roadie.Library.Engines
         private ILabelSearchEngine DiscogsLabelSearchEngine { get; }
 
         public LabelLookupEngine(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
-                    ICacheManager cacheManager, ILogger logger)
+                    ICacheManager cacheManager, ILogger<LabelLookupEngine> logger, discogs.IDiscogsHelper discogsHelper)
             : base(configuration, httpEncoder, context, cacheManager, logger)
         {
-            DiscogsLabelSearchEngine = new discogs.DiscogsHelper(Configuration, CacheManager, Logger);
+            DiscogsLabelSearchEngine = discogsHelper;
         }
 
         public async Task<OperationResult<Label>> Add(Label label)

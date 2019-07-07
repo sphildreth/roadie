@@ -53,21 +53,21 @@ namespace Roadie.Library.Engines
         private ILabelLookupEngine LabelLookupEngine { get; }
 
         public ReleaseLookupEngine(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
-                                                                                            ICacheManager cacheManager, ILogger logger, IArtistLookupEngine artistLookupEngine,
-            ILabelLookupEngine labelLookupEngine)
+                                   ICacheManager cacheManager, ILogger<ReleaseLookupEngine> logger, IArtistLookupEngine artistLookupEngine,
+                                   ILabelLookupEngine labelLookupEngine, musicbrainz.IMusicBrainzProvider musicBrainzProvider, lastfm.ILastFmHelper lastFmHelper,
+                                   spotify.ISpotifyHelper spotifyHelper, wikipedia.IWikipediaHelper wikipediaHelper, discogs.IDiscogsHelper discogsHelper,
+                                   IITunesSearchEngine iTunesSearchEngine)
             : base(configuration, httpEncoder, context, cacheManager, logger)
         {
-            ArtistLookupEngine = ArtistLookupEngine;
+            ArtistLookupEngine = artistLookupEngine;
             LabelLookupEngine = labelLookupEngine;
 
-            ITunesReleaseSearchEngine = new ITunesSearchEngine(Configuration, CacheManager, Logger);
-            MusicBrainzReleaseSearchEngine = new musicbrainz.MusicBrainzProvider(Configuration, CacheManager, Logger);
-            LastFmReleaseSearchEngine =
-                new lastfm.LastFmHelper(Configuration, CacheManager, Logger, context, httpEncoder);
-            DiscogsReleaseSearchEngine = new discogs.DiscogsHelper(Configuration, CacheManager, Logger);
-            SpotifyReleaseSearchEngine = new spotify.SpotifyHelper(Configuration, CacheManager, Logger);
-            WikipediaReleaseSearchEngine =
-                new wikipedia.WikipediaHelper(Configuration, CacheManager, Logger, HttpEncoder);
+            ITunesReleaseSearchEngine = iTunesSearchEngine;
+            MusicBrainzReleaseSearchEngine = musicBrainzProvider;
+            LastFmReleaseSearchEngine = lastFmHelper;
+            DiscogsReleaseSearchEngine = discogsHelper;
+            SpotifyReleaseSearchEngine = spotifyHelper;
+            WikipediaReleaseSearchEngine = wikipediaHelper;
         }
 
         public async Task<OperationResult<Release>> Add(Release release, bool doAddTracksInDatabase = false)
@@ -109,6 +109,8 @@ namespace Roadie.Library.Engines
                 {
                     _addedReleaseIds.Add(release.Id);
                     if (releaseGenreTables != null && releaseGenreTables.Any(x => x.GenreId == null))
+                    {
+                        var addedGenreIds = new List<int>();
                         foreach (var releaseGenreTable in releaseGenreTables)
                         {
                             var genreName = releaseGenreTable.Genre?.Name?.ToAlphanumericName();
@@ -120,7 +122,6 @@ namespace Roadie.Library.Engines
                                 genreName = genreName.Substring(0, 99);
                                 Logger.LogWarning($"Genre Name Too long was [{originalName}] truncated to [{releaseGenreTable.Genre.Name}]");
                             }
-
                             var genre = DbContext.Genres.FirstOrDefault(x => x.NormalizedName == genreName);
                             if (genre == null)
                             {
@@ -132,17 +133,19 @@ namespace Roadie.Library.Engines
                                 DbContext.Genres.Add(genre);
                                 await DbContext.SaveChangesAsync();
                             }
-
-                            if (genre != null && genre.Id > 0)
+                            if (genre != null && 
+                                genre.Id > 0 && 
+                                !addedGenreIds.Any(x => x == genre.Id))
                             {
-                               DbContext.ReleaseGenres.Add(new ReleaseGenre
+                                DbContext.ReleaseGenres.Add(new ReleaseGenre
                                 {
                                     ReleaseId = release.Id,
                                     GenreId = genre.Id
                                 });
-
+                                addedGenreIds.Add(genre.Id);
                             }
                         }
+                    }
 
                     if (releaseImages != null && releaseImages.Any(x => x.Status == Statuses.New))
                     {
@@ -193,6 +196,7 @@ namespace Roadie.Library.Engines
                     }
 
                     if (doAddTracksInDatabase)
+                    {
                         if (releaseMedias != null && releaseMedias.Any(x => x.Status == Statuses.New))
                         {
                             foreach (var newReleaseMedia in releaseMedias.Where(x => x.Status == Statuses.New))
@@ -214,10 +218,11 @@ namespace Roadie.Library.Engines
                                     {
                                         if (!release.IsCastRecording)
                                         {
-                                            var trackArtistData =
-                                                await ArtistLookupEngine.GetByName(
-                                                    new AudioMetaData { Artist = newTrack.TrackArtist.Name }, true);
-                                            if (trackArtistData.IsSuccess) trackArtistId = trackArtistData.Data.Id;
+                                            var trackArtistData = await ArtistLookupEngine.GetByName(new AudioMetaData { Artist = newTrack.TrackArtist.Name }, true);
+                                            if (trackArtistData.IsSuccess)
+                                            {
+                                                trackArtistId = trackArtistData.Data.Id;
+                                            }
                                         }
                                         else if (newTrack.TrackArtists != null && newTrack.TrackArtists.Any())
                                         {
@@ -261,7 +266,7 @@ namespace Roadie.Library.Engines
                                 Logger.LogError(ex);
                             }
                         }
-
+                    }
                     Logger.LogInformation("Added New Release: `{0}`", release.ToString());
                 }
             }
@@ -337,7 +342,7 @@ namespace Roadie.Library.Engines
                         try
                         {
                             releaseSearch = await PerformMetaDataProvidersReleaseSearch(metaData,
-                                artist.ArtistFileFolder(Configuration, Configuration.LibraryFolder), submissionId);
+                                artist.ArtistFileFolder(Configuration), submissionId);
                         }
                         catch (Exception ex)
                         {

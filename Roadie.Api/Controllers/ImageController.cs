@@ -81,7 +81,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var result = await ImageService.Delete(await CurrentUserModel(), id);
+            var result = await ImageService.Delete(await UserManager.GetUserAsync(User), id);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);

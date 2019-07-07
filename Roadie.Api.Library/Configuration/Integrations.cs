@@ -6,12 +6,9 @@ namespace Roadie.Library.Configuration
 {
     public class Integrations : IIntegrations
     {
-        private string _discogsConsumerKey = null;
-        private string _discogsConsumerSecret = null;
         private bool _discogsEnabled = true;
-        private string _lastFMApiKey = null;
+        private bool _bingSearchEnabled = true;
         private bool _lastFmEnabled = true;
-        private string _lastFMSecret = null;
 
         public List<ApiKey> ApiKeys { get; set; } = new List<ApiKey>();
 
@@ -58,6 +55,21 @@ namespace Roadie.Library.Configuration
 
         public bool ITunesProviderEnabled { get; set; }
 
+        public bool BingImageSearchEngineEnabled
+        {
+            get
+            {
+                var apiKey = ApiKeys.FirstOrDefault(x => x.ApiName == "BingImageSearch");
+                if (string.IsNullOrEmpty(apiKey?.Key))
+                {
+                    return false;
+                }
+                return _bingSearchEnabled;
+            }
+            set => _bingSearchEnabled = value;
+        }
+
+
         public string LastFMApiKey
         {
             get
@@ -94,5 +106,11 @@ namespace Roadie.Library.Configuration
 
         public bool MusicBrainzProviderEnabled { get; set; }
         public bool SpotifyProviderEnabled { get; set; }
+
+        public Integrations()
+        {
+            DiscogsReadWriteTimeout = short.MaxValue;
+            DiscogsTimeout = short.MaxValue;
+        }
     }
 }

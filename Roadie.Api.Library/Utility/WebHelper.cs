@@ -12,17 +12,23 @@ namespace Roadie.Library.Utility
 {
     public static class WebHelper
     {
-        public const string UserAgent =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36";
+        public const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36";
 
         public static byte[] BytesForImageUrl(string url)
         {
             if (string.IsNullOrEmpty(url)) return null;
             try
             {
-                using (var webClient = new WebClient())
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                request.Referer = "http://www.roadie.rocks";
+                request.UserAgent = UserAgent;
+
+                using (var response = (HttpWebResponse)request.GetResponse())
                 {
-                    return webClient.DownloadData(url);
+                    using (BinaryReader reader = new BinaryReader(response.GetResponseStream()))
+                    {
+                        return reader.ReadBytes(1 * 1024 * 1024 * 10);
+                    }
                 }
             }
             catch (WebException wex)

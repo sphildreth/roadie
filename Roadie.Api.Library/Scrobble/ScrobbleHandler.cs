@@ -30,9 +30,9 @@ namespace Roadie.Library.Scrobble
 
         private IEnumerable<IScrobblerIntegration> Scrobblers { get; }
 
-        public ScrobbleHandler(IRoadieSettings configuration, ILogger<ScrobbleHandler> logger,
-                                                            data.IRoadieDbContext dbContext,
-            ICacheManager cacheManager, IHttpEncoder httpEncoder, IHttpContext httpContext)
+        public ScrobbleHandler(IRoadieSettings configuration, ILogger<ScrobbleHandler> logger, data.IRoadieDbContext dbContext,
+                               ICacheManager cacheManager, IHttpEncoder httpEncoder, IHttpContext httpContext,
+                               ILastFmHelper lastFmHelper, IRoadieScrobbler roadieScrobbler, ILastFMScrobbler lastFMScrobbler)
         {
             Logger = logger;
             Configuration = configuration;
@@ -41,10 +41,12 @@ namespace Roadie.Library.Scrobble
             HttpContext = httpContext;
             var scrobblers = new List<IScrobblerIntegration>
             {
-                new RoadieScrobbler(configuration, logger, dbContext, cacheManager, httpContext)
+                roadieScrobbler
             };
             if (configuration.Integrations.LastFmProviderEnabled)
-                scrobblers.Add(new LastFmHelper(configuration, cacheManager, logger, dbContext, httpEncoder));
+            {
+                scrobblers.Add(lastFMScrobbler);
+            }
             Scrobblers = scrobblers;
         }
 

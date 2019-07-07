@@ -14,19 +14,17 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.SearchEngines.MetaData.Discogs
 {
-    public class DiscogsHelper : MetaDataProviderBase, IArtistSearchEngine, IReleaseSearchEngine, ILabelSearchEngine
+    public class DiscogsHelper : MetaDataProviderBase, IDiscogsHelper
     {
         public override bool IsEnabled => Configuration.Integrations.DiscogsProviderEnabled;
 
-        public DiscogsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger) : base(
+        public DiscogsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<DiscogsHelper> logger) : base(
                     configuration, cacheManager, logger)
         {
-            _apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey") ??
-                      new ApiKey();
+            _apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey") ?? new ApiKey();
         }
 
-        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query,
-            int resultsCount)
+        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
         {
             ArtistSearchResult data = null;
             try
@@ -101,8 +99,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             };
         }
 
-        public async Task<OperationResult<IEnumerable<LabelSearchResult>>> PerformLabelSearch(string labelName,
-            int resultsCount)
+        public async Task<OperationResult<IEnumerable<LabelSearchResult>>> PerformLabelSearch(string labelName, int resultsCount)
         {
             LabelSearchResult data = null;
             try
@@ -174,8 +171,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             };
         }
 
-        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName,
-            string query, int resultsCount)
+        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
         {
             ReleaseSearchResult data = null;
             try
@@ -185,30 +181,30 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 var client = new RestClient("https://api.discogs.com/database")
                 {
                     UserAgent = WebHelper.UserAgent,
-                    ReadWriteTimeout = (int)Configuration.Integrations.DiscogsReadWriteTimeout,
-                    Timeout = (int)Configuration.Integrations.DiscogsTimeout
+                    ReadWriteTimeout = SafeParser.ToNumber<int>(Configuration.Integrations.DiscogsReadWriteTimeout),
+                    Timeout = SafeParser.ToNumber<int>(Configuration.Integrations.DiscogsTimeout)
                 };
 
                 var response = await client.ExecuteTaskAsync<DiscogsReleaseSearchResult>(request);
-
-                if (response.ResponseStatus == ResponseStatus.Error)
+                if (response?.ResponseStatus == null || response.ResponseStatus == ResponseStatus.Error)
                 {
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
                         throw new AuthenticationException("Unauthorized");
-                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.",
-                        response.ErrorMessage, response.Content));
+                    }
+                    throw new Exception($"Request Error Message: {response?.ErrorMessage}. Content: {response?.Content}.");
                 }
 
-                var responseData = response.Data != null && response.Data.results.Any()
-                    ? response.Data.results.OrderBy(x => x.year).First()
-                    : null;
-                if (responseData != null)
+                var responseData = response?.Data?.results?.OrderBy(x => x.year).FirstOrDefault();
+                if (responseData?.id != null)
                 {
                     request = BuildReleaseRequest(responseData.id);
-                    var c2 = new RestClient("https://api.discogs.com/");
-                    c2.UserAgent = WebHelper.UserAgent;
+                    var c2 = new RestClient("https://api.discogs.com/")
+                    {
+                        UserAgent = WebHelper.UserAgent
+                    };
                     var releaseResult = await c2.ExecuteTaskAsync<DiscogReleaseDetail>(request);
-                    var release = releaseResult != null && releaseResult.Data != null ? releaseResult.Data : null;
+                    var release = releaseResult?.Data;
                     if (release != null)
                     {
                         var urls = new List<string>();
@@ -278,16 +274,18 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
 
                         if (release.identifiers != null)
                         {
-                            var barcode = release.identifiers.FirstOrDefault(x => x.type == "Barcode");
-                            if (barcode != null && !string.IsNullOrEmpty(barcode.value))
+                            var barcode = release.identifiers.FirstOrDefault(x => (x.type ?? string.Empty) == "Barcode");
+                            if (barcode?.value != null)
+                            {
                                 data.Tags = new[] { "barcode:" + barcode.value };
+                            }
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex);
+                Logger.LogError(ex, $"DiscogsHelper: Error in PerformReleaseSearch artistname [{ artistName }], query [{ query }], resultsCount [{ resultsCount }]");
             }
 
             return new OperationResult<IEnumerable<ReleaseSearchResult>>

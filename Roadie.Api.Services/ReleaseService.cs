@@ -9,7 +9,7 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
-using Roadie.Library.Factories;
+using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.MetaData.FileName;
@@ -22,6 +22,7 @@ using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Statistics;
 using Roadie.Library.Models.Users;
+using Roadie.Library.Processors;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -39,6 +40,8 @@ namespace Roadie.Api.Services
 {
     public class ReleaseService : ServiceBase, IReleaseService
     {
+        private List<int> _addedTrackIds = new List<int>();
+
         private IArtistLookupEngine ArtistLookupEngine { get; }
 
         private IAudioMetaDataHelper AudioMetaDataHelper { get; }
@@ -51,10 +54,6 @@ namespace Roadie.Api.Services
 
         private IID3TagsHelper ID3TagsHelper { get; }
 
-        private IImageFactory ImageFactory { get; }
-
-        private ILabelFactory LabelFactory { get; }
-
         private ILabelLookupEngine LabelLookupEngine { get; }
 
         private ILastFmHelper LastFmHelper { get; }
@@ -63,43 +62,42 @@ namespace Roadie.Api.Services
 
         private IPlaylistService PlaylistService { get; }
 
-        private IReleaseFactory ReleaseFactory { get; }
-
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
 
-        public ReleaseService(IRoadieSettings configuration,
-                                                                                                                            IHttpEncoder httpEncoder,
+        public IEnumerable<int> AddedTrackIds => _addedTrackIds;
+
+        public ReleaseService(IRoadieSettings configuration,                                                                                                                            
+            IHttpEncoder httpEncoder,
             IHttpContext httpContext,
             data.IRoadieDbContext dbContext,
             ICacheManager cacheManager,
             ICollectionService collectionService,
             IPlaylistService playlistService,
             ILogger<ReleaseService> logger,
-            IBookmarkService bookmarkService)
+            IBookmarkService bookmarkService,
+            IArtistLookupEngine artistLookupEngine,
+            IReleaseLookupEngine releaseLookupEngine,
+            IMusicBrainzProvider musicBrainzProvider,
+            ILastFmHelper lastFmHelper,
+            IFileNameHelper fileNameHelper,
+            IID3TagsHelper id3tagsHelper,
+            IAudioMetaDataHelper audioMetaDataHelper,
+            ILabelLookupEngine labelLookupEngine)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
             CollectionService = collectionService;
             PlaylistService = playlistService;
             BookmarkService = bookmarkService;
 
-            MusicBrainzProvider = new MusicBrainzProvider(configuration, cacheManager, logger);
-            LastFmHelper = new LastFmHelper(configuration, cacheManager, logger, dbContext, httpEncoder);
-            FileNameHelper = new FileNameHelper(configuration, cacheManager, logger);
-            ID3TagsHelper = new ID3TagsHelper(configuration, cacheManager, logger);
+            MusicBrainzProvider = musicBrainzProvider;
+            LastFmHelper = lastFmHelper;
+            FileNameHelper = fileNameHelper;
+            ID3TagsHelper = id3tagsHelper;
 
-            ArtistLookupEngine = new ArtistLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);
-            LabelLookupEngine = new LabelLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger);
-            ReleaseLookupEngine = new ReleaseLookupEngine(configuration, httpEncoder, dbContext, cacheManager, logger,
-                ArtistLookupEngine, LabelLookupEngine);
-            ImageFactory = new ImageFactory(configuration, httpEncoder, dbContext, cacheManager, logger,
-                ArtistLookupEngine, ReleaseLookupEngine);
-            LabelFactory = new LabelFactory(configuration, httpEncoder, dbContext, cacheManager, logger,
-                ArtistLookupEngine, ReleaseLookupEngine);
-            AudioMetaDataHelper = new AudioMetaDataHelper(configuration, httpEncoder, dbContext, MusicBrainzProvider,
-                LastFmHelper, cacheManager,
-                logger, ArtistLookupEngine, ImageFactory, FileNameHelper, ID3TagsHelper);
-            ReleaseFactory = new ReleaseFactory(configuration, httpEncoder, dbContext, cacheManager, logger,
-                ArtistLookupEngine, LabelFactory, AudioMetaDataHelper, ReleaseLookupEngine);
+            ArtistLookupEngine = artistLookupEngine;
+            LabelLookupEngine = labelLookupEngine;
+            ReleaseLookupEngine = releaseLookupEngine;
+            AudioMetaDataHelper = audioMetaDataHelper;
         }
 
         public async Task<OperationResult<Release>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
@@ -487,7 +485,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<bool>> MergeReleases(User user, Guid releaseToMergeId,
+        public async Task<OperationResult<bool>> MergeReleases(ApplicationUser user, Guid releaseToMergeId,
             Guid releaseToMergeIntoId, bool addAsMedia)
         {
             var sw = new Stopwatch();
@@ -524,7 +522,7 @@ namespace Roadie.Api.Services
 
             try
             {
-                await ReleaseFactory.MergeReleases(releaseToMerge, releaseToMergeInfo, addAsMedia);
+                await MergeReleases(user, releaseToMerge, releaseToMergeInfo, addAsMedia);
             }
             catch (Exception ex)
             {
@@ -544,6 +542,384 @@ namespace Roadie.Api.Services
             };
         }
 
+        /// <summary>
+        ///     Merge one release into another one
+        /// </summary>
+        /// <param name="releaseToMerge">The release to be merged</param>
+        /// <param name="releaseToMergeInto">The release to merge into</param>
+        /// <param name="addAsMedia">If true then add a ReleaseMedia to the release to be merged into</param>
+        /// <returns></returns>
+        public async Task<OperationResult<bool>> MergeReleases(ApplicationUser user, data.Release releaseToMerge, data.Release releaseToMergeInto,
+            bool addAsMedia)
+        {
+            SimpleContract.Requires<ArgumentNullException>(releaseToMerge != null, "Invalid Release");
+            SimpleContract.Requires<ArgumentNullException>(releaseToMergeInto != null, "Invalid Release");
+            SimpleContract.Requires<ArgumentNullException>(releaseToMerge.Artist != null, "Invalid Artist");
+            SimpleContract.Requires<ArgumentNullException>(releaseToMergeInto.Artist != null, "Invalid Artist");
+            var result = false;
+            var resultErrors = new List<Exception>();
+            var sw = new Stopwatch();
+            sw.Start();
+
+            try
+            {
+                var mergedFilesToDelete = new List<string>();
+                var mergedTracksToMove = new List<data.Track>();
+
+                releaseToMergeInto.MediaCount = releaseToMergeInto.MediaCount ?? 0;
+
+                var now = DateTime.UtcNow;
+                var releaseToMergeReleaseMedia =
+                    DbContext.ReleaseMedias.Where(x => x.ReleaseId == releaseToMerge.Id).ToList();
+                var releaseToMergeIntoReleaseMedia =
+                    DbContext.ReleaseMedias.Where(x => x.ReleaseId == releaseToMergeInto.Id).ToList();
+                var releaseToMergeIntoLastMediaNumber = releaseToMergeIntoReleaseMedia.Max(x => x.MediaNumber);
+
+                // Add new ReleaseMedia
+                if (addAsMedia || !releaseToMergeIntoReleaseMedia.Any())
+                    foreach (var rm in releaseToMergeReleaseMedia)
+                    {
+                        releaseToMergeIntoLastMediaNumber++;
+                        rm.ReleaseId = releaseToMergeInto.Id;
+                        rm.MediaNumber = releaseToMergeIntoLastMediaNumber;
+                        rm.LastUpdated = now;
+                        releaseToMergeInto.MediaCount++;
+                        releaseToMergeInto.TrackCount += rm.TrackCount;
+                    }
+                // Merge into existing ReleaseMedia
+                else
+                    // See if each media exists and merge details of each including tracks
+                    foreach (var rm in releaseToMergeReleaseMedia)
+                    {
+                        var existingReleaseMedia =
+                            releaseToMergeIntoReleaseMedia.FirstOrDefault(x => x.MediaNumber == rm.MediaNumber);
+                        var mergeTracks = DbContext.Tracks.Where(x => x.ReleaseMediaId == rm.Id).ToArray();
+                        if (existingReleaseMedia == null)
+                        {
+                            releaseToMergeIntoLastMediaNumber++;
+                            // Doesnt exist in release being merged to add
+                            rm.ReleaseId = releaseToMergeInto.Id;
+                            rm.MediaNumber = releaseToMergeIntoLastMediaNumber;
+                            rm.LastUpdated = now;
+                            releaseToMergeInto.MediaCount++;
+                            releaseToMergeInto.TrackCount += rm.TrackCount;
+                            mergedTracksToMove.AddRange(mergeTracks);
+                        }
+                        else
+                        {
+                            // ReleaseMedia Does exist merge tracks and details
+
+                            var mergeIntoTracks = DbContext.Tracks
+                                .Where(x => x.ReleaseMediaId == existingReleaseMedia.Id).ToArray();
+                            foreach (var mergeTrack in mergeTracks)
+                            {
+                                var existingTrack =
+                                    mergeIntoTracks.FirstOrDefault(x => x.TrackNumber == mergeTrack.TrackNumber);
+                                if (existingTrack == null)
+                                {
+                                    // Track does not exist, update to existing ReleaseMedia and update ReleaseToMergeInfo counts
+                                    mergeTrack.LastUpdated = now;
+                                    mergeTrack.ReleaseMediaId = existingReleaseMedia.Id;
+                                    existingReleaseMedia.TrackCount++;
+                                    existingReleaseMedia.LastUpdated = now;
+                                    releaseToMergeInto.TrackCount++;
+                                    mergedTracksToMove.Add(mergeTrack);
+                                }
+                                else
+                                {
+                                    // Track does exist merge two tracks together
+                                    existingTrack.MusicBrainzId =
+                                        existingTrack.MusicBrainzId ?? mergeTrack.MusicBrainzId;
+                                    existingTrack.SpotifyId = existingTrack.SpotifyId ?? mergeTrack.SpotifyId;
+                                    existingTrack.AmgId = existingTrack.AmgId ?? mergeTrack.AmgId;
+                                    existingTrack.ISRC = existingTrack.ISRC ?? mergeTrack.ISRC;
+                                    existingTrack.AmgId = existingTrack.AmgId ?? mergeTrack.AmgId;
+                                    existingTrack.LastFMId = existingTrack.LastFMId ?? mergeTrack.LastFMId;
+                                    existingTrack.PartTitles = existingTrack.PartTitles ?? mergeTrack.PartTitles;
+                                    existingTrack.PlayedCount =
+                                        (existingTrack.PlayedCount ?? 0) + (mergeTrack.PlayedCount ?? 0);
+                                    if (mergeTrack.LastPlayed.HasValue && existingTrack.LastPlayed.HasValue &&
+                                        mergeTrack.LastPlayed > existingTrack.LastPlayed)
+                                        existingTrack.LastPlayed = mergeTrack.LastPlayed;
+                                    existingTrack.Thumbnail = existingTrack.Thumbnail ?? mergeTrack.Thumbnail;
+                                    existingTrack.MusicBrainzId =
+                                        existingTrack.MusicBrainzId ?? mergeTrack.MusicBrainzId;
+                                    existingTrack.Tags =
+                                        existingTrack.Tags.AddToDelimitedList(mergeTrack.Tags.ToListFromDelimited());
+                                    if (!mergeTrack.Title.Equals(existingTrack.Title,
+                                        StringComparison.OrdinalIgnoreCase))
+                                        existingTrack.AlternateNames =
+                                            existingTrack.AlternateNames.AddToDelimitedList(new[]
+                                                {mergeTrack.Title, mergeTrack.Title.ToAlphanumericName()});
+                                    existingTrack.AlternateNames =
+                                        existingTrack.AlternateNames.AddToDelimitedList(mergeTrack.AlternateNames
+                                            .ToListFromDelimited());
+                                    existingTrack.LastUpdated = now;
+                                    var mergedTrackFileName =
+                                        mergeTrack.PathToTrack(Configuration);
+                                    var trackFileName =
+                                        existingTrack.PathToTrack(Configuration);
+                                    if (!trackFileName.Equals(mergedTrackFileName, StringComparison.Ordinal) &&
+                                        File.Exists(trackFileName)) mergedFilesToDelete.Add(mergedTrackFileName);
+                                }
+                            }
+                        }
+                    }
+
+                var releaseToMergeFolder = releaseToMerge.ReleaseFileFolder(releaseToMerge.Artist.ArtistFileFolder(Configuration));
+                var releaseToMergeIntoArtistFolder = releaseToMergeInto.Artist.ArtistFileFolder(Configuration);
+                var releaseToMergeIntoDirectory = new DirectoryInfo(releaseToMergeInto.ReleaseFileFolder(releaseToMergeIntoArtistFolder));
+
+                // Move tracks for releaseToMergeInto into correct folders
+                if (mergedTracksToMove.Any())
+                    foreach (var track in mergedTracksToMove)
+                    {
+                        var oldTrackPath = track.PathToTrack(Configuration);
+                        var newTrackPath = FolderPathHelper.TrackFullPath(Configuration, releaseToMerge.Artist,
+                            releaseToMerge, track);
+                        var trackFile = new FileInfo(oldTrackPath);
+                        if (!newTrackPath.ToLower().Equals(oldTrackPath.ToLower()))
+                        {
+                            var audioMetaData = await AudioMetaDataHelper.GetInfo(trackFile);
+                            track.FilePath = FolderPathHelper.TrackPath(Configuration, releaseToMergeInto.Artist,
+                                releaseToMergeInto, track);
+                            track.Hash = HashHelper.CreateMD5(
+                                releaseToMergeInto.ArtistId + trackFile.LastWriteTimeUtc.GetHashCode().ToString() +
+                                audioMetaData.GetHashCode());
+                            track.LastUpdated = now;
+                            File.Move(oldTrackPath, newTrackPath);
+                        }
+                    }
+
+                // Cleanup folders
+                Services.FileDirectoryProcessorService.DeleteEmptyFolders(new DirectoryInfo(releaseToMergeIntoArtistFolder), Logger);
+
+                // Now Merge release details
+                releaseToMergeInto.AlternateNames = releaseToMergeInto.AlternateNames.AddToDelimitedList(new[]
+                    {releaseToMerge.Title, releaseToMerge.Title.ToAlphanumericName()});
+                releaseToMergeInto.AlternateNames =
+                    releaseToMergeInto.AlternateNames.AddToDelimitedList(releaseToMerge.AlternateNames
+                        .ToListFromDelimited());
+                releaseToMergeInto.Tags =
+                    releaseToMergeInto.Tags.AddToDelimitedList(releaseToMerge.Tags.ToListFromDelimited());
+                releaseToMergeInto.URLs.AddToDelimitedList(releaseToMerge.URLs.ToListFromDelimited());
+                releaseToMergeInto.MusicBrainzId = releaseToMergeInto.MusicBrainzId ?? releaseToMerge.MusicBrainzId;
+                releaseToMergeInto.Profile = releaseToMergeInto.Profile ?? releaseToMerge.Profile;
+                releaseToMergeInto.ReleaseDate = releaseToMergeInto.ReleaseDate ?? releaseToMerge.ReleaseDate;
+                releaseToMergeInto.MusicBrainzId = releaseToMergeInto.MusicBrainzId ?? releaseToMerge.MusicBrainzId;
+                releaseToMergeInto.DiscogsId = releaseToMergeInto.DiscogsId ?? releaseToMerge.DiscogsId;
+                releaseToMergeInto.ITunesId = releaseToMergeInto.ITunesId ?? releaseToMerge.ITunesId;
+                releaseToMergeInto.AmgId = releaseToMergeInto.AmgId ?? releaseToMerge.AmgId;
+                releaseToMergeInto.LastFMId = releaseToMergeInto.LastFMId ?? releaseToMerge.LastFMId;
+                releaseToMergeInto.LastFMSummary = releaseToMergeInto.LastFMSummary ?? releaseToMerge.LastFMSummary;
+                releaseToMergeInto.SpotifyId = releaseToMergeInto.SpotifyId ?? releaseToMerge.SpotifyId;
+                releaseToMergeInto.Thumbnail = releaseToMergeInto.Thumbnail ?? releaseToMerge.Thumbnail;
+                if (releaseToMergeInto.ReleaseType == ReleaseType.Unknown &&
+                    releaseToMerge.ReleaseType != ReleaseType.Unknown)
+                    releaseToMergeInto.ReleaseType = releaseToMerge.ReleaseType;
+                releaseToMergeInto.LastUpdated = now;
+                await DbContext.SaveChangesAsync();
+
+                // Update any collection pointers for release to be merged
+                var collectionRecords = DbContext.CollectionReleases.Where(x => x.ReleaseId == releaseToMerge.Id);
+                if (collectionRecords != null && collectionRecords.Any())
+                {
+                    foreach (var cr in collectionRecords)
+                    {
+                        cr.ReleaseId = releaseToMergeInto.Id;
+                        cr.LastUpdated = now;
+                    }
+
+                    await DbContext.SaveChangesAsync();
+                }
+
+                // Update any existing playlist for release to be merged
+                var playListTrackInfos = (from pl in DbContext.PlaylistTracks
+                                          join t in DbContext.Tracks on pl.TrackId equals t.Id
+                                          join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                          where rm.ReleaseId == releaseToMerge.Id
+                                          select new
+                                          {
+                                              track = t,
+                                              rm,
+                                              pl
+                                          }).ToArray();
+                if (playListTrackInfos != null && playListTrackInfos.Any())
+                {
+                    foreach (var playListTrackInfo in playListTrackInfos)
+                    {
+                        var matchingTrack = (from t in DbContext.Tracks
+                                             join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                             where rm.ReleaseId == releaseToMergeInto.Id
+                                             where rm.MediaNumber == playListTrackInfo.rm.MediaNumber
+                                             where t.TrackNumber == playListTrackInfo.track.TrackNumber
+                                             select t).FirstOrDefault();
+                        if (matchingTrack != null)
+                        {
+                            playListTrackInfo.pl.TrackId = matchingTrack.Id;
+                            playListTrackInfo.pl.LastUpdated = now;
+                        }
+                    }
+
+                    await DbContext.SaveChangesAsync();
+                }
+
+                await Delete(user, releaseToMerge);
+
+                // Delete any files flagged to be deleted (duplicate as track already exists on merged to release)
+                if (mergedFilesToDelete.Any())
+                    foreach (var mergedFileToDelete in mergedFilesToDelete)
+                        try
+                        {
+                            if (File.Exists(mergedFileToDelete))
+                            {
+                                File.Delete(mergedFileToDelete);
+                                Logger.LogWarning("x Deleted Merged File [{0}]", mergedFileToDelete);
+                            }
+                        }
+                        catch
+                        {
+                        }
+
+                // Clear cache regions for manipulated records
+                CacheManager.ClearRegion(releaseToMergeInto.CacheRegion);
+                if (releaseToMergeInto.Artist != null) CacheManager.ClearRegion(releaseToMergeInto.Artist.CacheRegion);
+                if (releaseToMerge.Artist != null) CacheManager.ClearRegion(releaseToMerge.Artist.CacheRegion);
+
+                sw.Stop();
+                result = true;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex,
+                    $"MergeReleases ReleaseToMerge `{releaseToMerge}`, ReleaseToMergeInto `{releaseToMergeInto}`, addAsMedia [{addAsMedia}]");
+                resultErrors.Add(ex);
+            }
+
+            return new OperationResult<bool>
+            {
+                Data = result,
+                IsSuccess = result,
+                Errors = resultErrors,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<OperationResult<bool>> Delete(ApplicationUser user, data.Release release, bool doDeleteFiles = false,
+            bool doUpdateArtistCounts = true)
+        {
+            SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
+            SimpleContract.Requires<ArgumentNullException>(release.Artist != null, "Invalid Artist");
+
+            var releaseCacheRegion = release.CacheRegion;
+            var artistCacheRegion = release.Artist.CacheRegion;
+
+            var result = false;
+            var sw = new Stopwatch();
+            sw.Start();
+            if (doDeleteFiles)
+            {
+                var releaseTracks = (from r in DbContext.Releases
+                                     join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                     join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                     where r.Id == release.Id
+                                     select t).ToArray();
+                foreach (var track in releaseTracks)
+                {
+                    string trackPath = null;
+                    try
+                    {
+                        trackPath = track.PathToTrack(Configuration);
+                        if (File.Exists(trackPath))
+                        {
+                            File.Delete(trackPath);
+                            Logger.LogWarning("x For Release [{0}], Deleted File [{1}]", release.Id, trackPath);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex,
+                            string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath,
+                                track.Id, ex.Serialize()));
+                    }
+                }
+
+                try
+                {
+                    FolderPathHelper.DeleteEmptyFoldersForArtist(Configuration, release.Artist);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex);
+                }
+            }
+
+            var releaseLabelIds = DbContext.ReleaseLabels.Where(x => x.ReleaseId == release.Id).Select(x => x.LabelId).ToArray();
+            DbContext.Releases.Remove(release);
+            var i = await DbContext.SaveChangesAsync();
+            result = true;
+            try
+            {
+                CacheManager.ClearRegion(releaseCacheRegion);
+                CacheManager.ClearRegion(artistCacheRegion);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex,
+                    string.Format("Error Clearing Cache For Release [{0}] Exception [{1}]", release.Id,
+                        ex.Serialize()));
+            }
+
+            var now = DateTime.UtcNow;
+            if (doUpdateArtistCounts) await UpdateArtistCounts(release.Artist.Id, now);
+            if (releaseLabelIds != null && releaseLabelIds.Any())
+                foreach (var releaseLabelId in releaseLabelIds)
+                    await UpdateLabelCounts(releaseLabelId, now);
+            sw.Stop();
+            return new OperationResult<bool>
+            {
+                Data = result,
+                IsSuccess = result,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<OperationResult<bool>> DeleteReleases(ApplicationUser user, IEnumerable<Guid> releaseIds,
+            bool doDeleteFiles = false)
+        {
+            SimpleContract.Requires<ArgumentNullException>(releaseIds != null && releaseIds.Any(),
+                "No Release Ids Found");
+            var result = false;
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var now = DateTime.UtcNow;
+            var releases = (from r in DbContext.Releases.Include(r => r.Artist)
+                            where releaseIds.Contains(r.RoadieId)
+                            select r
+                ).ToArray();
+
+            var artistIds = releases.Select(x => x.ArtistId).Distinct().ToArray();
+
+            foreach (var release in releases)
+            {
+                var defaultResult = await Delete(user, release, doDeleteFiles, false);
+                result = result & defaultResult.IsSuccess;
+            }
+
+            foreach (var artistId in artistIds) await UpdateArtistCounts(artistId, now);
+            sw.Stop();
+
+            return new OperationResult<bool>
+            {
+                Data = result,
+                IsSuccess = result,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+
+
         public Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id)
         {
             var release = GetRelease(id);
@@ -555,7 +931,7 @@ namespace Roadie.Api.Services
             string zipFileName = null;
             try
             {
-                var artistFolder = release.Artist.ArtistFileFolder(Configuration, Configuration.LibraryFolder);
+                var artistFolder = release.Artist.ArtistFileFolder(Configuration);
                 var releaseFolder = release.ReleaseFileFolder(artistFolder);
                 if (!Directory.Exists(releaseFolder))
                 {
@@ -606,12 +982,367 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl)
+        public async Task<OperationResult<Image>> SetReleaseImageByUrl(ApplicationUser user, Guid id, string imageUrl)
         {
             return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
 
-        public async Task<OperationResult<bool>> UpdateRelease(User user, Release model)
+        /// <summary>
+        ///     For the given ReleaseId, Scan folder adding new, removing not found and updating DB tracks for tracks found
+        /// </summary>
+        public async Task<OperationResult<bool>> ScanReleaseFolder(ApplicationUser user, Guid releaseId, bool doJustInfo, data.Release releaseToScan = null)
+        {
+            SimpleContract.Requires<ArgumentOutOfRangeException>(
+                releaseId != Guid.Empty && releaseToScan == null || releaseToScan != null, "Invalid ReleaseId");
+
+            _addedTrackIds.Clear();
+
+            var result = false;
+            var resultErrors = new List<Exception>();
+            var sw = new Stopwatch();
+            sw.Start();
+            var modifiedRelease = false;
+            string releasePath = null;
+            try
+            {
+                var release = releaseToScan ?? DbContext.Releases
+                                  .Include(x => x.Artist)
+                                  .Include(x => x.Labels)
+                                  .FirstOrDefault(x => x.RoadieId == releaseId);
+                if (release == null)
+                {
+                    Logger.LogCritical("Unable To Find Release [{0}]", releaseId);
+                    return new OperationResult<bool>();
+                }
+
+                // This is recorded from metadata and if set then used to gauage if the release is complete
+                short? totalTrackCount = null;
+                short totalMissingCount = 0;
+                releasePath = release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration));
+                var releaseDirectory = new DirectoryInfo(releasePath);
+                if (!Directory.Exists(releasePath))
+                    Logger.LogWarning("Unable To Find Release Folder [{0}] For Release `{1}`", releasePath,
+                        release.ToString());
+                var now = DateTime.UtcNow;
+
+                #region Get Tracks for Release from DB and set as missing any not found in Folder
+
+                foreach (var releaseMedia in DbContext.ReleaseMedias.Where(x => x.ReleaseId == release.Id).ToArray())
+                {
+                    var foundMissingTracks = false;
+                    foreach (var existingTrack in DbContext.Tracks.Where(x => x.ReleaseMediaId == releaseMedia.Id)
+                        .ToArray())
+                    {
+                        var trackPath = existingTrack.PathToTrack(Configuration);
+
+                        if (!File.Exists(trackPath))
+                        {
+                            Logger.LogWarning("Track `{0}`, File [{1}] Not Found.", existingTrack.ToString(),
+                                trackPath);
+                            if (!doJustInfo)
+                            {
+                                existingTrack.UpdateTrackMissingFile(now);
+                                foundMissingTracks = true;
+                                modifiedRelease = true;
+                                totalMissingCount++;
+                            }
+                        }
+                    }
+
+                    if (foundMissingTracks) await DbContext.SaveChangesAsync();
+                }
+
+                #endregion Get Tracks for Release from DB and set as missing any not found in Folder
+
+                #region Scan Folder and Add or Update Existing Tracks from Files
+
+                var existingReleaseMedia = DbContext.ReleaseMedias.Include(x => x.Tracks)
+                    .Where(x => x.ReleaseId == release.Id).ToList();
+                var foundInFolderTracks = new List<data.Track>();
+                short totalNumberOfTracksFound = 0;
+                // This is the number of tracks metadata says the release should have (releaseMediaNumber, TotalNumberOfTracks)
+                var releaseMediaTotalNumberOfTracks = new Dictionary<short, short?>();
+                var releaseMediaTracksFound = new Dictionary<int, short>();
+                if (Directory.Exists(releasePath))
+                    foreach (var file in releaseDirectory.GetFiles("*.mp3", SearchOption.AllDirectories))
+                    {
+                        int? trackArtistId = null;
+                        string partTitles = null;
+                        var audioMetaData = await AudioMetaDataHelper.GetInfo(file, doJustInfo);
+                        // This is the path for the new track not in the database but the found MP3 file to be added to library
+                        var trackPath = Path.Combine(releaseDirectory.Parent.Name, releaseDirectory.Name);
+
+                        if (audioMetaData.IsValid)
+                        {
+                            var trackHash = HashHelper.CreateMD5(
+                                release.ArtistId + file.LastWriteTimeUtc.GetHashCode().ToString() +
+                                audioMetaData.GetHashCode());
+                            totalNumberOfTracksFound++;
+                            totalTrackCount = totalTrackCount ?? (short)(audioMetaData.TotalTrackNumbers ?? 0);
+                            var releaseMediaNumber = (short)(audioMetaData.Disc ?? 1);
+                            if (!releaseMediaTotalNumberOfTracks.ContainsKey(releaseMediaNumber))
+                                releaseMediaTotalNumberOfTracks.Add(releaseMediaNumber,
+                                    (short)(audioMetaData.TotalTrackNumbers ?? 0));
+                            else
+                                releaseMediaTotalNumberOfTracks[releaseMediaNumber] =
+                                    releaseMediaTotalNumberOfTracks[releaseMediaNumber]
+                                        .TakeLarger((short)(audioMetaData.TotalTrackNumbers ?? 0));
+                            var releaseMedia =
+                                existingReleaseMedia.FirstOrDefault(x => x.MediaNumber == releaseMediaNumber);
+                            if (releaseMedia == null)
+                            {
+                                // New ReleaseMedia - Not Found In Database
+                                releaseMedia = new data.ReleaseMedia
+                                {
+                                    ReleaseId = release.Id,
+                                    Status = Statuses.Incomplete,
+                                    MediaNumber = releaseMediaNumber
+                                };
+                                DbContext.ReleaseMedias.Add(releaseMedia);
+                                await DbContext.SaveChangesAsync();
+                                existingReleaseMedia.Add(releaseMedia);
+                                modifiedRelease = true;
+                            }
+                            else
+                            {
+                                // Existing ReleaseMedia Found
+                                releaseMedia.LastUpdated = now;
+                            }
+
+                            var track = releaseMedia.Tracks.FirstOrDefault(x =>
+                                x.TrackNumber == audioMetaData.TrackNumber);
+                            if (track == null)
+                            {
+                                // New Track - Not Found In Database
+                                track = new data.Track
+                                {
+                                    Status = Statuses.New,
+                                    FilePath = trackPath,
+                                    FileName = file.Name,
+                                    FileSize = (int)file.Length,
+                                    Hash = trackHash,
+                                    MusicBrainzId = audioMetaData.MusicBrainzId,
+                                    AmgId = audioMetaData.AmgId,
+                                    SpotifyId = audioMetaData.SpotifyId,
+                                    Title = audioMetaData.Title,
+                                    TrackNumber = audioMetaData.TrackNumber ?? totalNumberOfTracksFound,
+                                    Duration = audioMetaData.Time != null
+                                        ? (int)audioMetaData.Time.Value.TotalMilliseconds
+                                        : 0,
+                                    ReleaseMediaId = releaseMedia.Id,
+                                    ISRC = audioMetaData.ISRC,
+                                    LastFMId = audioMetaData.LastFmId
+                                };
+
+                                if (audioMetaData.TrackArtist != null)
+                                {
+                                    if (audioMetaData.TrackArtists.Count() == 1)
+                                    {
+                                        var trackArtistData =
+                                            await ArtistLookupEngine.GetByName(
+                                                new AudioMetaData { Artist = audioMetaData.TrackArtist }, true);
+                                        if (trackArtistData.IsSuccess && release.ArtistId != trackArtistData.Data.Id)
+                                            trackArtistId = trackArtistData.Data.Id;
+                                    }
+                                    else if (audioMetaData.TrackArtists.Any())
+                                    {
+                                        partTitles = string.Join(AudioMetaData.ArtistSplitCharacter.ToString(),
+                                            audioMetaData.TrackArtists);
+                                    }
+                                    else
+                                    {
+                                        partTitles = audioMetaData.TrackArtist;
+                                    }
+                                }
+
+                                var alt = track.Title.ToAlphanumericName();
+                                track.AlternateNames =
+                                    !alt.Equals(audioMetaData.Title, StringComparison.OrdinalIgnoreCase)
+                                        ? track.AlternateNames.AddToDelimitedList(new[] { alt })
+                                        : null;
+                                track.ArtistId = trackArtistId;
+                                track.PartTitles = partTitles;
+                                DbContext.Tracks.Add(track);
+                                await DbContext.SaveChangesAsync();
+                                _addedTrackIds.Add(track.Id);
+                                modifiedRelease = true;
+                            }
+                            else if (string.IsNullOrEmpty(track.Hash) || trackHash != track.Hash)
+                            {
+                                if (audioMetaData.TrackArtist != null)
+                                {
+                                    if (audioMetaData.TrackArtists.Count() == 1)
+                                    {
+                                        var trackArtistData =
+                                            await ArtistLookupEngine.GetByName(
+                                                new AudioMetaData { Artist = audioMetaData.TrackArtist }, true);
+                                        if (trackArtistData.IsSuccess && release.ArtistId != trackArtistData.Data.Id)
+                                            trackArtistId = trackArtistData.Data.Id;
+                                    }
+                                    else if (audioMetaData.TrackArtists.Any())
+                                    {
+                                        partTitles = string.Join(AudioMetaData.ArtistSplitCharacter.ToString(),
+                                            audioMetaData.TrackArtists);
+                                    }
+                                    else
+                                    {
+                                        partTitles = audioMetaData.TrackArtist;
+                                    }
+                                }
+
+                                track.Title = audioMetaData.Title;
+                                track.Duration = audioMetaData.Time != null
+                                    ? (int)audioMetaData.Time.Value.TotalMilliseconds
+                                    : 0;
+                                track.TrackNumber = audioMetaData.TrackNumber ?? totalNumberOfTracksFound;
+                                track.ArtistId = trackArtistId;
+                                track.PartTitles = partTitles;
+                                track.Hash = trackHash;
+                                track.FileName = file.Name;
+                                track.FileSize = (int)file.Length;
+                                track.FilePath = trackPath;
+                                track.Status = Statuses.Ok;
+                                track.LastUpdated = now;
+                                var alt = track.Title.ToAlphanumericName();
+                                if (!alt.Equals(track.Title, StringComparison.OrdinalIgnoreCase))
+                                    track.AlternateNames = track.AlternateNames.AddToDelimitedList(new[] { alt });
+                                track.TrackNumber = audioMetaData.TrackNumber ?? -1;
+                                track.LastUpdated = now;
+                                modifiedRelease = true;
+                            }
+                            else if (track.Status != Statuses.Ok)
+                            {
+                                track.Status = Statuses.Ok;
+                                track.LastUpdated = now;
+                                modifiedRelease = true;
+                            }
+
+                            foundInFolderTracks.Add(track);
+                            if (releaseMediaTracksFound.ContainsKey(releaseMedia.Id))
+                                releaseMediaTracksFound[releaseMedia.Id]++;
+                            else
+                                releaseMediaTracksFound[releaseMedia.Id] = 1;
+                        }
+                        else
+                        {
+                            Logger.LogWarning("Release Track File Has Invalid MetaData `{0}`",
+                                audioMetaData.ToString());
+                        }
+                    }
+                else
+                    Logger.LogWarning("Unable To Find Releaes Path [{0}] For Release `{1}`", releasePath,
+                        release.ToString());
+
+                var releaseMediaNumbersFound = new List<short?>();
+                foreach (var kp in releaseMediaTracksFound)
+                {
+                    var releaseMedia = DbContext.ReleaseMedias.FirstOrDefault(x => x.Id == kp.Key);
+                    if (releaseMedia != null)
+                    {
+                        if (!releaseMediaNumbersFound.Any(x => x == releaseMedia.MediaNumber))
+                            releaseMediaNumbersFound.Add(releaseMedia.MediaNumber);
+                        var releaseMediaFoundInFolderTrackNumbers = foundInFolderTracks
+                            .Where(x => x.ReleaseMediaId == releaseMedia.Id).Select(x => x.TrackNumber).OrderBy(x => x)
+                            .ToArray();
+                        var areTracksForRelaseMediaSequential = releaseMediaFoundInFolderTrackNumbers
+                            .Zip(releaseMediaFoundInFolderTrackNumbers.Skip(1), (a, b) => a + 1 == b).All(x => x);
+                        if (!areTracksForRelaseMediaSequential)
+                            Logger.LogDebug("ReleaseMedia [{0}] Track Numbers Are Not Sequential", releaseMedia.Id);
+                        releaseMedia.TrackCount = kp.Value;
+                        releaseMedia.LastUpdated = now;
+                        releaseMedia.Status = areTracksForRelaseMediaSequential ? Statuses.Ok : Statuses.Incomplete;
+                        await DbContext.SaveChangesAsync();
+                        modifiedRelease = true;
+                    }
+
+                    ;
+                }
+
+                var foundInFolderTrackNumbers =
+                    foundInFolderTracks.Select(x => x.TrackNumber).OrderBy(x => x).ToArray();
+                if (modifiedRelease || !foundInFolderTrackNumbers.Count().Equals(release.TrackCount) ||
+                    releaseMediaNumbersFound.Count() != (release.MediaCount ?? 0))
+                {
+                    var areTracksForRelaseSequential = foundInFolderTrackNumbers
+                        .Zip(foundInFolderTrackNumbers.Skip(1), (a, b) => a + 1 == b).All(x => x);
+                    var maxFoundInFolderTrackNumbers =
+                        foundInFolderTrackNumbers.Any() ? foundInFolderTrackNumbers.Max() : (short)0;
+                    release.Status = areTracksForRelaseSequential ? Statuses.Ok : Statuses.Incomplete;
+                    release.TrackCount = (short)foundInFolderTrackNumbers.Count();
+                    release.MediaCount = (short)releaseMediaNumbersFound.Count();
+                    if (release.TrackCount < maxFoundInFolderTrackNumbers)
+                        release.TrackCount = maxFoundInFolderTrackNumbers;
+                    release.LibraryStatus = release.TrackCount > 0 && release.TrackCount == totalNumberOfTracksFound
+                        ? LibraryStatus.Complete
+                        : LibraryStatus.Incomplete;
+                    release.LastUpdated = now;
+                    release.Status = release.LibraryStatus == LibraryStatus.Complete
+                        ? Statuses.Complete
+                        : Statuses.Incomplete;
+
+                    await DbContext.SaveChangesAsync();
+                    CacheManager.ClearRegion(release.Artist.CacheRegion);
+                    CacheManager.ClearRegion(release.CacheRegion);
+                }
+
+                #endregion Scan Folder and Add or Update Existing Tracks from Files
+
+                if (release.Thumbnail == null)
+                {
+                    var imageFiles = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releasePath),
+                        ImageType.Release, SearchOption.TopDirectoryOnly);
+                    if (imageFiles != null && imageFiles.Any())
+                    {
+                        // Read image and convert to jpeg
+                        var i = imageFiles.First();
+                        release.Thumbnail = File.ReadAllBytes(i.FullName);
+                        release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail,
+                            Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+                        release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
+                        if (release.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
+                        {
+                            Logger.LogWarning(
+                                $"Release Thumbnail larger than maximum size after resizing to [{Configuration.ThumbnailImageSize.Width}x{Configuration.ThumbnailImageSize.Height}] Thumbnail Size [{release.Thumbnail.Length}]");
+                            release.Thumbnail = null;
+                        }
+
+                        release.LastUpdated = now;
+                        await DbContext.SaveChangesAsync();
+                        CacheManager.ClearRegion(release.Artist.CacheRegion);
+                        CacheManager.ClearRegion(release.CacheRegion);
+                        Logger.LogInformation("Update Thumbnail using Release Cover File [{0}]", i.Name);
+                    }
+                }
+
+                sw.Stop();
+
+                await UpdateReleaseCounts(release.Id, now);
+                await UpdateArtistCountsForRelease(release.Id, now);
+                if (release.Labels != null && release.Labels.Any())
+                    foreach (var label in release.Labels)
+                        await UpdateLabelCounts(label.Id, now);
+
+                Logger.LogInformation("Scanned Release `{0}` Folder [{1}], Modified Release [{2}], OperationTime [{3}]",
+                    release.ToString(), releasePath, modifiedRelease, sw.ElapsedMilliseconds);
+                result = true;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "ReleasePath [" + releasePath + "] " + ex.Serialize());
+                resultErrors.Add(ex);
+            }
+
+            return new OperationResult<bool>
+            {
+                Data = result,
+                IsSuccess = result,
+                Errors = resultErrors,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+
+        public async Task<OperationResult<bool>> UpdateRelease(ApplicationUser user, Release model, string originalReleaseFolder = null)
         {
             var didChangeArtist = false;
             var didChangeThumbnail = false;
@@ -630,8 +1361,8 @@ namespace Roadie.Api.Services
             try
             {
                 var now = DateTime.UtcNow;
-                var artistFolder = release.Artist.ArtistFileFolder(Configuration, Configuration.LibraryFolder);
-                var originalReleaseFolder = release.ReleaseFileFolder(artistFolder);
+                var artistFolder = release.Artist.ArtistFileFolder(Configuration);
+                originalReleaseFolder = originalReleaseFolder ?? release.ReleaseFileFolder(artistFolder);
                 release.IsLocked = model.IsLocked;
                 release.IsVirtual = model.IsVirtual;
                 release.Status = SafeParser.ToEnum<Statuses>(model.Status);
@@ -679,7 +1410,7 @@ namespace Roadie.Api.Services
                     var coverFileName =
                         Path.Combine(
                             release.ReleaseFileFolder(
-                                release.Artist.ArtistFileFolder(Configuration, Configuration.LibraryFolder)),
+                                release.Artist.ArtistFileFolder(Configuration)),
                             "cover.jpg");
                     File.WriteAllBytes(coverFileName, release.Thumbnail);
 
@@ -692,8 +1423,7 @@ namespace Roadie.Api.Services
                 if (model.NewSecondaryImagesData != null && model.NewSecondaryImagesData.Any())
                 {
                     var releaseFolder =
-                        release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration,
-                            Configuration.LibraryFolder));
+                        release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration));
                     // Additional images to add to artist
                     var looper = 0;
                     foreach (var newSecondaryImageData in model.NewSecondaryImagesData)
@@ -765,10 +1495,9 @@ namespace Roadie.Api.Services
 
                 release.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
-                await ReleaseFactory.CheckAndChangeReleaseTitle(release, originalReleaseFolder);
+                await CheckAndChangeReleaseTitle(release, originalReleaseFolder);
                 CacheManager.ClearRegion(release.CacheRegion);
-                Logger.LogInformation(
-                    $"UpdateRelease `{release}` By User `{user}`: Edited Artist [{didChangeArtist}], Uploaded new image [{didChangeThumbnail}]");
+                Logger.LogInformation( $"UpdateRelease `{release}` By User `{user}`: Edited Artist [{didChangeArtist}], Uploaded new image [{didChangeThumbnail}]");
             }
             catch (Exception ex)
             {
@@ -787,7 +1516,79 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Image>> UploadReleaseImage(User user, Guid id, IFormFile file)
+        /// <summary>
+        ///     See if the given release has properties that have been modified that affect the folder structure, if so then handle
+        ///     necessary operations for changes
+        /// </summary>
+        /// <param name="release">Release that has been modified</param>
+        /// <param name="oldReleaseFolder">Folder for release before any changes</param>
+        /// <returns></returns>
+        public async Task<OperationResult<bool>> CheckAndChangeReleaseTitle(data.Release release, string oldReleaseFolder)
+        {
+            SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
+            SimpleContract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(oldReleaseFolder), "Invalid Release Old Folder");
+
+             var sw = new Stopwatch();
+            sw.Start();
+            var now = DateTime.UtcNow;
+
+            var result = false;
+            var artistFolder = release.Artist.ArtistFileFolder(Configuration);
+            var newReleaseFolder = release.ReleaseFileFolder(artistFolder);
+            if (!oldReleaseFolder.Equals(newReleaseFolder, StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.LogTrace("Moving Release From Folder [{0}] To [{1}]", oldReleaseFolder, newReleaseFolder);
+
+                // Create the new release folder
+                if (!Directory.Exists(newReleaseFolder)) Directory.CreateDirectory(newReleaseFolder);
+                var releaseDirectoryInfo = new DirectoryInfo(newReleaseFolder);
+                // Update and move tracks under new release folder
+                foreach (var releaseMedia in DbContext.ReleaseMedias.Where(x => x.ReleaseId == release.Id).ToArray())
+                    // Update the track path to have the new album title. This is needed because future scans might not work properly without updating track title.
+                    foreach (var track in DbContext.Tracks.Where(x => x.ReleaseMediaId == releaseMedia.Id).ToArray())
+                    {
+                        var existingTrackPath = track.PathToTrack(Configuration);
+
+                        var existingTrackFileInfo = new FileInfo(existingTrackPath);
+                        var newTrackFileInfo = new FileInfo(track.PathToTrack(Configuration));
+                        if (existingTrackFileInfo.Exists)
+                        {
+                            // Update the tracks release tags
+                            var audioMetaData = await AudioMetaDataHelper.GetInfo(existingTrackFileInfo);
+                            audioMetaData.Release = release.Title;
+                            AudioMetaDataHelper.WriteTags(audioMetaData, existingTrackFileInfo);
+
+                            // Update track path
+                            track.FilePath = Path.Combine(releaseDirectoryInfo.Parent.Name, releaseDirectoryInfo.Name);
+                            track.LastUpdated = now;
+
+                            // Move the physical track
+                            var newTrackPath = track.PathToTrack(Configuration);
+                            if (!existingTrackPath.Equals(newTrackPath, StringComparison.OrdinalIgnoreCase))
+                                File.Move(existingTrackPath, newTrackPath);
+                        }
+
+                        CacheManager.ClearRegion(track.CacheRegion);
+                    }
+
+                await DbContext.SaveChangesAsync();
+
+                // Clean up any empty folders for the artist
+                FolderPathHelper.DeleteEmptyFoldersForArtist(Configuration, release.Artist);
+            }
+
+            sw.Stop();
+            CacheManager.ClearRegion(release.CacheRegion);
+            if (release.Artist != null) CacheManager.ClearRegion(release.Artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = result,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<OperationResult<Image>> UploadReleaseImage(ApplicationUser user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
             using (var ms = new MemoryStream())
@@ -894,7 +1695,7 @@ namespace Roadie.Api.Services
                     var releaseImages = DbContext.Images.Where(x => x.ReleaseId == release.Id)
                         .Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
                     if (releaseImages != null && releaseImages.Any()) result.Images = releaseImages;
-                    var artistFolder = release.Artist.ArtistFileFolder(Configuration, Configuration.LibraryFolder);
+                    var artistFolder = release.Artist.ArtistFileFolder(Configuration);
                     var releaseFolder = release.ReleaseFileFolder(artistFolder);
                     var releaseImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder),
                         ImageType.ReleaseSecondary, SearchOption.TopDirectoryOnly);
@@ -1066,7 +1867,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
+        private async Task<OperationResult<Image>> SaveImageBytes(ApplicationUser user, Guid id, byte[] imageBytes)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -1083,11 +1884,7 @@ namespace Roadie.Api.Services
                     release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
 
                     // Save unaltered image to cover file
-                    var coverFileName =
-                        Path.Combine(
-                            release.ReleaseFileFolder(
-                                release.Artist.ArtistFileFolder(Configuration, Configuration.LibraryFolder)),
-                            "cover.jpg");
+                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)),"cover.jpg");
                     File.WriteAllBytes(coverFileName, release.Thumbnail);
 
                     // Resize to store in database as thumbnail
@@ -1117,5 +1914,6 @@ namespace Roadie.Api.Services
                 Errors = errors
             };
         }
+
     }
 }

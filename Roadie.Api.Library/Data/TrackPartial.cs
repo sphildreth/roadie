@@ -48,17 +48,17 @@ namespace Roadie.Library.Data
         /// <summary>
         ///     Returns a full file path to the current track
         /// </summary>
-        public string PathToTrack(IRoadieSettings configuration, string libraryFolder)
+        public string PathToTrack(IRoadieSettings configuration)
         {
-            return FolderPathHelper.PathForTrack(configuration, this, libraryFolder);
+            return FolderPathHelper.PathForTrack(configuration, this);
         }
 
         /// <summary>
         ///     Returns a full file path to the current track thumbnail (if any)
         /// </summary>
-        public string PathToTrackThumbnail(IRoadieSettings configuration, string libraryFolder)
+        public string PathToTrackThumbnail(IRoadieSettings configuration)
         {
-            return FolderPathHelper.PathForTrackThumbnail(configuration, this, libraryFolder);
+            return FolderPathHelper.PathForTrackThumbnail(configuration, this);
         }
 
         public override string ToString()

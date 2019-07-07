@@ -18,6 +18,8 @@ namespace Roadie.Library.SearchEngines.Imaging
         protected IApiKey _apiKey = null;
         protected ILogger _logger;
 
+        public abstract bool IsEnabled { get; }
+
         protected IApiKey ApiKey => _apiKey;
 
         protected IRoadieSettings Configuration => _configuratio;

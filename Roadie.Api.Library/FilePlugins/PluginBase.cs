@@ -3,7 +3,6 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
-using Roadie.Library.Factories;
 using Roadie.Library.Utility;
 using System;
 using System.IO;
@@ -17,8 +16,6 @@ namespace Roadie.Library.FilePlugins
 
         public int MinWeightToDelete => Configuration.FilePlugins.MinWeightToDelete;
 
-        protected IArtistFactory ArtistFactory { get; }
-
         protected IArtistLookupEngine ArtistLookupEngine { get; }
 
         protected ICacheManager CacheManager { get; }
@@ -27,23 +24,16 @@ namespace Roadie.Library.FilePlugins
 
         protected IHttpEncoder HttpEncoder { get; }
 
-        protected IImageFactory ImageFactory { get; }
 
         protected ILogger Logger { get; }
 
-        protected IReleaseFactory ReleaseFactory { get; }
-
         protected IReleaseLookupEngine ReleaseLookupEngine { get; }
 
-        public PluginBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, IArtistFactory artistFactory,
-                                                                                                    IReleaseFactory releaseFactory, IImageFactory imageFactory, ICacheManager cacheManager, ILogger logger,
+        public PluginBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, ICacheManager cacheManager, ILogger logger,
             IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine)
         {
             Configuration = configuration;
             HttpEncoder = httpEncoder;
-            ArtistFactory = artistFactory;
-            ReleaseFactory = releaseFactory;
-            ImageFactory = imageFactory;
             CacheManager = cacheManager;
             Logger = logger;
             ArtistLookupEngine = artistLookupEngine;
@@ -68,8 +58,7 @@ namespace Roadie.Library.FilePlugins
             return false;
         }
 
-        public abstract Task<OperationResult<bool>> Process(string destinationRoot, FileInfo fileInfo, bool doJustInfo,
-                    int? submissionId);
+        public abstract Task<OperationResult<bool>> Process(FileInfo fileInfo, bool doJustInfo, int? submissionId);
 
         protected virtual bool IsFileLocked(FileInfo file)
         {

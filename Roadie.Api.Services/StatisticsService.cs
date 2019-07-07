@@ -27,7 +27,7 @@ namespace Roadie.Api.Services
         {
         }
 
-        public OperationResult<LibraryStats> LibraryStatistics()
+        public Task<OperationResult<LibraryStats>> LibraryStatistics()
         {
             LibraryStats result = null;
             var sw = new Stopwatch();
@@ -58,12 +58,12 @@ namespace Roadie.Api.Services
                 Logger.LogError(ex);
             }
 
-            return new OperationResult<LibraryStats>
+            return Task.FromResult(new OperationResult<LibraryStats>
             {
-                IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds,
+                IsSuccess = result != null,
                 Data = result
-            };
+            });
         }
 
         public Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDate()

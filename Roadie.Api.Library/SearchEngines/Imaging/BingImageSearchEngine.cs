@@ -14,10 +14,12 @@ namespace Roadie.Library.SearchEngines.Imaging
     /// <summary>
     ///     https://msdn.microsoft.com/en-us/library/dn760791(v=bsynd.50).aspx
     /// </summary>
-    public class BingImageSearchEngine : ImageSearchEngineBase
+    public class BingImageSearchEngine : ImageSearchEngineBase, IBingImageSearchEngine
     {
-        public BingImageSearchEngine(IRoadieSettings configuration, ILogger logger, string requestIp = null,
-            string referrer = null)
+
+        public override bool IsEnabled => Configuration.Integrations.BingImageSearchEngineEnabled;
+
+        public BingImageSearchEngine(IRoadieSettings configuration, ILogger<BingImageSearchEngine> logger, string requestIp = null, string referrer = null)
             : base(configuration, logger, "https://api.cognitive.microsoft.com", requestIp, referrer)
         {
             _apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "BingImageSearch") ??

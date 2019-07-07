@@ -36,10 +36,12 @@ namespace Roadie.Api.Controllers
             var proc = Process.GetCurrentProcess();
             var mem = proc.WorkingSet64;
             var cpu = proc.TotalProcessorTime;
-            var messages = new List<string>();
-            messages.Add("▜ Memory Information: ");
-            messages.Add(string.Format("My process used working set {0:n3} K of working set and CPU {1:n} msec",
-                mem / 1024.0, cpu.TotalMilliseconds));
+            var messages = new List<string>
+            {
+                "▜ Memory Information: ",
+                string.Format("My process used working set {0:n3} K of working set and CPU {1:n} msec",
+                mem / 1024.0, cpu.TotalMilliseconds)
+            };
             foreach (var aProc in Process.GetProcesses())
                 messages.Add(string.Format("Proc {0,30}  CPU {1,-20:n} msec", aProc.ProcessName,
                     cpu.TotalMilliseconds));
@@ -50,24 +52,15 @@ namespace Roadie.Api.Controllers
 
         [HttpGet("library")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> Library()
-        {
-            return Ok(StatisticsService.LibraryStatistics());
-        }
+        public async Task<IActionResult> Library() => Ok(await StatisticsService.LibraryStatistics());
 
         [HttpGet("ping")]
         [ProducesResponseType(200)]
         [AllowAnonymous]
-        public IActionResult Ping()
-        {
-            return Ok("pong");
-        }
+        public IActionResult Ping() => Ok("pong");
 
         [HttpGet("releasesByDate")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> ReleasesByDate()
-        {
-            return Ok(await StatisticsService.ReleasesByDate());
-        }
+        public async Task<IActionResult> ReleasesByDate() => Ok(await StatisticsService.ReleasesByDate());
     }
 }

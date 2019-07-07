@@ -5,17 +5,7 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.SearchEngines.Imaging
 {
-    public interface IITunesSearchEngine
+    public interface IITunesSearchEngine : IArtistSearchEngine, IReleaseSearchEngine, IImageSearchEngine
     {
-        bool IsEnabled { get; }
-
-        RestRequest BuildRequest(string query, int resultsCount);
-
-        Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount);
-
-        Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount);
-
-        Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query,
-            int resultsCount);
     }
 }

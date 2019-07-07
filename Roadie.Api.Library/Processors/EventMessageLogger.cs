@@ -3,7 +3,7 @@ using System;
 
 namespace Roadie.Library.Processors
 {
-    public class EventMessageLogger : ILogger, IEventMessageLogger
+    public class EventMessageLogger<T> : ILogger<T>, IEventMessageLogger
     {
         public event EventHandler<EventMessage> Messages;
 

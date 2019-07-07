@@ -76,7 +76,7 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> MergeReleases(Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
         {
-            var result = await ReleaseService.MergeReleases(await CurrentUserModel(), releaseToMergeId, releaseToMergeIntoId, addAsMedia);
+            var result = await ReleaseService.MergeReleases(await UserManager.GetUserAsync(User), releaseToMergeId, releaseToMergeIntoId, addAsMedia);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
@@ -88,7 +88,7 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> SetReleaseImageByUrl(Guid id, string imageUrl)
         {
-            var result = await ReleaseService.SetReleaseImageByUrl(await CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
+            var result = await ReleaseService.SetReleaseImageByUrl(await UserManager.GetUserAsync(User), id, HttpUtility.UrlDecode(imageUrl));
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
@@ -101,7 +101,7 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Update(Release release)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var result = await ReleaseService.UpdateRelease(await CurrentUserModel(), release);
+            var result = await ReleaseService.UpdateRelease(await UserManager.GetUserAsync(User), release);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
@@ -113,7 +113,7 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
         {
-            var result = await ReleaseService.UploadReleaseImage(await CurrentUserModel(), id, file);
+            var result = await ReleaseService.UploadReleaseImage(await UserManager.GetUserAsync(User), id, file);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);

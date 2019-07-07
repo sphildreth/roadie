@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Roadie.Library;
+using Roadie.Library.Identity;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Users;
@@ -11,17 +12,22 @@ namespace Roadie.Api.Services
 {
     public interface IArtistService
     {
-        Task<OperationResult<Artist>> ById(User roadieUser, Guid id, IEnumerable<string> includes);
+        Task<OperationResult<Artist>> ById(User user, Guid id, IEnumerable<string> includes);
 
-        Task<PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false,
-            bool? onlyIncludeWithReleases = true);
+        Task<OperationResult<bool>> Delete(ApplicationUser user, Library.Data.Artist Artist);
 
-        Task<OperationResult<bool>> MergeArtists(User user, Guid artistToMergeId, Guid artistToMergeIntoId);
+        Task<PagedResult<ArtistList>> List(User user, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true);
 
-        Task<OperationResult<Image>> SetReleaseImageByUrl(User user, Guid id, string imageUrl);
+        Task<OperationResult<bool>> MergeArtists(ApplicationUser user, Guid artistToMergeId, Guid artistToMergeIntoId);
 
-        Task<OperationResult<bool>> UpdateArtist(User user, Artist artist);
+        Task<OperationResult<bool>> RefreshArtistMetadata(ApplicationUser user, Guid ArtistId);
 
-        Task<OperationResult<Image>> UploadArtistImage(User user, Guid id, IFormFile file);
+        Task<OperationResult<bool>> ScanArtistReleasesFolders(ApplicationUser user, Guid artistId, string destinationFolder, bool doJustInfo);
+
+        Task<OperationResult<Image>> SetReleaseImageByUrl(ApplicationUser user, Guid id, string imageUrl);
+
+        Task<OperationResult<bool>> UpdateArtist(ApplicationUser user, Artist artist);
+
+        Task<OperationResult<Image>> UploadArtistImage(ApplicationUser user, Guid id, IFormFile file);
     }
 }

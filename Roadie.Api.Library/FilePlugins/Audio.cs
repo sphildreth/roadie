@@ -6,7 +6,6 @@ using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
-using Roadie.Library.Factories;
 using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.Audio;
 using Roadie.Library.Utility;
@@ -28,35 +27,22 @@ namespace Roadie.Library.FilePlugins
 
         public override string[] HandlesTypes => new string[1] { "audio/mpeg" };
 
-        public Audio(IRoadieSettings configuration,
-                            IHttpEncoder httpEncoder,
-            IArtistFactory artistFactory,
-            IReleaseFactory releaseFactory,
-            IImageFactory imageFactory,
-            ICacheManager cacheManager,
-            ILogger logger,
-            IArtistLookupEngine artistLookupEngine,
-            IReleaseLookupEngine releaseLookupEngine,
-            IAudioMetaDataHelper audioMetaDataHelper)
-            : base(configuration, httpEncoder, artistFactory, releaseFactory, imageFactory, cacheManager, logger,
-                artistLookupEngine, releaseLookupEngine)
+        public Audio(IRoadieSettings configuration, IHttpEncoder httpEncoder, ICacheManager cacheManager,
+                     ILogger logger, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine,
+                     IAudioMetaDataHelper audioMetaDataHelper)
+            : base(configuration, httpEncoder, cacheManager, logger, artistLookupEngine, releaseLookupEngine)
         {
             AudioMetaDataHelper = audioMetaDataHelper;
         }
 
-        public override async Task<OperationResult<bool>> Process(string destinationRoot, FileInfo fileInfo,
-            bool doJustInfo, int? submissionId)
+        public override async Task<OperationResult<bool>> Process(FileInfo fileInfo, bool doJustInfo, int? submissionId)
         {
-            Logger.LogTrace(
-                ">> Audio: Process destinationRoot [{0}], FileInfo [{1}], doJustInfo [{2}], submissionId [{3}]",
-                destinationRoot, fileInfo, doJustInfo, submissionId);
+            Logger.LogTrace($">> Audio: Process FileInfo [{fileInfo}], doJustInfo [{doJustInfo}], submissionId [{submissionId}]", fileInfo, doJustInfo, submissionId);
             var sw = Stopwatch.StartNew();
             var result = new OperationResult<bool>();
 
             try
             {
-                var dr = destinationRoot ?? fileInfo.DirectoryName;
-
                 string destinationName = null;
 
                 var metaData = await AudioMetaDataHelper.GetInfo(fileInfo, doJustInfo);
@@ -89,7 +75,7 @@ namespace Roadie.Library.FilePlugins
                 SimpleContract.Requires<ArgumentException>(year > 0, string.Format("Invalid Track Year [{0}]", year));
                 SimpleContract.Requires<ArgumentException>(trackNumber > 0, "Missing Track Number");
 
-                var artistFolder = await DetermineArtistFolder(dr, metaData, doJustInfo);
+                var artistFolder = await DetermineArtistFolder(metaData, doJustInfo);
                 if (string.IsNullOrEmpty(artistFolder))
                 {
                     Logger.LogWarning("Unable To Find ArtistFolder [{0}] For MetaData [{1}]", artistFolder,
@@ -104,8 +90,7 @@ namespace Roadie.Library.FilePlugins
                     return new OperationResult<bool>("Unable To Find Release Folder");
                 }
 
-                destinationName =
-                    FolderPathHelper.TrackFullPath(Configuration, metaData, dr, artistFolder, releaseFolder);
+                destinationName = FolderPathHelper.TrackFullPath(Configuration, metaData, Configuration.LibraryFolder, artistFolder, releaseFolder);
                 Logger.LogTrace(
                     "Info: FileInfo [{0}], Artist Folder [{1}], Release Folder [{1}], Destination Name [{3}]",
                     fileInfo.FullName, artistFolder, releaseFolder, destinationName);
@@ -318,14 +303,14 @@ namespace Roadie.Library.FilePlugins
             return result;
         }
 
-        private async Task<string> DetermineArtistFolder(string destinationRoot, AudioMetaData metaData,
+        private async Task<string> DetermineArtistFolder(AudioMetaData metaData,
             bool doJustInfo)
         {
             var artist = await ArtistLookupEngine.GetByName(metaData, !doJustInfo);
             if (!artist.IsSuccess) return null;
             try
             {
-                return artist.Data.ArtistFileFolder(Configuration, destinationRoot);
+                return artist.Data.ArtistFileFolder(Configuration);
             }
             catch (Exception ex)
             {

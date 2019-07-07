@@ -1,5 +1,6 @@
 ﻿using ATL;
 using ATL.CatalogDataReaders;
+using ATL.Playlist;
 using ATL.PlaylistReaders;
 using IdSharp.AudioInfo;
 using IdSharp.Tagging.ID3v1;
@@ -21,7 +22,7 @@ namespace Roadie.Library.MetaData.ID3Tags
 {
     public class ID3TagsHelper : MetaDataProviderBase, IID3TagsHelper
     {
-        public ID3TagsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger)
+        public ID3TagsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<ID3TagsHelper> logger)
             : base(configuration, cacheManager, logger)
         {
         }
@@ -86,8 +87,8 @@ namespace Roadie.Library.MetaData.ID3Tags
                     if (m3uFiles != null && m3uFiles.Any())
                         try
                         {
-                            var theReader = PlaylistReaderFactory.GetInstance().GetPlaylistReader(m3uFiles.First());
-                            result = (short)theReader.GetFiles().Count();
+                            var theReader = PlaylistIOFactory.GetInstance().GetPlaylistIO(m3uFiles.First());
+                            result = (short)theReader.FilePaths.Count();
                         }
                         catch (Exception ex)
                         {

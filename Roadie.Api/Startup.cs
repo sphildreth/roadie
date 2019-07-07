@@ -1,4 +1,5 @@
-﻿using Mapster;
+﻿#region Usings
+using Mapster;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -21,13 +22,25 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
+using Roadie.Library.Engines;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
+using Roadie.Library.MetaData.Audio;
+using Roadie.Library.MetaData.FileName;
+using Roadie.Library.MetaData.ID3Tags;
+using Roadie.Library.MetaData.LastFm;
+using Roadie.Library.MetaData.MusicBrainz;
+using Roadie.Library.Processors;
 using Roadie.Library.Scrobble;
+using Roadie.Library.SearchEngines.Imaging;
+using Roadie.Library.SearchEngines.MetaData.Discogs;
+using Roadie.Library.SearchEngines.MetaData.Spotify;
+using Roadie.Library.SearchEngines.MetaData.Wikipedia;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Text;
+#endregion
 
 namespace Roadie.Api
 {
@@ -45,7 +58,7 @@ namespace Roadie.Api
 
             Logger = _loggerFactory.CreateLogger<Startup>();
 
-            TypeAdapterConfig<Image, Library.Models.Image>
+            TypeAdapterConfig<Library.Data.Image, Library.Models.Image>
                 .NewConfig()
                 .Map(i => i.ArtistId,
                     src => src.Artist == null ? null : (Guid?)src.Artist.RoadieId)
@@ -178,10 +191,29 @@ namespace Roadie.Api
 
             services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
             services.AddSingleton<IDefaultNotFoundImages, DefaultNotFoundImages>();
+            services.AddSingleton<IImageSearchManager, ImageSearchManager>();
+            services.AddSingleton<IITunesSearchEngine, ITunesSearchEngine>();
+            services.AddSingleton<IBingImageSearchEngine, BingImageSearchEngine>();
+            services.AddSingleton<IMusicBrainzProvider, MusicBrainzProvider>();
+            services.AddSingleton<ISpotifyHelper, SpotifyHelper>();
+            services.AddSingleton<IDiscogsHelper, DiscogsHelper>();
+            services.AddSingleton<IWikipediaHelper, WikipediaHelper>();
+            services.AddSingleton<IFileNameHelper, FileNameHelper>();
+            services.AddSingleton<IID3TagsHelper, ID3TagsHelper>();
+
+            services.AddScoped<ILastFmHelper, LastFmHelper>();
+            services.AddScoped<IRoadieScrobbler, RoadieScrobbler>();
+            services.AddScoped<ILastFMScrobbler, LastFMScrobbler>();
             services.AddScoped<IStatisticsService, StatisticsService>();
             services.AddScoped<ICollectionService, CollectionService>();
             services.AddScoped<IPlaylistService, PlaylistService>();
             services.AddScoped<IBookmarkService, BookmarkService>();
+            services.AddScoped<IArtistLookupEngine, ArtistLookupEngine>();
+            services.AddScoped<IReleaseLookupEngine, ReleaseLookupEngine>();
+            services.AddScoped<ILabelLookupEngine, LabelLookupEngine>();
+            services.AddScoped<IAudioMetaDataHelper, AudioMetaDataHelper>();
+            services.AddScoped<IFileProcessor, FileProcessor>();
+            services.AddScoped<IFileDirectoryProcessorService, FileDirectoryProcessorService>();
             services.AddScoped<IArtistService, ArtistService>();
             services.AddScoped<IImageService, ImageService>();
             services.AddScoped<IReleaseService, ReleaseService>();

@@ -15,19 +15,15 @@ namespace Roadie.Library.Utility
     public static class FolderPathHelper
     {
         /// <summary>
-        ///     Full path to Artist folder using destinationFolder as folder Root
+        ///     Full path to Artist folder
         /// </summary>
         /// <param name="artistSortName">Sort name of Artist to use for folder name</param>
-        /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
-        public static string ArtistPath(IRoadieSettings configuration, string artistSortName,
-            string destinationFolder = null)
+        public static string ArtistPath(IRoadieSettings configuration, string artistSortName)
         {
-            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artistSortName),
-                "Invalid Artist Sort Name");
+            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artistSortName),"Invalid Artist Sort Name");
 
             var artistFolder = artistSortName.ToTitleCase(false);
-            destinationFolder = destinationFolder ?? configuration.LibraryFolder;
-            var directoryInfo = new DirectoryInfo(Path.Combine(destinationFolder, artistFolder.ToFolderNameFriendly()));
+            var directoryInfo = new DirectoryInfo(Path.Combine(configuration.LibraryFolder, artistFolder.ToFolderNameFriendly()));
             return directoryInfo.FullName;
         }
 
@@ -63,15 +59,41 @@ namespace Roadie.Library.Utility
         /// <returns></returns>
         public static bool DeleteEmptyFolders(DirectoryInfo processingFolder)
         {
-            if (processingFolder == null || !processingFolder.Exists) return true;
-            foreach (var folder in processingFolder.GetDirectories("*.*", SearchOption.AllDirectories))
-                if (folder.Exists)
-                    if (!folder.GetFiles("*.*", SearchOption.AllDirectories).Any())
+            if (processingFolder == null || !processingFolder.Exists)
+            {
+                return true;
+            }
+            try
+            {
+                foreach (var folder in processingFolder.GetDirectories("*.*", SearchOption.AllDirectories))
+                {
+                    try
                     {
-                        folder.Delete(true);
-                        Trace.WriteLine(string.Format("Deleting Empty Folder [{0}]", folder.FullName), "Debug");
+                        if (folder.Exists)
+                        {
+                            if (!folder.GetFiles("*.*", SearchOption.AllDirectories).Any())
+                            {
+                                folder.Delete(true);
+                                Trace.WriteLine(string.Format("Deleting Empty Folder [{0}]", folder.FullName), "Debug");
+                            }
+                        }
                     }
-
+                    catch (DirectoryNotFoundException)
+                    {
+                    }
+                    catch (Exception)
+                    {
+                        throw;
+                    }
+                }
+            }
+            catch(DirectoryNotFoundException)
+            {
+            }
+            catch (Exception)
+            {
+                throw;
+            }
             return true;
         }
 
@@ -86,7 +108,7 @@ namespace Roadie.Library.Utility
         {
             destinationFolder = destinationFolder ?? configuration.LibraryFolder;
             SimpleContract.Requires<ArgumentException>(artist != null, "Invalid Artist");
-            return DeleteEmptyFolders(new DirectoryInfo(artist.ArtistFileFolder(configuration, destinationFolder)));
+            return DeleteEmptyFolders(new DirectoryInfo(artist.ArtistFileFolder(configuration)));
         }
 
         /// <summary>
@@ -94,11 +116,10 @@ namespace Roadie.Library.Utility
         /// </summary>
         /// <param name="track">Populate track database record</param>
         /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
-        public static string PathForTrack(IRoadieSettings configuration, Track track, string destinationFolder = null)
+        public static string PathForTrack(IRoadieSettings configuration, Track track)
         {
-            destinationFolder = destinationFolder ?? configuration.LibraryFolder;
             if (string.IsNullOrEmpty(track.FilePath) || string.IsNullOrEmpty(track.FileName)) return null;
-            var directoryInfo = new DirectoryInfo(Path.Combine(destinationFolder, track.FilePath, track.FileName));
+            var directoryInfo = new DirectoryInfo(Path.Combine(configuration.LibraryFolder, track.FilePath, track.FileName));
             return directoryInfo.FullName;
         }
 
@@ -235,7 +256,7 @@ namespace Roadie.Library.Utility
             string artistFolder = null, string releaseFolder = null)
         {
             destinationFolder = destinationFolder ?? configuration.LibraryFolder;
-            artistFolder = artistFolder ?? ArtistPath(configuration, artistSortName, destinationFolder);
+            artistFolder = artistFolder ?? ArtistPath(configuration, artistSortName);
             releaseFolder = releaseFolder ?? ReleasePath(artistFolder, releaseTitle, releaseDate);
             var trackFileName = TrackFileName(configuration, trackTitle, trackNumber, discNumber, totalTrackNumber,
                 fileExtension);

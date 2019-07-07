@@ -12,7 +12,7 @@ namespace Roadie.Library.MetaData.FileName
 {
     public class FileNameHelper : MetaDataProviderBase, IFileNameHelper
     {
-        public FileNameHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger)
+        public FileNameHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<FileNameHelper> logger)
             : base(configuration, cacheManager, logger)
         {
         }

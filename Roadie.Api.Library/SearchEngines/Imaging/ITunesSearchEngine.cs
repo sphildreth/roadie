@@ -13,11 +13,9 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.SearchEngines.Imaging
 {
-    public class ITunesSearchEngine : ImageSearchEngineBase, IArtistSearchEngine, IReleaseSearchEngine,
-        IITunesSearchEngine
+    public class ITunesSearchEngine : ImageSearchEngineBase, IITunesSearchEngine
     {
-        public ITunesSearchEngine(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger,
-            string requestIp = null, string referrer = null)
+        public ITunesSearchEngine(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<ITunesSearchEngine> logger, string requestIp = null, string referrer = null)
             : base(configuration, logger, "http://itunes.apple.com", requestIp, referrer)
         {
             CacheManager = cacheManager;
@@ -25,10 +23,9 @@ namespace Roadie.Library.SearchEngines.Imaging
 
         private ICacheManager CacheManager { get; }
 
-        public bool IsEnabled => true;
+        public override bool IsEnabled => Configuration.Integrations.ITunesProviderEnabled;
 
-        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query,
-            int resultsCount)
+        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
         {
             ArtistSearchResult data = null;
 
@@ -118,8 +115,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             return result;
         }
 
-        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName,
-            string query, int resultsCount)
+        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
         {
             var request = BuildRequest(query, 1, "album");
             var response = await _client.ExecuteTaskAsync<ITunesSearchResult>(request);

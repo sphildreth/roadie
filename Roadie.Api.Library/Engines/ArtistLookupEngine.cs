@@ -46,17 +46,17 @@ namespace Roadie.Library.Engines
         public IArtistSearchEngine WikipediaArtistSearchEngine { get; }
 
         public ArtistLookupEngine(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
-                                                                    ICacheManager cacheManager, ILogger logger)
+                                  ICacheManager cacheManager, ILogger<ArtistLookupEngine> logger, musicbrainz.IMusicBrainzProvider musicBrainzProvider,
+                                  lastfm.ILastFmHelper lastFmHelper, spotify.ISpotifyHelper spotifyHelper, wikipedia.IWikipediaHelper wikipediaHelper,
+                                  discogs.IDiscogsHelper discogsHelper, IITunesSearchEngine iTunesSearchEngine)
             : base(configuration, httpEncoder, context, cacheManager, logger)
         {
-            ITunesArtistSearchEngine = new ITunesSearchEngine(Configuration, CacheManager, Logger);
-            MusicBrainzArtistSearchEngine = new musicbrainz.MusicBrainzProvider(Configuration, CacheManager, Logger);
-            LastFmArtistSearchEngine =
-                new lastfm.LastFmHelper(Configuration, CacheManager, Logger, context, httpEncoder);
-            SpotifyArtistSearchEngine = new spotify.SpotifyHelper(Configuration, CacheManager, Logger);
-            WikipediaArtistSearchEngine =
-                new wikipedia.WikipediaHelper(Configuration, CacheManager, Logger, HttpEncoder);
-            DiscogsArtistSearchEngine = new discogs.DiscogsHelper(Configuration, CacheManager, Logger);
+            ITunesArtistSearchEngine = iTunesSearchEngine;
+            MusicBrainzArtistSearchEngine = musicBrainzProvider;
+            LastFmArtistSearchEngine = lastFmHelper;
+            SpotifyArtistSearchEngine = spotifyHelper;
+            WikipediaArtistSearchEngine = wikipediaHelper;
+            DiscogsArtistSearchEngine = discogsHelper;
         }
 
         public async Task<OperationResult<Artist>> Add(Artist artist)
@@ -240,24 +240,28 @@ namespace Roadie.Library.Engines
                         OperationResult<Artist> artistSearch = null;
 
                         // See if roadie.json file exists in the metadata files folder, if so then use artist data from that
-                        var releaseRoadieDataFilename = Path.Combine(Path.GetDirectoryName(metaData.Filename),
-                            "roadie.artist.json");
-                        if (File.Exists(releaseRoadieDataFilename))
+                        string releaseRoadieDataFilename = null;
+                        try
+                        {
+                            releaseRoadieDataFilename = Path.Combine(Path.GetDirectoryName(metaData.Filename), "roadie.artist.json");
+                        }
+                        catch (Exception)
+                        {
+                        }
+                        if (!string.IsNullOrEmpty(releaseRoadieDataFilename) && File.Exists(releaseRoadieDataFilename))
                         {
                             artist = JsonConvert.DeserializeObject<Artist>(File.ReadAllText(releaseRoadieDataFilename));
                             var addResult = await Add(artist);
                             if (!addResult.IsSuccess)
                             {
                                 sw.Stop();
-                                Logger.LogWarning("Unable To Add Artist For Roadie Data File [{0}]",
-                                    releaseRoadieDataFilename);
+                                Logger.LogWarning("Unable To Add Artist For Roadie Data File [{0}]", releaseRoadieDataFilename);
                                 return new OperationResult<Artist>
                                 {
                                     OperationTime = sw.ElapsedMilliseconds,
                                     Errors = addResult.Errors
                                 };
                             }
-
                             artist = addResult.Data;
                         }
                         else
@@ -508,10 +512,14 @@ namespace Roadie.Library.Engines
                         if (d.Urls != null) result.URLs = result.URLs.AddToDelimitedList(d.Urls);
                         if (d.ImageUrls != null) artistImageUrls.AddRange(d.ImageUrls);
                         if (d.AlternateNames != null)
+                        {
                             result.AlternateNames = result.AlternateNames.AddToDelimitedList(d.AlternateNames);
+                        }
                         if (!string.IsNullOrEmpty(d.ArtistName) &&
                             !d.ArtistName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
+                        {
                             result.AlternateNames.AddToDelimitedList(new[] { d.ArtistName });
+                        }
                         result.CopyTo(new Artist
                         {
                             Profile = HttpEncoder.HtmlEncode(d.Profile),

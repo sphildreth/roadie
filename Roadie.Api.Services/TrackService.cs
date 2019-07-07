@@ -681,7 +681,7 @@ namespace Roadie.Api.Services
             string trackPath = null;
             try
             {
-                trackPath = track.PathToTrack(Configuration, Configuration.LibraryFolder);
+                trackPath = track.PathToTrack(Configuration);
             }
             catch (Exception ex)
             {
@@ -712,7 +712,7 @@ namespace Roadie.Api.Services
 
                 try
                 {
-                    trackPath = track.PathToTrack(Configuration, Configuration.LibraryFolder);
+                    trackPath = track.PathToTrack(Configuration);
                 }
                 catch (Exception ex)
                 {
@@ -834,7 +834,7 @@ namespace Roadie.Api.Services
                     track.Thumbnail = ImageHelper.ConvertToJpegFormat(trackImage);
 
                     // Save unaltered image to cover file
-                    var trackThumbnailName = track.PathToTrackThumbnail(Configuration, Configuration.LibraryFolder);
+                    var trackThumbnailName = track.PathToTrackThumbnail(Configuration);
                     File.WriteAllBytes(trackThumbnailName, track.Thumbnail);
 
                     // Resize to store in database as thumbnail

@@ -5,7 +5,6 @@ using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Extensions;
-using Roadie.Library.Factories;
 using Roadie.Library.MetaData.FileName;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.MetaData.LastFm;
@@ -46,8 +45,6 @@ namespace Roadie.Library.MetaData.Audio
 
         private IID3TagsHelper ID3TagsHelper { get; }
 
-        private IImageFactory ImageFactory { get; }
-
         private ILastFmHelper LastFmHelper { get; }
 
         private ILogger Logger { get; }
@@ -55,16 +52,14 @@ namespace Roadie.Library.MetaData.Audio
         private IMusicBrainzProvider MusicBrainzProvider { get; }
 
         public AudioMetaDataHelper(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
-                                                                                                                                    IMusicBrainzProvider musicBrainzHelper,
-            ILastFmHelper lastFmHelper, ICacheManager cacheManager, ILogger logger,
-            IArtistLookupEngine artistLookupEngine,
-            IImageFactory imageFactory, IFileNameHelper filenameHelper, IID3TagsHelper id3TagsHelper)
+            IMusicBrainzProvider musicBrainzHelper, ILastFmHelper lastFmHelper, ICacheManager cacheManager, 
+            ILogger<AudioMetaDataHelper> logger, IArtistLookupEngine artistLookupEngine, IFileNameHelper filenameHelper, 
+            IID3TagsHelper id3TagsHelper)
         {
             Configuration = configuration;
             HttpEncoder = httpEncoder;
             CacheManager = cacheManager;
             Logger = logger;
-            ImageFactory = ImageFactory;
             FileNameHelper = filenameHelper;
             ID3TagsHelper = id3TagsHelper;
 
@@ -74,8 +69,7 @@ namespace Roadie.Library.MetaData.Audio
             ArtistLookupEngine = artistLookupEngine;
 
             DoParseFromFileName = configuration.Processing.DoParseFromFileName;
-            DoParseFromDiscogsDBFindingTrackForArtist =
-                configuration.Processing.DoParseFromDiscogsDBFindingTrackForArtist;
+            DoParseFromDiscogsDBFindingTrackForArtist = configuration.Processing.DoParseFromDiscogsDBFindingTrackForArtist;
             DoParseFromDiscogsDB = configuration.Processing.DoParseFromDiscogsDB;
             DoParseFromMusicBrainz = configuration.Processing.DoParseFromMusicBrainz;
             DoParseFromLastFM = configuration.Processing.DoParseFromLastFM;
@@ -128,7 +122,7 @@ namespace Roadie.Library.MetaData.Audio
                     {
                         if (result.Images == null || !result.Images.Any())
                         {
-                            var imageMetaData = ImageFactory.GetPictureForMetaData(fileInfo.FullName, result);
+                            var imageMetaData = Imaging.ImageHelper.GetPictureForMetaData(Configuration, fileInfo.FullName, result);
                             var tagImages = imageMetaData == null ? null : new List<AudioMetaDataImage> { imageMetaData };
                             result.Images = tagImages != null && tagImages.Any() ? tagImages : null;
                             if (result.Images == null || !result.Images.Any())

@@ -47,9 +47,9 @@ namespace Roadie.Library.Data
             return $"urn:artist_by_name:{name}";
         }
 
-        public string ArtistFileFolder(IRoadieSettings configuration, string destinationRoot)
+        public string ArtistFileFolder(IRoadieSettings configuration)
         {
-            return FolderPathHelper.ArtistPath(configuration, SortNameValue, destinationRoot);
+            return FolderPathHelper.ArtistPath(configuration, SortNameValue);
         }
 
         public override string ToString()

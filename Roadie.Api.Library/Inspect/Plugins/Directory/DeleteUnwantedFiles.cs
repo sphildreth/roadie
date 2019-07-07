@@ -37,7 +37,7 @@ namespace Roadie.Library.Inspect.Plugins.Directory
                 {
                     if (!Configuration.Inspector.IsInReadOnlyMode) file.Delete();
                     deletedFiles.Add(file.Name);
-                    Console.WriteLine($" X Deleted File [{file}], Was foud in in FileExtensionsToDelete");
+                    Console.WriteLine($" X Deleted File [{file}], Was found in in FileExtensionsToDelete");
                 }
 
             result.Data = $"Deleted [{deletedFiles.Count()}] unwanted files";

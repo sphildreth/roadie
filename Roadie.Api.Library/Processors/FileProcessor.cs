@@ -6,7 +6,6 @@ using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Extensions;
-using Roadie.Library.Factories;
 using Roadie.Library.FilePlugins;
 using Roadie.Library.MetaData.Audio;
 using System;
@@ -18,8 +17,32 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.Processors
 {
-    public sealed class FileProcessor : ProcessorBase
+    public sealed class FileProcessor : IFileProcessor
     {
+        private bool DoDeleteUnknowns => Configuration.Processing.DoDeleteUnknowns;
+
+        private bool DoMoveUnknowns => Configuration.Processing.DoMoveUnknowns;
+
+        public IHttpEncoder HttpEncoder { get; }
+
+        public int? SubmissionId { get; set; }
+
+        private string UnknownFolder => Configuration.Processing.UnknownFolder;
+
+        private IArtistLookupEngine ArtistLookupEngine { get; }
+
+        private IAudioMetaDataHelper AudioMetaDataHelper { get; }
+
+        private ICacheManager CacheManager { get; }
+
+        private IRoadieSettings Configuration { get; }
+
+        private IRoadieDbContext DbContext { get; }
+
+        private ILogger Logger { get; }
+
+        private IReleaseLookupEngine ReleaseLookupEngine { get; }
+
         private IEnumerable<IFilePlugin> _plugins;
 
         public IEnumerable<IFilePlugin> Plugins
@@ -38,8 +61,7 @@ namespace Roadie.Library.Processors
                         foreach (var t in types)
                             if (t.GetInterface("IFilePlugin") != null && !t.IsAbstract && !t.IsInterface)
                             {
-                                var plugin = Activator.CreateInstance(t, Configuration, HttpEncoder, ArtistFactory,
-                                    ReleaseFactory, ImageFactory, CacheManager, Logger, ArtistLookupEngine,
+                                var plugin = Activator.CreateInstance(t, Configuration, HttpEncoder, CacheManager, Logger, ArtistLookupEngine,
                                     ReleaseLookupEngine, AudioMetaDataHelper) as IFilePlugin;
                                 plugins.Add(plugin);
                             }
@@ -56,14 +78,20 @@ namespace Roadie.Library.Processors
             }
         }
 
-        public FileProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, string destinationRoot,
-                    IRoadieDbContext context, ICacheManager cacheManager, ILogger logger,
-            IArtistLookupEngine artistLookupEngine, IArtistFactory artistFactory, IReleaseFactory releaseFactory,
-            IImageFactory imageFactory, IReleaseLookupEngine releaseLookupEngine,
-            IAudioMetaDataHelper audioMetaDataHelper)
-            : base(configuration, httpEncoder, destinationRoot, context, cacheManager, logger, artistLookupEngine,
-                artistFactory, releaseFactory, imageFactory, releaseLookupEngine, audioMetaDataHelper)
+        public FileProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, 
+                IRoadieDbContext context, ICacheManager cacheManager, ILogger<FileProcessor> logger,
+                IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine,
+                IAudioMetaDataHelper audioMetaDataHelper)
         {
+            Configuration = configuration;
+            HttpEncoder = httpEncoder;
+            DbContext = context;
+            CacheManager = cacheManager;
+            Logger = logger;
+
+            ArtistLookupEngine = artistLookupEngine;
+            ReleaseLookupEngine = releaseLookupEngine;
+            AudioMetaDataHelper = audioMetaDataHelper;
         }
 
         public static string DetermineFileType(FileInfo fileinfo)
@@ -98,7 +126,7 @@ namespace Roadie.Library.Processors
                     // See if there is a plugin
                     if (p.HandlesTypes.Contains(fileType))
                     {
-                        pluginResult = await p.Process(DestinationRoot, fileInfo, doJustInfo, SubmissionId);
+                        pluginResult = await p.Process(fileInfo, doJustInfo, SubmissionId);
                         break;
                     }
 

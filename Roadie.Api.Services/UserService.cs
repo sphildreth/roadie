@@ -35,16 +35,17 @@ namespace Roadie.Api.Services
 
         public UserService(IRoadieSettings configuration,
                             IHttpEncoder httpEncoder,
-            IHttpContext httpContext,
-            data.IRoadieDbContext context,
-            ICacheManager cacheManager,
-            ILogger<ArtistService> logger,
-            UserManager<ApplicationUser> userManager
+                            IHttpContext httpContext,
+                            data.IRoadieDbContext context,
+                            ICacheManager cacheManager,
+                            ILogger<ArtistService> logger,
+                            UserManager<ApplicationUser> userManager,
+                            ILastFmHelper lastFmHelper
         )
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
             UserManager = userManager;
-            LastFmHelper = new LastFmHelper(Configuration, CacheManager, Logger, context, httpEncoder);
+            LastFmHelper = lastFmHelper;
             ;
         }
 

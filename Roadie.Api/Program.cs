@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.RollingFileAlternate;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -23,6 +25,7 @@ namespace Roadie.Api
         {
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(Configuration)
+                .WriteTo.RollingFileAlternate("logs", "errors", LogEventLevel.Error)
                 .CreateLogger();
 
             try
@@ -72,14 +75,8 @@ namespace Roadie.Api
 
     public class LoggingTraceListener : TraceListener
     {
-        public override void Write(string message)
-        {
-            Log.Verbose(message);
-        }
+        public override void Write(string message) => Log.Verbose(message);
 
-        public override void WriteLine(string message)
-        {
-            Log.Verbose(message);
-        }
+        public override void WriteLine(string message) => Log.Verbose(message);
     }
 }
