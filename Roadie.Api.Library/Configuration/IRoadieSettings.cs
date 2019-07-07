@@ -38,5 +38,6 @@ namespace Roadie.Library.Configuration
         Dictionary<string, string> TrackPathReplace { get; set; }
         bool UseSSLBehindProxy { get; set; }
         string WebsocketAddress { get; set; }
+        short? SubsonicRatingBoost { get; set; }
     }
 }

@@ -84,6 +84,8 @@ namespace Roadie.Library.Configuration
 
         public string WebsocketAddress { get; set; }
 
+        public short? SubsonicRatingBoost { get; set; }
+
         public RoadieSettings()
         {
             ThumbnailImageSize = new ImageSize { Width = 80, Height = 80 };

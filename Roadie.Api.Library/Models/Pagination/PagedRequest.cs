@@ -62,9 +62,13 @@ namespace Roadie.Library.Models.Pagination
                 if (!_skipValue.HasValue)
                 {
                     if (Page.HasValue)
+                    {
                         _skipValue = Page.Value * LimitValue - LimitValue;
+                    }
                     else
+                    {
                         return 0;
+                    }
                 }
 
                 return _skipValue.Value;

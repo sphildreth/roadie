@@ -218,7 +218,7 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
             get
             {
                 var limit = Size ?? MaxPageSize;
-                var page = Offset > 0 ? (int)Math.Ceiling(Offset.Value / (decimal)limit) : 1;
+                var page = Offset > 0 ? (int)Math.Ceiling(Offset.Value / (decimal)limit) + 1 : 1;
                 var pagedRequest = new PagedRequest();
                 switch (Type)
                 {

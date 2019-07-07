@@ -2221,6 +2221,14 @@ namespace Roadie.Api.Services
 
         private subsonic.Child SubsonicChildForTrack(TrackList t)
         {
+            var userRating = t.UserRating?.Rating ?? 0;
+            if(userRating > 0)
+            {
+                // This is done as many subsonic apps think rating "1" is don't play song, versus a minimum indication of like as intended for Roadie.
+                // To disable this set the configuration SubsonicRatingBoost to 0
+                userRating += Configuration.SubsonicRatingBoost ?? 1;
+                userRating = userRating > 5 ? (short)5 : userRating;
+            }
             return new subsonic.Child
             {
                 id = subsonic.Request.TrackIdIdentifier + t.Id,
@@ -2254,7 +2262,7 @@ namespace Roadie.Api.Services
                 trackSpecified = t.TrackNumber.HasValue,
                 type = subsonic.MediaType.music,
                 typeSpecified = true,
-                userRating = t.UserRating != null ? t.UserRating.Rating ?? 0 : 0,
+                userRating = userRating,
                 userRatingSpecified = t.UserRating != null,
                 year = t.Year ?? 0,
                 yearSpecified = t.Year.HasValue,
