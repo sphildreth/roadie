@@ -21,7 +21,7 @@ namespace Roadie.Library.Inspect.Plugins
         protected IRoadieSettings Configuration { get; }
 
         protected IEnumerable<string> ListReplacements { get; } = new List<string>
-            {" ; ", " ;", "; ", ";", " & ", " &", "& ", ";", "&"};
+            {" ; ", " ;", "; ", ";", ";", "\\"};
 
         protected ILogger Logger { get; }
 

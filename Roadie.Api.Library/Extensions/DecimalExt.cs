@@ -7,7 +7,11 @@ namespace Roadie.Library.Extensions
     {
         public static int ToSecondsFromMilliseconds(this decimal? value)
         {
-            if (value > 0) return (int)new TimeInfo(value.Value).Seconds;
+            if (value > 0)
+            {
+                var contentDurationTimeSpan = TimeSpan.FromMilliseconds((double)(value ?? 0));
+                return (int)contentDurationTimeSpan.TotalSeconds;
+            }
             return 0;
         }
 

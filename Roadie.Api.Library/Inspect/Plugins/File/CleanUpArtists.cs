@@ -28,15 +28,18 @@ namespace Roadie.Library.Inspect.Plugins.File
 
             // Replace seperators with proper split character
             foreach (var replace in ListReplacements)
+            {
                 artist = artist.Replace(replace, splitCharacter, StringComparison.OrdinalIgnoreCase);
+            }
             var originalArtist = artist;
-            var result = artist.CleanString(Configuration, Configuration.Processing.ArtistRemoveStringsRegex)
-                .ToTitleCase(false);
-            if (string.IsNullOrEmpty(result)) result = originalArtist;
+            var result = artist.CleanString(Configuration, Configuration.Processing.ArtistRemoveStringsRegex).ToTitleCase(false);
+            if (string.IsNullOrEmpty(result))
+            {
+                result = originalArtist;
+            }
             if (!string.IsNullOrEmpty(result) && !string.IsNullOrEmpty(trackArtist))
             {
-                result = result.Replace(splitCharacter + trackArtist + splitCharacter, "",
-                    StringComparison.OrdinalIgnoreCase);
+                result = result.Replace(splitCharacter + trackArtist + splitCharacter, "",StringComparison.OrdinalIgnoreCase);
                 result = result.Replace(trackArtist + splitCharacter, "", StringComparison.OrdinalIgnoreCase);
                 result = result.Replace(splitCharacter + trackArtist, "", StringComparison.OrdinalIgnoreCase);
                 result = result.Replace(trackArtist, "", StringComparison.OrdinalIgnoreCase);

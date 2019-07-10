@@ -2,10 +2,7 @@
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
 using Roadie.Library.Utility;
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -13,17 +10,9 @@ namespace Roadie.Library.Tests
 {
     public class StringExtensionTests
     {
-        public static IConfiguration InitConfiguration()
-        {
-            var config = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.test.json")
-                .Build();
-            return config;
-        }
+        private readonly IConfiguration _configuration;
 
         private readonly IRoadieSettings _settings = null;
-
-        private readonly IConfiguration _configuration;
 
         private IRoadieSettings Configuration
         {
@@ -40,173 +29,40 @@ namespace Roadie.Library.Tests
             this._configuration.GetSection("RoadieSettings").Bind(this._settings);
         }
 
-        [Theory]
-        [InlineData("2:00")]
-        [InlineData("30")]
-        [InlineData("45:15")]
-        [InlineData("5")]
-        [InlineData("1:02")]
-        public void ToTrackDurationShouldBeGreaterThanZero(string input)
+        public static IConfiguration InitConfiguration()
         {
-            var t = input.ToTrackDuration();
-            Assert.NotNull(t);
-            Assert.True(t > 0);
+            var config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.test.json")
+                .Build();
+            return config;
         }
 
-        [Theory]
-        [InlineData("")]
-        [InlineData(null)]
-        [InlineData("batman")]
-        [InlineData("::")]
-        [InlineData("asdfasdfasdfasdfasdfasdfasdf")]
-        [InlineData("Q")]
-        public void ToTrackDurationShouldBeNull(string input)
+        [Fact]
+        public void AddToDelimitedList()
         {
-            var t = input.ToTrackDuration();
-            Assert.Null(t);
+            string l = null;
+            var r = l.AddToDelimitedList(new string[] { "One" });
+            Assert.Equal("One", r);
+
+            l = "One|";
+            r = l.AddToDelimitedList(new string[] { "Two" });
+            Assert.Equal("One|Two", r);
+
+            l = "One|Two";
+            r = l.AddToDelimitedList(new string[3] { "Three", "Four", "Five" });
+            Assert.Equal("One|Two|Three|Four|Five", r);
         }
 
         [Theory]
-        [InlineData("Bob", "bob")]
-        [InlineData("Bob Marley", "bobmarley")]
-        [InlineData("Ringo Starr And His All-Starr Band", "ringostarrandhisallstarrband")]
-        [InlineData("Leslie & Tom", "leslieandtom")]
-        [InlineData(" Leslie  &  Tom", "leslieandtom")]
-        [InlineData("C o l i n  H a y", "colinhay")]
-        [InlineData("ColinHay", "colinhay")]
-        [InlineData("Colin Hay!", "colinhay")]
-        [InlineData("colinhay", "colinhay")]
-        [InlineData("COLINHAY", "colinhay")]
-        [InlineData("C.O!L&quot;I$N⌐HƒAY;", "colinhay")]
-        [InlineData(" Leslie  &amp; Tom", "leslieandtom")]
-        [InlineData("<b>Leslie  &amp; &#32;&#32; Tom</b>", "leslieandtom")]
-        [InlineData("Leslie;/&/;Tom", "leslieandtom")]
-        [InlineData("Leslie And Tom", "leslieandtom")]
-        [InlineData("L≈esl|ie ƒand T╗om╣;", "leslieandtom")]
-        [InlineData("Leslie Tom", "leslietom")]
-        [InlineData("Hüsker Dü", "huskerdu")] 
-        [InlineData("Motörhead", "motorhead")] 
-        [InlineData("Alright, Still", "alrightstill")]
-        [InlineData("Something,  SOMETHING & somEthing!", "somethingsomethingandsomething")] 
-        [InlineData("comfort y mãºsica para volar", "comfortymasicaparavolar")]
-        [InlineData("canciã³n animal", "canciananimal")]
-        [InlineData("Xylø", "xyloe")]
-        [InlineData("Метель", "metel")]
-        [InlineData("Svartidauði", "svartidaudhi")]
-        public void ToAlphanumericNameShouldStripAndMatch(string input, string shouldBe)
+        [InlineData("[1959] Kind Of Blue", "[1959] Kind Of Blue")]
+        [InlineData("This Is A Folder Name", "This Is A Folder Name")]
+        [InlineData("[1970] 022 # Plastic Ono Band", "[1970] 022 Plastic Ono Band")]
+        [InlineData("This is -OBSERVER a folder name", "This Is A Folder Name")]
+        [InlineData("This is [Torrent Tatty] a folder name", "This Is A Folder Name")]
+        [InlineData("This -OBSERVER is [Torrent Tatty] a folder name", "This Is A Folder Name")]
+        public void CleanString(string input, string shouldBe)
         {
-            var t = input.ToAlphanumericName();
-            Assert.Equal(shouldBe, t);
-        }
-
-        [Fact]
-        public void RemoveFirst()
-        {
-            var test = "02 02-Anything";
-            Assert.Equal("02-Anything", test.RemoveFirst("02"));
-            test = "02 Anything";
-            Assert.Equal("Anything", test.RemoveFirst("02"));
-            test = "02 Anything 02";
-            Assert.Equal("Anything 02", test.RemoveFirst("02"));
-        }
-
-        [Fact]
-        public void RemoveStartsWith()
-        {
-            var test = "02 02 02-Anything";
-            Assert.Equal("-Anything", test.RemoveStartsWith("02"));
-            test = "02 Anything";
-            Assert.Equal("Anything", test.RemoveStartsWith("02"));
-            test = "Anything 02";
-            Assert.Equal("Anything 02", test.RemoveStartsWith("02"));
-            test = "02Anything";
-            Assert.Equal("Anything", test.RemoveStartsWith("02"));
-            test = "02 02 02 02 Anything 02";
-            Assert.Equal("Anything 02", test.RemoveStartsWith("02"));
-
-        }
-
-        [Fact]
-        public void StartsWithNumber()
-        {
-            var test = "This is a test";
-            Assert.False(test.DoesStartWithNumber());
-            test = "1 This is second test";
-            Assert.True(test.DoesStartWithNumber());
-            test = "01 This is second test";
-            Assert.True(test.DoesStartWithNumber());
-            test = "001 This is second test";
-            Assert.True(test.DoesStartWithNumber());
-            test = "1001 This is second test";
-            Assert.True(test.DoesStartWithNumber());
-        }
-
-        [Fact]
-        public void StripStartingWithNumber()
-        {
-            var test = "This is a test";
-            Assert.Equal("This is a test", test.StripStartingNumber());
-            test = "1 This is a test";
-            Assert.Equal("This is a test", test.StripStartingNumber());
-            test = "01 This is a test";
-            Assert.Equal("This is a test", test.StripStartingNumber());
-            test = "001 This is a test";
-            Assert.Equal("This is a test", test.StripStartingNumber());
-            test = "1001 This is a test";
-            Assert.Equal("This is a test", test.StripStartingNumber());
-        }
-
-        [Fact]
-        public void CleanString()
-        {
-            var t = "[1959] Kind Of Blue";
-            Assert.Equal("[1959] Kind Of Blue", t.CleanString(this.Configuration));
-
-            t = "This is a folder name";
-            Assert.Equal("This Is A Folder Name", t.CleanString(this.Configuration));
-
-            t = "This is -OBSERVER a folder name";
-            Assert.Equal("This Is A Folder Name", t.CleanString(this.Configuration));
-
-            t = "This is [Torrent Tatty] a folder name";
-            Assert.Equal("This Is A Folder Name", t.CleanString(this.Configuration));
-
-            t = "This -OBSERVER is [Torrent Tatty] a folder name";
-            Assert.Equal("This Is A Folder Name", t.CleanString(this.Configuration));
-
-            t = "[1970] 022 # Plastic Ono Band";
-            Assert.Equal("[1970] 022 Plastic Ono Band", t.CleanString(this.Configuration));
-
-        }
-
-        [Fact]
-        public void CleanString_Track()
-        {
-
-            var t = "11 Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
-            Assert.Equal("Love.Mp3", t);
-
-            t = "99 -Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
-            Assert.Equal("Love.Mp3", t);
-
-            t = "99_Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
-            Assert.Equal("Love.Mp3", t);
-
-            t = "99 _ Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
-            Assert.Equal("Love.Mp3", t);
-
-            t = "001 Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
-            Assert.Equal("Love.Mp3", t);
-
-            t = "01 - Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
-            Assert.Equal("Love.Mp3", t);
-
-            t = "01. Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
-            Assert.Equal("Love.Mp3", t);
-
-            t = "Love.Mp3".CleanString(this.Configuration, this.Configuration.Processing.TrackRemoveStringsRegex);
-            Assert.Equal("Love.Mp3", t);
-
+            Assert.Equal(shouldBe, input.CleanString(Configuration));
         }
 
         [Theory]
@@ -241,7 +97,7 @@ namespace Roadie.Library.Tests
         [InlineData("Angie [2006, Self Released]")]
         [InlineData("Angie (2002 Expanded Edition)")]
         [InlineData("Angie (2004 Remastered)")]
-        [InlineData("Angie (Japan Ltd Dig")] 
+        [InlineData("Angie (Japan Ltd Dig")]
         [InlineData("Angie (Japan Release)")]
         public void CleanString_Release_Should_Be_Angie(string input)
         {
@@ -250,121 +106,43 @@ namespace Roadie.Library.Tests
             Assert.Equal("Angie", cleaned);
         }
 
+        [Theory]
+        [InlineData("11 Love.Mp3")]
+        [InlineData("99 -Love.Mp3")]
+        [InlineData("99_Love.Mp3")]
+        [InlineData("01. Love.Mp3")]
+        [InlineData("99 _ Love.Mp3")]
+        [InlineData("001 Love.Mp3")]
+        [InlineData("01 - Love.Mp3")]
+        [InlineData("Love.Mp3")]
+        public void CleanString_Track(string input)
+        {
+            Assert.Equal("Love.Mp3", input.CleanString(Configuration, Configuration.Processing.TrackRemoveStringsRegex));
+        }
 
         [Theory]
-        [InlineData("01 Batman Loves Robin")]
-        [InlineData("01  Batman Loves Robin")]
-        [InlineData("01 -Batman Loves Robin")]
-        [InlineData("01 - Batman Loves Robin")]
-        [InlineData("14 Batman Loves Robin")]
-        [InlineData("49 Batman Loves Robin")]
-        [InlineData("54  Batman Loves Robin")]
-        [InlineData("348 Batman Loves Robin")]
-        public void Test_Regex_String(string input)
+        [InlineData("This is a test")]
+        [InlineData(" This is a test")]
+        [InlineData("One Two Three")]
+        public void DoesNotStartsWithNumber(string input)
         {
-            var t1 = Regex.Replace(input, "^([0-9]+)(\\.|-|\\s)*", "");
-            Assert.NotNull(t1);
-            Assert.Equal("Batman Loves Robin", t1);
-
+            Assert.False(input.DoesStartWithNumber());
         }
 
-        [Fact]
-        public void ToFoldernameFriendly()
+        [Theory]
+        [InlineData("19134")]
+        [InlineData("23419134")]
+        [InlineData("7653419134")]
+        [InlineData("771018819134")]
+        [InlineData("3271018819134")]
+        [InlineData("623271018819134")]
+        public void FileSizeFormatProvider(string input)
         {
-            var t = "[1959] Kind Of Blue";
-            Assert.Equal("[1959] Kind Of Blue", t.ToFolderNameFriendly());
-            t = "This is a folder name";
-            Assert.Equal("This is a folder name", t.ToFolderNameFriendly());
-            t = "This @Is \\Something".ToFolderNameFriendly();
-            Assert.Equal("This @Is Something", t);
-            t = "AC\\DC".ToFolderNameFriendly();
-            Assert.Equal("AC DC", t);
-            t = "3OH*".ToFolderNameFriendly();
-            Assert.Equal("3OH", t);
-            t = "!BR549".ToFolderNameFriendly();
-            Assert.Equal("!BR549", t);
-            t = "6?42!88*44".ToFolderNameFriendly();
-            Assert.Equal("6 42!88 44", t);
-            t = "6?42!88*44?".ToFolderNameFriendly();
-            Assert.Equal("6 42!88 44", t);
-            t = "L'Être las - L'envers du miroir".ToFolderNameFriendly();
-            Assert.Equal("L Être las - L envers du miroir", t);
-
-
+            var l = (long?)long.Parse(input);
+            Assert.True(l > 0);
+            var f = l.ToFileSize();
+            Assert.NotNull(f);
         }
-
-
-        [Fact]
-        public void ToFileNameFriendly()
-        {
-            Assert.Equal("08 Specials, The - Pressure Drop", "08 Specials, The - Pressure Drop".ToFileNameFriendly());
-            var t = "This @Is \\Something".ToFileNameFriendly();
-            Assert.Equal("This @Is Something", t);
-            t = "01 The Red fox jumped over the lazy log.".ToFileNameFriendly();
-            Assert.Equal("01 The Red fox jumped over the lazy log.", t);
-            t = "10 Butchers Tale Western Front 1914.mp3".ToFileNameFriendly();
-            Assert.Equal("10 Butchers Tale Western Front 1914.mp3", t);
-            t = "[2004] Something Or Another".ToFileNameFriendly();
-            Assert.Equal("[2004] Something Or Another", t);
-            t = "You Were Great, How Was I? (Duet With Carl Wilson)";
-            Assert.Equal("You Were Great, How Was I (Duet With Carl Wilson)", t.ToFileNameFriendly());
-            t = "Sitting' On \"Top Of The World!\"";
-            Assert.Equal("Sitting On Top Of The World!", t.ToFileNameFriendly());
-        }
-
-        [Fact]
-        public void ToTitleCase()
-        {
-            var batmanThe = "Batman, The";
-
-            var n = "Batman";
-            Assert.Equal(n, n.ToTitleCase());
-
-            n = "The Batman";
-            Assert.Equal(n, n.ToTitleCase(false));
-
-            n = "The    Batman";
-            Assert.Equal("The Batman", n.ToTitleCase(false));
-
-            n = "The Batman";
-            Assert.Equal(batmanThe, n.ToTitleCase());
-
-            n = "THE BATMAN";
-            Assert.Equal(batmanThe, n.ToTitleCase());
-
-            n = "THE    batman";
-            Assert.Equal(batmanThe, n.ToTitleCase());
-
-            n = "ThE BatmaN ";
-            Assert.Equal(batmanThe, n.ToTitleCase());
-
-            n = " THE BatmaN ";
-            Assert.Equal(batmanThe, n.ToTitleCase());
-
-            n = "The Porcupine Tree";
-            Assert.Equal("Porcupine Tree, The", n.ToTitleCase());
-
-            n = "He Ain'T Heavy, He'S My Brother.mp3";
-            Assert.Equal("He Ain't Heavy, He's My Brother.Mp3", n.ToTitleCase());
-        }
-
-        [Fact]
-        public void AddToDelimitedList()
-        {
-            string l = null;
-            var r = l.AddToDelimitedList(new string[] { "One" });
-            Assert.Equal("One", r);
-
-            l = "One|";
-            r = l.AddToDelimitedList(new string[] { "Two" });
-            Assert.Equal("One|Two", r);
-
-            l = "One|Two";
-            r = l.AddToDelimitedList(new string[3] { "Three", "Four", "Five" });
-            Assert.Equal("One|Two|Three|Four|Five", r);
-
-        }
-
 
         [Fact]
         public void ParseLargeTrackDuration()
@@ -385,20 +163,24 @@ namespace Roadie.Library.Tests
         }
 
         [Theory]
-        [InlineData("19134")]
-        [InlineData("23419134")]
-        [InlineData("7653419134")]
-        [InlineData("771018819134")]
-        [InlineData("3271018819134")]
-        [InlineData("623271018819134")]
-        public void FileSizeFormatProvider(string input)
+        [InlineData("02 02-Anything", "02-Anything")]
+        [InlineData("02 Anything", "Anything")]
+        [InlineData("02 Anything 02", "Anything 02")]
+        public void RemoveFirst(string input, string shouldBe)
         {
-            var l = (long?)long.Parse(input);
-            Assert.True(l > 0);
-            var f = l.ToFileSize();
-            Assert.NotNull(f);
+            Assert.Equal(shouldBe, input.RemoveFirst("02"));
         }
 
+        [Theory]
+        [InlineData("02 02 02-Anything", "-Anything")]
+        [InlineData("02 Anything", "Anything")]
+        [InlineData("Anything 02", "Anything 02")]
+        [InlineData("02Anything", "Anything")]
+        [InlineData("02 02 02 02 Anything 02", "Anything 02")]
+        public void RemoveStartsWith(string input, string shouldBe)
+        {
+            Assert.Equal(shouldBe, input.RemoveStartsWith("02"));
+        }
 
         [Fact]
         public void SerializeDictionary()
@@ -409,32 +191,155 @@ namespace Roadie.Library.Tests
 
             var s = Newtonsoft.Json.JsonConvert.SerializeObject(d);
             Assert.NotNull(s);
-
         }
 
-        //[Fact]
-        //public void SerializeArtistXmlResult()
-        //{
-        //    var artist = new roadie.Models.Subsonic.ArtistXmlResponse
-        //    {
-        //        artist = new roadie.Models.Subsonic.artist
-        //        {
-        //            name = "Colin Hay"
-        //        }
-        //    };
-        //    XmlSerializer xsSubmit = new XmlSerializer(typeof(roadie.Models.Subsonic.ArtistXmlResponse));
+        [Theory]
+        [InlineData("1 This is second test")]
+        [InlineData("01 This is second test")]
+        [InlineData("98 This is second test")]
+        [InlineData("001 This is second test")]
+        [InlineData("1001 This is second test")]
+        public void StartsWithNumber(string input)
+        {
+            Assert.True(input.DoesStartWithNumber());
+        }
 
-        //    var xml = "";
-        //    using (var sww = new StringWriter())
-        //    {
-        //        using (XmlWriter writer = XmlWriter.Create(sww))
-        //        {
-        //            xsSubmit.Serialize(writer, artist);
-        //            xml = sww.ToString(); // Your XML
-        //        }
-        //    }
-        //    Assert.NotNull(xml);
-        //}
+        [Theory]
+        [InlineData("This is a test", "This is a test")]
+        [InlineData("1 This is a test", "This is a test")]
+        [InlineData("01 This is a test", "This is a test")]
+        [InlineData("76 This is a test", "This is a test")]
+        [InlineData("1001 This is a test", "This is a test")]
+        public void StripStartingWithNumber(string input, string shouldBe)
+        {
+            Assert.Equal(shouldBe, input.StripStartingNumber());
+        }
 
+        [Theory]
+        [InlineData("01 Batman Loves Robin")]
+        [InlineData("01  Batman Loves Robin")]
+        [InlineData("01 -Batman Loves Robin")]
+        [InlineData("01 - Batman Loves Robin")]
+        [InlineData("14 Batman Loves Robin")]
+        [InlineData("49 Batman Loves Robin")]
+        [InlineData("54  Batman Loves Robin")]
+        [InlineData("348 Batman Loves Robin")]
+        public void Test_Regex_String(string input)
+        {
+            var t1 = Regex.Replace(input, "^([0-9]+)(\\.|-|\\s)*", "");
+            Assert.NotNull(t1);
+            Assert.Equal("Batman Loves Robin", t1);
+        }
+
+        [Theory]
+        [InlineData("Bob", "bob")]
+        [InlineData("Bob Marley", "bobmarley")]
+        [InlineData("Ringo Starr And His All-Starr Band", "ringostarrandhisallstarrband")]
+        [InlineData("Leslie & Tom", "leslieandtom")]
+        [InlineData(" Leslie  &  Tom", "leslieandtom")]
+        [InlineData("C o l i n  H a y", "colinhay")]
+        [InlineData("ColinHay", "colinhay")]
+        [InlineData("Colin Hay!", "colinhay")]
+        [InlineData("colinhay", "colinhay")]
+        [InlineData("COLINHAY", "colinhay")]
+        [InlineData("C.O!L&quot;I$N⌐HƒAY;", "colinhay")]
+        [InlineData(" Leslie  &amp; Tom", "leslieandtom")]
+        [InlineData("<b>Leslie  &amp; &#32;&#32; Tom</b>", "leslieandtom")]
+        [InlineData("Leslie;/&/;Tom", "leslieandtom")]
+        [InlineData("Leslie And Tom", "leslieandtom")]
+        [InlineData("L≈esl|ie ƒand T╗om╣;", "leslieandtom")]
+        [InlineData("Leslie Tom", "leslietom")]
+        [InlineData("Hüsker Dü", "huskerdu")]
+        [InlineData("Motörhead", "motorhead")]
+        [InlineData("Alright, Still", "alrightstill")]
+        [InlineData("Something,  SOMETHING & somEthing!", "somethingsomethingandsomething")]
+        [InlineData("comfort y mãºsica para volar", "comfortymasicaparavolar")]
+        [InlineData("canciã³n animal", "canciananimal")]
+        [InlineData("Xylø", "xyloe")]
+        [InlineData("Метель", "metel")]
+        [InlineData("Svartidauði", "svartidaudhi")]
+        public void ToAlphanumericNameShouldStripAndMatch(string input, string shouldBe)
+        {
+            Assert.Equal(shouldBe, input.ToAlphanumericName());
+        }
+
+        [Theory]
+        [InlineData("08 Specials, The - Pressure Drop", "08 Specials, The - Pressure Drop")]
+        [InlineData("This @Is \\Something", "This @Is Something")]
+        [InlineData("01 The Red fox jumped over the lazy log.", "01 The Red fox jumped over the lazy log.")]
+        [InlineData("You Were Great, How Was I? (Duet With Carl Wilson)", "You Were Great, How Was I (Duet With Carl Wilson)")]
+        [InlineData("10 Butchers Tale Western Front 1914.mp3", "10 Butchers Tale Western Front 1914.mp3")]
+        [InlineData("[2004] Something Or Another", "[2004] Something Or Another")]
+        [InlineData("Sitting' On \"Top Of The World!\"", "Sitting On Top Of The World!")]
+        public void ToFileNameFriendly(string input, string shouldBe)
+        {
+            Assert.Equal(shouldBe, input.ToFileNameFriendly());
+        }
+
+        [Theory]
+        [InlineData("[1959] Kind Of Blue", "[1959] Kind Of Blue")]
+        [InlineData("This is a folder name", "This is a folder name")]
+        [InlineData("This @Is \\Something", "This @Is Something")]
+        [InlineData("AC\\DC", "AC DC")]
+        [InlineData("3OH*", "3OH")]
+        [InlineData("!BR549", "!BR549")]
+        [InlineData("6?42!88*44", "6 42!88 44")]
+        [InlineData("6?42!88*44?", "6 42!88 44")]
+        [InlineData("L'Être las - L'envers du miroir", "L Être las - L envers du miroir")]
+        public void ToFoldernameFriendly(string input, string shouldBe)
+        {
+            Assert.Equal(shouldBe, input.ToFolderNameFriendly());
+        }
+
+        [Theory]
+        [InlineData("Batman", "Batman")]
+        [InlineData("He Ain'T Heavy, He'S My Brother.mp3", "He Ain't Heavy, He's My Brother.Mp3")]
+        [InlineData("The Porcupine Tree", "Porcupine Tree, The")]
+        [InlineData("The Batman", "Batman, The")]
+        [InlineData("The    Batman", "Batman, The")]
+        [InlineData("THE BATMAN", "Batman, The")]
+        [InlineData("THE    batman", "Batman, The")]
+        [InlineData("ThE BatmaN", "Batman, The")]
+        [InlineData(" THE BatmaN ", "Batman, The")]
+        public void ToTitleCase(string input, string shouldBe)
+        {
+            Assert.Equal(shouldBe, input.ToTitleCase());
+        }
+
+        [Theory]
+        [InlineData("Batman", "Batman")]
+        [InlineData("He Ain'T Heavy, He'S My Brother.mp3", "He Ain't Heavy, He's My Brother.Mp3")]
+        [InlineData("The Porcupine Tree", "The Porcupine Tree")]
+        [InlineData("The Batman", "The Batman")]
+        public void ToTitleCaseDoPutTheAtEnd(string input, string shouldBe)
+        {
+            Assert.Equal(shouldBe, input.ToTitleCase(false));
+        }
+
+        [Theory]
+        [InlineData("2:00")]
+        [InlineData("30")]
+        [InlineData("45:15")]
+        [InlineData("5")]
+        [InlineData("1:02")]
+        public void ToTrackDurationShouldBeGreaterThanZero(string input)
+        {
+            var t = input.ToTrackDuration();
+            Assert.NotNull(t);
+            Assert.True(t > 0);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(null)]
+        [InlineData("batman")]
+        [InlineData("::")]
+        [InlineData("asdfasdfasdfasdfasdfasdfasdf")]
+        [InlineData("Q")]
+        public void ToTrackDurationShouldBeNull(string input)
+        {
+            var t = input.ToTrackDuration();
+            Assert.Null(t);
+        }
     }
 }

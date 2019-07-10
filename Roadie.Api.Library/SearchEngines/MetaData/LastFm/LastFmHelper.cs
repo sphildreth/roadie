@@ -280,7 +280,7 @@ namespace Roadie.Library.MetaData.LastFm
                 {
                     {"artist", scrobble.ArtistName},
                     {"track", scrobble.TrackTitle},
-                    {"timestamp", scrobble.TimePlayed.ToUnixTimeSinceEpoch().ToString()},
+                    {"timestamp", scrobble.TimePlayed.ToUnixTime().ToString()},
                     {"album", scrobble.ReleaseTitle},
                     {"chosenByUser", scrobble.IsRandomizedScrobble ? "1" : "0"},
                     {"duration", ((int) scrobble.TrackDuration.TotalSeconds).ToString()}

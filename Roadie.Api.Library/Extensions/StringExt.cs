@@ -59,7 +59,9 @@ namespace Roadie.Library.Extensions
             if (string.IsNullOrEmpty(input) || settings == null) return input;
             var result = input;
             foreach (var kvp in settings.Processing.ReplaceStrings.OrderBy(x => x.Order).ThenBy(x => x.Key))
+            {
                 result = result.Replace(kvp.Key, kvp.ReplaceWith, StringComparison.OrdinalIgnoreCase);
+            }
             result = result.Trim().ToTitleCase(false);
             if (string.IsNullOrEmpty(result)) return input;
             var rs = removeStringsRegex ?? settings.Processing.RemoveStringsRegex;

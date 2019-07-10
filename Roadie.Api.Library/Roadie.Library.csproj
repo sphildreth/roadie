@@ -13,13 +13,13 @@
     <PackageReference Include="EFCore.BulkExtensions" Version="2.4.9" />
     <PackageReference Include="FluentFTP" Version="25.0.5" />
     <PackageReference Include="Hashids.net" Version="1.2.2" />
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.8" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.9" />
     <PackageReference Include="IdSharp.Common" Version="1.0.1" />
     <PackageReference Include="IdSharp.Tagging" Version="1.0.0-rc3" />
     <PackageReference Include="Inflatable.Lastfm" Version="1.1.0.339" />
     <PackageReference Include="Mapster" Version="4.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="2.2.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.6" />
     <PackageReference Include="Microsoft.Extensions.Caching.Redis" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="6.2.1" />
