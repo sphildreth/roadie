@@ -4,13 +4,12 @@ namespace Roadie.Library.Configuration
 {
     public interface IRoadieSettings
     {
-        Dictionary<string, List<string>> ArtistNameReplace { get; set; }
+        Dictionary<string, IEnumerable<string>> ArtistNameReplace { get; set; }
         string BehindProxyHost { get; set; }
         string ConnectionString { get; set; }
         string ContentPath { get; set; }
         Converting Converting { get; set; }
         string DefaultTimeZone { get; set; }
-        string DiagnosticsPassword { get; set; }
         IEnumerable<string> DontDoMetaDataProvidersSearchArtists { get; set; }
         IEnumerable<string> FileExtensionsToDelete { get; set; }
         FilePlugins FilePlugins { get; set; }

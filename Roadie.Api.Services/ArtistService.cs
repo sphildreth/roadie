@@ -697,8 +697,7 @@ namespace Roadie.Api.Services
                     File.WriteAllBytes(artistImageName, artist.Thumbnail);
 
                     // Resize to store in database as thumbnail
-                    artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, Configuration.MediumImageSize.Width,
-                        Configuration.MediumImageSize.Height);
+                    artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
                     didChangeThumbnail = true;
                 }
 
@@ -714,13 +713,11 @@ namespace Roadie.Api.Services
                             // Ensure is jpeg first
                             artistSecondaryImage = ImageHelper.ConvertToJpegFormat(artistSecondaryImage);
 
-                            var artistImageFilename = Path.Combine(newArtistFolder,
-                                string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                            var artistImageFilename = Path.Combine(newArtistFolder,string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
                             while (File.Exists(artistImageFilename))
                             {
                                 looper++;
-                                artistImageFilename = Path.Combine(newArtistFolder,
-                                    string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                                artistImageFilename = Path.Combine(newArtistFolder,string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
                             }
 
                             File.WriteAllBytes(artistImageFilename, artistSecondaryImage);

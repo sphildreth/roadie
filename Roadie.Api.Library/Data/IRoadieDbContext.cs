@@ -10,8 +10,7 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.Data
 {
-    public interface IRoadieDbContext : IDisposable, IInfrastructure<IServiceProvider>, IDbContextDependencies,
-        IDbSetCache, IDbQueryCache, IDbContextPoolable
+    public interface IRoadieDbContext : IDisposable, IInfrastructure<IServiceProvider>, IDbContextDependencies, IDbSetCache, IDbQueryCache, IDbContextPoolable
     {
         DbSet<ArtistAssociation> ArtistAssociations { get; set; }
         DbSet<ArtistGenre> ArtistGenres { get; set; }

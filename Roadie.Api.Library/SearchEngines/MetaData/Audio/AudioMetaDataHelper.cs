@@ -69,7 +69,6 @@ namespace Roadie.Library.MetaData.Audio
             ArtistLookupEngine = artistLookupEngine;
 
             DoParseFromFileName = configuration.Processing.DoParseFromFileName;
-            DoParseFromDiscogsDBFindingTrackForArtist = configuration.Processing.DoParseFromDiscogsDBFindingTrackForArtist;
             DoParseFromDiscogsDB = configuration.Processing.DoParseFromDiscogsDB;
             DoParseFromMusicBrainz = configuration.Processing.DoParseFromMusicBrainz;
             DoParseFromLastFM = configuration.Processing.DoParseFromLastFM;
@@ -113,8 +112,7 @@ namespace Roadie.Library.MetaData.Audio
 
                 if (!result.IsValid)
                 {
-                    Logger.LogWarning("File [{0}] MetaData Invalid, TagSources [{1}] MetaData [{2}]", fileInfo.FullName,
-                        string.Join(",", tagSources), result.ToString());
+                    Logger.LogWarning("File [{0}] MetaData Invalid, TagSources [{1}] MetaData [{2}]", fileInfo.FullName,  string.Join(",", tagSources), result.ToString());
                 }
                 else
                 {
@@ -150,7 +148,11 @@ namespace Roadie.Library.MetaData.Audio
 
         public bool WriteTags(AudioMetaData metaData, FileInfo fileInfo)
         {
-            return ID3TagsHelper.WriteTags(metaData, fileInfo.FullName);
+            if (Configuration.Processing.DoSaveEditsToTags)
+            {
+                return ID3TagsHelper.WriteTags(metaData, fileInfo.FullName);
+            }
+            return false;
         }
 
         private static AudioMetaData MergeAudioData(IRoadieSettings settings, AudioMetaData left, AudioMetaData right)

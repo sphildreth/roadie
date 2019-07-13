@@ -62,17 +62,14 @@ namespace Roadie.Api.Services
         {
             var hashids = new Hashids(TrackTokenSalt);
             var trackIdPart = BitConverter.ToInt32(trackId.ToByteArray(), 6);
-            if (trackIdPart < 0) trackIdPart = trackIdPart * -1;
-            var token = hashids.Encode(user.Id, SafeParser.ToNumber<int>(user.CreatedDate.Value.ToString("DDHHmmss")),
-                trackIdPart);
+            if (trackIdPart < 0) trackIdPart *= -1;
+            var token = hashids.Encode(user.Id, SafeParser.ToNumber<int>(user.CreatedDate.Value.ToString("DDHHmmss")), trackIdPart);
             return token;
         }
 
-        public Image MakeThumbnailImage(Guid id, string type, int? width = null, int? height = null,
-            bool includeCachebuster = false)
+        public Image MakeThumbnailImage(Guid id, string type, int? width = null, int? height = null, bool includeCachebuster = false)
         {
-            return MakeImage(id, type, width ?? Configuration.ThumbnailImageSize.Width,
-                height ?? Configuration.ThumbnailImageSize.Height, null, includeCachebuster);
+            return MakeImage(id, type, width ?? Configuration.ThumbnailImageSize.Width, height ?? Configuration.ThumbnailImageSize.Height, null, includeCachebuster);
         }
 
         protected IEnumerable<int> ArtistIdsForRelease(int releaseId)
@@ -221,8 +218,10 @@ namespace Roadie.Api.Services
         protected Image MakeFullsizeSecondaryImage(Guid id, ImageType type, int imageId, string caption = null)
         {
             if (type == ImageType.ArtistSecondary)
+            {
                 return new Image($"{HttpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}", caption,
                     $"{HttpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}/{Configuration.SmallImageSize.Width}/{Configuration.SmallImageSize.Height}");
+            }
             return new Image($"{HttpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}", caption,
                 $"{HttpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}/{Configuration.SmallImageSize.Width}/{Configuration.SmallImageSize.Height}");
         }

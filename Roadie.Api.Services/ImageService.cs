@@ -352,24 +352,27 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<FileOperationResult<Image>> GetImageFileOperation(string type, string regionUrn, Guid id,
-            int? width, int? height, Func<Task<FileOperationResult<Image>>> action, EntityTagHeaderValue etag = null)
+        private async Task<FileOperationResult<Image>> GetImageFileOperation(string type, string regionUrn, Guid id, int? width, int? height, Func<Task<FileOperationResult<Image>>> action, EntityTagHeaderValue etag = null)
         {
             try
             {
                 var sw = Stopwatch.StartNew();
-                var result = (await CacheManager.GetAsync($"urn:{type}_by_id_operation:{id}", action, regionUrn))
-                    .Adapt<FileOperationResult<Image>>();
+                var result = (await CacheManager.GetAsync($"urn:{type}_by_id_operation:{id}", action, regionUrn)).Adapt<FileOperationResult<Image>>();
                 if (!result.IsSuccess) return new FileOperationResult<Image>(result.IsNotFoundResult, result.Messages);
                 if (result.ETag == etag) return new FileOperationResult<Image>(OperationMessages.NotModified);
-                if ((width.HasValue || height.HasValue) && result?.Data?.Bytes != null)
+                var force = width.HasValue || height.HasValue;
+                var newWidth = width ?? Configuration.MaximumImageSize.Width;
+                var newHeight = height ?? Configuration.MaximumImageSize.Height;
+                if (result?.Data?.Bytes != null)
                 {
-                    result.Data.Bytes = ImageHelper.ResizeImage(result?.Data?.Bytes, width.Value, height.Value);
+                    var resized = ImageHelper.ResizeImage(result?.Data?.Bytes, newWidth, newHeight, force);
+                    result.Data.Bytes = resized.Item2;
                     result.ETag = EtagHelper.GenerateETag(HttpEncoder, result.Data.Bytes);
                     result.LastModified = DateTime.UtcNow;
-                    if (width.Value != Configuration.ThumbnailImageSize.Width ||
-                        height.Value != Configuration.ThumbnailImageSize.Height)
-                        Logger.LogTrace($"{type}: Resized [{id}], Width [{width.Value}], Height [{height.Value}]");
+                    if (resized.Item1)
+                    {
+                        Logger.LogTrace($"{type}: Resized [{id}], Width [{ newWidth}], Height [{ newHeight}], Forced [{ force }]");
+                    }
                 }
 
                 sw.Stop();

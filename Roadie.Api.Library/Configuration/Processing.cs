@@ -14,13 +14,9 @@ namespace Roadie.Library.Configuration
 
         public bool DoDeleteUnknowns { get; set; }
 
-        public bool DoFolderArtistNameSet { get; set; }
-
         public bool DoMoveUnknowns { get; set; }
 
         public bool DoParseFromDiscogsDB { get; private set; }
-
-        public bool DoParseFromDiscogsDBFindingTrackForArtist { get; private set; }
 
         public bool DoParseFromFileName { get; set; }
 
@@ -52,9 +48,21 @@ namespace Roadie.Library.Configuration
 
         public Processing()
         {
-            ReplaceStrings = new List<ReplacementString>();
             DoAudioCleanup = true;
             DoClearComments = true;
+            DoParseFromDiscogsDB = true;
+            DoParseFromFileName = true;
+            DoParseFromLastFM = true;
+            DoParseFromMusicBrainz = true;
+            DoSaveEditsToTags = true;
+
+            MaximumArtistImagesToAdd = 12;
+            MaximumReleaseImagesToAdd = 12;
+
+            MaxImageWidth = 2048;
+
+            RemoveStringsRegex = "\\b[0-9]+\\s#\\s\\b";
+            ReplaceStrings = new List<ReplacementString>();
         }
     }
 }

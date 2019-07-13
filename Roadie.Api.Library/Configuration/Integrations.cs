@@ -109,6 +109,11 @@ namespace Roadie.Library.Configuration
 
         public Integrations()
         {
+            ITunesProviderEnabled = true;
+            MusicBrainzProviderEnabled = true;
+            LastFmProviderEnabled = true;
+            SpotifyProviderEnabled = true;
+
             DiscogsReadWriteTimeout = short.MaxValue;
             DiscogsTimeout = short.MaxValue;
         }

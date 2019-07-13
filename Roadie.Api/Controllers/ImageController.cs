@@ -49,8 +49,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> ArtistSecondaryImage(Guid id, int imageId, int? width, int? height)
         {
-            var result = await ImageService.ArtistSecondaryImage(id, imageId,
-                width ?? RoadieSettings.MaximumImageSize.Width, height ?? RoadieSettings.MaximumImageSize.Height);
+            var result = await ImageService.ArtistSecondaryImage(id, imageId, width, height);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return File(result.Data.Bytes,

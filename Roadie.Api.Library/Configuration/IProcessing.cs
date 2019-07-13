@@ -8,10 +8,8 @@ namespace Roadie.Library.Configuration
         bool DoAudioCleanup { get; set; }
         bool DoClearComments { get; set; }
         bool DoDeleteUnknowns { get; set; }
-        bool DoFolderArtistNameSet { get; set; }
         bool DoMoveUnknowns { get; set; }
         bool DoParseFromDiscogsDB { get; }
-        bool DoParseFromDiscogsDBFindingTrackForArtist { get; }
         bool DoParseFromFileName { get; set; }
         bool DoParseFromLastFM { get; }
         bool DoParseFromMusicBrainz { get; }
