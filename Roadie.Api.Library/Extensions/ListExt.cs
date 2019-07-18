@@ -12,19 +12,31 @@ namespace Roadie.Library.Extensions
             return source.OrderBy(item => rnd.Next());
         }
 
-        public static void Shuffle<T>(this IList<T> list)
+        //public static void Shuffle<T>(this IList<T> list)
+        //{
+        //    var n = list.Count;
+        //    var rnd = new Random();
+        //    while (n > 1)
+        //    {
+        //        var k = rnd.Next(0, n) % n;
+        //        n--;
+        //        var value = list[k];
+        //        list[k] = list[n];
+        //        list[n] = value;
+        //    }
+        //}
+
+        public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source, Random rng)
         {
-            var n = list.Count;
-            var rnd = new Random();
-            while (n > 1)
+            T[] elements = source.ToArray();
+            for (int i = elements.Length - 1; i >= 0; i--)
             {
-                var k = rnd.Next(0, n) % n;
-                n--;
-                var value = list[k];
-                list[k] = list[n];
-                list[n] = value;
+                int swapIndex = rng.Next(i + 1);
+                yield return elements[swapIndex];
+                elements[swapIndex] = elements[i];
             }
         }
+
 
         public static string ToDelimitedList<T>(this IList<T> list, char delimiter = '|')
         {

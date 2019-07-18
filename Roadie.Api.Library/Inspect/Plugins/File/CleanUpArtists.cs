@@ -39,7 +39,7 @@ namespace Roadie.Library.Inspect.Plugins.File
             }
             if (!string.IsNullOrEmpty(result) && !string.IsNullOrEmpty(trackArtist))
             {
-                result = result.Replace(splitCharacter + trackArtist + splitCharacter, "",StringComparison.OrdinalIgnoreCase);
+                result = result.Replace(splitCharacter + trackArtist + splitCharacter, "", StringComparison.OrdinalIgnoreCase);
                 result = result.Replace(trackArtist + splitCharacter, "", StringComparison.OrdinalIgnoreCase);
                 result = result.Replace(splitCharacter + trackArtist, "", StringComparison.OrdinalIgnoreCase);
                 result = result.Replace(trackArtist, "", StringComparison.OrdinalIgnoreCase);

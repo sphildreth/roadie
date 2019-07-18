@@ -96,9 +96,16 @@ namespace Roadie.Library.Scrobble
                     if (track.ArtistId.HasValue)
                     {
                         trackArtist = DbContext.Artists.FirstOrDefault(x => x.Id == track.ArtistId);
-                        trackArtist.LastPlayed = now;
-                        trackArtist.PlayedCount = (trackArtist.PlayedCount ?? 0) + 1;
-                        CacheManager.ClearRegion(trackArtist.CacheRegion);
+                        if (trackArtist != null)
+                        {
+                            trackArtist.LastPlayed = now;
+                            trackArtist.PlayedCount = (trackArtist.PlayedCount ?? 0) + 1;
+                            CacheManager.ClearRegion(trackArtist.CacheRegion);
+                        }
+                        else
+                        {
+                            Logger.LogWarning($"Invalid Track Artist [{ track.ArtistId }] on Track [{ track.Id }]");
+                        }
                     }
 
                     await DbContext.SaveChangesAsync();

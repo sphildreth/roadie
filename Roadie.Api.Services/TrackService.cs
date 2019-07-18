@@ -34,14 +34,9 @@ namespace Roadie.Api.Services
 
         private IBookmarkService BookmarkService { get; }
 
-        public TrackService(IRoadieSettings configuration,
-                            IHttpEncoder httpEncoder,
-            IHttpContext httpContext,
-            data.IRoadieDbContext dbContext,
-            ICacheManager cacheManager,
-            ILogger<TrackService> logger,
-            IBookmarkService bookmarkService,
-            IAdminService adminService)
+        public TrackService(IRoadieSettings configuration, IHttpEncoder httpEncoder,IHttpContext httpContext,
+                            data.IRoadieDbContext dbContext, ICacheManager cacheManager,ILogger<TrackService> logger,
+                            IBookmarkService bookmarkService, IAdminService adminService)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
             BookmarkService = bookmarkService;
@@ -169,8 +164,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<Library.Models.Pagination.PagedResult<TrackList>> List(PagedRequest request, User roadieUser,
-            bool? doRandomize = false, Guid? releaseId = null)
+        public Task<Library.Models.Pagination.PagedResult<TrackList>> List(PagedRequest request, User roadieUser, bool? doRandomize = false, Guid? releaseId = null)
         {
             try
             {
@@ -256,47 +250,56 @@ namespace Roadie.Api.Services
                     var randomLimit = roadieUser?.RandomReleaseLimit ?? request.Limit ?? 50;
                     var userId = roadieUser?.Id ?? -1;
 
-                    if (!request.FilterFavoriteOnly)
-                    {
-                        // Select random tracks that are not disliked Artist, Release or Track by user.
-                        var dislikedArtistIds = (from ua in DbContext.UserArtists
-                                                 where ua.UserId == userId
-                                                 where ua.IsDisliked == true
-                                                 select ua.ArtistId).ToArray();
-                        var dislikedReleaseIds = (from ur in DbContext.UserReleases
-                                                  where ur.UserId == userId
-                                                  where ur.IsDisliked == true
-                                                  select ur.ReleaseId).ToArray();
-                        var dislikedTrackIds = (from ut in DbContext.UserTracks
-                                                where ut.UserId == userId
-                                                where ut.IsDisliked == true
-                                                select ut.TrackId).ToArray();
-                        randomTrackIds = (from t in DbContext.Tracks
-                                          join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                          join r in DbContext.Releases on rm.ReleaseId equals r.Id
-                                          where !request.FilterRatedOnly || request.FilterRatedOnly && t.Rating > 0
-                                          where !dislikedArtistIds.Contains(r.ArtistId)
-                                          where !dislikedArtistIds.Contains(t.ArtistId ?? 0)
-                                          where !dislikedReleaseIds.Contains(r.Id)
-                                          where !dislikedTrackIds.Contains(t.Id)
-                                          where t.Hash != null
-                                          select new TrackList
-                                          {
-                                              DatabaseId = t.Id
-                                          })
-                                          .OrderBy(x => x.RandomSortId)
-                                          .Take(randomLimit)
-                                          .Select(x => x.DatabaseId)
-                                          .ToArray();
-                    }
+                    // Select random tracks that are not disliked Artist, Release or Track by user.
+                    var dislikedArtistIds = (from ua in DbContext.UserArtists
+                                                where ua.UserId == userId
+                                                where ua.IsDisliked == true
+                                                select ua.ArtistId).ToArray();
+                    var dislikedReleaseIds = (from ur in DbContext.UserReleases
+                                                where ur.UserId == userId
+                                                where ur.IsDisliked == true
+                                                select ur.ReleaseId).ToArray();
+                    var dislikedTrackIds = (from ut in DbContext.UserTracks
+                                            where ut.UserId == userId
+                                            where ut.IsDisliked == true
+                                            select ut.TrackId).ToArray();
+                    int[] favoritedTrackIds = null;
                     if (request.FilterFavoriteOnly)
                     {
-                        rowCount = favoriteTrackIds.Count();
+                        favoritedTrackIds = (from ut in DbContext.UserTracks
+                                                    where ut.UserId == userId
+                                                    where ut.IsFavorite == true
+                                                    select ut.TrackId).ToArray();
+                        favoriteTrackIds = new int[0].AsQueryable();
+                        request.FilterFavoriteOnly = false;
                     }
-                    else
-                    {
-                        rowCount = DbContext.Tracks.Where(x => x.Hash != null).Count();
-                    }
+                    randomTrackIds = TrackList.Shuffle((from t in DbContext.Tracks
+                                                        join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                                        join r in DbContext.Releases on rm.ReleaseId equals r.Id
+                                                        join a in DbContext.Artists on r.ArtistId equals a.Id
+                                                        where !request.FilterRatedOnly || request.FilterRatedOnly && t.Rating > 0
+                                                        where !dislikedArtistIds.Contains(r.ArtistId)
+                                                        where !dislikedArtistIds.Contains(t.ArtistId ?? 0)
+                                                        where !dislikedReleaseIds.Contains(r.Id)
+                                                        where !dislikedTrackIds.Contains(t.Id)
+                                                        where favoritedTrackIds == null || favoritedTrackIds.Contains(t.Id)
+                                                        where t.Hash != null
+                                                        select new TrackList
+                                                        {
+                                                            DatabaseId = t.Id,
+                                                            Artist = new ArtistList
+                                                            {
+                                                                Artist = new DataToken { Value = a.RoadieId.ToString(), Text = a.Name }
+                                                            },
+                                                            Release = new ReleaseList
+                                                            {
+                                                                Release = new DataToken { Value = r.RoadieId.ToString(), Text = r.Title}
+                                                            }
+                                                        })
+                                                        .OrderBy(x => x.RandomSortId)
+                                                        .Take(randomLimit))
+                                     .Select(x => x.DatabaseId)
+                                     .ToArray();
                 }
 
                 Guid?[] filterToTrackIds = null;
@@ -348,18 +351,12 @@ namespace Roadie.Api.Services
                                   where filterToTrackIds == null || filterToTrackIds.Contains(t.RoadieId)
                                   where releaseId == null || releaseId != null && r.RoadieId == releaseId
                                   where request.FilterMinimumRating == null || t.Rating >= request.FilterMinimumRating.Value
-                                  where request.FilterValue == "" || t.Title.Contains(request.FilterValue) ||
-                                        t.AlternateNames.Contains(request.FilterValue) ||
-                                        t.AlternateNames.Contains(normalizedFilterValue) || t.PartTitles.Contains(request.FilterValue)
-                                  where !isEqualFilter || t.Title.Equals(request.FilterValue) ||
-                                        t.AlternateNames.Equals(request.FilterValue) ||
-                                        t.AlternateNames.Equals(normalizedFilterValue) || t.PartTitles.Equals(request.FilterValue)
+                                  where request.FilterValue == "" || t.Title.Contains(request.FilterValue) || t.AlternateNames.Contains(request.FilterValue) || t.AlternateNames.Contains(normalizedFilterValue) || t.PartTitles.Contains(request.FilterValue)
+                                  where !isEqualFilter || t.Title.Equals(request.FilterValue) || t.AlternateNames.Equals(request.FilterValue) || t.AlternateNames.Equals(normalizedFilterValue) || t.PartTitles.Equals(request.FilterValue)
                                   where !request.FilterFavoriteOnly || favoriteTrackIds.Contains(t.Id)
                                   where request.FilterToPlaylistId == null || playlistTrackIds.Contains(t.Id)
                                   where !request.FilterTopPlayedOnly || topTrackids.Contains(t.Id)
-                                  where request.FilterToArtistId == null || request.FilterToArtistId != null &&
-                                        (t.TrackArtist != null && t.TrackArtist.RoadieId == request.FilterToArtistId ||
-                                         r.Artist.RoadieId == request.FilterToArtistId)
+                                  where request.FilterToArtistId == null || request.FilterToArtistId != null && (t.TrackArtist != null && t.TrackArtist.RoadieId == request.FilterToArtistId || r.Artist.RoadieId == request.FilterToArtistId)
                                   where !request.IsHistoryRequest || t.PlayedCount > 0
                                   where request.FilterToCollectionId == null || collectionTrackIds.Contains(t.Id)
                                   select new
@@ -506,14 +503,24 @@ namespace Roadie.Api.Services
                 }
                 else
                 {
-                    sortBy = string.IsNullOrEmpty(request.Sort)
-                        ? request.OrderValue(new Dictionary<string, string>{{"Release.Release.Text", "ASC"}, {"MediaNumber", "ASC"}, {"TrackNumber", "ASC"}})
-                        : request.OrderValue();
+                    if (request.Sort == "Rating")
+                    {
+                        // The request is to sort tracks by Rating if the artist only has a few tracks rated then order by those then order by played (put most popular after top rated)
+                        sortBy = request.OrderValue(new Dictionary<string, string> { { "Rating", request.Order }, { "PlayedCount", request.Order } });
+                    }
+                    else
+                    {
+                        sortBy = string.IsNullOrEmpty(request.Sort)
+                            ? request.OrderValue(new Dictionary<string, string> { { "Release.Release.Text", "ASC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } })
+                            : request.OrderValue();
+                    }
                 }
 
                 if (doRandomize ?? false)
                 {
-                    rows = result.ToArray();
+                    rows = result.OrderBy(x => x.Artist.RandomSortId)
+                                  .ThenBy(x => x.RandomSortId)
+                                  .ToArray();
                 }
                 else
                 {

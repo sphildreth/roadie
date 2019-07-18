@@ -33,15 +33,15 @@ namespace Roadie.Library.Inspect.Plugins.Directory
             var deletedFiles = new List<string>();
             var fileExtensionsToDelete = Configuration.FileExtensionsToDelete ?? new string[0];
             foreach (var file in directory.GetFiles("*.*", SearchOption.AllDirectories))
+            {
                 if (fileExtensionsToDelete.Any(x => x.Equals(file.Extension, StringComparison.OrdinalIgnoreCase)))
                 {
                     if (!Configuration.Inspector.IsInReadOnlyMode) file.Delete();
                     deletedFiles.Add(file.Name);
                     Console.WriteLine($" X Deleted File [{file}], Was found in in FileExtensionsToDelete");
                 }
-
+            }
             result.Data = $"Deleted [{deletedFiles.Count()}] unwanted files";
-            ;
             result.IsSuccess = true;
             return result;
         }

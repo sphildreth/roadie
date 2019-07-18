@@ -3,6 +3,7 @@ using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
@@ -68,6 +69,43 @@ namespace Roadie.Library.Models
             }
         }
 
+        public int GetArtistReleaseHashCode() => this.Artist?.Artist?.Value.GetHashCode() + this.Release?.Release?.Value.GetHashCode() ?? 0;
+
+        public override int GetHashCode() => this.Artist?.Artist?.Value.GetHashCode() + this.Release?.Release?.Value.GetHashCode() + this.Track?.Value.GetHashCode() ?? 0;
+
+        /// <summary>
+        /// Ensure that the given list is sorted so that Artist and Release don't repeat in sequence.
+        /// </summary>
+        public static IEnumerable<TrackList> Shuffle(IEnumerable<TrackList> tracks)
+        {
+            var shuffledTracks = new List<TrackList>(tracks);
+            Models.TrackList lastTrack = shuffledTracks.Skip(1).First();
+            foreach (var track in tracks)
+            {
+                if (lastTrack?.Artist?.Artist?.Value == track?.Artist?.Artist?.Value ||
+                   lastTrack?.Release?.Release?.Value == track?.Release?.Release?.Value)
+                {
+                    shuffledTracks.Remove(track);
+                    var insertAt = shuffledTracks.Count() - 1;
+                    foreach (var st in shuffledTracks)
+                    {
+                        if (st?.Artist?.Artist?.Value != track?.Artist?.Artist?.Value &&
+                           st?.Release?.Release?.Value != track?.Release?.Release?.Value)
+                        {
+                            break;
+                        }
+                        insertAt--;
+                    }
+                    shuffledTracks.Insert(insertAt, track);
+                    lastTrack = track;
+                    continue;
+                }
+                lastTrack = track;
+            }
+            return shuffledTracks;
+        }
+
+
         public static TrackList FromDataTrack(string trackPlayUrl,
             Data.Track track,
             int releaseMediaNumber,
@@ -107,5 +145,7 @@ namespace Roadie.Library.Models
                 Thumbnail = trackThumbnail
             };
         }
+
+
     }
 }
