@@ -42,5 +42,9 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false,
             bool wasDoneForInvalidTrackPlay = false);
+
+        Task<OperationResult<bool>> ValidateInviteToken(Guid? tokenId);
+
+        Task<OperationResult<bool>> UpdateInviteTokenUsed(Guid? tokenId);
     }
 }

@@ -38,5 +38,8 @@ namespace Roadie.Library.Configuration
         bool UseSSLBehindProxy { get; set; }
         string WebsocketAddress { get; set; }
         short? SubsonicRatingBoost { get; set; }
+
+        bool IsRegistrationClosed { get; set; }
+        bool UseRegistrationTokens { get; set; }
     }
 }

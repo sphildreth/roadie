@@ -9,6 +9,7 @@
         Missing = 4,
         Wishlist = 5,
         AdminRemoved = 6,
+        Expired = 7,
         Deleted = 99
     }
 }

@@ -14,6 +14,7 @@ using Roadie.Library.Identity;
 using Roadie.Library.Utility;
 using System;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
@@ -61,16 +62,9 @@ namespace Roadie.Api.Controllers
 
         private IRoadieSettings RoadieSettings { get; }
 
-        public AccountController(
-                                                            IAdminService adminService,
-            UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
-            IConfiguration configuration,
-            ILogger<AccountController> logger,
-            ITokenService tokenService,
-            ICacheManager cacheManager,
-            IEmailSender emailSender,
-            IHttpContext httpContext)
+        public AccountController(IAdminService adminService, UserManager<ApplicationUser> userManager,SignInManager<ApplicationUser> signInManager,
+                                 IConfiguration configuration, ILogger<AccountController> logger, ITokenService tokenService, 
+                                 ICacheManager cacheManager, IEmailSender emailSender, IHttpContext httpContext)
         {
             UserManager = userManager;
             SignInManager = signInManager;
@@ -193,6 +187,16 @@ namespace Roadie.Api.Controllers
                     Email = registerModel.Email
                 };
 
+                if(RoadieSettings.UseRegistrationTokens)
+                {
+                    var tokenValidation = await AdminService.ValidateInviteToken(registerModel.InviteToken);
+                    if(!tokenValidation.IsSuccess)
+                    {
+                        Logger.LogInformation("Invalid Token");
+                        return StatusCode((int)HttpStatusCode.BadRequest, new { Title = "Invite Token Is Required" });
+                    }
+                }
+
                 var identityResult = await UserManager.CreateAsync(user, registerModel.Password);
                 if (identityResult.Succeeded)
                 {
@@ -213,8 +217,11 @@ namespace Roadie.Api.Controllers
                     var t = await TokenService.GenerateToken(user, UserManager);
                     Logger.LogInformation($"Successfully created and authenticated User [{registerModel.Username}]");
                     CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-                    var avatarUrl =
-                        $"{RoadieHttpContext.ImageBaseUrl}/user/{user.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
+                    var avatarUrl = $"{RoadieHttpContext.ImageBaseUrl}/user/{user.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
+                    if (registerModel.InviteToken.HasValue)
+                    {
+                        await AdminService.UpdateInviteTokenUsed(registerModel.InviteToken);
+                    }
                     return Ok(new
                     {
                         Username = user.UserName,
@@ -234,6 +241,17 @@ namespace Roadie.Api.Controllers
 
             return BadRequest(ModelState);
         }
+
+        [HttpGet("registeroptions")]
+        public IActionResult RegisterOptions()
+        {
+            return Ok(new
+            {
+                RoadieSettings.IsRegistrationClosed,
+                RoadieSettings.UseRegistrationTokens
+            }) ;
+        }
+
 
         [HttpPost("resetpassword")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel resetPasswordModel)

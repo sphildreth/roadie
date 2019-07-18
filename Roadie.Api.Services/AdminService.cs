@@ -12,11 +12,6 @@ using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
-using Roadie.Library.MetaData.Audio;
-using Roadie.Library.MetaData.FileName;
-using Roadie.Library.MetaData.ID3Tags;
-using Roadie.Library.MetaData.LastFm;
-using Roadie.Library.MetaData.MusicBrainz;
 using Roadie.Library.Models.Collections;
 using Roadie.Library.Processors;
 using Roadie.Library.Utility;
@@ -34,49 +29,21 @@ namespace Roadie.Api.Services
     {
         protected IHubContext<ScanActivityHub> ScanActivityHub { get; }
 
-        private IArtistLookupEngine ArtistLookupEngine { get; }
-
-        private IAudioMetaDataHelper AudioMetaDataHelper { get; }
+        private IArtistService ArtistService { get; }
 
         private IEventMessageLogger EventMessageLogger { get; }
 
-        private IFileNameHelper FileNameHelper { get; }
-
-        private IID3TagsHelper ID3TagsHelper { get; }
-
-        private ILabelLookupEngine LabelLookupEngine { get; }
-
-        private ILastFmHelper LastFmHelper { get; }
+        private IFileDirectoryProcessorService FileDirectoryProcessorService { get; }
 
         private ILogger MessageLogger => EventMessageLogger as ILogger;
 
-        private IMusicBrainzProvider MusicBrainzProvider { get; }
-
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
-
-        private IArtistService ArtistService { get; }
         private IReleaseService ReleaseService { get; }
 
-        private IFileDirectoryProcessorService FileDirectoryProcessorService { get; }
-
-        public AdminService(IRoadieSettings configuration,
-                                                                                                                                    IHttpEncoder httpEncoder,
-            IHttpContext httpContext,
-            data.IRoadieDbContext context,
-            ICacheManager cacheManager,
-            ILogger<ArtistService> logger,
-            IHubContext<ScanActivityHub> scanActivityHub,
-            IMusicBrainzProvider musicbrainzProvider,
-            ILastFmHelper lastFmHelper,
-            IFileNameHelper fileNameHelper,
-            IID3TagsHelper iD3TagsHelper,
-            IAudioMetaDataHelper audioMetaDataHelper,
-            IArtistService artistService,
-            IReleaseService releaseService,
-            IArtistLookupEngine artistLookupEngine,
-            IReleaseLookupEngine releaseLookupEngine,
-            ILabelLookupEngine labelLookupEngine,
-            IFileDirectoryProcessorService fileDirectoryProcessorService
+        public AdminService(IRoadieSettings configuration, IHttpEncoder httpEncoder, IHttpContext httpContext,
+                            data.IRoadieDbContext context, ICacheManager cacheManager, ILogger<ArtistService> logger,
+                            IHubContext<ScanActivityHub> scanActivityHub, IFileDirectoryProcessorService fileDirectoryProcessorService, IArtistService artistService,
+                            IReleaseService releaseService
         )
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
@@ -84,21 +51,10 @@ namespace Roadie.Api.Services
             EventMessageLogger = new EventMessageLogger<AdminService>();
             EventMessageLogger.Messages += EventMessageLogger_Messages;
 
-            MusicBrainzProvider = musicbrainzProvider;
-            LastFmHelper = lastFmHelper;
-            FileNameHelper = fileNameHelper;
-            ID3TagsHelper = iD3TagsHelper;
-
-            ArtistLookupEngine = artistLookupEngine;
-            ReleaseLookupEngine = releaseLookupEngine;
-            LabelLookupEngine = labelLookupEngine;
-
-            AudioMetaDataHelper = audioMetaDataHelper;
-
             ArtistService = artistService;
             ReleaseService = releaseService;
-            FileDirectoryProcessorService = fileDirectoryProcessorService;
 
+            FileDirectoryProcessorService = fileDirectoryProcessorService;
         }
 
         public async Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId)
@@ -155,7 +111,7 @@ namespace Roadie.Api.Services
 
             try
             {
-                await ReleaseService.DeleteReleases(user, 
+                await ReleaseService.DeleteReleases(user,
                     DbContext.Releases.Where(x => x.ArtistId == artist.Id).Select(x => x.RoadieId).ToArray(),
                     doDeleteFiles);
                 await DbContext.SaveChangesAsync();
@@ -178,8 +134,68 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId,
-            int index)
+        public async Task<OperationResult<bool>> ValidateInviteToken(Guid? tokenId)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            if(tokenId == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Invite TokenId [{tokenId}]");
+            }
+            var token = DbContext.InviteTokens.FirstOrDefault(x => x.RoadieId == tokenId);
+            if(token == null)
+            {
+                return new OperationResult<bool>(true, $"Invite Token Not Found [{tokenId}]");
+            }
+            if(token.ExpiresDate < DateTime.UtcNow || token.Status == Statuses.Expired)
+            {
+                token.Status = Statuses.Expired;
+                token.LastUpdated = DateTime.UtcNow;
+                await DbContext.SaveChangesAsync();
+                return new OperationResult<bool>(true, $"Invite Token [{tokenId}] Expired [{ token.ExpiresDate }]");
+            }
+            if(token.Status == Statuses.Complete)
+            {
+                return new OperationResult<bool>(true, $"Invite Token [{tokenId}] Already Used");
+            }
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> UpdateInviteTokenUsed(Guid? tokenId)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            if (tokenId == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Invite TokenId [{tokenId}]");
+            }
+            var token = DbContext.InviteTokens.FirstOrDefault(x => x.RoadieId == tokenId);
+            if (token == null)
+            {
+                return new OperationResult<bool>(true, $"Invite Token Not Found [{tokenId}]");
+            }
+            token.Status = Statuses.Complete;
+            token.LastUpdated = DateTime.UtcNow;
+            await DbContext.SaveChangesAsync();
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+
+        public async Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -208,8 +224,7 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            await LogAndPublish($"DeleteArtistSecondaryImage `{artist}` Index [{index}], By User `{user}`",
-                LogLevel.Information);
+            await LogAndPublish($"DeleteArtistSecondaryImage `{artist}` Index [{index}], By User `{user}`", LogLevel.Information);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),

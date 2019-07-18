@@ -66,6 +66,7 @@ namespace Roadie.Library.Data
         public DbSet<ApplicationUser> Users { get; set; }
 
         public DbSet<UserTrack> UserTracks { get; set; }
+        public DbSet<InviteToken> InviteTokens { get; set; }
 
         public RoadieDbContext(DbContextOptions<RoadieDbContext> options)
                                                                                                                                                                                                                                                             : base(options)

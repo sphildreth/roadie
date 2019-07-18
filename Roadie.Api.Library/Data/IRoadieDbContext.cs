@@ -45,6 +45,8 @@ namespace Roadie.Library.Data
         DbSet<ApplicationUser> Users { get; set; }
         DbSet<UserTrack> UserTracks { get; set; }
 
+        DbSet<InviteToken> InviteTokens { get; set; }
+
         EntityEntry Add(object entity);
 
         EntityEntry<TEntity> Add<TEntity>(TEntity entity) where TEntity : class;

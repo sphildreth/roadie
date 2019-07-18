@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace Roadie.Api.Models
 {
@@ -7,5 +8,7 @@ namespace Roadie.Api.Models
         [Required] [EmailAddress] public string Email { get; set; }
 
         [Required] [Compare("Password")] public string PasswordConfirmation { get; set; }
+
+        public Guid? InviteToken { get; set; }
     }
 }

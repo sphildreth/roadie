@@ -14,7 +14,7 @@ namespace Roadie.Library.Data
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
-        public bool? IsLocked { get; set; }
+        public virtual bool? IsLocked { get; set; }
 
         [Column("lastUpdated")] public DateTime? LastUpdated { get; set; }
 

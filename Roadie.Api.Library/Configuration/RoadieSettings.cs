@@ -84,6 +84,16 @@ namespace Roadie.Library.Configuration
 
         public short? SubsonicRatingBoost { get; set; }
 
+        /// <summary>
+        /// When true require a "invite" token to exist for a user to register.
+        /// </summary>
+        public bool UseRegistrationTokens { get; set; }
+
+        /// <summary>
+        /// If true then don't allow new registrations
+        /// </summary>
+        public bool IsRegistrationClosed { get; set; }
+
         public RoadieSettings()
         {
             ArtistNameReplace = new Dictionary<string, IEnumerable<string>>
