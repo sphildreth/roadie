@@ -73,10 +73,12 @@ namespace Roadie.Api.Services
             {
                 var result = await ArtistService.Delete(user, artist);
                 if (!result.IsSuccess)
+                {
                     return new OperationResult<bool>
                     {
                         Errors = result.Errors
                     };
+                }
             }
             catch (Exception ex)
             {
@@ -111,9 +113,7 @@ namespace Roadie.Api.Services
 
             try
             {
-                await ReleaseService.DeleteReleases(user,
-                    DbContext.Releases.Where(x => x.ArtistId == artist.Id).Select(x => x.RoadieId).ToArray(),
-                    doDeleteFiles);
+                await ReleaseService.DeleteReleases(user, DbContext.Releases.Where(x => x.ArtistId == artist.Id).Select(x => x.RoadieId).ToArray(), doDeleteFiles);
                 await DbContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -314,65 +314,68 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteTrack(ApplicationUser user, Guid trackId, bool? doDeleteFile)
+        public async Task<OperationResult<bool>> DeleteTracks(ApplicationUser user, IEnumerable<Guid> trackIds, bool? doDeleteFile)
         {
             var sw = new Stopwatch();
             sw.Start();
 
             var errors = new List<Exception>();
 
-            var track = DbContext.Tracks.Include(x => x.ReleaseMedia)
-                .Include(x => x.ReleaseMedia.Release)
-                .Include(x => x.ReleaseMedia.Release.Artist)
-                .FirstOrDefault(x => x.RoadieId == trackId);
-            try
+            foreach (var trackId in trackIds)
             {
-                if (track == null)
+                var track = DbContext.Tracks.Include(x => x.ReleaseMedia)
+                    .Include(x => x.ReleaseMedia.Release)
+                    .Include(x => x.ReleaseMedia.Release.Artist)
+                    .FirstOrDefault(x => x.RoadieId == trackId);
+                try
                 {
-                    await LogAndPublish($"DeleteTrack Unknown Track [{trackId}]", LogLevel.Warning);
-                    return new OperationResult<bool>(true, $"Track Not Found [{trackId}]");
-                }
-
-                DbContext.Tracks.Remove(track);
-                await DbContext.SaveChangesAsync();
-                if (doDeleteFile ?? false)
-                {
-                    string trackPath = null;
-                    try
+                    if (track == null)
                     {
-                        trackPath = track.PathToTrack(Configuration);
-                        if (File.Exists(trackPath))
-                        {
-                            File.Delete(trackPath);
-                            Logger.LogWarning($"x For Track `{track}`, Deleted File [{trackPath}]");
-                        }
+                        await LogAndPublish($"DeleteTracks Unknown Track [{trackId}]", LogLevel.Warning);
+                        return new OperationResult<bool>(true, $"Track Not Found [{trackId}]");
+                    }
 
-                        var trackThumbnailName = track.PathToTrackThumbnail(Configuration);
-                        if (File.Exists(trackThumbnailName))
+                    DbContext.Tracks.Remove(track);
+                    await DbContext.SaveChangesAsync();
+                    if (doDeleteFile ?? false)
+                    {
+                        string trackPath = null;
+                        try
                         {
-                            File.Delete(trackThumbnailName);
-                            Logger.LogWarning($"x For Track `{track}`, Deleted Thumbnail File [{trackThumbnailName}]");
+                            trackPath = track.PathToTrack(Configuration);
+                            if (File.Exists(trackPath))
+                            {
+                                File.Delete(trackPath);
+                                Logger.LogWarning($"x For Track `{track}`, Deleted File [{trackPath}]");
+                            }
+
+                            var trackThumbnailName = track.PathToTrackThumbnail(Configuration);
+                            if (File.Exists(trackThumbnailName))
+                            {
+                                File.Delete(trackThumbnailName);
+                                Logger.LogWarning($"x For Track `{track}`, Deleted Thumbnail File [{trackThumbnailName}]");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex,
+                                string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath,
+                                    track.Id, ex.Serialize()));
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        Logger.LogError(ex,
-                            string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath,
-                                track.Id, ex.Serialize()));
-                    }
+
+                    await ReleaseService.ScanReleaseFolder(user, track.ReleaseMedia.Release.RoadieId, false, track.ReleaseMedia.Release);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex);
+                    await LogAndPublish("Error deleting track.");
+                    errors.Add(ex);
                 }
 
-                await ReleaseService.ScanReleaseFolder(user, track.ReleaseMedia.Release.RoadieId, false, track.ReleaseMedia.Release);
+                sw.Stop();
+                await LogAndPublish($"DeleteTracks `{track}`, By User `{user}`", LogLevel.Information);
             }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex);
-                await LogAndPublish("Error deleting track.");
-                errors.Add(ex);
-            }
-
-            sw.Stop();
-            await LogAndPublish($"DeleteTrack `{track}`, By User `{user}`", LogLevel.Information);
             CacheManager.Clear();
             return new OperationResult<bool>
             {
@@ -381,6 +384,7 @@ namespace Roadie.Api.Services
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };
+
         }
 
         public async Task<OperationResult<bool>> DeleteUser(ApplicationUser applicationUser, Guid userId)

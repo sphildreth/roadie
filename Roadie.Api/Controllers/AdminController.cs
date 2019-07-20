@@ -7,6 +7,7 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -82,11 +83,21 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("delete/tracks")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> DeleteTracks([FromBody]IEnumerable<Guid> ids, bool? doDeleteFile)
+        {
+            var result = await AdminService.DeleteTracks(await UserManager.GetUserAsync(User), ids, doDeleteFile);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            return Ok(result);
+        }
+
+
         [HttpPost("delete/track/{id}")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteTrack(Guid id, bool? doDeleteFile)
         {
-            var result = await AdminService.DeleteTrack(await UserManager.GetUserAsync(User), id, doDeleteFile);
+            var result = await AdminService.DeleteTracks(await UserManager.GetUserAsync(User), new Guid[1] { id }, doDeleteFile);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
