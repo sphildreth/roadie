@@ -492,9 +492,19 @@ namespace Roadie.Api.Services
                 var artistGenres = DbContext.ArtistGenres.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
                 if (artistGenres != null)
                 {
+                    var existingArtistGenres = DbContext.ArtistGenres.Where(x => x.ArtistId == artistToMergeInto.Id).ToArray();
                     foreach (var artistGenre in artistGenres)
                     {
-                        artistGenre.ArtistId = artistToMergeInto.Id;
+                        var existing = existingArtistGenres.FirstOrDefault(x => x.GenreId == artistGenre.GenreId);
+                        // If not exist then add new for artist to merge into
+                        if (existing == null)
+                        {
+                            DbContext.ArtistGenres.Add(new data.ArtistGenre
+                            {
+                                ArtistId = artistToMergeInto.Id,
+                                GenreId = artistGenre.GenreId
+                            });
+                        }                       
                     }
                 }
                 var artistImages = DbContext.Images.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
@@ -550,6 +560,8 @@ namespace Roadie.Api.Services
                 var originalReleaseFolder = release.ReleaseFileFolder(artistFolder);
                 await ReleaseService.UpdateRelease(user, release.Adapt<Release>(), originalReleaseFolder);
             }
+            await DbContext.SaveChangesAsync();
+
             await Delete(user, artistToMerge);
             
 
