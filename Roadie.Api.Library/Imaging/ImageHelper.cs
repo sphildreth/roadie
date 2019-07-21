@@ -21,7 +21,7 @@ namespace Roadie.Library.Imaging
         public static string ArtistImageFilename = "artist.jpg";
         public static string ArtistSecondaryImageFilename = "artist {0}.jpg";
         public static string LabelImageFilename = "label.jpg";
-        public static int MaximumThumbnailByteSize = 65535;
+        public static int MaximumThumbnailByteSize = 65000;
 
         // Replace with counter of image
         public static string ReleaseCoverFilename = "cover.jpg";

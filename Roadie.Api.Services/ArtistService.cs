@@ -692,10 +692,12 @@ namespace Roadie.Api.Services
                 if (!newArtistFolder.Equals(originalArtistFolder, StringComparison.OrdinalIgnoreCase))
                 {
                     didRenameArtist = true;
-
-                    // Rename artist folder to reflect new artist name
-                    Logger.LogTrace("Moving Artist From Folder [{0}] To  [{1}]", originalArtistFolder, newArtistFolder);
-                    Directory.Move(originalArtistFolder, newArtistFolder);
+                    if (Directory.Exists(originalArtistFolder))
+                    {
+                        // Rename artist folder to reflect new artist name
+                        Logger.LogTrace("Moving Artist From Folder [{0}] To  [{1}]", originalArtistFolder, newArtistFolder);
+                        Directory.Move(originalArtistFolder, newArtistFolder);
+                    }
                 }
 
                 var artistImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
@@ -710,6 +712,11 @@ namespace Roadie.Api.Services
 
                     // Resize to store in database as thumbnail
                     artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+                    if (artist.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
+                    {
+                        Logger.LogWarning($"Artist Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{artist.Thumbnail.Length}]");
+                        artist.Thumbnail = null;
+                    }
                     didChangeThumbnail = true;
                 }
 
@@ -853,19 +860,23 @@ namespace Roadie.Api.Services
                 await DbContext.SaveChangesAsync();
                 if (didRenameArtist)
                 {
-                    // Update artist tracks to have new artist name in ID3 metadata
-                    foreach (var mp3 in Directory.GetFiles(newArtistFolder, "*.mp3", SearchOption.AllDirectories))
+                    // Many contributing artists do not have releases and will not have an empty Artist folder
+                    if (Directory.Exists(newArtistFolder))
                     {
-                        var trackFileInfo = new FileInfo(mp3);
-                        var audioMetaData = await AudioMetaDataHelper.GetInfo(trackFileInfo);
-                        if (audioMetaData != null)
+                        // Update artist tracks to have new artist name in ID3 metadata
+                        foreach (var mp3 in Directory.GetFiles(newArtistFolder, "*.mp3", SearchOption.AllDirectories))
                         {
-                            audioMetaData.Artist = artist.Name;
-                            AudioMetaDataHelper.WriteTags(audioMetaData, trackFileInfo);
+                            var trackFileInfo = new FileInfo(mp3);
+                            var audioMetaData = await AudioMetaDataHelper.GetInfo(trackFileInfo);
+                            if (audioMetaData != null)
+                            {
+                                audioMetaData.Artist = artist.Name;
+                                AudioMetaDataHelper.WriteTags(audioMetaData, trackFileInfo);
+                            }
                         }
-                    }
 
-                    await ScanArtistReleasesFolders(user, artist.RoadieId, Configuration.LibraryFolder, false);
+                        await ScanArtistReleasesFolders(user, artist.RoadieId, Configuration.LibraryFolder, false);
+                    }
                 }
 
                 CacheManager.ClearRegion(artist.CacheRegion);
@@ -1295,8 +1306,12 @@ namespace Roadie.Api.Services
                     File.WriteAllBytes(artistImage, artist.Thumbnail);
 
                     // Resize to store in database as thumbnail
-                    artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, Configuration.MediumImageSize.Width,
-                        Configuration.MediumImageSize.Height);
+                    artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+                    if (artist.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
+                    {
+                        Logger.LogWarning($"Artist Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{artist.Thumbnail.Length}]");
+                        artist.Thumbnail = null;
+                    }
                 }
 
                 artist.LastUpdated = now;
@@ -1384,9 +1399,13 @@ namespace Roadie.Api.Services
                     {
                         // Read image and convert to jpeg
                         artist.Thumbnail = File.ReadAllBytes(i.FullName);
-                        artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail,
-                            Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+                        artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail,Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
                         artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
+                        if (artist.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
+                        {
+                            Logger.LogWarning($"Artist Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{artist.Thumbnail.Length}]");
+                            artist.Thumbnail = null;
+                        }
                         artist.LastUpdated = DateTime.UtcNow;
                         await DbContext.SaveChangesAsync();
                         CacheManager.ClearRegion(artist.CacheRegion);

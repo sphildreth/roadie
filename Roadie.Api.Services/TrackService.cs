@@ -845,8 +845,12 @@ namespace Roadie.Api.Services
                     File.WriteAllBytes(trackThumbnailName, track.Thumbnail);
 
                     // Resize to store in database as thumbnail
-                    track.Thumbnail = ImageHelper.ResizeImage(track.Thumbnail, Configuration.MediumImageSize.Width,
-                        Configuration.MediumImageSize.Height);
+                    track.Thumbnail = ImageHelper.ResizeImage(track.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+                    if (track.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
+                    {
+                        Logger.LogWarning($"Track Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{track.Thumbnail.Length}]");
+                        track.Thumbnail = null;
+                    }
                     didChangeThumbnail = true;
                 }
 

@@ -81,13 +81,11 @@ namespace Roadie.Library.Engines
                         artist.Thumbnail = firstImageWithNotNullBytes.Bytes;
                         if (artist.Thumbnail != null)
                         {
-                            artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail,
-                                Configuration.ThumbnailImageSize.Width, Configuration.ThumbnailImageSize.Height);
+                            artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
                             artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
                             if (artist.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
                             {
-                                Logger.LogWarning(
-                                    $"Artist Thumbnail larger than maximum size after resizing to [{Configuration.ThumbnailImageSize.Width}x{Configuration.ThumbnailImageSize.Height}] Thumbnail Size [{artist.Thumbnail.Length}]");
+                                Logger.LogWarning($"Artist Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{artist.Thumbnail.Length}]");
                                 artist.Thumbnail = null;
                             }
                         }
@@ -546,19 +544,24 @@ namespace Roadie.Library.Engines
                 if (WikipediaArtistSearchEngine.IsEnabled)
                 {
                     var wikiName = result.Name;
-                    // Help get better results for bands with proper nouns (e.g. "Poison")
+                    // Help get better results for bands with proper nouns (e.g. "Poison" vs "Poison Band")
                     if (!result.ArtistType.Equals("Person", StringComparison.OrdinalIgnoreCase))
-                        wikiName = wikiName + " band";
+                    {
+                        wikiName += " band";
+                    }
                     var wikipediaResult = await WikipediaArtistSearchEngine.PerformArtistSearch(wikiName, 1);
                     if (wikipediaResult != null)
                     {
                         if (wikipediaResult.IsSuccess)
                         {
-                            var w = wikipediaResult.Data.First();
-                            result.CopyTo(new Artist
+                            var w = wikipediaResult?.Data?.FirstOrDefault();
+                            if (w != null)
                             {
-                                BioContext = HttpEncoder.HtmlEncode(w.Bio)
-                            });
+                                result.CopyTo(new Artist
+                                {
+                                    BioContext = HttpEncoder.HtmlEncode(w.Bio)
+                                });
+                            }
                         }
 
                         if (wikipediaResult.Errors != null) resultsExceptions.AddRange(wikipediaResult.Errors);
@@ -620,8 +623,7 @@ namespace Roadie.Library.Engines
 
                 if (result.Thumbnail != null)
                 {
-                    result.Thumbnail = ImageHelper.ResizeImage(result.Thumbnail, Configuration.ThumbnailImageSize.Width,
-                        Configuration.ThumbnailImageSize.Height);
+                    result.Thumbnail = ImageHelper.ResizeImage(result.Thumbnail, Configuration.MediumImageSize.Width,  Configuration.MediumImageSize.Height);
                     result.Thumbnail = ImageHelper.ConvertToJpegFormat(result.Thumbnail);
                 }
             }

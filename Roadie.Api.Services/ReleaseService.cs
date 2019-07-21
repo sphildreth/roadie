@@ -1289,20 +1289,17 @@ namespace Roadie.Api.Services
 
                 if (release.Thumbnail == null)
                 {
-                    var imageFiles = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releasePath),
-                        ImageType.Release, SearchOption.TopDirectoryOnly);
+                    var imageFiles = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releasePath), ImageType.Release, SearchOption.TopDirectoryOnly);
                     if (imageFiles != null && imageFiles.Any())
                     {
                         // Read image and convert to jpeg
                         var i = imageFiles.First();
                         release.Thumbnail = File.ReadAllBytes(i.FullName);
-                        release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail,
-                            Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+                        release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
                         release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
                         if (release.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
                         {
-                            Logger.LogWarning(
-                                $"Release Thumbnail larger than maximum size after resizing to [{Configuration.ThumbnailImageSize.Width}x{Configuration.ThumbnailImageSize.Height}] Thumbnail Size [{release.Thumbnail.Length}]");
+                            Logger.LogWarning($"Release Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{release.Thumbnail.Length}]");
                             release.Thumbnail = null;
                         }
 
@@ -1415,8 +1412,12 @@ namespace Roadie.Api.Services
                     File.WriteAllBytes(coverFileName, release.Thumbnail);
 
                     // Resize to store in database as thumbnail
-                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, Configuration.MediumImageSize.Width,
-                        Configuration.MediumImageSize.Height);
+                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+                    if (release.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
+                    {
+                        Logger.LogWarning($"Release Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{release.Thumbnail.Length}]");
+                        release.Thumbnail = null;
+                    }
                     didChangeThumbnail = true;
                 }
 
@@ -1888,8 +1889,12 @@ namespace Roadie.Api.Services
                     File.WriteAllBytes(coverFileName, release.Thumbnail);
 
                     // Resize to store in database as thumbnail
-                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, Configuration.MediumImageSize.Width,
-                        Configuration.MediumImageSize.Height);
+                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+                    if (release.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
+                    {
+                        Logger.LogWarning($"Release Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{release.Thumbnail.Length}]");
+                        release.Thumbnail = null;
+                    }
                 }
 
                 release.LastUpdated = now;
