@@ -38,13 +38,14 @@ namespace Roadie.Api.Services
         private ILogger MessageLogger => EventMessageLogger as ILogger;
 
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
+
         private IReleaseService ReleaseService { get; }
 
         public AdminService(IRoadieSettings configuration, IHttpEncoder httpEncoder, IHttpContext httpContext,
                             data.IRoadieDbContext context, ICacheManager cacheManager, ILogger<ArtistService> logger,
                             IHubContext<ScanActivityHub> scanActivityHub, IFileDirectoryProcessorService fileDirectoryProcessorService, IArtistService artistService,
-                            IReleaseService releaseService
-        )
+                            IReleaseService releaseService, IReleaseLookupEngine releaseLookupEngine
+        ) 
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
             ScanActivityHub = scanActivityHub;
@@ -53,7 +54,7 @@ namespace Roadie.Api.Services
 
             ArtistService = artistService;
             ReleaseService = releaseService;
-
+            ReleaseLookupEngine = releaseLookupEngine;
             FileDirectoryProcessorService = fileDirectoryProcessorService;
         }
 
