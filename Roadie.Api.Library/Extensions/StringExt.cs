@@ -250,14 +250,23 @@ namespace Roadie.Library.Extensions
 
         public static string ToTitleCase(this string input, bool doPutTheAtEnd = true)
         {
-            if (string.IsNullOrEmpty(input)) return null;
+            if (string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+            input = input.Replace("’", "'");
             var textInfo = new CultureInfo("en-US", false).TextInfo;
             var r = textInfo.ToTitleCase(input.Trim().ToLower());
             r = Regex.Replace(r, @"\s+", " ");
             if (doPutTheAtEnd)
+            {
                 if (r.StartsWith("The "))
-                    return r.Replace("The ", "") + ", The";
-            return r;
+                {
+                    r = r.Replace("The ", "") + ", The";
+                }
+            }
+            return r.NameCase();
+            //return r; // 10/29
         }
 
         public static int? ToTrackDuration(this string input)
