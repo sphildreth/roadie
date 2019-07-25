@@ -1294,14 +1294,7 @@ namespace Roadie.Api.Services
                     {
                         // Read image and convert to jpeg
                         var i = imageFiles.First();
-                        release.Thumbnail = File.ReadAllBytes(i.FullName);
-                        release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
-                        release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
-                        if (release.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
-                        {
-                            Logger.LogWarning($"Release Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{release.Thumbnail.Length}]");
-                            release.Thumbnail = null;
-                        }
+                        release.Thumbnail = ImageHelper.ResizeToThumbnail(File.ReadAllBytes(i.FullName), Configuration);
 
                         release.LastUpdated = now;
                         await DbContext.SaveChangesAsync();
@@ -1400,24 +1393,12 @@ namespace Roadie.Api.Services
                 var releaseImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (releaseImage != null)
                 {
-                    // Ensure is jpeg first
-                    release.Thumbnail = ImageHelper.ConvertToJpegFormat(releaseImage);
-
                     // Save unaltered image to cover file
-                    var coverFileName =
-                        Path.Combine(
-                            release.ReleaseFileFolder(
-                                release.Artist.ArtistFileFolder(Configuration)),
-                            "cover.jpg");
-                    File.WriteAllBytes(coverFileName, release.Thumbnail);
+                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)),"cover.jpg");
+                    File.WriteAllBytes(coverFileName, ImageHelper.ConvertToJpegFormat(releaseImage));
 
                     // Resize to store in database as thumbnail
-                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
-                    if (release.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
-                    {
-                        Logger.LogWarning($"Release Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{release.Thumbnail.Length}]");
-                        release.Thumbnail = null;
-                    }
+                    release.Thumbnail = ImageHelper.ResizeToThumbnail(releaseImage, Configuration);
                     didChangeThumbnail = true;
                 }
 
@@ -1881,20 +1862,12 @@ namespace Roadie.Api.Services
                 release.Thumbnail = imageBytes;
                 if (release.Thumbnail != null)
                 {
-                    // Ensure is jpeg first
-                    release.Thumbnail = ImageHelper.ConvertToJpegFormat(release.Thumbnail);
-
                     // Save unaltered image to cover file
                     var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)),"cover.jpg");
-                    File.WriteAllBytes(coverFileName, release.Thumbnail);
+                    File.WriteAllBytes(coverFileName, ImageHelper.ConvertToJpegFormat(imageBytes));
 
                     // Resize to store in database as thumbnail
-                    release.Thumbnail = ImageHelper.ResizeImage(release.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
-                    if (release.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
-                    {
-                        Logger.LogWarning($"Release Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{release.Thumbnail.Length}]");
-                        release.Thumbnail = null;
-                    }
+                    release.Thumbnail = ImageHelper.ResizeToThumbnail(imageBytes, Configuration);
                 }
 
                 release.LastUpdated = now;

@@ -210,14 +210,18 @@ namespace Roadie.Api.Services
                 etag);
         }
 
+        /// <summary>
+        /// Get image for an artist, see if the artist has an image in their folder and use that else use Artist.Thumbnail, is also not found use Artist DefaultNotFound image.
+        /// </summary>
         private Task<FileOperationResult<Image>> ArtistImageAction(Guid id, EntityTagHeaderValue etag = null)
         {
             try
             {
                 var artist = GetArtist(id);
                 if (artist == null)
-                    return Task.FromResult(new FileOperationResult<Image>(true,
-                        string.Format("Artist Not Found [{0}]", id)));
+                {
+                    return Task.FromResult(new FileOperationResult<Image>(true, string.Format("Artist Not Found [{0}]", id)));
+                }
                 byte[] imageBytes = null;
                 string artistFolder = null;
                 try
@@ -230,9 +234,11 @@ namespace Roadie.Api.Services
                     }
                     else
                     {
-                        var artistImages =
-                            ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.Artist);
-                        if (artistImages.Any()) imageBytes = File.ReadAllBytes(artistImages.First().FullName);
+                        var artistImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.Artist);
+                        if (artistImages.Any())
+                        {
+                            imageBytes = File.ReadAllBytes(artistImages.First().FullName);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -247,7 +253,10 @@ namespace Roadie.Api.Services
                     CreatedDate = artist.CreatedDate,
                     LastUpdated = artist.LastUpdated
                 };
-                if (imageBytes == null || !imageBytes.Any()) image = DefaultNotFoundImages.Artist;
+                if (imageBytes == null || !imageBytes.Any())
+                {
+                    image = DefaultNotFoundImages.Artist;
+                }
                 return Task.FromResult(GenerateFileOperationResult(id, image, etag));
             }
             catch (Exception ex)
@@ -466,6 +475,9 @@ namespace Roadie.Api.Services
             return Task.FromResult(new FileOperationResult<Image>(OperationMessages.ErrorOccured));
         }
 
+        /// <summary>
+        /// Get image for Release from Release folder, if not exists then use Release.Thumbnail if that is not set then use Release DefaultNotFound image.
+        /// </summary>
         private Task<FileOperationResult<Image>> ReleaseImageAction(Guid id, EntityTagHeaderValue etag = null)
         {
             try
@@ -505,8 +517,7 @@ namespace Roadie.Api.Services
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex,
-                        $"Error Reading Release Folder [{releaseFolder}] Artist Folder [{artistFolder}] For Artist `{release.Artist.Id}`");
+                    Logger.LogError(ex, $"Error Reading Release Folder [{releaseFolder}] Artist Folder [{artistFolder}] For Artist `{release.Artist.Id}`");
                 }
 
                 imageBytes = imageBytes ?? release.Thumbnail;
@@ -516,7 +527,10 @@ namespace Roadie.Api.Services
                     CreatedDate = release.CreatedDate,
                     LastUpdated = release.LastUpdated
                 };
-                if (release.Thumbnail == null || !release.Thumbnail.Any()) image = DefaultNotFoundImages.Release;
+                if (release.Thumbnail == null || !release.Thumbnail.Any())
+                {
+                    image = DefaultNotFoundImages.Release;
+                }
                 return Task.FromResult(GenerateFileOperationResult(id, image, etag));
             }
             catch (Exception ex)

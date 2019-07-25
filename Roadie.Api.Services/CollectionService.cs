@@ -249,12 +249,7 @@ namespace Roadie.Api.Services
             var collectionImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
             if (collectionImage != null)
             {
-                // Ensure is jpeg first
-                collection.Thumbnail = ImageHelper.ConvertToJpegFormat(collectionImage);
-
-                // Resize to store in database as thumbnail
-                collection.Thumbnail = ImageHelper.ResizeImage(collection.Thumbnail,
-                    Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+                collection.Thumbnail = ImageHelper.ResizeToThumbnail(collectionImage, Configuration);
             }
 
             if (model.Maintainer?.Value != null)

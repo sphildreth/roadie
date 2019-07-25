@@ -36,9 +36,11 @@ namespace Roadie.Library.Imaging
                 IImageFormat imageFormat = null;
                 using (var image = Image.Load(imageBytes, out imageFormat))
                 {
-                    image.Save(outStream, ImageFormats.Jpeg);
+                    if (imageFormat != ImageFormats.Jpeg)
+                    {
+                        image.Save(outStream, ImageFormats.Jpeg);
+                    }
                 }
-
                 return outStream.ToArray();
             }
         }
@@ -253,6 +255,24 @@ namespace Roadie.Library.Imaging
                 Trace.WriteLine($"Error Resizing Image [{ex}]");
             }
             return null;
+        }
+
+        /// <summary>
+        /// Convert to JPEG and Resize given image to be a thumbnail size, if larger than maximum thumbnail size no image is returned.
+        /// </summary>
+        public static byte[] ResizeToThumbnail(byte[] imageBytes, IRoadieSettings configuration)
+        {
+            if(!imageBytes.Any())
+            {
+                return imageBytes;
+            }
+            var result = ImageHelper.ResizeImage(ImageHelper.ConvertToJpegFormat(imageBytes), configuration.ThumbnailImageSize.Width, configuration.ThumbnailImageSize.Height, true).Item2;
+            if(result.Length > ImageHelper.MaximumThumbnailByteSize)
+            {
+                Trace.WriteLine($"Thumbnail larger than maximum size after resizing to [{configuration.ThumbnailImageSize.Width}x{configuration.ThumbnailImageSize.Height}] Thumbnail Size [{result.Length}]");
+                result = new byte[0];
+            }
+            return result;
         }
 
         /// <summary>

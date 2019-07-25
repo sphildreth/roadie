@@ -184,12 +184,8 @@ namespace Roadie.Api.Services
                 var labelImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (labelImage != null)
                 {
-                    // Ensure is jpeg first
-                    label.Thumbnail = ImageHelper.ConvertToJpegFormat(labelImage);
-
                     // Resize to store in database as thumbnail
-                    label.Thumbnail = ImageHelper.ResizeImage(label.Thumbnail, Configuration.MediumImageSize.Width,
-                        Configuration.MediumImageSize.Height);
+                    label.Thumbnail = ImageHelper.ResizeToThumbnail(labelImage, Configuration);
                 }
 
                 label.LastUpdated = now;
@@ -324,11 +320,7 @@ namespace Roadie.Api.Services
                 if (label.Thumbnail != null)
                 {
                     // Ensure is jpeg first
-                    label.Thumbnail = ImageHelper.ConvertToJpegFormat(label.Thumbnail);
-
-                    // Resize to store in database as thumbnail
-                    label.Thumbnail = ImageHelper.ResizeImage(label.Thumbnail, Configuration.MediumImageSize.Width,
-                        Configuration.MediumImageSize.Height);
+                    label.Thumbnail = ImageHelper.ResizeToThumbnail(label.Thumbnail, Configuration);
                 }
 
                 label.LastUpdated = now;

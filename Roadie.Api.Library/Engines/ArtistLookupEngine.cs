@@ -81,13 +81,7 @@ namespace Roadie.Library.Engines
                         artist.Thumbnail = firstImageWithNotNullBytes.Bytes;
                         if (artist.Thumbnail != null)
                         {
-                            artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
-                            artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
-                            if (artist.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
-                            {
-                                Logger.LogWarning($"Artist Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{artist.Thumbnail.Length}]");
-                                artist.Thumbnail = null;
-                            }
+                            artist.Thumbnail = ImageHelper.ResizeToThumbnail(artist.Thumbnail, Configuration);
                         }
                     }
                 }
@@ -615,16 +609,20 @@ namespace Roadie.Library.Engines
                         imageBag.Add(await WebHelper.GetImageFromUrlAsync(url));
                     });
                     await Task.WhenAll(i);
-                    result.Images = imageBag.Where(x => x != null && x.Bytes != null).GroupBy(x => x.Signature)
-                        .Select(x => x.First()).Take(Configuration.Processing.MaximumArtistImagesToAdd).ToList();
+                    result.Images = imageBag.Where(x => x != null && x.Bytes != null)
+                                            .GroupBy(x => x.Signature)
+                                            .Select(x => x.First())
+                                            .Take(Configuration.Processing.MaximumArtistImagesToAdd)
+                                            .ToList();
                     if (result.Thumbnail == null && result.Images != null)
+                    {
                         result.Thumbnail = result.Images.First().Bytes;
+                    }
                 }
 
                 if (result.Thumbnail != null)
                 {
-                    result.Thumbnail = ImageHelper.ResizeImage(result.Thumbnail, Configuration.MediumImageSize.Width,  Configuration.MediumImageSize.Height);
-                    result.Thumbnail = ImageHelper.ConvertToJpegFormat(result.Thumbnail);
+                    result.Thumbnail = ImageHelper.ResizeToThumbnail(result.Thumbnail, Configuration);
                 }
             }
             catch (Exception ex)

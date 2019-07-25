@@ -703,20 +703,12 @@ namespace Roadie.Api.Services
                 var artistImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (artistImage != null)
                 {
-                    // Ensure is jpeg first
-                    artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artistImage);
-
                     // Save unaltered image to cover file
                     var artistImageName = Path.Combine(newArtistFolder, ImageHelper.ArtistImageFilename);
-                    File.WriteAllBytes(artistImageName, artist.Thumbnail);
+                    File.WriteAllBytes(artistImageName, ImageHelper.ConvertToJpegFormat(artistImage));
 
                     // Resize to store in database as thumbnail
-                    artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
-                    if (artist.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
-                    {
-                        Logger.LogWarning($"Artist Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{artist.Thumbnail.Length}]");
-                        artist.Thumbnail = null;
-                    }
+                    artist.Thumbnail = ImageHelper.ResizeToThumbnail(artistImage, Configuration);
                     didChangeThumbnail = true;
                 }
 
@@ -1290,9 +1282,6 @@ namespace Roadie.Api.Services
                 artist.Thumbnail = imageBytes;
                 if (artist.Thumbnail != null)
                 {
-                    // Ensure is jpeg first
-                    artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
-
                     // Ensure artist folder exists
                     var artistFolder = artist.ArtistFileFolder(Configuration);
                     if (!Directory.Exists(artistFolder))
@@ -1303,15 +1292,10 @@ namespace Roadie.Api.Services
 
                     // Save unaltered image to artist file
                     var artistImage = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
-                    File.WriteAllBytes(artistImage, artist.Thumbnail);
+                    File.WriteAllBytes(artistImage, ImageHelper.ConvertToJpegFormat(imageBytes));
 
                     // Resize to store in database as thumbnail
-                    artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail, Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
-                    if (artist.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
-                    {
-                        Logger.LogWarning($"Artist Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{artist.Thumbnail.Length}]");
-                        artist.Thumbnail = null;
-                    }
+                    artist.Thumbnail = ImageHelper.ResizeToThumbnail(artist.Thumbnail, Configuration);
                 }
 
                 artist.LastUpdated = now;
@@ -1391,21 +1375,12 @@ namespace Roadie.Api.Services
                 var imageFiles = ImageHelper.ImageFilesInFolder(artistFolder, SearchOption.AllDirectories);
                 if (imageFiles != null && imageFiles.Any())
                 {
-                    var imageFile = imageFiles.First();
-                    var i = new FileInfo(imageFile);
+                    var i = new FileInfo(imageFiles.First());
                     var iName = i.Name.ToLower().Trim();
-                    var isArtistImage = iName.Contains("artist");
-                    if (isArtistImage)
+                    if (ImageHelper.IsArtistImage(i))
                     {
                         // Read image and convert to jpeg
-                        artist.Thumbnail = File.ReadAllBytes(i.FullName);
-                        artist.Thumbnail = ImageHelper.ResizeImage(artist.Thumbnail,Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
-                        artist.Thumbnail = ImageHelper.ConvertToJpegFormat(artist.Thumbnail);
-                        if (artist.Thumbnail.Length >= ImageHelper.MaximumThumbnailByteSize)
-                        {
-                            Logger.LogWarning($"Artist Thumbnail larger than maximum size after resizing to [{Configuration.MediumImageSize.Width}x{Configuration.MediumImageSize.Height}] Thumbnail Size [{artist.Thumbnail.Length}]");
-                            artist.Thumbnail = null;
-                        }
+                        artist.Thumbnail = ImageHelper.ResizeToThumbnail(File.ReadAllBytes(i.FullName), Configuration);
                         artist.LastUpdated = DateTime.UtcNow;
                         await DbContext.SaveChangesAsync();
                         CacheManager.ClearRegion(artist.CacheRegion);

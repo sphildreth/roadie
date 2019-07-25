@@ -296,11 +296,7 @@ namespace Roadie.Api.Services
                 if (playlistImage != null)
                 {
                     // Ensure is jpeg first
-                    playlist.Thumbnail = ImageHelper.ConvertToJpegFormat(playlistImage);
-
-                    // Resize to store in database as thumbnail
-                    playlist.Thumbnail = ImageHelper.ResizeImage(playlist.Thumbnail,
-                        Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+                    playlist.Thumbnail = ImageHelper.ResizeToThumbnail(playlistImage, Configuration);
                 }
 
                 playlist.LastUpdated = now;
