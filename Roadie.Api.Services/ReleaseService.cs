@@ -66,7 +66,7 @@ namespace Roadie.Api.Services
 
         public IEnumerable<int> AddedTrackIds => _addedTrackIds;
 
-        public ReleaseService(IRoadieSettings configuration,                                                                                                                            
+        public ReleaseService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
             data.IRoadieDbContext dbContext,
@@ -884,8 +884,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteReleases(ApplicationUser user, IEnumerable<Guid> releaseIds,
-            bool doDeleteFiles = false)
+        public async Task<OperationResult<bool>> DeleteReleases(ApplicationUser user, IEnumerable<Guid> releaseIds, bool doDeleteFiles = false)
         {
             SimpleContract.Requires<ArgumentNullException>(releaseIds != null && releaseIds.Any(),
                 "No Release Ids Found");
@@ -904,10 +903,13 @@ namespace Roadie.Api.Services
             foreach (var release in releases)
             {
                 var defaultResult = await Delete(user, release, doDeleteFiles, false);
-                result = result & defaultResult.IsSuccess;
+                result &= defaultResult.IsSuccess;
             }
 
-            foreach (var artistId in artistIds) await UpdateArtistCounts(artistId, now);
+            foreach (var artistId in artistIds)
+            {
+                await UpdateArtistCounts(artistId, now);
+            }
             sw.Stop();
 
             return new OperationResult<bool>
@@ -1394,7 +1396,7 @@ namespace Roadie.Api.Services
                 if (releaseImage != null)
                 {
                     // Save unaltered image to cover file
-                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)),"cover.jpg");
+                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)), "cover.jpg");
                     File.WriteAllBytes(coverFileName, ImageHelper.ConvertToJpegFormat(releaseImage));
 
                     // Resize to store in database as thumbnail
@@ -1479,7 +1481,7 @@ namespace Roadie.Api.Services
                 await DbContext.SaveChangesAsync();
                 await CheckAndChangeReleaseTitle(release, originalReleaseFolder);
                 CacheManager.ClearRegion(release.CacheRegion);
-                Logger.LogInformation( $"UpdateRelease `{release}` By User `{user}`: Edited Artist [{didChangeArtist}], Uploaded new image [{didChangeThumbnail}]");
+                Logger.LogInformation($"UpdateRelease `{release}` By User `{user}`: Edited Artist [{didChangeArtist}], Uploaded new image [{didChangeThumbnail}]");
             }
             catch (Exception ex)
             {
@@ -1510,7 +1512,7 @@ namespace Roadie.Api.Services
             SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
             SimpleContract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(oldReleaseFolder), "Invalid Release Old Folder");
 
-             var sw = new Stopwatch();
+            var sw = new Stopwatch();
             sw.Start();
             var now = DateTime.UtcNow;
 
@@ -1863,7 +1865,7 @@ namespace Roadie.Api.Services
                 if (release.Thumbnail != null)
                 {
                     // Save unaltered image to cover file
-                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)),"cover.jpg");
+                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)), "cover.jpg");
                     File.WriteAllBytes(coverFileName, ImageHelper.ConvertToJpegFormat(imageBytes));
 
                     // Resize to store in database as thumbnail

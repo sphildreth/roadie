@@ -292,11 +292,8 @@ namespace Roadie.Api.Services
                           where !onlyWithReleases || a.ReleaseCount > 0
                           where request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId
                           where request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value
-                          where request.FilterValue == "" || a.Name.Contains(request.FilterValue) ||
-                                a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue) ||
-                                a.AlternateNames.Contains(normalizedFilterValue)
-                          where !isEqualFilter || a.Name.Equals(request.FilterValue) || a.SortName.Equals(request.FilterValue) ||
-                                a.AlternateNames.Equals(request.FilterValue) || a.AlternateNames.Equals(normalizedFilterValue)
+                          where request.FilterValue == "" || a.Name.Contains(request.FilterValue) ||  a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue) || a.AlternateNames.Contains(normalizedFilterValue)
+                          where !isEqualFilter || a.Name.Equals(request.FilterValue) || a.SortName.Equals(request.FilterValue) || a.AlternateNames.Equals(request.FilterValue) || a.AlternateNames.Equals(normalizedFilterValue)
                           where !request.FilterFavoriteOnly || favoriteArtistIds.Contains(a.Id)
                           where request.FilterToLabelId == null || labelArtistIds.Contains(a.Id)
                           where !isFilteredToGenre || genreArtistIds.Contains(a.Id)
@@ -333,13 +330,15 @@ namespace Roadie.Api.Services
             {
                 string sortBy;
                 if (request.ActionValue == User.ActionKeyUserRated)
-                    sortBy = string.IsNullOrEmpty(request.Sort)
-                        ? request.OrderValue(
-                            new Dictionary<string, string> { { "Rating", "DESC" }, { "Artist.Text", "ASC" } })
+                {
+                    sortBy = string.IsNullOrEmpty(request.Sort) 
+                        ? request.OrderValue(new Dictionary<string, string> { { "Rating", "DESC" }, { "Artist.Text", "ASC" } })
                         : request.OrderValue();
+                }
                 else
-                    sortBy = request.OrderValue(new Dictionary<string, string>
-                        {{"SortName", "ASC"}, {"Artist.Text", "ASC"}});
+                {
+                    sortBy = request.OrderValue(new Dictionary<string, string> {{"SortName", "ASC"}, {"Artist.Text", "ASC"}});
+                }
                 rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }
 
@@ -1340,12 +1339,17 @@ namespace Roadie.Api.Services
                     Logger.LogWarning("Unable To Find Artist [{0}]", artistId);
                     return new OperationResult<bool>();
                 }
-
                 var releaseScannedCount = 0;
                 var artistFolder = artist.ArtistFileFolder(Configuration);
+                if (!Directory.Exists(artistFolder))
+                {
+                    Logger.LogDebug($"ScanArtistReleasesFolders: ArtistFolder Not Found [{ artistFolder }] For Artist `{ artist }`");
+                    return new OperationResult<bool>();
+                }
                 var scannedArtistFolders = new List<string>();
                 // Scan known releases for changes
                 if (artist.Releases != null)
+                {
                     foreach (var release in artist.Releases)
                         try
                         {
@@ -1357,7 +1361,7 @@ namespace Roadie.Api.Services
                         {
                             Logger.LogError(ex, ex.Serialize());
                         }
-
+                }
                 // Any folder found in Artist folder not already scanned scan
                 var nonReleaseFolders = from d in Directory.EnumerateDirectories(artistFolder)
                                         where !(from r in scannedArtistFolders select r).Contains(d)
@@ -1390,8 +1394,7 @@ namespace Roadie.Api.Services
 
                 sw.Stop();
                 CacheManager.ClearRegion(artist.CacheRegion);
-                Logger.LogInformation("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]",
-                    artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
+                Logger.LogInformation("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {

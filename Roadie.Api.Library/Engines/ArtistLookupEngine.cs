@@ -68,8 +68,7 @@ namespace Roadie.Library.Engines
                 var artistGenreTables = artist.Genres;
                 var ArtistImages = artist.Images;
                 var now = DateTime.UtcNow;
-                artist.AlternateNames =
-                    artist.AlternateNames.AddToDelimitedList(new[] { artist.Name.ToAlphanumericName() });
+                artist.AlternateNames = artist.AlternateNames.AddToDelimitedList(new[] { artist.Name.ToAlphanumericName() });
                 artist.Genres = null;
                 artist.Images = null;
                 if (artist.Thumbnail == null && ArtistImages != null)
@@ -87,10 +86,16 @@ namespace Roadie.Library.Engines
                 }
 
                 if (!artist.IsValid)
+                {
                     return new OperationResult<Artist>
                     {
                         Errors = new Exception[1] { new Exception("Artist is Invalid") }
                     };
+                }
+                if (artist.Thumbnail != null)
+                {
+                    artist.Thumbnail = ImageHelper.ResizeToThumbnail(artist.Thumbnail, Configuration);
+                }
                 var addArtistResult = DbContext.Artists.Add(artist);
                 var inserted = 0;
                 inserted = await DbContext.SaveChangesAsync();
@@ -265,8 +270,7 @@ namespace Roadie.Library.Engines
                                 {
                                     artist = artistSearch.Data;
                                     // See if Artist already exist with either Name or Sort Name
-                                    var alreadyExists = DatabaseQueryForArtistName(artistSearch.Data.Name,
-                                        artistSearch.Data.SortNameValue);
+                                    var alreadyExists = DatabaseQueryForArtistName(artistSearch.Data.Name, artistSearch.Data.SortNameValue);
                                     if (alreadyExists == null || !alreadyExists.IsValid)
                                     {
                                         var addResult = await Add(artist);
@@ -317,8 +321,7 @@ namespace Roadie.Library.Engines
         public async Task<OperationResult<Artist>> PerformMetaDataProvidersArtistSearch(AudioMetaData metaData)
         {
             SimpleContract.Requires<ArgumentNullException>(metaData != null, "Invalid MetaData");
-            SimpleContract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(metaData.Artist),
-                "Invalid MetaData, Missing Artist");
+            SimpleContract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(metaData.Artist), "Invalid MetaData, Missing Artist");
 
             var sw = new Stopwatch();
             sw.Start();
@@ -340,12 +343,29 @@ namespace Roadie.Library.Engines
                     {
                         var i = iTunesResult.Data.First();
                         if (i.AlternateNames != null)
+                        {
                             result.AlternateNames = result.AlternateNames.AddToDelimitedList(i.AlternateNames);
-                        if (i.Tags != null) result.Tags = result.Tags.AddToDelimitedList(i.Tags);
-                        if (i.Urls != null) result.URLs = result.URLs.AddToDelimitedList(i.Urls);
-                        if (i.ISNIs != null) result.ISNI = result.ISNI.AddToDelimitedList(i.ISNIs);
-                        if (i.ImageUrls != null) artistImageUrls.AddRange(i.ImageUrls);
-                        if (i.ArtistGenres != null) artistGenres.AddRange(i.ArtistGenres);
+                        }
+                        if (i.Tags != null)
+                        {
+                            result.Tags = result.Tags.AddToDelimitedList(i.Tags);
+                        }
+                        if (i.Urls != null)
+                        {
+                            result.URLs = result.URLs.AddToDelimitedList(i.Urls);
+                        }
+                        if (i.ISNIs != null)
+                        {
+                            result.ISNI = result.ISNI.AddToDelimitedList(i.ISNIs);
+                        }
+                        if (i.ImageUrls != null)
+                        {
+                            artistImageUrls.AddRange(i.ImageUrls);
+                        }
+                        if (i.ArtistGenres != null)
+                        {
+                            artistGenres.AddRange(i.ArtistGenres);
+                        }
                         result.CopyTo(new Artist
                         {
                             EndDate = i.EndDate,
@@ -379,15 +399,34 @@ namespace Roadie.Library.Engines
                     {
                         var mb = mbResult.Data.First();
                         if (mb.AlternateNames != null)
+                        {
                             result.AlternateNames = result.AlternateNames.AddToDelimitedList(mb.AlternateNames);
-                        if (mb.Tags != null) result.Tags = result.Tags.AddToDelimitedList(mb.Tags);
-                        if (mb.Urls != null) result.URLs = result.URLs.AddToDelimitedList(mb.Urls);
-                        if (mb.ISNIs != null) result.ISNI = result.ISNI.AddToDelimitedList(mb.ISNIs);
-                        if (mb.ImageUrls != null) artistImageUrls.AddRange(mb.ImageUrls);
-                        if (mb.ArtistGenres != null) artistGenres.AddRange(mb.ArtistGenres);
+                        }
+                        if (mb.Tags != null)
+                        {
+                            result.Tags = result.Tags.AddToDelimitedList(mb.Tags);
+                        }
+                        if (mb.Urls != null)
+                        {
+                            result.URLs = result.URLs.AddToDelimitedList(mb.Urls);
+                        }
+                        if (mb.ISNIs != null)
+                        {
+                            result.ISNI = result.ISNI.AddToDelimitedList(mb.ISNIs);
+                        }
+                        if (mb.ImageUrls != null)
+                        {
+                            artistImageUrls.AddRange(mb.ImageUrls);
+                        }
+                        if (mb.ArtistGenres != null)
+                        {
+                            artistGenres.AddRange(mb.ArtistGenres);
+                        }
                         if (!string.IsNullOrEmpty(mb.ArtistName) &&
                             !mb.ArtistName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
+                        {
                             result.AlternateNames.AddToDelimitedList(new[] { mb.ArtistName });
+                        }
                         result.CopyTo(new Artist
                         {
                             EndDate = mb.EndDate,
@@ -544,7 +583,7 @@ namespace Roadie.Library.Engines
                         wikiName += " band";
                     }
                     var wikipediaResult = await WikipediaArtistSearchEngine.PerformArtistSearch(wikiName, 1);
-                    if (wikipediaResult != null)
+                    if (wikipediaResult?.Data != null)
                     {
                         if (wikipediaResult.IsSuccess)
                         {
@@ -553,7 +592,7 @@ namespace Roadie.Library.Engines
                             {
                                 result.CopyTo(new Artist
                                 {
-                                    BioContext = HttpEncoder.HtmlEncode(w.Bio)
+                                    BioContext = HttpEncoder.HtmlEncode(w.Bio ?? string.Empty)
                                 });
                             }
                         }
@@ -570,12 +609,17 @@ namespace Roadie.Library.Engines
             try
             {
                 if (result.AlternateNames != null)
-                    result.AlternateNames = string.Join("|",
-                        result.AlternateNames.ToListFromDelimited().Distinct().OrderBy(x => x));
+                {
+                    result.AlternateNames = string.Join("|", result.AlternateNames.ToListFromDelimited().Distinct().OrderBy(x => x));
+                }
                 if (result.URLs != null)
+                {
                     result.URLs = string.Join("|", result.URLs.ToListFromDelimited().Distinct().OrderBy(x => x));
+                }
                 if (result.Tags != null)
+                {
                     result.Tags = string.Join("|", result.Tags.ToListFromDelimited().Distinct().OrderBy(x => x));
+                }
                 if (artistGenres.Any())
                 {
                     var genreInfos = from ag in artistGenres
@@ -588,17 +632,21 @@ namespace Roadie.Library.Engines
                                      };
                     result.Genres = new List<ArtistGenre>();
                     foreach (var genreInfo in genreInfos)
-                        result.Genres.Add(new ArtistGenre
+                    {
+                        var ag = new ArtistGenre
                         {
-                            Genre = genreInfo.existingGenre != null
-                                ? genreInfo.existingGenre
-                                : new Genre
-                                {
-                                    Name = genreInfo.newGenre,
-                                    NormalizedName = genreInfo.newGenre.ToAlphanumericName()
+                            Genre = genreInfo.existingGenre != null ? genreInfo.existingGenre : new Genre
+                            {
+                                Name = genreInfo.newGenre,
+                                NormalizedName = genreInfo.newGenre.ToAlphanumericName()
 
-                                }
-                        });
+                            }
+                        };
+                        if (!result.Genres.Any(x => x.Genre.NormalizedName == ag.Genre.NormalizedName))
+                        {
+                            result.Genres.Add(ag);
+                        }
+                    }
                 }
 
                 if (artistImageUrls.Any())
@@ -614,15 +662,6 @@ namespace Roadie.Library.Engines
                                             .Select(x => x.First())
                                             .Take(Configuration.Processing.MaximumArtistImagesToAdd)
                                             .ToList();
-                    if (result.Thumbnail == null && result.Images != null)
-                    {
-                        result.Thumbnail = result.Images.First().Bytes;
-                    }
-                }
-
-                if (result.Thumbnail != null)
-                {
-                    result.Thumbnail = ImageHelper.ResizeToThumbnail(result.Thumbnail, Configuration);
                 }
             }
             catch (Exception ex)

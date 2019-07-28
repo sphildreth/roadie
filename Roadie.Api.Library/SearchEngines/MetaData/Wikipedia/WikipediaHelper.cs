@@ -21,24 +21,21 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
             HttpEncoder = httpEncoder;
         }
 
-        public Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query,
-            int resultsCount)
+        public Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
         {
             var tcs = new TaskCompletionSource<OperationResult<IEnumerable<ArtistSearchResult>>>();
-            var client =
-                new RestClient(
-                    "https://en.wikipedia.org/w/api.php?format=xml&action=query&redirects=1&prop=extracts&exintro=&explaintext=&titles=" +
-                    HttpEncoder.UrlEncode(query));
+            var client = new RestClient("https://en.wikipedia.org/w/api.php?format=xml&action=query&redirects=1&prop=extracts&exintro=&explaintext=&titles=" + HttpEncoder.UrlEncode(query ?? string.Empty));
             var request = new RestRequest(Method.GET);
             client.ExecuteAsync<api>(request, response =>
             {
                 ArtistSearchResult data = null;
-                if (response != null && response.Data != null && response.Data.query != null &&
-                    response.Data.query.pages != null)
+                if (response?.Data?.query?.pages != null)
+                {
                     data = new ArtistSearchResult
                     {
                         Bio = response.Data.query.pages.First().extract
                     };
+                }
                 tcs.SetResult(new OperationResult<IEnumerable<ArtistSearchResult>>
                 {
                     IsSuccess = data != null,
@@ -53,19 +50,18 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
         {
             var tcs = new TaskCompletionSource<OperationResult<IEnumerable<ReleaseSearchResult>>>();
 
-            var client =
-                new RestClient(
-                    "https://en.wikipedia.org/w/api.php?format=xml&action=query&redirects=1&prop=extracts&exintro=&explaintext=&titles=" +
-                    HttpEncoder.UrlEncode(query) + " (album)");
+            var client = new RestClient("https://en.wikipedia.org/w/api.php?format=xml&action=query&redirects=1&prop=extracts&exintro=&explaintext=&titles=" + HttpEncoder.UrlEncode(query ?? string.Empty) + " (album)");
             var request = new RestRequest(Method.GET);
             client.ExecuteAsync<api>(request, response =>
             {
                 ReleaseSearchResult data = null;
-                if (response.Data != null)
+                if (response?.Data?.query?.pages != null)
+                {
                     data = new ReleaseSearchResult
                     {
                         Bio = response.Data.query.pages.First().extract
                     };
+                }
                 tcs.SetResult(new OperationResult<IEnumerable<ReleaseSearchResult>>
                 {
                     IsSuccess = data != null,

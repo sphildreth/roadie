@@ -4,6 +4,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
+using Roadie.Library.Imaging;
 using Roadie.Library.SearchEngines.MetaData;
 using Roadie.Library.Utility;
 using System;
@@ -34,11 +35,17 @@ namespace Roadie.Library.Engines
             {
                 var now = DateTime.UtcNow;
                 label.AlternateNames = label.AlternateNames.AddToDelimitedList(new[] { label.Name.ToAlphanumericName() });
+                if (label.Thumbnail != null)
+                {
+                    label.Thumbnail = ImageHelper.ResizeToThumbnail(label.Thumbnail, Configuration);
+                }
                 if (!label.IsValid)
+                {
                     return new OperationResult<Label>
                     {
                         Errors = new Exception[1] { new Exception("Label is Invalid") }
                     };
+                }
                 DbContext.Labels.Add(label);
                 var inserted = 0;
                 try
@@ -163,10 +170,14 @@ namespace Roadie.Library.Engines
                     var d = discogsResult.Data.First();
                     if (d.Urls != null) result.URLs = result.URLs.AddToDelimitedList(d.Urls);
                     if (d.AlternateNames != null)
+                    {
                         result.AlternateNames = result.AlternateNames.AddToDelimitedList(d.AlternateNames);
+                    }
                     if (!string.IsNullOrEmpty(d.LabelName) &&
                         !d.LabelName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
+                    {
                         result.AlternateNames.AddToDelimitedList(new[] { d.LabelName });
+                    }
                     result.CopyTo(new Label
                     {
                         Profile = HttpEncoder.HtmlEncode(d.Profile),
@@ -176,7 +187,10 @@ namespace Roadie.Library.Engines
                     });
                 }
 
-                if (discogsResult.Errors != null) resultsExceptions.AddRange(discogsResult.Errors);
+                if (discogsResult.Errors != null)
+                {
+                    resultsExceptions.AddRange(discogsResult.Errors);
+                }
             }
 
             sw.Stop();

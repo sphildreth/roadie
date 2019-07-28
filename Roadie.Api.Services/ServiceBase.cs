@@ -686,13 +686,13 @@ namespace Roadie.Api.Services
             var artist = DbContext.Artists.FirstOrDefault(x => x.Id == artistId);
             if (artist != null)
             {
-                artist.ReleaseCount = DbContext.Releases.Where(x => x.ArtistId == artistId).Count();
+                artist.ReleaseCount = DbContext.Releases.Where(x => x.ArtistId == artistId).Count();                
                 artist.TrackCount = (from r in DbContext.Releases
                                      join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                      join tr in DbContext.Tracks on rm.Id equals tr.ReleaseMediaId
                                      where tr.ArtistId == artistId || r.ArtistId == artistId
                                      select tr).Count();
-
+                
                 artist.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
                 CacheManager.ClearRegion(artist.CacheRegion);
@@ -704,7 +704,10 @@ namespace Roadie.Api.Services
         /// </summary>
         protected async Task UpdateArtistCountsForRelease(int releaseId, DateTime now)
         {
-            foreach (var artistId in ArtistIdsForRelease(releaseId)) await UpdateArtistCounts(artistId, now);
+            foreach (var artistId in ArtistIdsForRelease(releaseId))
+            {
+                await UpdateArtistCounts(artistId, now);
+            }
         }
 
         /// <summary>

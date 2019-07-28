@@ -33,6 +33,8 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<bool>> ScanArtist(ApplicationUser user, Guid artistId, bool isReadOnly = false);
 
+        Task<OperationResult<bool>> ScanArtists(ApplicationUser user, IEnumerable<Guid> artistIds, bool isReadOnly = false);
+
         Task<OperationResult<bool>> ScanCollection(ApplicationUser user, Guid collectionId, bool isReadOnly = false,
             bool doPurgeFirst = false, bool doUpdateRanks = true);
 

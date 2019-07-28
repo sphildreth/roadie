@@ -41,5 +41,6 @@ namespace Roadie.Library.Configuration
 
         bool IsRegistrationClosed { get; set; }
         bool UseRegistrationTokens { get; set; }
+        string SearchEngineReposFolder { get; set; }
     }
 }

@@ -138,6 +138,16 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("scan/artists")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ScanArtists(IEnumerable<Guid> ids)
+        {
+            var result = await AdminService.ScanArtists(await UserManager.GetUserAsync(User), ids);
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            return Ok(result);
+        }
+
+
         [HttpPost("scan/collection/{id}")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanCollection(Guid id)

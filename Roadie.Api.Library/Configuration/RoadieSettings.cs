@@ -93,6 +93,10 @@ namespace Roadie.Library.Configuration
         /// If true then don't allow new registrations
         /// </summary>
         public bool IsRegistrationClosed { get; set; }
+        /// <summary>
+        /// Place to hold cache repositories used by SearchEngine and MetaData engines
+        /// </summary>
+        public string SearchEngineReposFolder { get; set; }
 
         public RoadieSettings()
         {

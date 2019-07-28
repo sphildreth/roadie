@@ -74,19 +74,25 @@ namespace Roadie.Library.Utility
             {
             }
 
-            if (imageBytes != null)
+            try
             {
-                var signature = ImageHasher.AverageHash(imageBytes).ToString();
-                var ib = ImageHelper.ConvertToJpegFormat(imageBytes);
-                return new Image
+                if (imageBytes != null)
                 {
-                    Url = url,
-                    Status = Statuses.New,
-                    Signature = signature,
-                    Bytes = ib
-                };
+                    var signature = ImageHasher.AverageHash(imageBytes).ToString();
+                    var ib = ImageHelper.ConvertToJpegFormat(imageBytes);
+                    return new Image
+                    {
+                        Url = url,
+                        Status = Statuses.New,
+                        Signature = signature,
+                        Bytes = ib
+                    };
+                }
             }
-
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"GetImageFromUrlAsync Url [{ url }], Exception [{ ex.ToString() }");
+            }
             return null;
         }
 

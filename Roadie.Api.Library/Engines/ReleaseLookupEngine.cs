@@ -81,8 +81,7 @@ namespace Roadie.Library.Engines
                 var releaseMedias = release.Medias;
                 var releaseLabels = release.Labels;
                 var now = DateTime.UtcNow;
-                release.AlternateNames =
-                    release.AlternateNames.AddToDelimitedList(new[] { release.Title.ToAlphanumericName() });
+                release.AlternateNames = release.AlternateNames.AddToDelimitedList(new[] { release.Title.ToAlphanumericName() });
                 release.Images = null;
                 release.Labels = null;
                 release.Medias = null;
@@ -90,10 +89,16 @@ namespace Roadie.Library.Engines
                 release.LibraryStatus = LibraryStatus.Incomplete;
                 release.Status = Statuses.New;
                 if (!release.IsValid)
+                {
                     return new OperationResult<Release>
                     {
                         Errors = new Exception[1] { new Exception("Release is Invalid") }
                     };
+                }
+                if (release.Thumbnail != null)
+                {
+                    release.Thumbnail = ImageHelper.ResizeToThumbnail(release.Thumbnail, Configuration);
+                }
                 DbContext.Releases.Add(release);
                 var inserted = 0;
                 try
@@ -838,12 +843,6 @@ namespace Roadie.Library.Engines
                     }
                 }
             }
-
-            if (result.Thumbnail != null)
-            {
-                result.Thumbnail = ImageHelper.ResizeToThumbnail(result.Thumbnail, Configuration); 
-            }
-
             sw.Stop();
             return new OperationResult<Release>
             {

@@ -579,17 +579,40 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> ScanArtist(ApplicationUser user, Guid artistId,
-            bool isReadOnly = false)
+        public async Task<OperationResult<bool>> ScanArtists(ApplicationUser user, IEnumerable<Guid> artistIds, bool isReadOnly = false)
         {
-            var sw = new Stopwatch();
-            sw.Start();
+            var sw = Stopwatch.StartNew();
+
+            var errors = new List<Exception>();
+            foreach (var artistId in artistIds)
+            {
+                var result = await ScanArtist(user, artistId, isReadOnly);
+                if (!result.IsSuccess)
+                {
+                    if (result.Errors?.Any() ?? false)
+                    {
+                        errors.AddRange(result.Errors);
+                    }
+                }
+            }
+            sw.Stop();
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> ScanArtist(ApplicationUser user, Guid artistId, bool isReadOnly = false)
+        {
+            var sw = Stopwatch.StartNew();
 
             var errors = new List<Exception>();
             var artist = DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
             if (artist == null)
             {
-                await LogAndPublish($"ScanArtist Unknown Release [{artistId}]", LogLevel.Warning);
+                await LogAndPublish($"ScanArtist Unknown Artist [{artistId}]", LogLevel.Warning);
                 return new OperationResult<bool>(true, $"Artist Not Found [{artistId}]");
             }
 

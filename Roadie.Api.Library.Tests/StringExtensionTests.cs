@@ -385,5 +385,16 @@ namespace Roadie.Library.Tests
             var t = input.ToTrackDuration();
             Assert.Null(t);
         }
+
+
+        [Theory]
+        [InlineData("https://itunes.apple.com/us/artist/id485953", "id485953")]
+        [InlineData("https://www.last.fm/music/Billy+Joel", "Billy+Joel")]
+        [InlineData("https://www.discogs.com/artist/137418", "137418")]
+        public void LastSegmentInUrl(string input, string shouldBe)
+        {
+            var v = input.LastSegmentInUrl();
+            Assert.Equal(v, shouldBe);
+        }
     }
 }

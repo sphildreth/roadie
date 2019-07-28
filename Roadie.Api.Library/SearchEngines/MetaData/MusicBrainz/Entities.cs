@@ -5,97 +5,11 @@ using System.Diagnostics;
 
 namespace Roadie.Library.MetaData.MusicBrainz
 {
-    public class Alias
-    {
-        public object begindate { get; set; }
-
-        public object enddate { get; set; }
-
-        public object locale { get; set; }
-
-        public string name { get; set; }
-
-        public object primary { get; set; }
-
-        [JsonProperty(PropertyName = "sort-name")]
-        public string sortname { get; set; }
-
-        public object type { get; set; }
-    }
-
-    public class Area
-    {
-        public string disambiguation { get; set; }
-        public string id { get; set; }
-        public List<string> iso31661codes { get; set; }
-        public string name { get; set; }
-        public string sortname { get; set; }
-    }
-
-    [DebuggerDisplay("name: {name}")]
-    public class Artist
-    {
-        public List<Alias> aliases { get; set; }
-        public Area area { get; set; }
-        public Begin_Area begin_area { get; set; }
-        public string country { get; set; }
-
-        public string disambiguation { get; set; }
-        public object end_area { get; set; }
-        public string gender { get; set; }
-        public string id { get; set; }
-        public List<string> ipis { get; set; }
-
-        [JsonProperty(PropertyName = "isni-list")]
-        public List<string> isnis { get; set; }
-
-        public LifeSpan lifespan { get; set; }
-
-        public string name { get; set; }
-
-        public List<Release> releases { get; set; }
-
-        [JsonProperty(PropertyName = "sort-name")]
-        public string sortname { get; set; }
-
-        public List<Tag> tags { get; set; }
-        public string type { get; set; }
-    }
-
-    public class ArtistResult
-    {
-        public List<Artist> artists { get; set; }
-        public int? count { get; set; }
-        public DateTime? created { get; set; }
-        public int? offset { get; set; }
-    }
-
     public class AttributeValues
     {
     }
 
-    public class Begin_Area
-    {
-        public string disambiguation { get; set; }
-
-        public string id { get; set; }
-        public List<string> iso_3166_1_codes { get; set; }
-        public List<string> iso_3166_2_codes { get; set; }
-        public List<string> iso_3166_3_codes { get; set; }
-
-        public string name { get; set; }
-        public string sortname { get; set; }
-    }
-
-    public class BeginArea
-    {
-        public string id { get; set; }
-
-        public string name { get; set; }
-
-        public string sortname { get; set; }
-    }
-
+    [Serializable]
     public class CoverArtArchive
     {
         public bool artwork { get; set; }
@@ -119,8 +33,12 @@ namespace Roadie.Library.MetaData.MusicBrainz
 
         [JsonProperty(PropertyName = "sort-name")]
         public string sortname { get; set; }
+
+        public NameAndCount[] tags { get; set; }
+        public NameAndCount[] genres { get; set; }
     }
 
+    [Serializable]
     public class LabelInfo
     {
         [JsonProperty(PropertyName = "catalog-number")]
@@ -129,13 +47,8 @@ namespace Roadie.Library.MetaData.MusicBrainz
         public Label label { get; set; }
     }
 
-    public class LifeSpan
-    {
-        public string begin { get; set; }
-        public string end { get; set; }
-        public bool ended { get; set; }
-    }
 
+    [Serializable]
     public class Medium
     {
         public object format { get; set; }
@@ -144,12 +57,13 @@ namespace Roadie.Library.MetaData.MusicBrainz
 
         [JsonProperty(PropertyName = "track-count")]
         public short? trackcount { get; set; }
-
+        [JsonProperty(PropertyName = "track-offset")]
         public int? trackoffset { get; set; }
 
         public List<Track> tracks { get; set; }
     }
 
+    [Serializable]
     public class Recording
     {
         public List<Alias> aliases { get; set; }
@@ -158,8 +72,11 @@ namespace Roadie.Library.MetaData.MusicBrainz
         public int? length { get; set; }
         public string title { get; set; }
         public bool video { get; set; }
+        public NameAndCount[] tags { get; set; }
+        public NameAndCount[] genres { get; set; }
     }
 
+    [Serializable]
     public class Relation
     {
         public List<object> attributes { get; set; }
@@ -173,10 +90,19 @@ namespace Roadie.Library.MetaData.MusicBrainz
         public string targettype { get; set; }
         public string type { get; set; }
         public string typeid { get; set; }
-        public Url url { get; set; }
+        public MbUrl url { get; set; }
+    }
+
+    [Serializable]
+    public class RepositoryRelease
+    {
+        public int Id { get; set; }
+        public string ArtistMbId { get; set; }
+        public Release Release { get; set; }
     }
 
     [DebuggerDisplay("title: {title}, date: {date}")]
+    [Serializable]
     public class Release
     {
         public List<object> aliases { get; set; }
@@ -203,13 +129,17 @@ namespace Roadie.Library.MetaData.MusicBrainz
 
         [JsonProperty(PropertyName = "release-events")]
         public List<ReleaseEvents> releaseevents { get; set; }
-
+        [JsonProperty(PropertyName = "release-group")]
         public ReleaseGroup releasegroup { get; set; }
         public string status { get; set; }
+        [JsonProperty(PropertyName = "text-representation")]
         public TextRepresentation textrepresentation { get; set; }
         public string title { get; set; }
+        [JsonProperty("artist-credits")]
+        public Artist[] artistcredits { get; set; }
     }
 
+    [Serializable]
     public class ReleaseBrowseResult
     {
         [JsonProperty(PropertyName = "release-count")]
@@ -221,6 +151,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
         public List<Release> releases { get; set; }
     }
 
+    [Serializable]
     public class ReleaseEvents
     {
         public Area area { get; set; }
@@ -228,30 +159,30 @@ namespace Roadie.Library.MetaData.MusicBrainz
         public string date { get; set; }
     }
 
+    [Serializable]
     public class ReleaseGroup
     {
         public List<object> aliases { get; set; }
         public string disambiguation { get; set; }
+        [JsonProperty("first-release-date")]
         public string firstreleasedate { get; set; }
         public string id { get; set; }
+        [JsonProperty("primary-type")]
         public string primarytype { get; set; }
         public List<object> secondarytypes { get; set; }
         public string title { get; set; }
+        public NameAndCount[] tags { get; set; }
+        public NameAndCount[] genres { get; set; }
     }
 
-    public class Tag
-    {
-        public int? count { get; set; }
-
-        public string name { get; set; }
-    }
-
+    [Serializable]
     public class TextRepresentation
     {
         public string language { get; set; }
         public string script { get; set; }
     }
 
+    [Serializable]
     public class Track
     {
         public string id { get; set; }
@@ -262,9 +193,11 @@ namespace Roadie.Library.MetaData.MusicBrainz
         public Recording recording { get; set; }
 
         public string title { get; set; }
+
     }
 
-    public class Url
+    [Serializable]
+    public class MbUrl
     {
         public string id { get; set; }
         public string resource { get; set; }

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 
 namespace Roadie.Library.Extensions
 {
@@ -330,6 +331,16 @@ namespace Roadie.Library.Extensions
             if (input != null && suffixToRemove != null && input.EndsWith(suffixToRemove))
                 return input.Substring(0, input.Length - suffixToRemove.Length);
             return input;
+        }
+
+        public static string LastSegmentInUrl(this string input)
+        {
+            if(string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+            var uri = new Uri(input);
+            return uri.Segments.Last();
         }
     }
 }

@@ -21,7 +21,7 @@ namespace Roadie.Library.Imaging
         public static string ArtistImageFilename = "artist.jpg";
         public static string ArtistSecondaryImageFilename = "artist {0}.jpg";
         public static string LabelImageFilename = "label.jpg";
-        public static int MaximumThumbnailByteSize = 65000;
+        public static int MaximumThumbnailByteSize = 50000;
 
         // Replace with counter of image
         public static string ReleaseCoverFilename = "cover.jpg";
@@ -36,10 +36,7 @@ namespace Roadie.Library.Imaging
                 IImageFormat imageFormat = null;
                 using (var image = Image.Load(imageBytes, out imageFormat))
                 {
-                    if (imageFormat != ImageFormats.Jpeg)
-                    {
-                        image.Save(outStream, ImageFormats.Jpeg);
-                    }
+                    image.Save(outStream, ImageFormats.Jpeg);
                 }
                 return outStream.ToArray();
             }
@@ -266,8 +263,10 @@ namespace Roadie.Library.Imaging
             {
                 return imageBytes;
             }
-            var result = ImageHelper.ResizeImage(ImageHelper.ConvertToJpegFormat(imageBytes), configuration.ThumbnailImageSize.Width, configuration.ThumbnailImageSize.Height, true).Item2;
-            if(result.Length > ImageHelper.MaximumThumbnailByteSize)
+            var width = configuration?.ThumbnailImageSize?.Width ?? 80;
+            var height = configuration?.ThumbnailImageSize?.Height ?? 80;
+            var result = ImageHelper.ResizeImage(ImageHelper.ConvertToJpegFormat(imageBytes), width, height, true).Item2;
+            if(result.Length >= ImageHelper.MaximumThumbnailByteSize)
             {
                 Trace.WriteLine($"Thumbnail larger than maximum size after resizing to [{configuration.ThumbnailImageSize.Width}x{configuration.ThumbnailImageSize.Height}] Thumbnail Size [{result.Length}]");
                 result = new byte[0];
