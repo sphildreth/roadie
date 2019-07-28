@@ -167,31 +167,41 @@ namespace Roadie.Library.MetaData.LastFm
             };
         }
 
-        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query,
-                                                            int resultsCount)
+        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
         {
             try
             {
-                Logger.LogTrace("LastFmHelper:PerformArtistSearch:{0}", query);
-                var auth = new LastAuth(ApiKey.Key, ApiKey.KeySecret);
-                var albumApi = new ArtistApi(auth);
-                var response = await albumApi.GetInfoAsync(query);
-                if (!response.Success) return new OperationResult<IEnumerable<ArtistSearchResult>>();
-                var lastFmArtist = response.Content;
-                var result = new ArtistSearchResult
+                var cacheKey = $"uri:lastfm:artistsearch:{ query.ToAlphanumericName() }";
+                var data = await CacheManager.GetAsync<ArtistSearchResult>(cacheKey, async () =>
                 {
-                    ArtistName = lastFmArtist.Name,
-                    LastFMId = lastFmArtist.Id,
-                    MusicBrainzId = lastFmArtist.Mbid,
-                    Bio = lastFmArtist.Bio != null ? lastFmArtist.Bio.Content : null
-                };
-                if (lastFmArtist.Tags != null) result.Tags = lastFmArtist.Tags.Select(x => x.Name).ToList();
-                // No longer fetching/consuming images LastFm says is violation of ToS ; https://getsatisfaction.com/lastfm/topics/api-announcement-dac8oefw5vrxq
-                if (lastFmArtist.Url != null) result.Urls = new[] { lastFmArtist.Url.ToString() };
+                    Logger.LogTrace("LastFmHelper:PerformArtistSearch:{0}", query);
+                    var auth = new LastAuth(ApiKey.Key, ApiKey.KeySecret);
+                    var albumApi = new ArtistApi(auth);
+                    var response = await albumApi.GetInfoAsync(query);
+                    if (!response.Success)
+                    {
+                        return null;
+                    }
+                    var lastFmArtist = response.Content;
+                    var result = new ArtistSearchResult
+                    {
+                        ArtistName = lastFmArtist.Name,
+                        LastFMId = lastFmArtist.Id,
+                        MusicBrainzId = lastFmArtist.Mbid,
+                        Bio = lastFmArtist.Bio != null ? lastFmArtist.Bio.Content : null
+                    };
+                    if (lastFmArtist.Tags != null) result.Tags = lastFmArtist.Tags.Select(x => x.Name).ToList();
+                    // No longer fetching/consuming images LastFm says is violation of ToS ; https://getsatisfaction.com/lastfm/topics/api-announcement-dac8oefw5vrxq
+                    if (lastFmArtist.Url != null)
+                    {
+                        result.Urls = new[] { lastFmArtist.Url.ToString() };
+                    }
+                    return result;
+                }, "uri:metadata");
                 return new OperationResult<IEnumerable<ArtistSearchResult>>
                 {
-                    IsSuccess = response.Success,
-                    Data = new List<ArtistSearchResult> { result }
+                    IsSuccess = data != null,
+                    Data = new[] { data }
                 };
             }
             catch (Exception ex)
@@ -202,56 +212,59 @@ namespace Roadie.Library.MetaData.LastFm
             return new OperationResult<IEnumerable<ArtistSearchResult>>();
         }
 
-        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName,
-            string query, int resultsCount)
+        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName,string query, int resultsCount)
         {
-            var request = new RestRequest(Method.GET);
-            var client = new RestClient(string.Format(
-                "http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={0}&artist={1}&album={2}&format=xml",
-                ApiKey.Key, artistName, query));
-            var responseData = await client.ExecuteTaskAsync<lfm>(request);
-
-            ReleaseSearchResult result = null;
-
-            var response = responseData != null && responseData.Data != null ? responseData.Data : null;
-            if (response != null && response.album != null)
+            var cacheKey = $"uri:lastfm:releasesearch:{ artistName.ToAlphanumericName() }:{ query.ToAlphanumericName() }";
+            var data = await CacheManager.GetAsync<ReleaseSearchResult>(cacheKey, async () =>
             {
-                var lastFmAlbum = response.album;
-                result = new ReleaseSearchResult
-                {
-                    ReleaseTitle = lastFmAlbum.name,
-                    MusicBrainzId = lastFmAlbum.mbid
-                };
+                var request = new RestRequest(Method.GET);
+                var client = new RestClient(string.Format("http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={0}&artist={1}&album={2}&format=xml", ApiKey.Key, artistName, query));
+                var responseData = await client.ExecuteTaskAsync<lfm>(request);
 
-                // No longer fetching/consuming images LastFm says is violation of ToS ; https://getsatisfaction.com/lastfm/topics/api-announcement-dac8oefw5vrxq
+                ReleaseSearchResult result = null;
 
-                if (lastFmAlbum.tags != null) result.Tags = lastFmAlbum.tags.Select(x => x.name).ToList();
-                if (lastFmAlbum.tracks != null)
+                var response = responseData != null && responseData.Data != null ? responseData.Data : null;
+                if (response != null && response.album != null)
                 {
-                    var tracks = new List<TrackSearchResult>();
-                    foreach (var lastFmTrack in lastFmAlbum.tracks)
-                        tracks.Add(new TrackSearchResult
-                        {
-                            TrackNumber = SafeParser.ToNumber<short?>(lastFmTrack.rank),
-                            Title = lastFmTrack.name,
-                            Duration = SafeParser.ToNumber<int?>(lastFmTrack.duration),
-                            Urls = string.IsNullOrEmpty(lastFmTrack.url) ? new[] { lastFmTrack.url } : null
-                        });
-                    result.ReleaseMedia = new List<ReleaseMediaSearchResult>
+                    var lastFmAlbum = response.album;
+                    result = new ReleaseSearchResult
                     {
-                        new ReleaseMediaSearchResult
-                        {
-                            ReleaseMediaNumber = 1,
-                            Tracks = tracks
-                        }
+                        ReleaseTitle = lastFmAlbum.name,
+                        MusicBrainzId = lastFmAlbum.mbid
                     };
-                }
-            }
 
+                    // No longer fetching/consuming images LastFm says is violation of ToS ; https://getsatisfaction.com/lastfm/topics/api-announcement-dac8oefw5vrxq
+
+                    if (lastFmAlbum.tags != null) result.Tags = lastFmAlbum.tags.Select(x => x.name).ToList();
+                    if (lastFmAlbum.tracks != null)
+                    {
+                        var tracks = new List<TrackSearchResult>();
+                        foreach (var lastFmTrack in lastFmAlbum.tracks)
+                        {
+                            tracks.Add(new TrackSearchResult
+                            {
+                                TrackNumber = SafeParser.ToNumber<short?>(lastFmTrack.rank),
+                                Title = lastFmTrack.name,
+                                Duration = SafeParser.ToNumber<int?>(lastFmTrack.duration),
+                                Urls = string.IsNullOrEmpty(lastFmTrack.url) ? new[] { lastFmTrack.url } : null
+                            });
+                        }
+                        result.ReleaseMedia = new List<ReleaseMediaSearchResult>
+                        {
+                            new ReleaseMediaSearchResult
+                            {
+                                ReleaseMediaNumber = 1,
+                                Tracks = tracks
+                            }
+                        };
+                    }
+                }
+                return result;
+            }, "uri:metadata");
             return new OperationResult<IEnumerable<ReleaseSearchResult>>
             {
-                IsSuccess = result != null,
-                Data = new List<ReleaseSearchResult> { result }
+                IsSuccess = data != null,
+                Data = new[] { data }
             };
         }
 

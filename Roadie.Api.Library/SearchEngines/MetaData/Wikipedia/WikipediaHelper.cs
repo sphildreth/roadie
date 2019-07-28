@@ -29,7 +29,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
             client.ExecuteAsync<api>(request, response =>
             {
                 ArtistSearchResult data = null;
-                if (response?.Data?.query?.pages != null)
+                if (response?.Data?.query?.pages != null && (response?.Data?.query?.pages?.Any() ?? false))
                 {
                     data = new ArtistSearchResult
                     {

@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
@@ -72,6 +71,8 @@ namespace Roadie.Library.Engines
 
         public async Task<OperationResult<Release>> Add(Release release, bool doAddTracksInDatabase = false)
         {
+            var sw = Stopwatch.StartNew();
+
             SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
 
             try
@@ -138,8 +139,8 @@ namespace Roadie.Library.Engines
                                 DbContext.Genres.Add(genre);
                                 await DbContext.SaveChangesAsync();
                             }
-                            if (genre != null && 
-                                genre.Id > 0 && 
+                            if (genre != null &&
+                                genre.Id > 0 &&
                                 !addedGenreIds.Any(x => x == genre.Id))
                             {
                                 DbContext.ReleaseGenres.Add(new ReleaseGenre
@@ -272,7 +273,8 @@ namespace Roadie.Library.Engines
                             }
                         }
                     }
-                    Logger.LogInformation("Added New Release: `{0}`", release.ToString());
+                    sw.Stop();
+                    Logger.LogInformation($"Added New Release: Elapsed Time [{ sw.ElapsedMilliseconds }], Release `{ release }`");
                 }
             }
             catch (Exception ex)
@@ -283,7 +285,8 @@ namespace Roadie.Library.Engines
             return new OperationResult<Release>
             {
                 IsSuccess = release.Id > 0,
-                Data = release
+                Data = release,
+                OperationTime = sw.ElapsedMilliseconds
             };
         }
 
@@ -427,11 +430,9 @@ namespace Roadie.Library.Engines
 
                     if (ITunesReleaseSearchEngine.IsEnabled)
                     {
-                        Logger.LogTrace(
-                            "ITunesReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]",
-                            metaData.Artist, result.Title);
-                        var iTunesResult =
-                            await ITunesReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
+                        var sw2 = Stopwatch.StartNew();
+                        Logger.LogTrace("ITunesReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
+                        var iTunesResult = await ITunesReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
                         if (iTunesResult.IsSuccess)
                         {
                             var i = iTunesResult.Data.First();
@@ -460,6 +461,8 @@ namespace Roadie.Library.Engines
                         }
 
                         if (iTunesResult.Errors != null) resultsExceptions.AddRange(iTunesResult.Errors);
+                        sw2.Stop();
+                        Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: ITunesArtistSearchEngine Complete [{ sw2.ElapsedMilliseconds }]");
                     }
 
                     #endregion ITunes
@@ -468,11 +471,9 @@ namespace Roadie.Library.Engines
 
                     if (MusicBrainzReleaseSearchEngine.IsEnabled)
                     {
-                        Logger.LogTrace(
-                            "MusicBrainzReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]",
-                            metaData.Artist, result.Title);
-                        var mbResult =
-                            await MusicBrainzReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
+                        var sw2 = Stopwatch.StartNew();
+                        Logger.LogTrace("MusicBrainzReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
+                        var mbResult = await MusicBrainzReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
                         if (mbResult.IsSuccess)
                         {
                             var mb = mbResult.Data.First();
@@ -508,6 +509,8 @@ namespace Roadie.Library.Engines
                         }
 
                         if (mbResult.Errors != null) resultsExceptions.AddRange(mbResult.Errors);
+                        sw2.Stop();
+                        Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: MusicBrainzReleaseSearchEngine Complete [{ sw2.ElapsedMilliseconds }]");
                     }
 
                     #endregion MusicBrainz
@@ -516,9 +519,8 @@ namespace Roadie.Library.Engines
 
                     if (LastFmReleaseSearchEngine.IsEnabled)
                     {
-                        Logger.LogTrace(
-                            "LastFmReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]",
-                            metaData.Artist, result.Title);
+                        var sw2 = Stopwatch.StartNew();
+                        Logger.LogTrace("LastFmReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
                         var lastFmResult =
                             await LastFmReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
                         if (lastFmResult.IsSuccess)
@@ -555,6 +557,8 @@ namespace Roadie.Library.Engines
                         }
 
                         if (lastFmResult.Errors != null) resultsExceptions.AddRange(lastFmResult.Errors);
+                        sw2.Stop();
+                        Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: LastFmReleaseSearchEngine Complete [{ sw2.ElapsedMilliseconds }]");
                     }
 
                     #endregion LastFm
@@ -563,11 +567,9 @@ namespace Roadie.Library.Engines
 
                     if (SpotifyReleaseSearchEngine.IsEnabled)
                     {
-                        Logger.LogTrace(
-                            "SpotifyReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]",
-                            metaData.Artist, result.Title);
-                        var spotifyResult =
-                            await SpotifyReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
+                        var sw2 = Stopwatch.StartNew();
+                        Logger.LogTrace("SpotifyReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
+                        var spotifyResult = await SpotifyReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
                         if (spotifyResult.IsSuccess)
                         {
                             var s = spotifyResult.Data.First();
@@ -599,6 +601,8 @@ namespace Roadie.Library.Engines
                         }
 
                         if (spotifyResult.Errors != null) resultsExceptions.AddRange(spotifyResult.Errors);
+                        sw2.Stop();
+                        Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: SpotifyReleaseSearchEngine Complete [{ sw2.ElapsedMilliseconds }]");
                     }
 
                     #endregion Spotify
@@ -607,11 +611,9 @@ namespace Roadie.Library.Engines
 
                     if (DiscogsReleaseSearchEngine.IsEnabled)
                     {
-                        Logger.LogTrace(
-                            "DiscogsReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]",
-                            metaData.Artist, result.Title);
-                        var discogsResult =
-                            await DiscogsReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
+                        var sw2 = Stopwatch.StartNew();
+                        Logger.LogTrace("DiscogsReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
+                        var discogsResult = await DiscogsReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
                         if (discogsResult.IsSuccess)
                         {
                             var d = discogsResult.Data.First();
@@ -639,6 +641,8 @@ namespace Roadie.Library.Engines
                         }
 
                         if (discogsResult.Errors != null) resultsExceptions.AddRange(discogsResult.Errors);
+                        sw2.Stop();
+                        Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: DiscogsReleaseSearchEngine Complete [{ sw2.ElapsedMilliseconds }]");
                     }
 
                     #endregion Discogs
@@ -652,20 +656,24 @@ namespace Roadie.Library.Engines
             }
             else
             {
-                Logger.LogTrace(
-                    "Skipped Metadata Providers Search, DontDoMetaDataProvidersSearchArtists set for Artist [{0}].",
-                    metaData.Artist);
+                Logger.LogTrace("Skipped Metadata Providers Search, DontDoMetaDataProvidersSearchArtists set for Artist [{0}].", metaData.Artist);
             }
 
             if (result.AlternateNames != null)
-                result.AlternateNames = string.Join("|",
-                    result.AlternateNames.ToListFromDelimited().Distinct().OrderBy(x => x));
+            {
+                result.AlternateNames = string.Join("|", result.AlternateNames.ToListFromDelimited().Distinct().OrderBy(x => x));
+            }
             if (result.URLs != null)
+            {
                 result.URLs = string.Join("|", result.URLs.ToListFromDelimited().Distinct().OrderBy(x => x));
+            }
             if (result.Tags != null)
+            {
                 result.Tags = string.Join("|", result.Tags.ToListFromDelimited().Distinct().OrderBy(x => x));
+            }
             if (releaseGenres.Any())
             {
+                var sw2 = Stopwatch.StartNew();
                 result.Genres = new List<ReleaseGenre>();
                 foreach (var releaseGenre in releaseGenres.Where(x => !string.IsNullOrEmpty(x)).GroupBy(x => x).Select(x => x.First()))
                 {
@@ -685,10 +693,13 @@ namespace Roadie.Library.Engines
                         }
                     }
                 };
+                sw2.Stop();
+                Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: Release Genre Processing Complete [{ sw2.ElapsedMilliseconds }]");
             }
 
             if (releaseImageUrls.Any())
             {
+                var sw2 = Stopwatch.StartNew();
                 var imageBag = new ConcurrentBag<Image>();
                 var i = releaseImageUrls.Select(async url =>
                 {
@@ -699,12 +710,22 @@ namespace Roadie.Library.Engines
                 var existingImages = result.Images != null ? result.Images.ToList() : new List<Image>();
                 existingImages.AddRange(imageBag.ToList());
                 // Now set release images to be unique image based on image hash
-                result.Images = existingImages.Where(x => x != null && x.Bytes != null).GroupBy(x => x.Signature)
-                    .Select(x => x.First()).Take(Configuration.Processing.MaximumReleaseImagesToAdd).ToList();
-                if (result.Thumbnail == null && result.Images != null) result.Thumbnail = result.Images.First().Bytes;
+                result.Images = existingImages
+                                .Where(x => x != null && x.Bytes != null)
+                                .GroupBy(x => x.Signature)
+                                .Select(x => x.First()).Take(Configuration.Processing.MaximumReleaseImagesToAdd)
+                                .ToList();
+                if (result.Thumbnail == null && result.Images != null)
+                {
+                    result.Thumbnail = result.Images.First().Bytes;
+                }
+                sw2.Stop();
+                Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: Image Url Processing Complete [{ sw2.ElapsedMilliseconds }]");
             }
 
             if (releaseLabels.Any())
+            {
+                var sw2 = Stopwatch.StartNew();
                 result.Labels = releaseLabels.GroupBy(x => x.CatalogNumber).Select(x => x.First()).Select(x =>
                     new ReleaseLabel
                     {
@@ -725,9 +746,12 @@ namespace Roadie.Library.Engines
                             Status = Statuses.New
                         }
                     }).ToList();
-
+                sw2.Stop();
+                Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: Release Labels Processing Complete [{ sw2.ElapsedMilliseconds }]");
+            }
             if (releaseMedias.Any())
             {
+                var sw2 = Stopwatch.StartNew();
                 var resultReleaseMedias = new List<ReleaseMedia>();
                 foreach (var releaseMedia in releaseMedias.GroupBy(x => x.ReleaseMediaNumber).Select(x => x.First()))
                 {
@@ -751,12 +775,14 @@ namespace Roadie.Library.Engines
                         {
                             Artist trackArtist = null;
                             if (releaseTrack.Artist != null)
+                            {
                                 trackArtist = new Artist
                                 {
                                     Name = releaseTrack.Artist.ArtistName,
                                     SpotifyId = releaseTrack.Artist.SpotifyId,
                                     ArtistType = releaseTrack.Artist.ArtistType
                                 };
+                            }
                             rmTrack = new Track
                             {
                                 TrackArtist = trackArtist,
@@ -800,6 +826,8 @@ namespace Roadie.Library.Engines
 
                 result.Medias = resultReleaseMedias;
                 result.TrackCount = (short)releaseMedias.SelectMany(x => x.Tracks).Count();
+                sw2.Stop();
+                Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: Release Media Processing Complete [{ sw2.ElapsedMilliseconds }]");
             }
 
             if (metaData.Images != null && metaData.Images.Any())
@@ -839,7 +867,7 @@ namespace Roadie.Library.Engines
                     {
                         // Read image and convert to jpeg
                         result.Thumbnail = File.ReadAllBytes(coverFileName);
-                        Logger.LogDebug("Using Release Cover File [{0}]", coverFileName);
+                        Logger.LogDebug("PerformMetaDataProvidersReleaseSearch: Using Release Cover File [{0}]", coverFileName);
                     }
                 }
             }

@@ -50,8 +50,7 @@ namespace Roadie.Api.Controllers
             var result = await CacheManager.GetAsync($"urn:user_model_by_id:{id}",
                 async () =>
                 {
-                    return await UserService.ById(user, id,
-                        (inc ?? Library.Models.Users.User.DefaultIncludes).ToLower().Split(","));
+                    return await UserService.ById(user, id, (inc ?? Library.Models.Users.User.DefaultIncludes).ToLower().Split(","));
                 }, ControllerCacheRegionUrn);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);

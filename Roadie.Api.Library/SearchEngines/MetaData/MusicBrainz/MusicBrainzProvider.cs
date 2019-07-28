@@ -223,17 +223,22 @@ namespace Roadie.Library.MetaData.MusicBrainz
                         {
                             var releaseLabels = new List<ReleaseLabelSearchResult>();
                             foreach (var mbLabel in r.labelinfo)
-                                releaseLabels.Add(new ReleaseLabelSearchResult
+                            {
+                                if (mbLabel.label != null)
                                 {
-                                    CatalogNumber = mbLabel.catalognumber,
-                                    Label = new LabelSearchResult
+                                    releaseLabels.Add(new ReleaseLabelSearchResult
                                     {
-                                        LabelName = mbLabel.label.name,
-                                        MusicBrainzId = mbLabel.label.id,
-                                        LabelSortName = mbLabel.label.sortname,
-                                        AlternateNames = mbLabel.label.aliases.Select(x => x.name).ToList()
-                                    }
-                                });
+                                        CatalogNumber = mbLabel.catalognumber,
+                                        Label = new LabelSearchResult
+                                        {
+                                            LabelName = mbLabel.label.name,
+                                            MusicBrainzId = mbLabel.label.id,
+                                            LabelSortName = mbLabel.label.sortname,
+                                            AlternateNames = mbLabel.label.aliases?.Select(x => x.name).ToList()
+                                        }
+                                    });
+                                }
+                            }
                             result.ReleaseLabel = releaseLabels;
                         }
 

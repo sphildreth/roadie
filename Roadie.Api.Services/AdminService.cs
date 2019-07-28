@@ -941,10 +941,11 @@ namespace Roadie.Api.Services
             long processedFolders = 0;
             foreach (var folder in Directory.EnumerateDirectories(d.FullName).ToArray())
             {
-                await FileDirectoryProcessorService.Process(user, new DirectoryInfo(folder), isReadOnly);
-                // Between folders flush cache, the caching for folder processing was intended for caching artist metadata lookups. Most of the time artists releases are in the same folder.
-                CacheManager.Clear();
+                var directoryProcessResult = await FileDirectoryProcessorService.Process(user, new DirectoryInfo(folder), isReadOnly);
+                processedFolders++;
+                processedFiles += SafeParser.ToNumber<int>(directoryProcessResult.AdditionalData["ProcessedFiles"]);
             }
+            CacheManager.Clear();
             if (!isReadOnly)
             {
                 Services.FileDirectoryProcessorService.DeleteEmptyFolders(d, Logger);

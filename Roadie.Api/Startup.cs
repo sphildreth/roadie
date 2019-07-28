@@ -101,8 +101,7 @@ namespace Roadie.Api
             services.AddSingleton<IHttpEncoder, HttpEncoder>();
             services.AddSingleton<IEmailSender, EmailSenderService>();
 
-            var cacheManager = new DictionaryCacheManager(_loggerFactory.CreateLogger<DictionaryCacheManager>(),
-                new CachePolicy(TimeSpan.FromHours(4)));
+            var cacheManager = new MemoryCacheManager(_loggerFactory.CreateLogger<DictionaryCacheManager>(), new CachePolicy(TimeSpan.FromHours(4)));
             services.AddSingleton<ICacheManager>(cacheManager);
 
             services.AddDbContextPool<ApplicationUserDbContext>(

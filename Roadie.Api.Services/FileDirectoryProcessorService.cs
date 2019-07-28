@@ -113,6 +113,7 @@ namespace Roadie.Api.Services
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
+                AdditionalData = new Dictionary<string, object> { { "ProcessedFiles", processedFiles } },
                 OperationTime = sw.ElapsedMilliseconds
             };
         }

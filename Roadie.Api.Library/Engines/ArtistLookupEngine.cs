@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -61,6 +60,8 @@ namespace Roadie.Library.Engines
 
         public async Task<OperationResult<Artist>> Add(Artist artist)
         {
+            var sw = Stopwatch.StartNew();
+
             SimpleContract.Requires<ArgumentNullException>(artist != null, "Invalid Artist");
 
             try
@@ -150,19 +151,19 @@ namespace Roadie.Library.Engines
                             });
                         inserted = await DbContext.SaveChangesAsync();
                     }
-
-                    Logger.LogInformation("Added New Artist: [{0}]", artist.ToString());
+                    sw.Stop();
+                    Logger.LogInformation($"Added New Artist: Elapsed Time [{ sw.ElapsedMilliseconds }], Artist `{ artist }`");
                 }
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, ex.Serialize());
             }
-
             return new OperationResult<Artist>
             {
                 IsSuccess = artist.Id > 0,
-                Data = artist
+                Data = artist,
+                OperationTime = sw.ElapsedMilliseconds
             };
         }
 
@@ -338,6 +339,7 @@ namespace Roadie.Library.Engines
             {
                 if (ITunesArtistSearchEngine.IsEnabled)
                 {
+                    var sw2 = Stopwatch.StartNew();
                     var iTunesResult = await ITunesArtistSearchEngine.PerformArtistSearch(artistName, 1);
                     if (iTunesResult.IsSuccess)
                     {
@@ -383,6 +385,9 @@ namespace Roadie.Library.Engines
                     }
 
                     if (iTunesResult.Errors != null) resultsExceptions.AddRange(iTunesResult.Errors);
+
+                    sw2.Stop();
+                    Logger.LogTrace($"PerformMetaDataProvidersArtistSearch: ITunesArtistSearchEngine Complete [{ sw2.ElapsedMilliseconds }]");
                 }
             }
             catch (Exception ex)
@@ -394,6 +399,7 @@ namespace Roadie.Library.Engines
             {
                 if (MusicBrainzArtistSearchEngine.IsEnabled)
                 {
+                    var sw2 = Stopwatch.StartNew();
                     var mbResult = await MusicBrainzArtistSearchEngine.PerformArtistSearch(result.Name, 1);
                     if (mbResult.IsSuccess)
                     {
@@ -444,6 +450,8 @@ namespace Roadie.Library.Engines
                     }
 
                     if (mbResult.Errors != null) resultsExceptions.AddRange(mbResult.Errors);
+                    sw2.Stop();
+                    Logger.LogTrace($"PerformMetaDataProvidersArtistSearch: MusicBrainzArtistSearchEngine Complete [{ sw2.ElapsedMilliseconds }]");
                 }
             }
             catch (Exception ex)
@@ -455,6 +463,7 @@ namespace Roadie.Library.Engines
             {
                 if (LastFmArtistSearchEngine.IsEnabled)
                 {
+                    var sw2 = Stopwatch.StartNew();
                     var lastFmResult = await LastFmArtistSearchEngine.PerformArtistSearch(result.Name, 1);
                     if (lastFmResult.IsSuccess)
                     {
@@ -486,6 +495,8 @@ namespace Roadie.Library.Engines
                     }
 
                     if (lastFmResult.Errors != null) resultsExceptions.AddRange(lastFmResult.Errors);
+                    sw2.Stop();
+                    Logger.LogTrace($"PerformMetaDataProvidersArtistSearch: LastFmArtistSearchEngine Complete [{ sw2.ElapsedMilliseconds }]");
                 }
             }
             catch (Exception ex)
@@ -497,6 +508,7 @@ namespace Roadie.Library.Engines
             {
                 if (SpotifyArtistSearchEngine.IsEnabled)
                 {
+                    var sw2 = Stopwatch.StartNew();
                     var spotifyResult = await SpotifyArtistSearchEngine.PerformArtistSearch(result.Name, 1);
                     if (spotifyResult.IsSuccess)
                     {
@@ -525,6 +537,8 @@ namespace Roadie.Library.Engines
                     }
 
                     if (spotifyResult.Errors != null) resultsExceptions.AddRange(spotifyResult.Errors);
+                    sw2.Stop();
+                    Logger.LogTrace($"PerformMetaDataProvidersArtistSearch: SpotifyArtistSearchEngine Complete [{ sw2.ElapsedMilliseconds }]");
                 }
             }
             catch (Exception ex)
@@ -536,6 +550,7 @@ namespace Roadie.Library.Engines
             {
                 if (DiscogsArtistSearchEngine.IsEnabled)
                 {
+                    var sw2 = Stopwatch.StartNew();
                     var discogsResult = await DiscogsArtistSearchEngine.PerformArtistSearch(result.Name, 1);
                     if (discogsResult.IsSuccess)
                     {
@@ -565,6 +580,8 @@ namespace Roadie.Library.Engines
                     }
 
                     if (discogsResult.Errors != null) resultsExceptions.AddRange(discogsResult.Errors);
+                    sw2.Stop();
+                    Logger.LogTrace($"PerformMetaDataProvidersArtistSearch: DiscogsArtistSearchEngine Complete [{ sw2.ElapsedMilliseconds }]");
                 }
             }
             catch (Exception ex)
@@ -576,6 +593,7 @@ namespace Roadie.Library.Engines
             {
                 if (WikipediaArtistSearchEngine.IsEnabled)
                 {
+                    var sw2 = Stopwatch.StartNew();
                     var wikiName = result.Name;
                     // Help get better results for bands with proper nouns (e.g. "Poison" vs "Poison Band")
                     if (!result.ArtistType.Equals("Person", StringComparison.OrdinalIgnoreCase))
@@ -599,6 +617,8 @@ namespace Roadie.Library.Engines
 
                         if (wikipediaResult.Errors != null) resultsExceptions.AddRange(wikipediaResult.Errors);
                     }
+                    sw2.Stop();
+                    Logger.LogTrace($"PerformMetaDataProvidersArtistSearch: WikipediaArtistSearchEngine Complete [{ sw2.ElapsedMilliseconds }]");
                 }
             }
             catch (Exception ex)
@@ -622,6 +642,7 @@ namespace Roadie.Library.Engines
                 }
                 if (artistGenres.Any())
                 {
+                    var sw2 = Stopwatch.StartNew();
                     var genreInfos = from ag in artistGenres
                                      join g in DbContext.Genres on ag equals g.Name into gg
                                      from g in gg.DefaultIfEmpty()
@@ -639,7 +660,6 @@ namespace Roadie.Library.Engines
                             {
                                 Name = genreInfo.newGenre,
                                 NormalizedName = genreInfo.newGenre.ToAlphanumericName()
-
                             }
                         };
                         if (!result.Genres.Any(x => x.Genre.NormalizedName == ag.Genre.NormalizedName))
@@ -647,10 +667,13 @@ namespace Roadie.Library.Engines
                             result.Genres.Add(ag);
                         }
                     }
+                    sw2.Stop();
+                    Logger.LogTrace($"PerformMetaDataProvidersArtistSearch: Artist Genre Processing Complete [{ sw2.ElapsedMilliseconds }]");
                 }
 
                 if (artistImageUrls.Any())
                 {
+                    var sw2 = Stopwatch.StartNew();
                     var imageBag = new ConcurrentBag<Image>();
                     var i = artistImageUrls.Select(async url =>
                     {
@@ -662,6 +685,8 @@ namespace Roadie.Library.Engines
                                             .Select(x => x.First())
                                             .Take(Configuration.Processing.MaximumArtistImagesToAdd)
                                             .ToList();
+                    sw2.Stop();
+                    Logger.LogTrace($"PerformMetaDataProvidersArtistSearch: Image Url Processing Complete [{ sw2.ElapsedMilliseconds }]");
                 }
             }
             catch (Exception ex)
