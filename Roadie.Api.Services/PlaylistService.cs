@@ -295,10 +295,20 @@ namespace Roadie.Api.Services
                 playlist.Description = model.Description;
                 playlist.IsLocked = model.IsLocked;
                 playlist.IsPublic = model.IsPublic;
+                var oldPathToImage = playlist.PathToImage(Configuration);
+                var didChangeName = playlist.Name != model.Name;
                 playlist.Name = model.Name;
                 playlist.Status = SafeParser.ToEnum<Statuses>(model.Status);
                 playlist.Tags = model.TagsList.ToDelimitedList();
                 playlist.URLs = model.URLsList.ToDelimitedList();
+
+                if (didChangeName)
+                {
+                    if (File.Exists(oldPathToImage))
+                    {
+                        File.Move(oldPathToImage, playlist.PathToImage(Configuration));
+                    }
+                }
 
                 var playlistImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (playlistImage != null)
@@ -308,7 +318,6 @@ namespace Roadie.Api.Services
                     // Update thumbnail
                     playlist.Thumbnail = ImageHelper.ResizeToThumbnail(playlistImage, Configuration);
                 }
-
                 playlist.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
 

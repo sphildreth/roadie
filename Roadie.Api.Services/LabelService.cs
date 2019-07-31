@@ -266,12 +266,22 @@ namespace Roadie.Api.Services
                 label.EndDate = model.EndDate;
                 label.IsLocked = model.IsLocked;
                 label.MusicBrainzId = model.MusicBrainzId;
+                var oldPathToImage = label.PathToImage(Configuration);
+                var didChangeName = label.Name != model.Name;
                 label.Name = model.Name;
                 label.Profile = model.Profile;
                 label.SortName = model.SortName;
                 label.Status = SafeParser.ToEnum<Statuses>(model.Status);
                 label.Tags = model.TagsList.ToDelimitedList();
                 label.URLs = model.URLsList.ToDelimitedList();
+
+                if (didChangeName)
+                {
+                    if (File.Exists(oldPathToImage))
+                    {
+                        File.Move(oldPathToImage, label.PathToImage(Configuration));
+                    }
+                }
 
                 var labelImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (labelImage != null)

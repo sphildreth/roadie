@@ -240,6 +240,8 @@ namespace Roadie.Api.Services
             }
 
             collection.IsLocked = model.IsLocked;
+            var oldPathToImage = collection.PathToImage(Configuration);
+            var didChangeName = collection.Name != model.Name;
             collection.Name = model.Name;
             collection.SortName = model.SortName;
             collection.Edition = model.Edition;
@@ -253,6 +255,14 @@ namespace Roadie.Api.Services
             collection.URLs = model.URLsList.ToDelimitedList();
             collection.AlternateNames = model.AlternateNamesList.ToDelimitedList();
             collection.CollectionCount = model.CollectionCount;
+
+            if (didChangeName)
+            {
+                if (File.Exists(oldPathToImage))
+                {
+                    File.Move(oldPathToImage, collection.PathToImage(Configuration));
+                }
+            }
 
             var collectionImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
             if (collectionImage != null)

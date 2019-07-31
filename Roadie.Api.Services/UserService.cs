@@ -383,7 +383,8 @@ namespace Roadie.Api.Services
                         Errors = new List<Exception> { new Exception("Email already in use") }
                     };
             }
-
+            var oldPathToImage = user.PathToImage(Configuration);
+            var didChangeName = user.UserName != userBeingUpdatedModel.UserName;
             user.UserName = userBeingUpdatedModel.UserName;
             user.NormalizedUserName = userBeingUpdatedModel.UserName.ToUpper();
             user.Email = userBeingUpdatedModel.Email;
@@ -405,6 +406,15 @@ namespace Roadie.Api.Services
             user.FtpPassword = EncryptionHelper.Encrypt(userBeingUpdatedModel.FtpPassword, user.RoadieId.ToString());
             user.ConcurrencyStamp = Guid.NewGuid().ToString();
 
+            if (didChangeName)
+            {
+                if (File.Exists(oldPathToImage))
+                {
+                    File.Move(oldPathToImage, user.PathToImage(Configuration));
+                }
+            }
+
+
             if (!string.IsNullOrEmpty(userBeingUpdatedModel.AvatarData))
             {
                 var imageData = ImageHelper.ImageDataFromUrl(userBeingUpdatedModel.AvatarData);
@@ -421,8 +431,6 @@ namespace Roadie.Api.Services
                         user.Avatar = null;
                     }
                 }
-
-
             }
 
             await DbContext.SaveChangesAsync();
