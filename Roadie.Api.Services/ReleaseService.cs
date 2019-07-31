@@ -983,8 +983,7 @@ namespace Roadie.Api.Services
         /// </summary>
         public async Task<OperationResult<bool>> ScanReleaseFolder(ApplicationUser user, Guid releaseId, bool doJustInfo, data.Release releaseToScan = null)
         {
-            SimpleContract.Requires<ArgumentOutOfRangeException>(
-                releaseId != Guid.Empty && releaseToScan == null || releaseToScan != null, "Invalid ReleaseId");
+            SimpleContract.Requires<ArgumentOutOfRangeException>(releaseId != Guid.Empty && releaseToScan == null || releaseToScan != null, "Invalid ReleaseId");
 
             _addedTrackIds.Clear();
 
@@ -1012,8 +1011,9 @@ namespace Roadie.Api.Services
                 releasePath = release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration));
                 var releaseDirectory = new DirectoryInfo(releasePath);
                 if (!Directory.Exists(releasePath))
-                    Logger.LogWarning("Unable To Find Release Folder [{0}] For Release `{1}`", releasePath,
-                        release.ToString());
+                {
+                    Logger.LogWarning("Unable To Find Release Folder [{0}] For Release `{1}`", releasePath, release.ToString());
+                }
                 var now = DateTime.UtcNow;
 
                 #region Get Tracks for Release from DB and set as missing any not found in Folder
@@ -1021,15 +1021,13 @@ namespace Roadie.Api.Services
                 foreach (var releaseMedia in DbContext.ReleaseMedias.Where(x => x.ReleaseId == release.Id).ToArray())
                 {
                     var foundMissingTracks = false;
-                    foreach (var existingTrack in DbContext.Tracks.Where(x => x.ReleaseMediaId == releaseMedia.Id)
-                        .ToArray())
+                    foreach (var existingTrack in DbContext.Tracks.Where(x => x.ReleaseMediaId == releaseMedia.Id).ToArray())
                     {
                         var trackPath = existingTrack.PathToTrack(Configuration);
 
                         if (!File.Exists(trackPath))
                         {
-                            Logger.LogWarning("Track `{0}`, File [{1}] Not Found.", existingTrack.ToString(),
-                                trackPath);
+                            Logger.LogWarning("Track `{0}`, File [{1}] Not Found.", existingTrack.ToString(), trackPath);
                             if (!doJustInfo)
                             {
                                 existingTrack.UpdateTrackMissingFile(now);
@@ -1040,21 +1038,24 @@ namespace Roadie.Api.Services
                         }
                     }
 
-                    if (foundMissingTracks) await DbContext.SaveChangesAsync();
+                    if (foundMissingTracks)
+                    {
+                        await DbContext.SaveChangesAsync();
+                    }
                 }
 
                 #endregion Get Tracks for Release from DB and set as missing any not found in Folder
 
                 #region Scan Folder and Add or Update Existing Tracks from Files
 
-                var existingReleaseMedia = DbContext.ReleaseMedias.Include(x => x.Tracks)
-                    .Where(x => x.ReleaseId == release.Id).ToList();
+                var existingReleaseMedia = DbContext.ReleaseMedias.Include(x => x.Tracks).Where(x => x.ReleaseId == release.Id).ToList();
                 var foundInFolderTracks = new List<data.Track>();
                 short totalNumberOfTracksFound = 0;
                 // This is the number of tracks metadata says the release should have (releaseMediaNumber, TotalNumberOfTracks)
                 var releaseMediaTotalNumberOfTracks = new Dictionary<short, short?>();
                 var releaseMediaTracksFound = new Dictionary<int, short>();
                 if (Directory.Exists(releasePath))
+                {
                     foreach (var file in releaseDirectory.GetFiles("*.mp3", SearchOption.AllDirectories))
                     {
                         int? trackArtistId = null;
@@ -1065,21 +1066,19 @@ namespace Roadie.Api.Services
 
                         if (audioMetaData.IsValid)
                         {
-                            var trackHash = HashHelper.CreateMD5(
-                                release.ArtistId + file.LastWriteTimeUtc.GetHashCode().ToString() +
-                                audioMetaData.GetHashCode());
+                            var trackHash = HashHelper.CreateMD5(release.ArtistId + file.LastWriteTimeUtc.GetHashCode().ToString() + audioMetaData.GetHashCode());
                             totalNumberOfTracksFound++;
                             totalTrackCount = totalTrackCount ?? (short)(audioMetaData.TotalTrackNumbers ?? 0);
                             var releaseMediaNumber = (short)(audioMetaData.Disc ?? 1);
                             if (!releaseMediaTotalNumberOfTracks.ContainsKey(releaseMediaNumber))
-                                releaseMediaTotalNumberOfTracks.Add(releaseMediaNumber,
-                                    (short)(audioMetaData.TotalTrackNumbers ?? 0));
+                            {
+                                releaseMediaTotalNumberOfTracks.Add(releaseMediaNumber, (short)(audioMetaData.TotalTrackNumbers ?? 0));
+                            }
                             else
-                                releaseMediaTotalNumberOfTracks[releaseMediaNumber] =
-                                    releaseMediaTotalNumberOfTracks[releaseMediaNumber]
-                                        .TakeLarger((short)(audioMetaData.TotalTrackNumbers ?? 0));
-                            var releaseMedia =
-                                existingReleaseMedia.FirstOrDefault(x => x.MediaNumber == releaseMediaNumber);
+                            {
+                                releaseMediaTotalNumberOfTracks[releaseMediaNumber] = releaseMediaTotalNumberOfTracks[releaseMediaNumber].TakeLarger((short)(audioMetaData.TotalTrackNumbers ?? 0));
+                            }
+                            var releaseMedia = existingReleaseMedia.FirstOrDefault(x => x.MediaNumber == releaseMediaNumber);
                             if (releaseMedia == null)
                             {
                                 // New ReleaseMedia - Not Found In Database
@@ -1100,8 +1099,7 @@ namespace Roadie.Api.Services
                                 releaseMedia.LastUpdated = now;
                             }
 
-                            var track = releaseMedia.Tracks.FirstOrDefault(x =>
-                                x.TrackNumber == audioMetaData.TrackNumber);
+                            var track = releaseMedia.Tracks.FirstOrDefault(x => x.TrackNumber == audioMetaData.TrackNumber);
                             if (track == null)
                             {
                                 // New Track - Not Found In Database
@@ -1129,16 +1127,15 @@ namespace Roadie.Api.Services
                                 {
                                     if (audioMetaData.TrackArtists.Count() == 1)
                                     {
-                                        var trackArtistData =
-                                            await ArtistLookupEngine.GetByName(
-                                                new AudioMetaData { Artist = audioMetaData.TrackArtist }, true);
+                                        var trackArtistData = await ArtistLookupEngine.GetByName(new AudioMetaData { Artist = audioMetaData.TrackArtist }, true);
                                         if (trackArtistData.IsSuccess && release.ArtistId != trackArtistData.Data.Id)
+                                        {
                                             trackArtistId = trackArtistData.Data.Id;
+                                        }
                                     }
                                     else if (audioMetaData.TrackArtists.Any())
                                     {
-                                        partTitles = string.Join(AudioMetaData.ArtistSplitCharacter.ToString(),
-                                            audioMetaData.TrackArtists);
+                                        partTitles = string.Join(AudioMetaData.ArtistSplitCharacter.ToString(), audioMetaData.TrackArtists);
                                     }
                                     else
                                     {
@@ -1147,8 +1144,7 @@ namespace Roadie.Api.Services
                                 }
 
                                 var alt = track.Title.ToAlphanumericName();
-                                track.AlternateNames =
-                                    !alt.Equals(audioMetaData.Title, StringComparison.OrdinalIgnoreCase)
+                                track.AlternateNames = !alt.Equals(audioMetaData.Title, StringComparison.OrdinalIgnoreCase)
                                         ? track.AlternateNames.AddToDelimitedList(new[] { alt })
                                         : null;
                                 track.ArtistId = trackArtistId;
@@ -1164,16 +1160,15 @@ namespace Roadie.Api.Services
                                 {
                                     if (audioMetaData.TrackArtists.Count() == 1)
                                     {
-                                        var trackArtistData =
-                                            await ArtistLookupEngine.GetByName(
-                                                new AudioMetaData { Artist = audioMetaData.TrackArtist }, true);
+                                        var trackArtistData = await ArtistLookupEngine.GetByName( new AudioMetaData { Artist = audioMetaData.TrackArtist }, true);
                                         if (trackArtistData.IsSuccess && release.ArtistId != trackArtistData.Data.Id)
+                                        {
                                             trackArtistId = trackArtistData.Data.Id;
+                                        }
                                     }
                                     else if (audioMetaData.TrackArtists.Any())
                                     {
-                                        partTitles = string.Join(AudioMetaData.ArtistSplitCharacter.ToString(),
-                                            audioMetaData.TrackArtists);
+                                        partTitles = string.Join(AudioMetaData.ArtistSplitCharacter.ToString(), audioMetaData.TrackArtists);
                                     }
                                     else
                                     {
@@ -1196,7 +1191,9 @@ namespace Roadie.Api.Services
                                 track.LastUpdated = now;
                                 var alt = track.Title.ToAlphanumericName();
                                 if (!alt.Equals(track.Title, StringComparison.OrdinalIgnoreCase))
+                                {
                                     track.AlternateNames = track.AlternateNames.AddToDelimitedList(new[] { alt });
+                                }
                                 track.TrackNumber = audioMetaData.TrackNumber ?? -1;
                                 track.LastUpdated = now;
                                 modifiedRelease = true;
@@ -1210,20 +1207,24 @@ namespace Roadie.Api.Services
 
                             foundInFolderTracks.Add(track);
                             if (releaseMediaTracksFound.ContainsKey(releaseMedia.Id))
+                            {
                                 releaseMediaTracksFound[releaseMedia.Id]++;
+                            }
                             else
+                            {
                                 releaseMediaTracksFound[releaseMedia.Id] = 1;
+                            }
                         }
                         else
                         {
-                            Logger.LogWarning("Release Track File Has Invalid MetaData `{0}`",
-                                audioMetaData.ToString());
+                            Logger.LogWarning("Release Track File Has Invalid MetaData `{0}`", audioMetaData.ToString());
                         }
                     }
+                }
                 else
-                    Logger.LogWarning("Unable To Find Releaes Path [{0}] For Release `{1}`", releasePath,
-                        release.ToString());
-
+                {
+                    Logger.LogWarning("Unable To Find Releaes Path [{0}] For Release `{1}`", releasePath, release.ToString());
+                }
                 var releaseMediaNumbersFound = new List<short?>();
                 foreach (var kp in releaseMediaTracksFound)
                 {
@@ -1231,38 +1232,38 @@ namespace Roadie.Api.Services
                     if (releaseMedia != null)
                     {
                         if (!releaseMediaNumbersFound.Any(x => x == releaseMedia.MediaNumber))
+                        {
                             releaseMediaNumbersFound.Add(releaseMedia.MediaNumber);
+                        }
                         var releaseMediaFoundInFolderTrackNumbers = foundInFolderTracks
                             .Where(x => x.ReleaseMediaId == releaseMedia.Id).Select(x => x.TrackNumber).OrderBy(x => x)
                             .ToArray();
-                        var areTracksForRelaseMediaSequential = releaseMediaFoundInFolderTrackNumbers
-                            .Zip(releaseMediaFoundInFolderTrackNumbers.Skip(1), (a, b) => a + 1 == b).All(x => x);
+                        var areTracksForRelaseMediaSequential = releaseMediaFoundInFolderTrackNumbers.Zip(releaseMediaFoundInFolderTrackNumbers.Skip(1), (a, b) => a + 1 == b).All(x => x);
                         if (!areTracksForRelaseMediaSequential)
+                        {
                             Logger.LogDebug("ReleaseMedia [{0}] Track Numbers Are Not Sequential", releaseMedia.Id);
+                        }
                         releaseMedia.TrackCount = kp.Value;
                         releaseMedia.LastUpdated = now;
                         releaseMedia.Status = areTracksForRelaseMediaSequential ? Statuses.Ok : Statuses.Incomplete;
                         await DbContext.SaveChangesAsync();
                         modifiedRelease = true;
                     }
-
-                    ;
                 }
 
-                var foundInFolderTrackNumbers =
-                    foundInFolderTracks.Select(x => x.TrackNumber).OrderBy(x => x).ToArray();
+                var foundInFolderTrackNumbers = foundInFolderTracks.Select(x => x.TrackNumber).OrderBy(x => x).ToArray();
                 if (modifiedRelease || !foundInFolderTrackNumbers.Count().Equals(release.TrackCount) ||
                     releaseMediaNumbersFound.Count() != (release.MediaCount ?? 0))
                 {
-                    var areTracksForRelaseSequential = foundInFolderTrackNumbers
-                        .Zip(foundInFolderTrackNumbers.Skip(1), (a, b) => a + 1 == b).All(x => x);
-                    var maxFoundInFolderTrackNumbers =
-                        foundInFolderTrackNumbers.Any() ? foundInFolderTrackNumbers.Max() : (short)0;
+                    var areTracksForRelaseSequential = foundInFolderTrackNumbers.Zip(foundInFolderTrackNumbers.Skip(1), (a, b) => a + 1 == b).All(x => x);
+                    var maxFoundInFolderTrackNumbers = foundInFolderTrackNumbers.Any() ? foundInFolderTrackNumbers.Max() : (short)0;
                     release.Status = areTracksForRelaseSequential ? Statuses.Ok : Statuses.Incomplete;
                     release.TrackCount = (short)foundInFolderTrackNumbers.Count();
                     release.MediaCount = (short)releaseMediaNumbersFound.Count();
                     if (release.TrackCount < maxFoundInFolderTrackNumbers)
+                    {
                         release.TrackCount = maxFoundInFolderTrackNumbers;
+                    }
                     release.LibraryStatus = release.TrackCount > 0 && release.TrackCount == totalNumberOfTracksFound
                         ? LibraryStatus.Complete
                         : LibraryStatus.Incomplete;
@@ -1299,12 +1300,16 @@ namespace Roadie.Api.Services
 
                 await UpdateReleaseCounts(release.Id, now);
                 await UpdateArtistCountsForRelease(release.Id, now);
-                if (release.Labels != null && release.Labels.Any())
-                    foreach (var label in release.Labels)
-                        await UpdateLabelCounts(label.Id, now);
+                await UpdateReleaseRank(release.Id);
 
-                Logger.LogInformation("Scanned Release `{0}` Folder [{1}], Modified Release [{2}], OperationTime [{3}]",
-                    release.ToString(), releasePath, modifiedRelease, sw.ElapsedMilliseconds);
+                if (release.Labels != null && release.Labels.Any())
+                {
+                    foreach (var label in release.Labels)
+                    {
+                        await UpdateLabelCounts(label.Id, now);
+                    }
+                }
+                Logger.LogInformation("Scanned Release `{0}` Folder [{1}], Modified Release [{2}], OperationTime [{3}]", release.ToString(), releasePath, modifiedRelease, sw.ElapsedMilliseconds);
                 result = true;
             }
             catch (Exception ex)

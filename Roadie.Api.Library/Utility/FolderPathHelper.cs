@@ -118,7 +118,10 @@ namespace Roadie.Library.Utility
         /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
         public static string PathForTrack(IRoadieSettings configuration, Track track)
         {
-            if (string.IsNullOrEmpty(track.FilePath) || string.IsNullOrEmpty(track.FileName)) return null;
+            if (string.IsNullOrEmpty(track.FilePath) || string.IsNullOrEmpty(track.FileName))
+            {
+                return null;
+            }
             var directoryInfo = new DirectoryInfo(Path.Combine(configuration.LibraryFolder, track.FilePath, track.FileName));
             return directoryInfo.FullName;
         }

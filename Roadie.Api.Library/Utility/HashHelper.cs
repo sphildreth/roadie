@@ -8,27 +8,34 @@ namespace Roadie.Library.Utility
     {
         public static string CreateMD5(string input)
         {
-            if (string.IsNullOrEmpty(input)) return null;
-            return CreateMD5(System.Text.Encoding.ASCII.GetBytes(input));
+            if (string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+            return CreateMD5(System.Text.Encoding.UTF8.GetBytes(input));
         }
 
         public static string CreateMD5(byte[] bytes)
         {
-            if (bytes == null || !bytes.Any()) return null;
+            if (bytes == null || !bytes.Any())
+            {
+                return null;
+            }
             using (var md5 = MD5.Create())
             {
-                return System.Text.Encoding.ASCII.GetString(md5.ComputeHash(bytes));
+                byte[] data = md5.ComputeHash(bytes);
+
+                // Create a new Stringbuilder to collect the bytes and create a string.
+                StringBuilder sBuilder = new StringBuilder();
+
+                // Loop through each byte of the hashed data and format each one as a hexadecimal string.
+                for (int i = 0; i < data.Length; i++)
+                {
+                    sBuilder.Append(data[i].ToString("x2"));
+                }
+                // Return the hexadecimal string.
+                return sBuilder.ToString();
             }
-        }
-
-        public static string MD5Hash(string input)
-        {
-            var hash = new StringBuilder();
-            var md5provider = new MD5CryptoServiceProvider();
-            var bytes = md5provider.ComputeHash(new UTF8Encoding().GetBytes(input));
-
-            for (var i = 0; i < bytes.Length; i++) hash.Append(bytes[i].ToString("x2"));
-            return hash.ToString();
         }
     }
 }

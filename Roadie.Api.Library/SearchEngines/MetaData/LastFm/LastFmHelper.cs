@@ -68,21 +68,6 @@ namespace Roadie.Library.MetaData.LastFm
                 SelectSingleNode(navigator, LastFmErrorXPath)), webException);
         }
 
-        // http://msdn.microsoft.com/en-us/library/system.security.cryptography.md5.aspx
-        // Hash an input string and return the hash as
-        // a 32 character hexadecimal string.
-        public static string Hash(string input)
-        {
-            // Create a new instance of the MD5CryptoServiceProvider object.
-            using (var md5Hasher = MD5.Create())
-            {
-                var data = md5Hasher.ComputeHash(System.Text.Encoding.ASCII.GetBytes(input));
-                var sb = new StringBuilder();
-                foreach (var b in data) sb.Append(b.ToString("X2"));
-                return sb.ToString();
-            }
-        }
-
         public static XPathNavigator SelectSingleNode(XPathNavigator navigator, string xpath)
         {
             var node = navigator.SelectSingleNode(xpath);
@@ -474,8 +459,7 @@ namespace Roadie.Library.MetaData.LastFm
             return builder.ToString();
         }
 
-        private string GenerateMethodSignature(string method, IDictionary<string, string> parameters = null,
-            string sk = null)
+        private string GenerateMethodSignature(string method, IDictionary<string, string> parameters = null, string sk = null)
         {
             if (parameters == null) parameters = new Dictionary<string, string>();
             if (!parameters.ContainsKey("method")) parameters.Add("method", method);
@@ -483,9 +467,11 @@ namespace Roadie.Library.MetaData.LastFm
             if (!string.IsNullOrEmpty(sk) && !parameters.ContainsKey("sk")) parameters.Add("sk", sk);
             var builder = new StringBuilder();
             foreach (var kv in parameters.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+            {
                 builder.Append($"{kv.Key}{kv.Value}");
+            }
             builder.Append(_apiKey.KeySecret);
-            return Hash(builder.ToString());
+            return HashHelper.CreateMD5(builder.ToString());
         }
     }
 }

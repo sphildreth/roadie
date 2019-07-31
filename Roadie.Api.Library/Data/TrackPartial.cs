@@ -19,17 +19,23 @@ namespace Roadie.Library.Data
         {
             get
             {
-                using (var md5 = MD5.Create())
-                {
-                    return string.Concat(md5
-                        .ComputeHash(
-                            System.Text.Encoding.Default.GetBytes(string.Format("{0}{1}", RoadieId, LastUpdated)))
-                        .Select(x => x.ToString("D2")));
-                }
+                return HashHelper.CreateMD5($"{ RoadieId}{ LastUpdated}");
             }
         }
 
-        public bool IsValid => !string.IsNullOrEmpty(Hash);
+        /// <summary>
+        /// Are the track details valid so the track can play.
+        /// </summary>
+        public bool IsValid
+        {
+            get
+            {
+                return !string.IsNullOrEmpty(Hash) &&
+                       !string.IsNullOrEmpty(FileName) &&
+                       FileSize.HasValue &&
+                       !string.IsNullOrEmpty(FilePath);
+            }
+        }
 
         public Artist TrackArtist { get; set; }
 

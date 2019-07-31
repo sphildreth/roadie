@@ -934,8 +934,7 @@ namespace Roadie.Api.Services
             return await ScanFolder(user, d, dest, isReadOnly);
         }
 
-        public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId,
-            bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
+        public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -954,8 +953,6 @@ namespace Roadie.Api.Services
             try
             {
                 var result = await ReleaseService.ScanReleaseFolder(user, release.RoadieId, isReadOnly, release);
-                await UpdateReleaseRank(release.Id);
-                CacheManager.ClearRegion(release.CacheRegion);
             }
             catch (Exception ex)
             {

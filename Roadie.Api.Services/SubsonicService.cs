@@ -135,7 +135,7 @@ namespace Roadie.Api.Services
                 if (!string.IsNullOrEmpty(request.s))
                     try
                     {
-                        var token = HashHelper.MD5Hash((user.ApiToken ?? user.Email) + request.s);
+                        var token = HashHelper.CreateMD5((user.ApiToken ?? user.Email) + request.s);
                         if (!token.Equals(request.t, StringComparison.OrdinalIgnoreCase)) user = null;
                     }
                     catch

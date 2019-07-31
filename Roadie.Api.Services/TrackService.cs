@@ -657,7 +657,7 @@ namespace Roadie.Api.Services
             long endBytes, User roadieUser)
         {
             var track = DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
-            if (track == null)
+            if (!(track?.IsValid ?? true))
             {
                 // Not Found try recanning release
                 var release = (from r in DbContext.Releases
@@ -670,21 +670,21 @@ namespace Roadie.Api.Services
                     {
                         Id = roadieUser.Id.Value
                     }, release.RoadieId, false, true);
+                    track = DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
                 }
-
-                track = DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
+                else
+                {
+                    Logger.LogWarning($"TrackStreamInfo: Track [{ trackId }] was invalid but release [{ release.RoadieId }] is locked, did not rescan.");
+                }
                 if (track == null)
                 {
                     return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Unable To Find Track [{trackId}]");
                 }
+                if (!track.IsValid)
+                {
+                    return new OperationResult<TrackStreamInfo>($"TrackStreamInfo: Invalid Track. Track Id [{trackId}], FilePath [{track.FilePath}], Filename [{track.FileName}]");
+                }
             }
-
-            if (!track.IsValid)
-            {
-                return new OperationResult<TrackStreamInfo>(
-                    $"TrackStreamInfo: Invalid Track. Track Id [{trackId}], FilePath [{track.FilePath}], Filename [{track.FileName}]");
-            }
-
             string trackPath = null;
             try
             {

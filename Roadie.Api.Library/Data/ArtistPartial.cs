@@ -16,13 +16,7 @@ namespace Roadie.Library.Data
         {
             get
             {
-                using (var md5 = MD5.Create())
-                {
-                    return string.Concat(md5
-                        .ComputeHash(
-                            System.Text.Encoding.Default.GetBytes(string.Format("{0}{1}", RoadieId, LastUpdated)))
-                        .Select(x => x.ToString("D2")));
-                }
+                return HashHelper.CreateMD5($"{ RoadieId }{ LastUpdated }");
             }
         }
 
