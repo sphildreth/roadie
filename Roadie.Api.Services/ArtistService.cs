@@ -183,17 +183,18 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> Delete(ApplicationUser user, data.Artist Artist)
+        public async Task<OperationResult<bool>> Delete(ApplicationUser user, data.Artist artist)
         {
             var isSuccess = false;
             try
             {
-                if (Artist != null)
+                if (artist != null)
                 {
-                    DbContext.Artists.Remove(Artist);
+                    DbContext.Artists.Remove(artist);
                     await DbContext.SaveChangesAsync();
-                    CacheManager.ClearRegion(Artist.CacheRegion);
-                    Logger.LogInformation(string.Format("x DeleteArtist [{0}]", Artist.Id));
+                    // TODO delete artist folder if empty?
+                    CacheManager.ClearRegion(artist.CacheRegion);
+                    Logger.LogInformation(string.Format("x DeleteArtist [{0}]", artist.Id));
                     isSuccess = true;
                 }
             }
@@ -461,22 +462,25 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
 
-            artistToMergeInto.RealName = artistToMerge.RealName ?? artistToMergeInto.RealName;
-            artistToMergeInto.MusicBrainzId = artistToMerge.MusicBrainzId ?? artistToMergeInto.MusicBrainzId;
-            artistToMergeInto.ITunesId = artistToMerge.ITunesId ?? artistToMergeInto.ITunesId;
-            artistToMergeInto.AmgId = artistToMerge.AmgId ?? artistToMergeInto.AmgId;
-            artistToMergeInto.SpotifyId = artistToMerge.SpotifyId ?? artistToMergeInto.SpotifyId;
-            artistToMergeInto.Thumbnail = artistToMerge.Thumbnail ?? artistToMergeInto.Thumbnail;
-            artistToMergeInto.Profile = artistToMerge.Profile ?? artistToMergeInto.Profile;
-            artistToMergeInto.BirthDate = artistToMerge.BirthDate ?? artistToMergeInto.BirthDate;
-            artistToMergeInto.BeginDate = artistToMerge.BeginDate ?? artistToMergeInto.BeginDate;
-            artistToMergeInto.EndDate = artistToMerge.EndDate ?? artistToMergeInto.EndDate;
+            var artistToMergeFolder = artistToMerge.ArtistFileFolder(Configuration);
+            var artistToMergeIntoFolder = artistToMergeInto.ArtistFileFolder(Configuration);
+
+            artistToMergeInto.RealName = artistToMergeInto.RealName ?? artistToMerge.RealName;
+            artistToMergeInto.MusicBrainzId = artistToMergeInto.MusicBrainzId ?? artistToMerge.MusicBrainzId;
+            artistToMergeInto.ITunesId = artistToMergeInto.ITunesId ?? artistToMerge.ITunesId;
+            artistToMergeInto.AmgId = artistToMergeInto.AmgId ?? artistToMerge.AmgId;
+            artistToMergeInto.SpotifyId = artistToMergeInto.SpotifyId ?? artistToMerge.SpotifyId;
+            artistToMergeInto.Thumbnail = artistToMergeInto.Thumbnail ?? artistToMerge.Thumbnail;
+            artistToMergeInto.Profile = artistToMergeInto.Profile ?? artistToMerge.Profile;
+            artistToMergeInto.BirthDate = artistToMergeInto.BirthDate ?? artistToMerge.BirthDate;
+            artistToMergeInto.BeginDate = artistToMergeInto.BeginDate ?? artistToMerge.BeginDate;
+            artistToMergeInto.EndDate = artistToMergeInto.EndDate ?? artistToMerge.EndDate;
             if (!string.IsNullOrEmpty(artistToMerge.ArtistType) && !artistToMerge.ArtistType.Equals("Other", StringComparison.OrdinalIgnoreCase))
             {
-                artistToMergeInto.ArtistType = artistToMerge.ArtistType;
+                artistToMergeInto.ArtistType = artistToMergeInto.ArtistType ?? artistToMerge.ArtistType;
             }
-            artistToMergeInto.BioContext = artistToMerge.BioContext ?? artistToMergeInto.BioContext;
-            artistToMergeInto.DiscogsId = artistToMerge.DiscogsId ?? artistToMergeInto.DiscogsId;
+            artistToMergeInto.BioContext = artistToMergeInto.BioContext ?? artistToMerge.BioContext;
+            artistToMergeInto.DiscogsId = artistToMergeInto.DiscogsId ?? artistToMerge.DiscogsId;
             artistToMergeInto.Tags = artistToMergeInto.Tags.AddToDelimitedList(artistToMerge.Tags.ToListFromDelimited());
             var altNames = artistToMerge.AlternateNames.ToListFromDelimited().ToList();
             altNames.Add(artistToMerge.Name);
@@ -514,6 +518,51 @@ namespace Roadie.Api.Services
                         artistImage.ArtistId = artistToMergeInto.Id;
                     }
                 }
+
+                try
+                {
+                    // Move any Artist and Artist Secondary images from ArtistToMerge into ArtistToMergeInto folder
+                    if (Directory.Exists(artistToMergeFolder))
+                    {
+                        var artistToMergeImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistToMergeFolder), ImageType.Artist);
+                        var artistToMergeSecondaryImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistToMergeFolder), ImageType.ArtistSecondary).ToList();
+                        // Primary Artist image
+                        if (artistToMergeImages.Any())
+                        {
+                            // If the ArtistToMergeInto already has a primary image then the ArtistToMerge primary image becomes a secondary image
+                            var artistToMergeIntoPrimaryImage = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistToMergeIntoFolder), ImageType.Artist).FirstOrDefault();
+                            if (artistToMergeIntoPrimaryImage != null)
+                            {
+                                artistToMergeSecondaryImages.Add(artistToMergeImages.First());
+                            }
+                            else
+                            {
+                                var artistImageFilename = Path.Combine(artistToMergeIntoFolder, ImageHelper.ArtistImageFilename);
+                                artistToMergeImages.First().MoveTo(artistImageFilename);
+                            }
+                        }
+                        // Secondary Artist images
+                        if (artistToMergeSecondaryImages.Any())
+                        {
+                            var looper = 0;
+                            foreach (var artistSecondaryImage in artistToMergeSecondaryImages)
+                            {
+                                var artistImageFilename = Path.Combine(artistToMergeIntoFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                                while (File.Exists(artistImageFilename))
+                                {
+                                    looper++;
+                                    artistImageFilename = Path.Combine(artistToMergeIntoFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                                }
+                                artistSecondaryImage.MoveTo(artistImageFilename);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "MergeArtists: Error Moving Artist Primary and Secondary Images");
+                }
+
                 var userArtists = DbContext.UserArtists.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
                 if (artistImages != null)
                 {
@@ -553,10 +602,9 @@ namespace Roadie.Api.Services
                 Logger.LogWarning(ex.ToString());
             }
 
-            var artistFolder = artistToMerge.ArtistFileFolder(Configuration);
             foreach (var release in DbContext.Releases.Include("Artist").Where(x => x.ArtistId == artistToMerge.Id).ToArray())
             {
-                var originalReleaseFolder = release.ReleaseFileFolder(artistFolder);
+                var originalReleaseFolder = release.ReleaseFileFolder(artistToMergeFolder);
                 await ReleaseService.UpdateRelease(user, release.Adapt<Release>(), originalReleaseFolder);
             }
             await DbContext.SaveChangesAsync();
@@ -664,7 +712,9 @@ namespace Roadie.Api.Services
                 var specialArtistName = model.Name.ToAlphanumericName();
                 var alt = new List<string>(model.AlternateNamesList);
                 if (!model.AlternateNamesList.Contains(specialArtistName, StringComparer.OrdinalIgnoreCase))
+                {
                     alt.Add(specialArtistName);
+                }
                 artist.AlternateNames = alt.ToDelimitedList();
                 artist.ArtistType = model.ArtistType;
                 artist.AmgId = model.AmgId;

@@ -18,6 +18,11 @@ namespace Roadie.Library.Configuration
         Integrations Integrations { get; set; }
         ImageSize LargeImageSize { get; set; }
         string LibraryFolder { get; set; }
+        string ImageFolder { get; set; }
+        string LabelImageFolder { get; }
+        string CollectionImageFolder { get; }
+        string PlaylistImageFolder { get; }
+        string UserImageFolder { get; }
         string ListenAddress { get; set; }
         ImageSize MaximumImageSize { get; set; }
         ImageSize MediumImageSize { get; set; }

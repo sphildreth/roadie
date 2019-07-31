@@ -569,10 +569,8 @@ namespace Roadie.Api.Services
                 releaseToMergeInto.MediaCount = releaseToMergeInto.MediaCount ?? 0;
 
                 var now = DateTime.UtcNow;
-                var releaseToMergeReleaseMedia =
-                    DbContext.ReleaseMedias.Where(x => x.ReleaseId == releaseToMerge.Id).ToList();
-                var releaseToMergeIntoReleaseMedia =
-                    DbContext.ReleaseMedias.Where(x => x.ReleaseId == releaseToMergeInto.Id).ToList();
+                var releaseToMergeReleaseMedia = DbContext.ReleaseMedias.Where(x => x.ReleaseId == releaseToMerge.Id).ToList();
+                var releaseToMergeIntoReleaseMedia = DbContext.ReleaseMedias.Where(x => x.ReleaseId == releaseToMergeInto.Id).ToList();
                 var releaseToMergeIntoLastMediaNumber = releaseToMergeIntoReleaseMedia.Max(x => x.MediaNumber);
 
                 // Add new ReleaseMedia
@@ -628,37 +626,29 @@ namespace Roadie.Api.Services
                                 else
                                 {
                                     // Track does exist merge two tracks together
-                                    existingTrack.MusicBrainzId =
-                                        existingTrack.MusicBrainzId ?? mergeTrack.MusicBrainzId;
+                                    existingTrack.MusicBrainzId = existingTrack.MusicBrainzId ?? mergeTrack.MusicBrainzId;
                                     existingTrack.SpotifyId = existingTrack.SpotifyId ?? mergeTrack.SpotifyId;
                                     existingTrack.AmgId = existingTrack.AmgId ?? mergeTrack.AmgId;
                                     existingTrack.ISRC = existingTrack.ISRC ?? mergeTrack.ISRC;
                                     existingTrack.AmgId = existingTrack.AmgId ?? mergeTrack.AmgId;
                                     existingTrack.LastFMId = existingTrack.LastFMId ?? mergeTrack.LastFMId;
                                     existingTrack.PartTitles = existingTrack.PartTitles ?? mergeTrack.PartTitles;
-                                    existingTrack.PlayedCount =
-                                        (existingTrack.PlayedCount ?? 0) + (mergeTrack.PlayedCount ?? 0);
+                                    existingTrack.PlayedCount = (existingTrack.PlayedCount ?? 0) + (mergeTrack.PlayedCount ?? 0);
                                     if (mergeTrack.LastPlayed.HasValue && existingTrack.LastPlayed.HasValue &&
                                         mergeTrack.LastPlayed > existingTrack.LastPlayed)
                                         existingTrack.LastPlayed = mergeTrack.LastPlayed;
                                     existingTrack.Thumbnail = existingTrack.Thumbnail ?? mergeTrack.Thumbnail;
-                                    existingTrack.MusicBrainzId =
-                                        existingTrack.MusicBrainzId ?? mergeTrack.MusicBrainzId;
-                                    existingTrack.Tags =
-                                        existingTrack.Tags.AddToDelimitedList(mergeTrack.Tags.ToListFromDelimited());
+                                    existingTrack.MusicBrainzId = existingTrack.MusicBrainzId ?? mergeTrack.MusicBrainzId;
+                                    existingTrack.Tags = existingTrack.Tags.AddToDelimitedList(mergeTrack.Tags.ToListFromDelimited());
                                     if (!mergeTrack.Title.Equals(existingTrack.Title,
                                         StringComparison.OrdinalIgnoreCase))
                                         existingTrack.AlternateNames =
                                             existingTrack.AlternateNames.AddToDelimitedList(new[]
                                                 {mergeTrack.Title, mergeTrack.Title.ToAlphanumericName()});
-                                    existingTrack.AlternateNames =
-                                        existingTrack.AlternateNames.AddToDelimitedList(mergeTrack.AlternateNames
-                                            .ToListFromDelimited());
+                                    existingTrack.AlternateNames = existingTrack.AlternateNames.AddToDelimitedList(mergeTrack.AlternateNames.ToListFromDelimited());
                                     existingTrack.LastUpdated = now;
-                                    var mergedTrackFileName =
-                                        mergeTrack.PathToTrack(Configuration);
-                                    var trackFileName =
-                                        existingTrack.PathToTrack(Configuration);
+                                    var mergedTrackFileName = mergeTrack.PathToTrack(Configuration);
+                                    var trackFileName = existingTrack.PathToTrack(Configuration);
                                     if (!trackFileName.Equals(mergedTrackFileName, StringComparison.Ordinal) &&
                                         File.Exists(trackFileName)) mergedFilesToDelete.Add(mergedTrackFileName);
                                 }
@@ -805,8 +795,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> Delete(ApplicationUser user, data.Release release, bool doDeleteFiles = false,
-            bool doUpdateArtistCounts = true)
+        public async Task<OperationResult<bool>> Delete(ApplicationUser user, data.Release release, bool doDeleteFiles = false, bool doUpdateArtistCounts = true)
         {
             SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
             SimpleContract.Requires<ArgumentNullException>(release.Artist != null, "Invalid Artist");

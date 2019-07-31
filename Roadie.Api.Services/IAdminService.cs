@@ -9,12 +9,16 @@ namespace Roadie.Api.Services
 {
     public interface IAdminService
     {
+        void PerformStartUpTasks();
+
         Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId);
 
         Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId,
             bool doDeleteFiles = false);
 
         Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index);
+
+        Task<OperationResult<bool>> DeleteLabel(ApplicationUser user, Guid labelId);
 
         Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles);
 

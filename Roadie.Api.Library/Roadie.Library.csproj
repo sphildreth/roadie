@@ -41,10 +41,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\Subsonic\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="IdSharp.AudioInfo-core">
       <HintPath>..\libraries\IdSharp.AudioInfo-core.dll</HintPath>
     </Reference>

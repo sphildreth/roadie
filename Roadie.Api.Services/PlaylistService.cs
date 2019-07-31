@@ -17,6 +17,7 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
@@ -176,6 +177,13 @@ namespace Roadie.Api.Services
 
             DbContext.Playlists.Remove(playlist);
             await DbContext.SaveChangesAsync();
+
+            var playlistImageFilename = playlist.PathToImage(Configuration);
+            if (File.Exists(playlistImageFilename))
+            {
+                File.Delete(playlistImageFilename);
+            }
+
             Logger.LogInformation("User `{0}` deleted Playlist `{1}]`", user, playlist);
             CacheManager.ClearRegion(playlist.CacheRegion);
             sw.Stop();
@@ -295,7 +303,9 @@ namespace Roadie.Api.Services
                 var playlistImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (playlistImage != null)
                 {
-                    // Ensure is jpeg first
+                    // Save unaltered playlist image 
+                    File.WriteAllBytes(playlist.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(playlistImage));
+                    // Update thumbnail
                     playlist.Thumbnail = ImageHelper.ResizeToThumbnail(playlistImage, Configuration);
                 }
 

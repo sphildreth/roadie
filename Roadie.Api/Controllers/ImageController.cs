@@ -138,8 +138,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> ReleaseImage(Guid id, int? width, int? height)
         {
-            var result = await ImageService.ReleaseImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width,
-                height ?? RoadieSettings.ThumbnailImageSize.Height);
+            var result = await ImageService.ReleaseImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return File(result.Data.Bytes,
@@ -203,8 +202,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> TrackImage(Guid id, int? width, int? height)
         {
-            var result = await ImageService.TrackImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width,
-                height ?? RoadieSettings.ThumbnailImageSize.Height);
+            var result = await ImageService.TrackImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return File(result.Data.Bytes,
@@ -215,20 +213,19 @@ namespace Roadie.Api.Controllers
         }
 
         /// <summary>
-        ///     NOTE that user images/avatars are PNG not JPG this is so it looks better in the menus/applications
+        ///     NOTE that user images/avatars are GIF not JPG this is so it looks better in the menus/applications
         /// </summary>
         [HttpGet("user/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> UserImage(Guid id, int? width, int? height)
         {
-            var result = await ImageService.UserImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width,
-                height ?? RoadieSettings.ThumbnailImageSize.Height);
+            var result = await ImageService.UserImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height);
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return File(result.Data.Bytes,
                 result.ContentType,
-                $"{result.Data.Caption ?? id.ToString()}.png",
+                $"{result.Data.Caption ?? id.ToString()}.gif",
                 result.LastModified,
                 result.ETag);
         }

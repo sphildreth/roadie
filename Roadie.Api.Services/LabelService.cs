@@ -8,6 +8,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
+using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
@@ -41,6 +42,32 @@ namespace Roadie.Api.Services
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
             BookmarkService = bookmarkService;
+        }
+
+        public async Task<OperationResult<bool>> Delete(ApplicationUser user, Guid id)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var label = DbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
+            if (label == null) return new OperationResult<bool>(true, string.Format("Label Not Found [{0}]", id));
+            DbContext.Labels.Remove(label);
+            await DbContext.SaveChangesAsync();
+
+            var labelImageFilename = label.PathToImage(Configuration);
+            if(File.Exists(labelImageFilename))
+            {
+                File.Delete(labelImageFilename);
+            }
+
+            Logger.LogInformation("User `{0}` deleted Label `{1}]`", user, label);
+            CacheManager.ClearRegion(label.CacheRegion);
+            sw.Stop();
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds
+            };
         }
 
         public async Task<OperationResult<Label>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
@@ -103,10 +130,11 @@ namespace Roadie.Api.Services
                 ? request.FilterValue.ToAlphanumericName()
                 : null;
             var result = from l in DbContext.Labels
-                         where request.FilterValue.Length == 0 || request.FilterValue.Length > 0 && (
-                                   l.Name != null && l.Name.Contains(request.FilterValue) ||
-                                   l.AlternateNames != null && l.AlternateNames.Contains(request.FilterValue) ||
-                                   l.AlternateNames != null && l.AlternateNames.Contains(normalizedFilterValue)
+                         where request.FilterValue == "" || ( 
+                                   l.Name.Contains(request.FilterValue) ||
+                                   l.SortName.Contains(request.FilterValue) ||
+                                   l.AlternateNames.Contains(request.FilterValue) ||
+                                   l.AlternateNames.Contains(normalizedFilterValue)
                                )
                          select new LabelList
                          {
@@ -116,7 +144,7 @@ namespace Roadie.Api.Services
                              {
                                  Text = l.Name,
                                  Value = l.RoadieId.ToString()
-                             },                             
+                             },
                              SortName = l.SortName,
                              CreatedDate = l.CreatedDate,
                              LastUpdated = l.LastUpdated,
@@ -132,7 +160,6 @@ namespace Roadie.Api.Services
                 var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
                 request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
                 rows = result.OrderBy(x => x.RandomSortId).Take(request.LimitValue).ToArray();
-
             }
             else
             {
@@ -153,6 +180,67 @@ namespace Roadie.Api.Services
             });
         }
 
+        public async Task<OperationResult<bool>> MergeLabelsIntoLabel(ApplicationUser user, Guid intoLabelId, IEnumerable<Guid> labelIdsToMerge)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var errors = new List<Exception>();
+            var label = DbContext.Labels.FirstOrDefault(x => x.RoadieId == intoLabelId);
+            if (label == null)
+            {
+                return new OperationResult<bool>(true, string.Format("Merge Into Label Not Found [{0}]", intoLabelId));
+            }
+
+            var now = DateTime.UtcNow;
+            var labelsToMerge = (from l in DbContext.Labels
+                                 join ltm in labelIdsToMerge on l.RoadieId equals ltm
+                                 select l);
+            foreach (var labelToMerge in labelsToMerge)
+            {
+                label.MusicBrainzId = label.MusicBrainzId ?? labelToMerge.MusicBrainzId;
+                label.SortName = label.SortName ?? labelToMerge.SortName;
+                label.Thumbnail = label.Thumbnail ?? labelToMerge.Thumbnail;
+                label.Profile = label.Profile ?? labelToMerge.Profile;
+                label.BeginDate = label.BeginDate ?? labelToMerge.BeginDate;
+                label.EndDate = label.EndDate ?? labelToMerge.EndDate;
+                label.Profile = label.Profile ?? labelToMerge.Profile;
+                label.DiscogsId = label.DiscogsId ?? labelToMerge.DiscogsId;
+                label.ImageUrl = label.ImageUrl ?? labelToMerge.ImageUrl;
+                label.Tags = label.Tags.AddToDelimitedList(labelToMerge.Tags.ToListFromDelimited());
+                var altNames = labelToMerge.AlternateNames.ToListFromDelimited().ToList();
+                altNames.Add(labelToMerge.Name);
+                altNames.Add(labelToMerge.SortName);
+                altNames.Add(labelToMerge.Name.ToAlphanumericName());
+                label.AlternateNames = label.AlternateNames.AddToDelimitedList(altNames);
+                label.URLs = label.URLs.AddToDelimitedList(labelToMerge.URLs.ToListFromDelimited());
+
+                var labelToMergeReleases = (from rl in DbContext.ReleaseLabels
+                                            where rl.LabelId == labelToMerge.Id
+                                            select rl);
+                foreach (var labelToMergeRelease in labelToMergeReleases)
+                {
+                    labelToMergeRelease.LabelId = label.Id;
+                    labelToMergeRelease.LastUpdated = now;
+                }
+                label.LastUpdated = now;
+                await DbContext.SaveChangesAsync();
+            }
+            await UpdateLabelCounts(label.Id, now);
+
+            CacheManager.ClearRegion(label.CacheRegion);
+            Logger.LogInformation($"MergeLabelsIntoLabel `{label}`, Merged Label Ids [{ string.Join(",", labelIdsToMerge) }] By User `{user}`");
+
+            sw.Stop();
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
         public async Task<OperationResult<Image>> SetLabelImageByUrl(User user, Guid id, string imageUrl)
         {
             return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
@@ -168,7 +256,11 @@ namespace Roadie.Api.Services
             try
             {
                 var now = DateTime.UtcNow;
-                label.AlternateNames = model.AlternateNamesList.ToDelimitedList();
+                var specialArtistName = model.Name.ToAlphanumericName();
+                var alt = new List<string>(model.AlternateNamesList);
+                if (!model.AlternateNamesList.Contains(specialArtistName, StringComparer.OrdinalIgnoreCase))
+                    alt.Add(specialArtistName);
+                label.AlternateNames = alt.ToDelimitedList();
                 label.BeginDate = model.BeginDate;
                 label.DiscogsId = model.DiscogsId;
                 label.EndDate = model.EndDate;
@@ -184,7 +276,8 @@ namespace Roadie.Api.Services
                 var labelImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (labelImage != null)
                 {
-                    // Resize to store in database as thumbnail
+                    // Save unaltered label image 
+                    File.WriteAllBytes(label.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(labelImage));
                     label.Thumbnail = ImageHelper.ResizeToThumbnail(labelImage, Configuration);
                 }
 
@@ -319,7 +412,8 @@ namespace Roadie.Api.Services
                 label.Thumbnail = imageBytes;
                 if (label.Thumbnail != null)
                 {
-                    // Ensure is jpeg first
+                    // Save unaltered label image 
+                    File.WriteAllBytes(label.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(imageBytes));
                     label.Thumbnail = ImageHelper.ResizeToThumbnail(label.Thumbnail, Configuration);
                 }
 

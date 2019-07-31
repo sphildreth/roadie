@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Roadie.Library.Configuration
 {
@@ -43,6 +44,40 @@ namespace Roadie.Library.Configuration
         public ImageSize LargeImageSize { get; set; }
 
         public string LibraryFolder { get; set; }
+
+        public string ImageFolder { get; set; }
+
+        public string LabelImageFolder
+        {
+            get
+            {
+                return Path.Combine(ImageFolder ?? LibraryFolder, "__roadie_images", "labels");
+            }
+        }
+
+        public string CollectionImageFolder
+        {
+            get
+            {
+                return Path.Combine(ImageFolder ?? LibraryFolder, "__roadie_images", "collections");
+            }
+        }
+
+        public string PlaylistImageFolder
+        {
+            get
+            {
+                return Path.Combine(ImageFolder ?? LibraryFolder, "__roadie_images", "playlists");
+            }
+        }
+
+        public string UserImageFolder
+        {
+            get
+            {
+                return Path.Combine(LibraryFolder, "__roadie_images", "users");
+            }
+        }
 
         public string ListenAddress { get; set; }
 

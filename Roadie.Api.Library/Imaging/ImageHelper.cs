@@ -20,7 +20,6 @@ namespace Roadie.Library.Imaging
     {
         public static string ArtistImageFilename = "artist.jpg";
         public static string ArtistSecondaryImageFilename = "artist {0}.jpg";
-        public static string LabelImageFilename = "label.jpg";
         public static int MaximumThumbnailByteSize = 50000;
 
         // Replace with counter of image
@@ -41,6 +40,21 @@ namespace Roadie.Library.Imaging
                 return outStream.ToArray();
             }
         }
+
+        public static byte[] ConvertToGifFormat(byte[] imageBytes)
+        {
+            if (imageBytes == null) return null;
+            using (var outStream = new MemoryStream())
+            {
+                IImageFormat imageFormat = null;
+                using (var image = Image.Load(imageBytes, out imageFormat))
+                {
+                    image.Save(outStream, ImageFormats.Gif);
+                }
+                return outStream.ToArray();
+            }
+        }
+
 
         public static IEnumerable<FileInfo> FindImagesByName(DirectoryInfo directory, string name,
             SearchOption folderSearchOptions = SearchOption.AllDirectories)

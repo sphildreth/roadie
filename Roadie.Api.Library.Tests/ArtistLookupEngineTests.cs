@@ -195,5 +195,33 @@ namespace Roadie.Library.Tests
         //        context.SaveChanges();
         //    }
         //}
+
+        //[Fact]
+        //public void Update_Label_Special_Name()
+        //{
+        //    var optionsBuilder = new DbContextOptionsBuilder<RoadieDbContext>();
+        //    optionsBuilder.UseMySql("server=viking;userid=roadie;password=MenAtW0rk668;persistsecurityinfo=True;database=roadie;ConvertZeroDateTime=true");
+
+        //    using (var context = new RoadieDbContext(optionsBuilder.Options))
+        //    {
+        //        var now = DateTime.UtcNow;
+        //        foreach (var label in context.Labels)
+        //        {
+        //            var labelModel = label.Adapt<Roadie.Library.Models.Label>();
+        //            var specialLabelName = labelModel.Name.ToAlphanumericName();
+        //            if (!labelModel.AlternateNamesList.Contains(specialLabelName, StringComparer.OrdinalIgnoreCase))
+        //            {
+        //                var alt = new List<string>(labelModel.AlternateNamesList)
+        //                {
+        //                    specialLabelName
+        //                };
+        //                label.AlternateNames = alt.ToDelimitedList();
+        //                label.LastUpdated = now;
+        //            }
+        //        }
+        //        context.SaveChanges();
+        //    }
+        //}
+
     }
 }

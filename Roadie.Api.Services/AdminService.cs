@@ -41,10 +41,12 @@ namespace Roadie.Api.Services
 
         private IReleaseService ReleaseService { get; }
 
+        private ILabelService LabelService { get; }
+
         public AdminService(IRoadieSettings configuration, IHttpEncoder httpEncoder, IHttpContext httpContext,
                             data.IRoadieDbContext context, ICacheManager cacheManager, ILogger<ArtistService> logger,
                             IHubContext<ScanActivityHub> scanActivityHub, IFileDirectoryProcessorService fileDirectoryProcessorService, IArtistService artistService,
-                            IReleaseService releaseService, IReleaseLookupEngine releaseLookupEngine
+                            IReleaseService releaseService, IReleaseLookupEngine releaseLookupEngine, ILabelService labelService
         ) 
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
@@ -54,6 +56,7 @@ namespace Roadie.Api.Services
 
             ArtistService = artistService;
             ReleaseService = releaseService;
+            LabelService = labelService;
             ReleaseLookupEngine = releaseLookupEngine;
             FileDirectoryProcessorService = fileDirectoryProcessorService;
         }
@@ -135,6 +138,52 @@ namespace Roadie.Api.Services
             };
         }
 
+        /// <summary>
+        /// Perform checks/setup on start of application
+        /// </summary>
+        public void PerformStartUpTasks()
+        {
+            var sw = Stopwatch.StartNew();
+
+            #region Setup Configured storage folders
+            try
+            {
+                if (!Directory.Exists(Configuration.LibraryFolder))
+                {
+                    Directory.CreateDirectory(Configuration.LibraryFolder);
+                    Logger.LogInformation($"Created Library Folder [{Configuration.LibraryFolder }]");
+                }
+                if (!Directory.Exists(Configuration.UserImageFolder))
+                {
+                    Directory.CreateDirectory(Configuration.UserImageFolder);
+                    Logger.LogInformation($"Created User Image Folder [{Configuration.UserImageFolder }]");
+                }
+                if (!Directory.Exists(Configuration.PlaylistImageFolder))
+                {
+                    Directory.CreateDirectory(Configuration.PlaylistImageFolder);
+                    Logger.LogInformation($"Created Playlist Image Folder [{Configuration.PlaylistImageFolder }]");
+                }
+                if (!Directory.Exists(Configuration.CollectionImageFolder))
+                {
+                    Directory.CreateDirectory(Configuration.CollectionImageFolder);
+                    Logger.LogInformation($"Created Collection Image Folder [{Configuration.CollectionImageFolder }]");
+                }
+                if (!Directory.Exists(Configuration.LabelImageFolder))
+                {
+                    Directory.CreateDirectory(Configuration.LabelImageFolder);
+                    Logger.LogInformation($"Created Label Image Folder [{Configuration.LabelImageFolder}]");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error setting up storage folders. Ensure application has create folder permissions.");
+                throw;
+            }
+            #endregion
+            sw.Stop();
+            Logger.LogInformation($"Administration startup tasks completed, elapsed time [{ sw.ElapsedMilliseconds }]");
+        }
+
         public async Task<OperationResult<bool>> ValidateInviteToken(Guid? tokenId)
         {
             var sw = new Stopwatch();
@@ -195,6 +244,40 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<bool>> DeleteLabel(ApplicationUser user, Guid labelId)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var label = DbContext.Labels.FirstOrDefault(x => x.RoadieId == labelId);
+            if (label == null)
+            {
+                await LogAndPublish($"DeleteLabel Unknown Label [{labelId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Label Not Found [{labelId}]");
+            }
+
+            try
+            {
+                await LabelService.Delete(user, labelId);
+                CacheManager.ClearRegion(label.CacheRegion);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+                await LogAndPublish("Error deleting artist secondary image.");
+                errors.Add(ex);
+            }
+
+            sw.Stop();
+            await LogAndPublish($"DeleteLabel `{label}`, By User `{user}`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
 
         public async Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index)
         {
@@ -413,6 +496,11 @@ namespace Roadie.Api.Services
 
                 DbContext.Users.Remove(user);
                 await DbContext.SaveChangesAsync();
+                var userImageFilename = user.PathToImage(Configuration);
+                if (File.Exists(userImageFilename))
+                {
+                    File.Delete(userImageFilename);
+                }
             }
             catch (Exception ex)
             {

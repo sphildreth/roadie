@@ -19,6 +19,7 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
@@ -408,8 +409,20 @@ namespace Roadie.Api.Services
             {
                 var imageData = ImageHelper.ImageDataFromUrl(userBeingUpdatedModel.AvatarData);
                 if (imageData != null)
-                    user.Avatar = ImageHelper.ResizeImage(imageData, Configuration.ThumbnailImageSize.Width,
-                        Configuration.ThumbnailImageSize.Height);
+                {
+                    imageData = ImageHelper.ConvertToGifFormat(imageData);
+
+                    // Save unaltered user image 
+                    File.WriteAllBytes(user.PathToImage(Configuration), imageData);
+                    // Update thumbnail
+                    user.Avatar = ImageHelper.ResizeImage(imageData, Configuration.ThumbnailImageSize.Width, Configuration.ThumbnailImageSize.Height);
+                    if(user.Avatar.Length >= ImageHelper.MaximumThumbnailByteSize)
+                    {
+                        user.Avatar = null;
+                    }
+                }
+
+
             }
 
             await DbContext.SaveChangesAsync();
@@ -518,21 +531,20 @@ namespace Roadie.Api.Services
         {
             var user = GetUser(id);
             if (user == null)
+            {
                 return Task.FromResult(new OperationResult<User>(true, string.Format("User Not Found [{0}]", id)));
+            }
             var model = user.Adapt<User>();
+            model.MediumThumbnail = MakeThumbnailImage(id, "user", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            model.IsAdmin = user.UserRoles?.Any(x => x.Role?.NormalizedName == "ADMIN") ?? false;
+            model.IsEditor = model.IsAdmin ? true : user.UserRoles?.Any(x => x.Role?.NormalizedName == "EDITOR") ?? false;
             if (includes != null && includes.Any())
+            {
                 if (includes.Contains("stats"))
                 {
-                    var userArtists =
-                        DbContext.UserArtists.Include(x => x.Artist).Where(x => x.UserId == user.Id).ToArray() ??
-                        new data.UserArtist[0];
-                    var userReleases =
-                        DbContext.UserReleases.Include(x => x.Release).Where(x => x.UserId == user.Id).ToArray() ??
-                        new data.UserRelease[0];
-                    var userTracks =
-                        DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == user.Id).ToArray() ??
-                        new data.UserTrack[0];
-
+                    var userArtists = DbContext.UserArtists.Include(x => x.Artist).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserArtist[0];
+                    var userReleases = DbContext.UserReleases.Include(x => x.Release).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserRelease[0];
+                    var userTracks = DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserTrack[0];
                     var mostPlayedArtist = (from a in DbContext.Artists
                                             join r in DbContext.Releases on a.Id equals r.ArtistId
                                             join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
@@ -548,7 +560,6 @@ namespace Roadie.Api.Services
                         })
                         .OrderByDescending(x => x.Played)
                         .FirstOrDefault();
-
                     var mostPlayedReleaseId = (from r in DbContext.Releases
                                                join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                                join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
@@ -564,9 +575,7 @@ namespace Roadie.Api.Services
                         .OrderByDescending(x => x.Played)
                         .Select(x => x.Release.RoadieId)
                         .FirstOrDefault();
-
                     var mostPlayedRelease = GetRelease(mostPlayedReleaseId);
-
                     var mostPlayedTrackUserTrack = userTracks
                         .OrderByDescending(x => x.PlayedCount)
                         .FirstOrDefault();
@@ -620,7 +629,7 @@ namespace Roadie.Api.Services
                         DislikedTracks = userTracks.Where(x => x.IsDisliked ?? false).Count()
                     };
                 }
-
+            }
             return Task.FromResult(new OperationResult<User>
             {
                 IsSuccess = true,

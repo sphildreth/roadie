@@ -321,16 +321,31 @@ namespace Roadie.Api.Services
             {
                 var collection = GetCollection(id);
                 if (collection == null)
-                    return Task.FromResult(new FileOperationResult<Image>(true,
-                        string.Format("Collection Not Found [{0}]", id)));
+                {
+                    return Task.FromResult(new FileOperationResult<Image>(true, string.Format("Collection Not Found [{0}]", id)));
+                }
                 var image = new data.Image
                 {
                     Bytes = collection.Thumbnail,
                     CreatedDate = collection.CreatedDate,
                     LastUpdated = collection.LastUpdated
                 };
+                var collectionImageFilename = collection.PathToImage(Configuration);
+                try
+                {
+                    if (File.Exists(collectionImageFilename))
+                    {
+                        image.Bytes = File.ReadAllBytes(collectionImageFilename);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, $"Error Reading Image File [{collectionImageFilename}]");
+                }
                 if (collection.Thumbnail == null || !collection.Thumbnail.Any())
+                {
                     image = DefaultNotFoundImages.Collection;
+                }
                 return Task.FromResult(GenerateFileOperationResult(id, image, etag));
             }
             catch (Exception ex)
@@ -439,7 +454,22 @@ namespace Roadie.Api.Services
                     CreatedDate = label.CreatedDate,
                     LastUpdated = label.LastUpdated
                 };
-                if (label.Thumbnail == null || !label.Thumbnail.Any()) image = DefaultNotFoundImages.Label;
+                var labelImageFilename = label.PathToImage(Configuration);
+                try
+                {
+                    if(File.Exists(labelImageFilename))
+                    {
+                        image.Bytes = File.ReadAllBytes(labelImageFilename);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, $"Error Reading Image File [{labelImageFilename}]");
+                }
+                if (label.Thumbnail == null || !label.Thumbnail.Any())
+                {
+                    image = DefaultNotFoundImages.Label;
+                }
                 return Task.FromResult(GenerateFileOperationResult(id, image, etag));
             }
             catch (Exception ex)
@@ -464,7 +494,22 @@ namespace Roadie.Api.Services
                     CreatedDate = playlist.CreatedDate,
                     LastUpdated = playlist.LastUpdated
                 };
-                if (playlist.Thumbnail == null || !playlist.Thumbnail.Any()) image = DefaultNotFoundImages.Playlist;
+                var playlistImageFilename = playlist.PathToImage(Configuration);
+                try
+                {
+                    if (File.Exists(playlistImageFilename))
+                    {
+                        image.Bytes = File.ReadAllBytes(playlistImageFilename);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, $"Error Reading Image File [{playlistImageFilename}]");
+                }
+                if (playlist.Thumbnail == null || !playlist.Thumbnail.Any())
+                {
+                    image = DefaultNotFoundImages.Playlist;
+                }
                 return Task.FromResult(GenerateFileOperationResult(id, image, etag));
             }
             catch (Exception ex)
@@ -638,15 +683,31 @@ namespace Roadie.Api.Services
             {
                 var user = GetUser(id);
                 if (user == null)
-                    return Task.FromResult(new FileOperationResult<Image>(true,
-                        string.Format("User Not Found [{0}]", id)));
+                {
+                    return Task.FromResult(new FileOperationResult<Image>(true, string.Format("User Not Found [{0}]", id)));
+                }
                 var image = new data.Image
                 {
                     Bytes = user.Avatar,
                     CreatedDate = user.CreatedDate.Value,
                     LastUpdated = user.LastUpdated
                 };
-                if (user.Avatar == null || !user.Avatar.Any()) image = DefaultNotFoundImages.User;
+                var userImageFilename = user.PathToImage(Configuration);
+                try
+                {
+                    if (File.Exists(userImageFilename))
+                    {
+                        image.Bytes = File.ReadAllBytes(userImageFilename);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, $"Error Reading Image File [{userImageFilename}]");
+                }
+                if (!(image?.Bytes?.Any() ?? false))
+                {
+                    image = DefaultNotFoundImages.User;
+                }
                 return Task.FromResult(GenerateFileOperationResult(id, image, etag, "image/png"));
             }
             catch (Exception ex)

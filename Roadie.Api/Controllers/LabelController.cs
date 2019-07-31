@@ -68,16 +68,39 @@ namespace Roadie.Api.Controllers
             return StatusCode((int)HttpStatusCode.InternalServerError);
         }
 
+        [HttpPost("mergeLabels/{labelToMergeId}/{labelToMergeIntoId}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> MergeLabels(Guid labelToMergeId, Guid labelToMergeIntoId)
+        {
+            var result = await LabelService.MergeLabelsIntoLabel(await UserManager.GetUserAsync(User), labelToMergeIntoId, new Guid[1] { labelToMergeId });
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
         [HttpPost("setImageByUrl/{id}/{imageUrl}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> SetLabelImageByUrl(Guid id, string imageUrl)
         {
-            var result =
-                await LabelService.SetLabelImageByUrl(await CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
-            if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            var result = await LabelService.SetLabelImageByUrl(await CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 

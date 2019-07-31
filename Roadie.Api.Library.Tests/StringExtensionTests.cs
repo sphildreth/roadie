@@ -115,9 +115,11 @@ namespace Roadie.Library.Tests
         [InlineData("001 Love.Mp3")]
         [InlineData("01 - Love.Mp3")]
         [InlineData("Love.Mp3")]
+        [InlineData("LOVE.Mp3")]
+        [InlineData("love.mp3")]
         public void CleanString_Track(string input)
         {
-            Assert.Equal("Love.Mp3", input.CleanString(Configuration, Configuration.Processing.TrackRemoveStringsRegex));
+            Assert.Equal("Love.Mp3", input.CleanString(Configuration, Configuration.Processing.TrackRemoveStringsRegex).ToTitleCase());
         }
 
         [Theory]

@@ -1,7 +1,11 @@
-﻿using Roadie.Library.Data;
+﻿using Roadie.Library.Configuration;
+using Roadie.Library.Data;
 using Roadie.Library.Enums;
+using Roadie.Library.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 
 namespace Roadie.Library.Identity
 {
@@ -12,6 +16,14 @@ namespace Roadie.Library.Identity
         public string CacheKeyByUsername => CacheUrnByUsername(UserName);
 
         public string CacheRegion => CacheRegionUrn(RoadieId);
+
+        /// <summary>
+        ///     Returns a full file path to the User Image
+        /// </summary>
+        public string PathToImage(IRoadieSettings configuration)
+        {
+            return Path.Combine(configuration.UserImageFolder, $"{ UserName.ToFileNameFriendly() } [{ Id }].gif");
+        }
 
         public ApplicationUser()
         {

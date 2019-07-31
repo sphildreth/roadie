@@ -18,6 +18,7 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
@@ -138,6 +139,11 @@ namespace Roadie.Api.Services
             {
                 DbContext.Collections.Remove(collection);
                 await DbContext.SaveChangesAsync();
+                var collectionImageFilename = collection.PathToImage(Configuration);
+                if (File.Exists(collectionImageFilename))
+                {
+                    File.Delete(collectionImageFilename);
+                }
             }
             catch (Exception ex)
             {
@@ -228,7 +234,9 @@ namespace Roadie.Api.Services
             {
                 collection = DbContext.Collections.FirstOrDefault(x => x.RoadieId == model.Id);
                 if (collection == null)
+                {
                     return new OperationResult<bool>(true, string.Format("Collection Not Found [{0}]", model.Id));
+                }
             }
 
             collection.IsLocked = model.IsLocked;
@@ -249,6 +257,9 @@ namespace Roadie.Api.Services
             var collectionImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
             if (collectionImage != null)
             {
+                // Save unaltered collection image 
+                File.WriteAllBytes(collection.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(collectionImage));
+                // Update Thumbnail
                 collection.Thumbnail = ImageHelper.ResizeToThumbnail(collectionImage, Configuration);
             }
 
@@ -296,8 +307,7 @@ namespace Roadie.Api.Services
             result.Tags = collection.Tags;
             result.URLs = collection.URLs;
             result.Thumbnail = MakeCollectionThumbnailImage(collection.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(id, "collection", Configuration.MediumImageSize.Width,
-                Configuration.MediumImageSize.Height);
+            result.MediumThumbnail = MakeThumbnailImage(id, "collection", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             result.CollectionFoundCount = (from crc in DbContext.CollectionReleases
                                            where crc.CollectionId == collection.Id
                                            select crc.Id).Count();

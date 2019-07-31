@@ -39,34 +39,57 @@ namespace Roadie.Library.Extensions
 
         public static string AddToDelimitedList(this string input, IEnumerable<string> values, char delimiter = '|')
         {
-            if (string.IsNullOrEmpty(input) && (values == null || !values.Any())) return null;
-            if (string.IsNullOrEmpty(input)) return string.Join(delimiter.ToString(), values);
-            if (values == null || !values.Any()) return input;
+            if (string.IsNullOrEmpty(input) && (values == null || !values.Any()))
+            {
+                return null;
+            }
+            if (string.IsNullOrEmpty(input))
+            {
+                return string.Join(delimiter.ToString(), values);
+            }
+            if (values == null || !values.Any())
+            {
+                return input;
+            }
             foreach (var value in values)
             {
-                if (string.IsNullOrEmpty(value)) continue;
+                if (string.IsNullOrEmpty(value))
+                {
+                    continue;
+                }
                 if (!input.IsValueInDelimitedList(value, delimiter))
                 {
-                    if (!input.EndsWith(delimiter.ToString())) input = input + delimiter;
-                    input = input + value;
+                    if (!input.EndsWith(delimiter.ToString()))
+                    {
+                        input += delimiter;
+                    }
+                    input += value;
                 }
             }
-
             return input;
         }
 
         public static string CleanString(this string input, IRoadieSettings settings, string removeStringsRegex = null)
         {
-            if (string.IsNullOrEmpty(input) || settings == null) return input;
+            if (string.IsNullOrEmpty(input) || settings == null)
+            {
+                return input;
+            }
             var result = input;
             foreach (var kvp in settings.Processing.ReplaceStrings.OrderBy(x => x.Order).ThenBy(x => x.Key))
             {
                 result = result.Replace(kvp.Key, kvp.ReplaceWith, StringComparison.OrdinalIgnoreCase);
             }
             result = result.Trim().ToTitleCase(false);
-            if (string.IsNullOrEmpty(result)) return input;
+            if (string.IsNullOrEmpty(result))
+            {
+                return input;
+            }
             var rs = removeStringsRegex ?? settings.Processing.RemoveStringsRegex;
-            if (!string.IsNullOrEmpty(rs)) result = Regex.Replace(result, rs, "", RegexOptions.IgnoreCase);
+            if (!string.IsNullOrEmpty(rs))
+            {
+                result = Regex.Replace(result, rs, "", RegexOptions.IgnoreCase);
+            }
             if (result.Length > 5)
             {
                 var extensionStart = result.Substring(result.Length - 5, 2);

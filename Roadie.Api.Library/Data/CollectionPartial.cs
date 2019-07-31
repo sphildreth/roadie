@@ -1,6 +1,8 @@
 ﻿using CsvHelper;
 using Newtonsoft.Json;
+using Roadie.Library.Configuration;
 using Roadie.Library.Enums;
+using Roadie.Library.Extensions;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -38,6 +40,14 @@ namespace Roadie.Library.Data
         public string CacheKey => CacheUrn(RoadieId);
 
         public string CacheRegion => CacheRegionUrn(RoadieId);
+
+        /// <summary>
+        ///     Returns a full file path to the Collection Image
+        /// </summary>
+        public string PathToImage(IRoadieSettings configuration)
+        {
+            return Path.Combine(configuration.CollectionImageFolder, $"{ (SortName ?? Name).ToFileNameFriendly() } [{ Id }].jpg");
+        }
 
         public int PositionColumn
         {

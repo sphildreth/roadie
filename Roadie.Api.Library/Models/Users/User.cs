@@ -67,6 +67,7 @@ namespace Roadie.Library.Models.Users
         [AdaptMember("RoadieId")] public Guid UserId { get; set; }
 
         [Required] [MaxLength(20)] public string UserName { get; set; }
+        public Image MediumThumbnail { get; set; }
 
         public override string ToString()
         {

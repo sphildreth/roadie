@@ -228,7 +228,7 @@ namespace Roadie.Api
             services.AddScoped<ILookupService, LookupService>();
             services.AddScoped<ICommentService, CommentService>();
 
-            var securityKey = new SymmetricSecurityKey(Encoding.Default.GetBytes(_configuration["Tokens:PrivateKey"]));
+            var securityKey = new SymmetricSecurityKey(Encoding.Default.GetBytes(_configuration["Tokens:PrivateKey"]));            
 
             services.AddAuthentication(options =>
             {
@@ -288,11 +288,17 @@ namespace Roadie.Api
             services.AddHttpContextAccessor();
             services.AddScoped<IHttpContext>(factory =>
             {
-                var actionContext = factory.GetService<IActionContextAccessor>()
-                    .ActionContext;
-
+                var actionContext = factory.GetService<IActionContextAccessor>().ActionContext;
+                if(actionContext == null)
+                {
+                    return null;
+                }
                 return new HttpContext(factory.GetService<IRoadieSettings>(), new UrlHelper(actionContext));
             });
+
+            var sp = services.BuildServiceProvider();
+            var adminService = sp.GetService<IAdminService>();
+            adminService.PerformStartUpTasks();
         }
 
         private class IntegrationKey

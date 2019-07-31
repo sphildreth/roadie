@@ -1,4 +1,8 @@
-﻿using System;
+﻿using Roadie.Library.Configuration;
+using Roadie.Library.Extensions;
+using System;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 
@@ -22,6 +26,14 @@ namespace Roadie.Library.Data
                         .Select(x => x.ToString("D2")));
                 }
             }
+        }
+
+        /// <summary>
+        ///     Returns a full file path to the Label Image
+        /// </summary>
+        public string PathToImage(IRoadieSettings configuration)
+        {
+            return Path.Combine(configuration.LabelImageFolder, $"{ (SortName ?? Name).ToFileNameFriendly() } [{ Id }].jpg");
         }
 
         public bool IsValid => !string.IsNullOrEmpty(Name);
