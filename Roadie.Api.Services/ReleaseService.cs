@@ -671,11 +671,8 @@ namespace Roadie.Api.Services
                         if (!newTrackPath.ToLower().Equals(oldTrackPath.ToLower()))
                         {
                             var audioMetaData = await AudioMetaDataHelper.GetInfo(trackFile);
-                            track.FilePath = FolderPathHelper.TrackPath(Configuration, releaseToMergeInto.Artist,
-                                releaseToMergeInto, track);
-                            track.Hash = HashHelper.CreateMD5(
-                                releaseToMergeInto.ArtistId + trackFile.LastWriteTimeUtc.GetHashCode().ToString() +
-                                audioMetaData.GetHashCode());
+                            track.FilePath = FolderPathHelper.TrackPath(Configuration, releaseToMergeInto.Artist, releaseToMergeInto, track);
+                            track.Hash = HashHelper.CreateMD5(releaseToMergeInto.ArtistId + trackFile.LastWriteTimeUtc.GetHashCode().ToString() + audioMetaData.GetHashCode());
                             track.LastUpdated = now;
                             File.Move(oldTrackPath, newTrackPath);
                         }
@@ -1132,6 +1129,10 @@ namespace Roadie.Api.Services
                                         {
                                             trackArtistId = trackArtistData.Data.Id;
                                         }
+                                        if (release.ArtistId == trackArtistData.Data.Id)
+                                        {
+                                            trackArtistId = null;
+                                        }
                                     }
                                     else if (audioMetaData.TrackArtists.Any())
                                     {
@@ -1343,7 +1344,9 @@ namespace Roadie.Api.Services
                 .Include("Labels.Label")
                 .FirstOrDefault(x => x.RoadieId == model.Id);
             if (release == null)
+            {
                 return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", model.Id));
+            }
             try
             {
                 var now = DateTime.UtcNow;
@@ -1356,7 +1359,9 @@ namespace Roadie.Api.Services
                 var specialReleaseTitle = model.Title.ToAlphanumericName();
                 var alt = new List<string>(model.AlternateNamesList);
                 if (!model.AlternateNamesList.Contains(specialReleaseTitle, StringComparer.OrdinalIgnoreCase))
+                {
                     alt.Add(specialReleaseTitle);
+                }
                 release.AlternateNames = alt.ToDelimitedList();
                 release.ReleaseDate = model.ReleaseDate;
                 release.Rating = model.Rating;
@@ -1377,15 +1382,13 @@ namespace Roadie.Api.Services
 
                 if (model?.Artist?.Artist?.Value != null)
                 {
-                    var artist = DbContext.Artists.FirstOrDefault(x =>
-                        x.RoadieId == SafeParser.ToGuid(model.Artist.Artist.Value));
+                    var artist = DbContext.Artists.FirstOrDefault(x => x.RoadieId == SafeParser.ToGuid(model.Artist.Artist.Value));
                     if (artist != null && release.ArtistId != artist.Id)
                     {
                         release.ArtistId = artist.Id;
                         didChangeArtist = true;
                     }
                 }
-
                 var releaseImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (releaseImage != null)
                 {
@@ -1400,8 +1403,7 @@ namespace Roadie.Api.Services
 
                 if (model.NewSecondaryImagesData != null && model.NewSecondaryImagesData.Any())
                 {
-                    var releaseFolder =
-                        release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration));
+                    var releaseFolder = release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration));
                     // Additional images to add to artist
                     var looper = 0;
                     foreach (var newSecondaryImageData in model.NewSecondaryImagesData)
@@ -1513,39 +1515,43 @@ namespace Roadie.Api.Services
             var result = false;
             var artistFolder = release.Artist.ArtistFileFolder(Configuration);
             var newReleaseFolder = release.ReleaseFileFolder(artistFolder);
-            if (!oldReleaseFolder.Equals(newReleaseFolder, StringComparison.OrdinalIgnoreCase))
+            if (newReleaseFolder != oldReleaseFolder) 
             {
-                Logger.LogTrace("Moving Release From Folder [{0}] To [{1}]", oldReleaseFolder, newReleaseFolder);
-
-                // Create the new release folder
-                if (!Directory.Exists(newReleaseFolder)) Directory.CreateDirectory(newReleaseFolder);
+                if (Directory.Exists(oldReleaseFolder))
+                {
+                    Directory.Move(oldReleaseFolder, newReleaseFolder);
+                    Logger.LogInformation($"Moved Release Folder From [{ oldReleaseFolder }] -> [{ newReleaseFolder }]");
+                }                
+                else if (!Directory.Exists(newReleaseFolder))
+                {
+                    Directory.CreateDirectory(newReleaseFolder);
+                }
                 var releaseDirectoryInfo = new DirectoryInfo(newReleaseFolder);
                 // Update and move tracks under new release folder
                 foreach (var releaseMedia in DbContext.ReleaseMedias.Where(x => x.ReleaseId == release.Id).ToArray())
                     // Update the track path to have the new album title. This is needed because future scans might not work properly without updating track title.
                     foreach (var track in DbContext.Tracks.Where(x => x.ReleaseMediaId == releaseMedia.Id).ToArray())
                     {
-                        var existingTrackPath = track.PathToTrack(Configuration);
-
-                        var existingTrackFileInfo = new FileInfo(existingTrackPath);
-                        var newTrackFileInfo = new FileInfo(track.PathToTrack(Configuration));
-                        if (existingTrackFileInfo.Exists)
+                        track.FilePath = Path.Combine(releaseDirectoryInfo.Parent.Name, releaseDirectoryInfo.Name);
+                        var trackPath = track.PathToTrack(Configuration);
+                        var trackFileInfo = new FileInfo(trackPath);
+                        if (trackFileInfo.Exists)
                         {
                             // Update the tracks release tags
-                            var audioMetaData = await AudioMetaDataHelper.GetInfo(existingTrackFileInfo);
+                            var audioMetaData = await AudioMetaDataHelper.GetInfo(trackFileInfo);
                             audioMetaData.Release = release.Title;
-                            AudioMetaDataHelper.WriteTags(audioMetaData, existingTrackFileInfo);
+                            AudioMetaDataHelper.WriteTags(audioMetaData, trackFileInfo);
 
                             // Update track path
-                            track.FilePath = Path.Combine(releaseDirectoryInfo.Parent.Name, releaseDirectoryInfo.Name);
+                            track.Status = Statuses.Ok;
+                            track.Hash = HashHelper.CreateMD5(release.ArtistId + trackFileInfo.LastWriteTimeUtc.GetHashCode().ToString() + audioMetaData.GetHashCode());
                             track.LastUpdated = now;
-
-                            // Move the physical track
-                            var newTrackPath = track.PathToTrack(Configuration);
-                            if (!existingTrackPath.Equals(newTrackPath, StringComparison.OrdinalIgnoreCase))
-                                File.Move(existingTrackPath, newTrackPath);
                         }
-
+                        else
+                        {
+                            track.Hash = null;
+                            track.Status = Statuses.Missing;
+                        }
                         CacheManager.ClearRegion(track.CacheRegion);
                     }
 

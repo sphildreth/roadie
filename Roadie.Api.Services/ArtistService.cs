@@ -744,7 +744,7 @@ namespace Roadie.Api.Services
                     if (Directory.Exists(originalArtistFolder))
                     {
                         // Rename artist folder to reflect new artist name
-                        Logger.LogTrace("Moving Artist From Folder [{0}] To  [{1}]", originalArtistFolder, newArtistFolder);
+                        Logger.LogInformation("Moving Artist From Folder [{0}] ->  [{1}]", originalArtistFolder, newArtistFolder);
                         Directory.Move(originalArtistFolder, newArtistFolder);
                     }
                 }
@@ -921,8 +921,7 @@ namespace Roadie.Api.Services
                 }
 
                 CacheManager.ClearRegion(artist.CacheRegion);
-                Logger.LogInformation(
-                    $"UpdateArtist `{artist}` By User `{user}`: Renamed Artist [{didRenameArtist}], Uploaded new image [{didChangeThumbnail}]");
+                Logger.LogInformation($"UpdateArtist `{artist}` By User `{user}`: Renamed Artist [{didRenameArtist}], Uploaded new image [{didChangeThumbnail}]");
             }
             catch (Exception ex)
             {

@@ -41,9 +41,7 @@ namespace Roadie.Library.SearchEngines.Imaging
                         response.ErrorMessage, response.Content));
                 }
 
-                var responseData = response.Data.resultCount > 0 && response.Data.results != null
-                    ? response.Data.results.First()
-                    : null;
+                var responseData = response?.Data?.results?.FirstOrDefault();
                 if (responseData != null)
                 {
                     var urls = new List<string>();
@@ -130,9 +128,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             ReleaseSearchResult data = null;
             try
             {
-                var responseData = response.Data.results != null && response.Data.results.Any()
-                    ? response.Data.results.First()
-                    : null;
+                var responseData = response?.Data?.results?.FirstOrDefault();
                 if (responseData != null)
                 {
                     var urls = new List<string>();
