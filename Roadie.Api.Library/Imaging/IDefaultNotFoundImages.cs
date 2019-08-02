@@ -7,6 +7,7 @@ namespace Roadie.Library.Imaging
         Image Artist { get; }
         Image Collection { get; }
         Image Label { get; }
+        Image Genre { get; }
         Image Playlist { get; }
         Image Release { get; }
         Image Track { get; }

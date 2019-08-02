@@ -113,8 +113,10 @@ namespace Roadie.Api.Services
             sw.Start();
             var cacheKey = string.Format("urn:playlist_by_id_operation:{0}:{1}", id,
                 includes == null ? "0" : string.Join("|", includes));
-            var result = await CacheManager.GetAsync(cacheKey,
-                async () => { return await PlaylistByIdAction(id, includes); }, data.Artist.CacheRegionUrn(id));
+            var result = await CacheManager.GetAsync(cacheKey, async () => 
+            {
+                return await PlaylistByIdAction(id, includes);
+            }, data.Artist.CacheRegionUrn(id));
             sw.Stop();
             if (result?.Data != null && roadieUser != null)
             {
@@ -122,17 +124,17 @@ namespace Roadie.Api.Services
                 {
                     var user = GetUser(roadieUser.UserId);
                     foreach (var track in result.Data.Tracks)
+                    {
                         track.Track.TrackPlayUrl = MakeTrackPlayUrl(user, track.Track.DatabaseId, track.Track.Id);
+                    }
                 }
 
                 result.Data.UserCanEdit = result.Data.Maintainer.Id == roadieUser.UserId || roadieUser.IsAdmin;
-                var userBookmarkResult =
-                    await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Playlist);
+                var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Playlist);
                 if (userBookmarkResult.IsSuccess)
-                    result.Data.UserBookmarked =
-                        userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) !=
-                        null;
-
+                {
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
+                }
                 if (result.Data.Comments.Any())
                 {
                     var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
@@ -142,8 +144,7 @@ namespace Roadie.Api.Services
                                                 select cr).ToArray();
                     foreach (var comment in result.Data.Comments)
                     {
-                        var userCommentReaction =
-                            userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
+                        var userCommentReaction = userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
                         comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
                         comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
                     }
@@ -402,15 +403,14 @@ namespace Roadie.Api.Services
             var playlist = GetPlaylist(id);
 
             if (playlist == null)
-                return Task.FromResult(new OperationResult<Playlist>(true,
-                    string.Format("Playlist Not Found [{0}]", id)));
-
+            {
+                return Task.FromResult(new OperationResult<Playlist>(true, string.Format("Playlist Not Found [{0}]", id)));
+            }
             var result = playlist.Adapt<Playlist>();
             result.AlternateNames = playlist.AlternateNames;
             result.Tags = playlist.Tags;
             result.URLs = playlist.URLs;
-            var maintainer = DbContext.Users.Include(x => x.UserRoles).Include("UserRoles.Role")
-                .FirstOrDefault(x => x.Id == playlist.UserId);
+            var maintainer = DbContext.Users.Include(x => x.UserRoles).Include("UserRoles.Role").FirstOrDefault(x => x.Id == playlist.UserId);
             result.Maintainer = UserList.FromDataUser(maintainer, MakeUserThumbnailImage(maintainer.RoadieId));
             result.Thumbnail = MakePlaylistThumbnailImage(playlist.RoadieId);
             result.MediumThumbnail = MakeThumbnailImage(id, "playlist", Configuration.MediumImageSize.Width,
@@ -424,6 +424,7 @@ namespace Roadie.Api.Services
                                       select new { t, pltr }).ToArray();
 
                 if (includes.Contains("stats"))
+                {
                     result.Statistics = new ReleaseGroupingStatistics
                     {
                         ReleaseCount = result.ReleaseCount,
@@ -431,7 +432,9 @@ namespace Roadie.Api.Services
                         TrackSize = result.DurationTime,
                         FileSize = playlistTracks.Sum(x => (long?)x.t.FileSize).ToFileSize()
                     };
+                }
                 if (includes.Contains("tracks"))
+                {
                     result.Tracks = (from plt in playlistTracks
                                      join rm in DbContext.ReleaseMedias on plt.t.ReleaseMediaId equals rm.Id
                                      join r in DbContext.Releases on rm.ReleaseId equals r.Id
@@ -453,10 +456,13 @@ namespace Roadie.Api.Services
                                              MakeArtistThumbnailImage(releaseArtist.RoadieId),
                                              MakeArtistThumbnailImage(trackArtist == null ? null : (Guid?)trackArtist.RoadieId))
                                      }).ToArray();
+                }
                 if (includes.Contains("comments"))
                 {
                     var playlistComments = DbContext.Comments.Include(x => x.User)
-                        .Where(x => x.PlaylistId == playlist.Id).OrderByDescending(x => x.CreatedDate).ToArray();
+                                                    .Where(x => x.PlaylistId == playlist.Id)
+                                                    .OrderByDescending(x => x.CreatedDate)
+                                                    .ToArray();
                     if (playlistComments.Any())
                     {
                         var comments = new List<Comment>();
@@ -468,15 +474,11 @@ namespace Roadie.Api.Services
                         {
                             var comment = playlistComment.Adapt<Comment>();
                             comment.DatabaseId = playlistComment.Id;
-                            comment.User = UserList.FromDataUser(playlistComment.User,
-                                MakeUserThumbnailImage(playlistComment.User.RoadieId));
-                            comment.DislikedCount = userCommentReactions.Count(x =>
-                                x.CommentId == playlistComment.Id && x.ReactionValue == CommentReaction.Dislike);
-                            comment.LikedCount = userCommentReactions.Count(x =>
-                                x.CommentId == playlistComment.Id && x.ReactionValue == CommentReaction.Like);
+                            comment.User = UserList.FromDataUser(playlistComment.User, MakeUserThumbnailImage(playlistComment.User.RoadieId));
+                            comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == playlistComment.Id && x.ReactionValue == CommentReaction.Dislike);
+                            comment.LikedCount = userCommentReactions.Count(x => x.CommentId == playlistComment.Id && x.ReactionValue == CommentReaction.Like);
                             comments.Add(comment);
                         }
-
                         result.Comments = comments;
                     }
                 }

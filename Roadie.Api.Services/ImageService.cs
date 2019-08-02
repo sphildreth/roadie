@@ -128,6 +128,17 @@ namespace Roadie.Api.Services
                 etag);
         }
 
+        public async Task<FileOperationResult<Image>> GenreImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return await GetImageFileOperation("GenreThumbnail",
+                data.Label.CacheRegionUrn(id),
+                id,
+                width,
+                height,
+                async () => { return await GenreImageAction(id, etag); },
+                etag);
+        }
+
         public async Task<FileOperationResult<Image>> PlaylistImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
         {
             return await GetImageFileOperation("PlaylistThumbnail",
@@ -469,6 +480,47 @@ namespace Roadie.Api.Services
                 if (label.Thumbnail == null || !label.Thumbnail.Any())
                 {
                     image = DefaultNotFoundImages.Label;
+                }
+                return Task.FromResult(GenerateFileOperationResult(id, image, etag));
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error fetching Label Thumbnail [{id}]", ex);
+            }
+
+            return Task.FromResult(new FileOperationResult<Image>(OperationMessages.ErrorOccured));
+        }
+
+        private Task<FileOperationResult<Image>> GenreImageAction(Guid id, EntityTagHeaderValue etag = null)
+        {
+            try
+            {
+                var genre = GetGenre(id);
+                if (genre == null)
+                {
+                    return Task.FromResult(new FileOperationResult<Image>(true, string.Format("Genre Not Found [{0}]", id)));
+                }
+                var image = new data.Image
+                {
+                    Bytes = genre.Thumbnail,
+                    CreatedDate = genre.CreatedDate,
+                    LastUpdated = genre.LastUpdated
+                };
+                var genreImageFilename = genre.PathToImage(Configuration);
+                try
+                {
+                    if (File.Exists(genreImageFilename))
+                    {
+                        image.Bytes = File.ReadAllBytes(genreImageFilename);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, $"Error Reading Image File [{genreImageFilename}]");
+                }
+                if (genre.Thumbnail == null || !genre.Thumbnail.Any())
+                {
+                    image = DefaultNotFoundImages.Genre;
                 }
                 return Task.FromResult(GenerateFileOperationResult(id, image, etag));
             }

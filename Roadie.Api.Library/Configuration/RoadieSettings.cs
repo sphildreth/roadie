@@ -63,6 +63,14 @@ namespace Roadie.Library.Configuration
             }
         }
 
+        public string GenreImageFolder
+        {
+            get
+            {
+                return Path.Combine(ImageFolder ?? LibraryFolder, "__roadie_images", "genres");
+            }
+        }
+
         public string PlaylistImageFolder
         {
             get
@@ -133,6 +141,8 @@ namespace Roadie.Library.Configuration
         /// </summary>
         public string SearchEngineReposFolder { get; set; }
 
+        public short DefaultRowsPerPage { get; set; }
+
         public RoadieSettings()
         {
             ArtistNameReplace = new Dictionary<string, IEnumerable<string>>
@@ -152,6 +162,7 @@ namespace Roadie.Library.Configuration
             SiteName = "Roadie";
             SmallImageSize = new ImageSize { Width = 160, Height = 160 };
             ThumbnailImageSize = new ImageSize { Width = 80, Height = 80 };
+            DefaultRowsPerPage = 12;
 
             SmtpFromAddress = "noreply@roadie.rocks";
             SmtpPort = 587;

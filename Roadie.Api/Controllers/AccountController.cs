@@ -102,9 +102,11 @@ namespace Roadie.Api.Controllers
                 try
                 {
                     // Login user
-                    var loginResult =
-                        await SignInManager.PasswordSignInAsync(model.Username, model.Password, false, false);
-                    if (!loginResult.Succeeded) return BadRequest();
+                    var loginResult = await SignInManager.PasswordSignInAsync(model.Username, model.Password, false, false);
+                    if (!loginResult.Succeeded)
+                    {
+                        return BadRequest();
+                    }
                     var user = await UserManager.FindByNameAsync(model.Username);
                     var now = DateTime.UtcNow;
                     user.LastLogin = now;
@@ -127,8 +129,7 @@ namespace Roadie.Api.Controllers
                         }
 
                     CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-                    var avatarUrl =
-                        $"{RoadieHttpContext.ImageBaseUrl}/user/{user.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
+                    var avatarUrl =  $"{RoadieHttpContext.ImageBaseUrl}/user/{user.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
                     return Ok(new
                     {
                         Username = user.UserName,
@@ -139,7 +140,8 @@ namespace Roadie.Api.Controllers
                         avatarUrl,
                         Token = t,
                         user.Timeformat,
-                        user.Timezone
+                        user.Timezone,
+                        DefaultRowsPerPage = user.DefaultRowsPerPage ?? RoadieSettings.DefaultRowsPerPage
                     });
                 }
                 catch (Exception ex)

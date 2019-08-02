@@ -21,6 +21,7 @@ namespace Roadie.Library.Configuration
         string ImageFolder { get; set; }
         string LabelImageFolder { get; }
         string CollectionImageFolder { get; }
+        string GenreImageFolder { get; }
         string PlaylistImageFolder { get; }
         string UserImageFolder { get; }
         string ListenAddress { get; set; }
@@ -47,5 +48,6 @@ namespace Roadie.Library.Configuration
         bool IsRegistrationClosed { get; set; }
         bool UseRegistrationTokens { get; set; }
         string SearchEngineReposFolder { get; set; }
+        short DefaultRowsPerPage { get; set; }
     }
 }

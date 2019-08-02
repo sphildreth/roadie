@@ -40,6 +40,36 @@ namespace Roadie.Api.Controllers
             RoadieHttpContext = httpContext;
         }
 
+
+        [HttpGet("accountsettings/{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> GetAccountSettings(Guid id, string inc = null)
+        {
+            var user = await CurrentUserModel();
+            var result = await CacheManager.GetAsync($"urn:user_edit_model_by_id:{id}", async () =>
+            {
+                return await UserService.ById(user, id, (inc ?? Library.Models.Users.User.DefaultIncludes).ToLower().Split(","), true);
+            }, ControllerCacheRegionUrn);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            result.AdditionalClientData = new Dictionary<string, object>();
+            if (RoadieSettings.Integrations.LastFmProviderEnabled)
+            {
+                var lastFmCallBackUrl = $"{RoadieHttpContext.BaseUrl}/users/integration/grant?userId={user.UserId}&iname=lastfm";
+                result.AdditionalClientData.Add("lastFMIntegrationUrl", $"http://www.last.fm/api/auth/?api_key={RoadieSettings.Integrations.LastFMApiKey}&cb={WebUtility.UrlEncode(lastFmCallBackUrl)}");
+            }
+            return Ok(result);
+        }
+
+
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(204)]
@@ -52,17 +82,14 @@ namespace Roadie.Api.Controllers
                 {
                     return await UserService.ById(user, id, (inc ?? Library.Models.Users.User.DefaultIncludes).ToLower().Split(","));
                 }, ControllerCacheRegionUrn);
-            if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
-            result.AdditionalClientData = new Dictionary<string, object>();
-            if (RoadieSettings.Integrations.LastFmProviderEnabled)
+            if (result == null || result.IsNotFoundResult)
             {
-                var lastFmCallBackUrl =
-                    $"{RoadieHttpContext.BaseUrl}/users/integration/grant?userId={user.UserId}&iname=lastfm";
-                result.AdditionalClientData.Add("lastFMIntegrationUrl",
-                    $"http://www.last.fm/api/auth/?api_key={RoadieSettings.Integrations.LastFMApiKey}&cb={WebUtility.UrlEncode(lastFmCallBackUrl)}");
+                return NotFound();
             }
-
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -239,7 +266,10 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> UpdateProfile(User model)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var user = await CurrentUserModel();
             var result = await UserService.UpdateProfile(user, model);
             if (result == null || result.IsNotFoundResult) return NotFound();
@@ -260,7 +290,8 @@ namespace Roadie.Api.Controllers
                 avatarUrl,
                 Token = t,
                 modelUser.Timeformat,
-                modelUser.Timezone
+                modelUser.Timezone,
+                DefaultRowsPerPage = modelUser.DefaultRowsPerPage ?? RoadieSettings.DefaultRowsPerPage
             });
         }
 

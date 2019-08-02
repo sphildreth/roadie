@@ -11,6 +11,7 @@ namespace Roadie.Library.Imaging
         private Image _artist;
         private Image _collection;
         private Image _label;
+        private Image _genre;
         private Image _playlist;
         private Image _release;
         private Image _track;
@@ -22,6 +23,8 @@ namespace Roadie.Library.Imaging
             _collection ?? (_collection = MakeImageFromFile(MakeImagePath(@"images/collection.jpg")));
 
         public Image Label => _label ?? (_label = MakeImageFromFile(MakeImagePath(@"images/label.jpg")));
+
+        public Image Genre => _genre ?? (_genre = MakeImageFromFile(MakeImagePath(@"images/genre.jpg")));
 
         public Image Playlist => _playlist ?? (_playlist = MakeImageFromFile(MakeImagePath(@"images/playlist.jpg")));
 

@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Roadie.Library.Configuration;
+using Roadie.Library.Extensions;
+using System;
+using System.IO;
 
 namespace Roadie.Library.Data
 {
@@ -7,6 +10,14 @@ namespace Roadie.Library.Data
         public string CacheKey => CacheUrn(RoadieId);
 
         public string CacheRegion => CacheRegionUrn(RoadieId);
+
+        /// <summary>
+        ///     Returns a full file path to the Genre Image
+        /// </summary>
+        public string PathToImage(IRoadieSettings configuration)
+        {
+            return Path.Combine(configuration.GenreImageFolder, $"{ Name.ToFileNameFriendly() } [{ Id }].jpg");
+        }
 
         public static string CacheRegionUrn(Guid Id)
         {

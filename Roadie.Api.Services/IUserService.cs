@@ -9,7 +9,7 @@ namespace Roadie.Api.Services
 {
     public interface IUserService
     {
-        Task<OperationResult<User>> ById(User user, Guid id, IEnumerable<string> includes);
+        Task<OperationResult<User>> ById(User user, Guid id, IEnumerable<string> includes, bool isAccountSettingsEdit = false);
 
         Task<PagedResult<UserList>> List(PagedRequest request);
 

@@ -34,6 +34,7 @@ namespace Roadie.Library.Models.Pagination
         public Statuses FilterToStatusValue => SafeParser.ToEnum<Statuses>(FilterToStatus);
         public Guid? FilterToTrackId { get; set; }
         public Guid?[] FilterToTrackIds { get; set; }
+        public Guid? FilterToGenreId { get; set; }
         public int? FilterToYear { get; set; }
         public string FilterValue => Filter ?? string.Empty;
         public bool IsHistoryRequest { get; set; }

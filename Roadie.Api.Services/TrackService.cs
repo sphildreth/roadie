@@ -518,8 +518,12 @@ namespace Roadie.Api.Services
 
                 if (doRandomize ?? false)
                 {
+                    var randomLimit = roadieUser?.RandomReleaseLimit ?? request.Limit;
+                    request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
+
                     rows = result.OrderBy(x => x.Artist.RandomSortId)
                                   .ThenBy(x => x.RandomSortId)
+                                  .Take(request.LimitValue)
                                   .ToArray();
                 }
                 else

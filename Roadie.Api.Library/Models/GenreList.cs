@@ -8,5 +8,6 @@ namespace Roadie.Library.Models
         public int? ArtistCount { get; set; }
         public DataToken Genre { get; set; }
         public int? ReleaseCount { get; set; }
+        public Image Thumbnail { get; set; }
     }
 }

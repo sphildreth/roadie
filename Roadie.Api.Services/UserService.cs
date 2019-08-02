@@ -50,14 +50,20 @@ namespace Roadie.Api.Services
             ;
         }
 
-        public async Task<OperationResult<User>> ById(User user, Guid id, IEnumerable<string> includes)
+        public async Task<OperationResult<User>> ById(User user, Guid id, IEnumerable<string> includes, bool isAccountSettingsEdit = false)
         {
             var timings = new Dictionary<string, long>();
             var tsw = new Stopwatch();
-
+            if(isAccountSettingsEdit)
+            {
+                if(user.UserId != id && !user.IsAdmin)
+                {
+                    return new OperationResult<User>(new Exception("Access Denied"));
+                }
+            }
             var sw = Stopwatch.StartNew();
             sw.Start();
-            var cacheKey = string.Format("urn:user_by_id_operation:{0}", id);
+            var cacheKey = string.Format("urn:user_by_id_operation:{0}:{1}", id, isAccountSettingsEdit);
             var result = await CacheManager.GetAsync(cacheKey, async () =>
             {
                 tsw.Restart();
@@ -67,7 +73,15 @@ namespace Roadie.Api.Services
                 return rr;
             }, ApplicationUser.CacheRegionUrn(id));
             sw.Stop();
-            if (result?.Data != null) result.Data.Avatar = MakeUserThumbnailImage(id);
+            if (result?.Data != null)
+            {
+                result.Data.Avatar = MakeUserThumbnailImage(id);
+                if(!isAccountSettingsEdit)
+                {
+                    result.Data.ApiToken = null;                    
+                    result.Data.ConcurrencyStamp = null;
+                }
+            }
             timings.Add("operation", sw.ElapsedMilliseconds);
             Logger.LogDebug("ById Timings: id [{0}]", id);
             return new OperationResult<User>(result.Messages)
@@ -101,6 +115,7 @@ namespace Roadie.Api.Services
                                  Value = u.RoadieId.ToString()
                              },
                              IsEditor = u.UserRoles.Any(x => x.Role.Name == "Editor"),
+                             IsAdmin = u.UserRoles.Any(x => x.Role.Name == "Admin"),
                              IsPrivate = u.IsPrivate,
                              Thumbnail = MakeUserThumbnailImage(u.RoadieId),
                              CreatedDate = u.CreatedDate,
@@ -119,15 +134,18 @@ namespace Roadie.Api.Services
             rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
 
             if (rows.Any())
+            {
                 foreach (var row in rows)
                 {
                     var userArtists = DbContext.UserArtists.Include(x => x.Artist)
-                        .Where(x => x.UserId == row.DatabaseId).ToArray();
+                                               .Where(x => x.UserId == row.DatabaseId)
+                                               .ToArray();
                     var userReleases = DbContext.UserReleases.Include(x => x.Release)
-                        .Where(x => x.UserId == row.DatabaseId).ToArray();
-                    var userTracks = DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == row.DatabaseId)
-                        .ToArray();
-
+                                                .Where(x => x.UserId == row.DatabaseId)
+                                                .ToArray();
+                    var userTracks = DbContext.UserTracks.Include(x => x.Track)
+                                              .Where(x => x.UserId == row.DatabaseId)
+                                              .ToArray();
                     row.Statistics = new UserStatistics
                     {
                         RatedArtists = userArtists.Where(x => x.Rating > 0).Count(),
@@ -142,6 +160,7 @@ namespace Roadie.Api.Services
                         DislikedTracks = userTracks.Where(x => x.IsDisliked ?? false).Count()
                     };
                 }
+            }
 
             sw.Stop();
             return Task.FromResult(new Library.Models.Pagination.PagedResult<UserList>
@@ -347,41 +366,48 @@ namespace Roadie.Api.Services
         {
             var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == userBeingUpdatedModel.UserId);
             if (user == null)
-                return new OperationResult<bool>(true,
-                    string.Format("User Not Found [{0}]", userBeingUpdatedModel.UserId));
+            {
+                return new OperationResult<bool>(true, string.Format("User Not Found [{0}]", userBeingUpdatedModel.UserId));
+            }
             if (user.Id != userPerformingUpdate.Id && !userPerformingUpdate.IsAdmin)
+            {
                 return new OperationResult<bool>
                 {
                     Errors = new List<Exception> { new Exception("Access Denied") }
                 };
+            }
             // Check concurrency stamp
             if (user.ConcurrencyStamp != userBeingUpdatedModel.ConcurrencyStamp)
+            {
                 return new OperationResult<bool>
                 {
                     Errors = new List<Exception> { new Exception("User data is stale.") }
                 };
+            }
             // Check that username (if changed) doesn't already exist
             if (user.UserName != userBeingUpdatedModel.UserName)
             {
-                var userByUsername = DbContext.Users.FirstOrDefault(x =>
-                    x.NormalizedUserName == userBeingUpdatedModel.UserName.ToUpper());
+                var userByUsername = DbContext.Users.FirstOrDefault(x => x.NormalizedUserName == userBeingUpdatedModel.UserName.ToUpper());
                 if (userByUsername != null)
+                {
                     return new OperationResult<bool>
                     {
                         Errors = new List<Exception> { new Exception("Username already in use") }
                     };
+                }
             }
 
             // Check that email (if changed) doesn't already exist
             if (user.Email != userBeingUpdatedModel.Email)
             {
-                var userByEmail =
-                    DbContext.Users.FirstOrDefault(x => x.NormalizedEmail == userBeingUpdatedModel.Email.ToUpper());
+                var userByEmail = DbContext.Users.FirstOrDefault(x => x.NormalizedEmail == userBeingUpdatedModel.Email.ToUpper());
                 if (userByEmail != null)
+                {
                     return new OperationResult<bool>
                     {
                         Errors = new List<Exception> { new Exception("Email already in use") }
                     };
+                }
             }
             var oldPathToImage = user.PathToImage(Configuration);
             var didChangeName = user.UserName != userBeingUpdatedModel.UserName;
@@ -405,6 +431,7 @@ namespace Roadie.Api.Services
             user.FtpUsername = userBeingUpdatedModel.FtpUsername;
             user.FtpPassword = EncryptionHelper.Encrypt(userBeingUpdatedModel.FtpPassword, user.RoadieId.ToString());
             user.ConcurrencyStamp = Guid.NewGuid().ToString();
+            user.DefaultRowsPerPage = userBeingUpdatedModel.DefaultRowsPerPage;
 
             if (didChangeName)
             {
@@ -413,7 +440,6 @@ namespace Roadie.Api.Services
                     File.Move(oldPathToImage, user.PathToImage(Configuration));
                 }
             }
-
 
             if (!string.IsNullOrEmpty(userBeingUpdatedModel.AvatarData))
             {
@@ -560,33 +586,43 @@ namespace Roadie.Api.Services
                                             join ut in DbContext.UserTracks on t.Id equals ut.TrackId
                                             where ut.UserId == user.Id
                                             select new { a, ut.PlayedCount })
-                        .GroupBy(a => a.a)
-                        .Select(x => new
-                        {
-                            Artist = x.Key,
-                            Played = x.Sum(t => t.PlayedCount)
-                        })
-                        .OrderByDescending(x => x.Played)
-                        .FirstOrDefault();
+                                            .GroupBy(a => a.a)
+                                            .Select(x => new
+                                            {
+                                                Artist = x.Key,
+                                                Played = x.Sum(t => t.PlayedCount)
+                                            })
+                                            .OrderByDescending(x => x.Played)
+                                            .FirstOrDefault();
                     var mostPlayedReleaseId = (from r in DbContext.Releases
                                                join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                                join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
                                                join ut in DbContext.UserTracks on t.Id equals ut.TrackId
                                                where ut.UserId == user.Id
                                                select new { r, ut.PlayedCount })
-                        .GroupBy(r => r.r)
-                        .Select(x => new
-                        {
-                            Release = x.Key,
-                            Played = x.Sum(t => t.PlayedCount)
-                        })
-                        .OrderByDescending(x => x.Played)
-                        .Select(x => x.Release.RoadieId)
-                        .FirstOrDefault();
+                                            .GroupBy(r => r.r)
+                                            .Select(x => new
+                                            {
+                                                Release = x.Key,
+                                                Played = x.Sum(t => t.PlayedCount)
+                                            })
+                                            .OrderByDescending(x => x.Played)
+                                            .Select(x => x.Release.RoadieId)
+                                            .FirstOrDefault();
                     var mostPlayedRelease = GetRelease(mostPlayedReleaseId);
-                    var mostPlayedTrackUserTrack = userTracks
-                        .OrderByDescending(x => x.PlayedCount)
-                        .FirstOrDefault();
+                    var mostPlayedTrackUserTrack = userTracks.OrderByDescending(x => x.PlayedCount)
+                                                             .FirstOrDefault();
+                    var lastPlayedTrackUserTrack = userTracks.OrderByDescending(x => x.LastPlayed)
+                                                             .FirstOrDefault();
+
+                    var lastPlayedTrack = lastPlayedTrackUserTrack == null
+                        ? null
+                        : DbContext.Tracks
+                            .Include(x => x.TrackArtist)
+                            .Include(x => x.ReleaseMedia)
+                            .Include("ReleaseMedia.Release")
+                            .Include("ReleaseMedia.Release.Artist")
+                            .FirstOrDefault(x => x.Id == lastPlayedTrackUserTrack.TrackId);
                     var mostPlayedTrack = mostPlayedTrackUserTrack == null
                         ? null
                         : DbContext.Tracks
@@ -598,6 +634,22 @@ namespace Roadie.Api.Services
 
                     model.Statistics = new UserStatistics
                     {
+                        LastPlayedTrack = lastPlayedTrack == null
+                            ? null
+                            : models.TrackList.FromDataTrack(
+                                MakeTrackPlayUrl(user, lastPlayedTrack.Id, lastPlayedTrack.RoadieId),
+                                lastPlayedTrack,
+                                lastPlayedTrack.ReleaseMedia.MediaNumber,
+                                lastPlayedTrack.ReleaseMedia.Release,
+                                lastPlayedTrack.ReleaseMedia.Release.Artist,
+                                lastPlayedTrack.TrackArtist,
+                                HttpContext.BaseUrl,
+                                MakeTrackThumbnailImage(lastPlayedTrack.RoadieId),
+                                MakeReleaseThumbnailImage(lastPlayedTrack.ReleaseMedia.Release.RoadieId),
+                                MakeArtistThumbnailImage(lastPlayedTrack.ReleaseMedia.Release.Artist.RoadieId),
+                                MakeArtistThumbnailImage(lastPlayedTrack.TrackArtist == null
+                                    ? null
+                                    : (Guid?)lastPlayedTrack.TrackArtist.RoadieId)),
                         MostPlayedArtist = mostPlayedArtist == null
                             ? null
                             : models.ArtistList.FromDataArtist(mostPlayedArtist.Artist,
@@ -634,7 +686,7 @@ namespace Roadie.Api.Services
                         RatedTracks = userTracks.Where(x => x.Rating > 0).Count(),
                         PlayedTracks = userTracks.Where(x => x.PlayedCount.HasValue).Select(x => x.PlayedCount).Sum(),
                         FavoritedTracks = userTracks.Where(x => x.IsFavorite ?? false).Count(),
-                        DislikedTracks = userTracks.Where(x => x.IsDisliked ?? false).Count()
+                        DislikedTracks = userTracks.Where(x => x.IsDisliked ?? false).Count()                        
                     };
                 }
             }

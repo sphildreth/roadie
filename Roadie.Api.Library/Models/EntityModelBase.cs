@@ -93,7 +93,7 @@ namespace Roadie.Library.Models
             set => _urlsList = value;
         }
 
-        public bool UserBookmarked { get; set; }
+        public bool? UserBookmarked { get; set; }
 
         public EntityModelBase()
         {

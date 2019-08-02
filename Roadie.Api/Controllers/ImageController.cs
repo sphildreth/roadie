@@ -117,6 +117,21 @@ namespace Roadie.Api.Controllers
                 result.ETag);
         }
 
+        [HttpGet("genre/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> GenreImage(Guid id, int? width, int? height)
+        {
+            var result = await ImageService.GenreImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height);
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            return File(result.Data.Bytes,
+                result.ContentType,
+                $"{result.Data.Caption ?? id.ToString()}.jpg",
+                result.LastModified,
+                result.ETag);
+        }
+
         [HttpGet("playlist/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
@@ -179,6 +194,17 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> SearchForLabelImage(string query, int? resultsCount)
+        {
+            var result = await ImageService.Search(query, resultsCount ?? 10);
+            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            return Ok(result);
+        }
+
+        [HttpPost("search/genre/{query}/{resultsCount:int?}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> SearchForGenreImage(string query, int? resultsCount)
         {
             var result = await ImageService.Search(query, resultsCount ?? 10);
             if (result == null || result.IsNotFoundResult) return NotFound();

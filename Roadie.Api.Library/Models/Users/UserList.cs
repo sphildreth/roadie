@@ -9,6 +9,7 @@ namespace Roadie.Library.Models.Users
     public class UserList : EntityInfoModelBase
     {
         public bool IsEditor { get; set; }
+        public bool IsAdmin { get; set; }
         public bool? IsPrivate { get; set; }
         public DateTime? LastActivity { get; set; }
         public DateTime? LastApiAccessDate { get; set; }
@@ -31,13 +32,15 @@ namespace Roadie.Library.Models.Users
                     Value = user.RoadieId.ToString()
                 },
                 IsEditor = user.UserRoles.Any(x => x.Role.Name == "Editor"),
+                IsAdmin = user.UserRoles.Any(x => x.Role.Name == "Admin"),
                 IsPrivate = user.IsPrivate,
                 Thumbnail = thumbnail,
                 CreatedDate = user.CreatedDate,
                 LastUpdated = user.LastUpdated,
                 RegisteredDate = user.RegisteredOn,
                 LastLoginDate = user.LastLogin,
-                LastApiAccessDate = user.LastApiAccess
+                LastApiAccessDate = user.LastApiAccess,
+                Statistics = new UserStatistics()
             };
         }
     }

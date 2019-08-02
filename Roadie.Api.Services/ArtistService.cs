@@ -21,7 +21,6 @@ using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Statistics;
 using Roadie.Library.Models.Users;
-using Roadie.Library.Processors;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -45,6 +44,7 @@ namespace Roadie.Api.Services
 
         private ICollectionService CollectionService { get; }
 
+        private IFileDirectoryProcessorService FileDirectoryProcessorService { get; }
         private IFileNameHelper FileNameHelper { get; }
 
         private IID3TagsHelper ID3TagsHelper { get; }
@@ -61,9 +61,7 @@ namespace Roadie.Api.Services
 
         private IReleaseService ReleaseService { get; }
 
-        private IFileDirectoryProcessorService FileDirectoryProcessorService { get; }
-
-        public ArtistService(IRoadieSettings configuration,                                                                                                                                    
+        public ArtistService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
             data.IRoadieDbContext dbContext,
@@ -214,65 +212,52 @@ namespace Roadie.Api.Services
             };
         }
 
-        private OperationResult<data.Artist> GetByExternalIds(string musicBrainzId = null, string iTunesId = null, string amgId = null, string spotifyId = null)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var artist = (from a in DbContext.Artists
-                          where a.MusicBrainzId != null && musicBrainzId != null && a.MusicBrainzId == musicBrainzId ||
-                                a.ITunesId != null || iTunesId != null && a.ITunesId == iTunesId || a.AmgId != null ||
-                                amgId != null && a.AmgId == amgId || a.SpotifyId != null ||
-                                spotifyId != null && a.SpotifyId == spotifyId
-                          select a).FirstOrDefault();
-            sw.Stop();
-            if (artist == null || !artist.IsValid)
-                Logger.LogTrace(
-                    "ArtistFactory: Artist Not Found By External Ids: MusicbrainzId [{0}], iTunesIs [{1}], AmgId [{2}], SpotifyId [{3}]",
-                    musicBrainzId, iTunesId, amgId, spotifyId);
-            return new OperationResult<data.Artist>
-            {
-                IsSuccess = artist != null,
-                OperationTime = sw.ElapsedMilliseconds,
-                Data = artist
-            };
-        }
-
-        public async Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request,
-                            bool? doRandomize = false, bool? onlyIncludeWithReleases = true)
+        public async Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true)
         {
             var sw = new Stopwatch();
             sw.Start();
 
             IQueryable<int> favoriteArtistIds = null;
             if (request.FilterFavoriteOnly)
+            {
                 favoriteArtistIds = from a in DbContext.Artists
                                     join ua in DbContext.UserArtists on a.Id equals ua.ArtistId
                                     where ua.IsFavorite ?? false
                                     where roadieUser == null || ua.UserId == roadieUser.Id
                                     select a.Id;
+            }
             IQueryable<int> labelArtistIds = null;
             if (request.FilterToLabelId.HasValue)
+            {
                 labelArtistIds = (from l in DbContext.Labels
                                   join rl in DbContext.ReleaseLabels on l.Id equals rl.LabelId
                                   join r in DbContext.Releases on rl.ReleaseId equals r.Id
                                   where l.RoadieId == request.FilterToLabelId
                                   select r.ArtistId)
-                    .Distinct();
+                                  .Distinct();
+            }
             IQueryable<int> genreArtistIds = null;
             var isFilteredToGenre = false;
-            if (!string.IsNullOrEmpty(request.Filter) &&
-                request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase))
+            if(request.FilterToGenreId.HasValue)
+            {
+                genreArtistIds = (from ag in DbContext.ArtistGenres
+                                  join g in DbContext.Genres on ag.GenreId equals g.Id
+                                  where g.RoadieId == request.FilterToGenreId
+                                  select ag.ArtistId)
+                  .Distinct();
+                isFilteredToGenre = true;
+            }
+            else if (!string.IsNullOrEmpty(request.Filter) && request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase))
             {
                 var genreFilter = request.Filter.Replace(":genre ", "");
                 genreArtistIds = (from ag in DbContext.ArtistGenres
                                   join g in DbContext.Genres on ag.GenreId equals g.Id
                                   where g.Name.Contains(genreFilter)
                                   select ag.ArtistId)
-                    .Distinct();
+                                  .Distinct();
                 isFilteredToGenre = true;
                 request.Filter = null;
             }
-
             var onlyWithReleases = onlyIncludeWithReleases ?? true;
             var isEqualFilter = false;
             if (!string.IsNullOrEmpty(request.FilterValue))
@@ -285,7 +270,6 @@ namespace Roadie.Api.Services
                     request.Filter = filter.Substring(1, filter.Length - 2);
                 }
             }
-
             var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue)
                 ? request.FilterValue.ToAlphanumericName()
                 : null;
@@ -293,8 +277,18 @@ namespace Roadie.Api.Services
                           where !onlyWithReleases || a.ReleaseCount > 0
                           where request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId
                           where request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value
-                          where request.FilterValue == "" || a.Name.Contains(request.FilterValue) ||  a.SortName.Contains(request.FilterValue) || a.AlternateNames.Contains(request.FilterValue) || a.AlternateNames.Contains(normalizedFilterValue)
-                          where !isEqualFilter || a.Name.Equals(request.FilterValue) || a.SortName.Equals(request.FilterValue) || a.AlternateNames.Equals(request.FilterValue) || a.AlternateNames.Equals(normalizedFilterValue)
+                          where request.FilterValue == "" || 
+                                a.Name.Contains(request.FilterValue) || 
+                                a.SortName.Contains(request.FilterValue) ||
+                                a.RealName.Contains(request.FilterValue) ||
+                                a.AlternateNames.Contains(request.FilterValue) || 
+                                a.AlternateNames.Contains(normalizedFilterValue)                                
+                          where !isEqualFilter || 
+                                a.Name.Equals(request.FilterValue) || 
+                                a.SortName.Equals(request.FilterValue) ||
+                                a.RealName.Equals(request.FilterValue) ||
+                                a.AlternateNames.Equals(request.FilterValue) || 
+                                a.AlternateNames.Equals(normalizedFilterValue)
                           where !request.FilterFavoriteOnly || favoriteArtistIds.Contains(a.Id)
                           where request.FilterToLabelId == null || labelArtistIds.Contains(a.Id)
                           where !isFilteredToGenre || genreArtistIds.Contains(a.Id)
@@ -323,22 +317,24 @@ namespace Roadie.Api.Services
             var rowCount = result.Count();
             if (doRandomize ?? false)
             {
-                var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
+                var randomLimit = roadieUser?.RandomReleaseLimit ?? request.Limit;
                 request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
-                rows = result.OrderBy(x => x.RandomSortId).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                rows = result.OrderBy(x => x.RandomSortId)
+                             .Take(request.LimitValue)
+                             .ToArray();
             }
             else
             {
                 string sortBy;
                 if (request.ActionValue == User.ActionKeyUserRated)
                 {
-                    sortBy = string.IsNullOrEmpty(request.Sort) 
+                    sortBy = string.IsNullOrEmpty(request.Sort)
                         ? request.OrderValue(new Dictionary<string, string> { { "Rating", "DESC" }, { "Artist.Text", "ASC" } })
                         : request.OrderValue();
                 }
                 else
                 {
-                    sortBy = request.OrderValue(new Dictionary<string, string> {{"SortName", "ASC"}, {"Artist.Text", "ASC"}});
+                    sortBy = request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Artist.Text", "ASC" } });
                 }
                 rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
             }
@@ -351,11 +347,11 @@ namespace Roadie.Api.Services
                                          where rowIds.Contains(ua.ArtistId)
                                          select ua).ToArray();
 
-                foreach (var userArtistRating in userArtistRatings.Where(x =>
-                    rows.Select(r => r.DatabaseId).Contains(x.ArtistId)))
+                foreach (var userArtistRating in userArtistRatings.Where(x => rows.Select(r => r.DatabaseId).Contains(x.ArtistId)))
                 {
                     var row = rows.FirstOrDefault(x => x.DatabaseId == userArtistRating.ArtistId);
                     if (row != null)
+                    {
                         row.UserRating = new UserArtist
                         {
                             IsDisliked = userArtistRating.IsDisliked ?? false,
@@ -363,11 +359,11 @@ namespace Roadie.Api.Services
                             Rating = userArtistRating.Rating,
                             RatedDate = userArtistRating.LastUpdated ?? userArtistRating.CreatedDate
                         };
+                    }
                 }
             }
-
-            sw.Stop();
             if (!string.IsNullOrEmpty(request.Filter) && rowCount == 0)
+            {
                 if (Configuration.RecordNoResultSearches)
                 {
                     // Create request for no artist found
@@ -379,7 +375,8 @@ namespace Roadie.Api.Services
                     DbContext.Requests.Add(req);
                     await DbContext.SaveChangesAsync();
                 }
-
+            }
+            sw.Stop();
             return new Library.Models.Pagination.PagedResult<ArtistList>
             {
                 TotalCount = rowCount,
@@ -450,179 +447,6 @@ namespace Roadie.Api.Services
             };
         }
 
-
-        async Task<OperationResult<data.Artist>> MergeArtists(ApplicationUser user, data.Artist artistToMerge, data.Artist artistToMergeInto)
-        {
-            SimpleContract.Requires<ArgumentNullException>(artistToMerge != null, "Invalid Artist");
-            SimpleContract.Requires<ArgumentNullException>(artistToMergeInto != null, "Invalid Artist");
-
-            var result = false;
-            var now = DateTime.UtcNow;
-
-            var sw = new Stopwatch();
-            sw.Start();
-
-            var artistToMergeFolder = artistToMerge.ArtistFileFolder(Configuration);
-            var artistToMergeIntoFolder = artistToMergeInto.ArtistFileFolder(Configuration);
-
-            artistToMergeInto.RealName = artistToMergeInto.RealName ?? artistToMerge.RealName;
-            artistToMergeInto.MusicBrainzId = artistToMergeInto.MusicBrainzId ?? artistToMerge.MusicBrainzId;
-            artistToMergeInto.ITunesId = artistToMergeInto.ITunesId ?? artistToMerge.ITunesId;
-            artistToMergeInto.AmgId = artistToMergeInto.AmgId ?? artistToMerge.AmgId;
-            artistToMergeInto.SpotifyId = artistToMergeInto.SpotifyId ?? artistToMerge.SpotifyId;
-            artistToMergeInto.Thumbnail = artistToMergeInto.Thumbnail ?? artistToMerge.Thumbnail;
-            artistToMergeInto.Profile = artistToMergeInto.Profile ?? artistToMerge.Profile;
-            artistToMergeInto.BirthDate = artistToMergeInto.BirthDate ?? artistToMerge.BirthDate;
-            artistToMergeInto.BeginDate = artistToMergeInto.BeginDate ?? artistToMerge.BeginDate;
-            artistToMergeInto.EndDate = artistToMergeInto.EndDate ?? artistToMerge.EndDate;
-            if (!string.IsNullOrEmpty(artistToMerge.ArtistType) && !artistToMerge.ArtistType.Equals("Other", StringComparison.OrdinalIgnoreCase))
-            {
-                artistToMergeInto.ArtistType = artistToMergeInto.ArtistType ?? artistToMerge.ArtistType;
-            }
-            artistToMergeInto.BioContext = artistToMergeInto.BioContext ?? artistToMerge.BioContext;
-            artistToMergeInto.DiscogsId = artistToMergeInto.DiscogsId ?? artistToMerge.DiscogsId;
-            artistToMergeInto.Tags = artistToMergeInto.Tags.AddToDelimitedList(artistToMerge.Tags.ToListFromDelimited());
-            var altNames = artistToMerge.AlternateNames.ToListFromDelimited().ToList();
-            altNames.Add(artistToMerge.Name);
-            altNames.Add(artistToMerge.SortName);
-            artistToMergeInto.AlternateNames = artistToMergeInto.AlternateNames.AddToDelimitedList(altNames);
-            artistToMergeInto.URLs = artistToMergeInto.URLs.AddToDelimitedList(artistToMerge.URLs.ToListFromDelimited());
-            artistToMergeInto.ISNI = artistToMergeInto.ISNI.AddToDelimitedList(artistToMerge.ISNI.ToListFromDelimited());
-            artistToMergeInto.LastUpdated = now;
-
-            try
-            {
-                var artistGenres = DbContext.ArtistGenres.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
-                if (artistGenres != null)
-                {
-                    var existingArtistGenres = DbContext.ArtistGenres.Where(x => x.ArtistId == artistToMergeInto.Id).ToArray();
-                    foreach (var artistGenre in artistGenres)
-                    {
-                        var existing = existingArtistGenres.FirstOrDefault(x => x.GenreId == artistGenre.GenreId);
-                        // If not exist then add new for artist to merge into
-                        if (existing == null)
-                        {
-                            DbContext.ArtistGenres.Add(new data.ArtistGenre
-                            {
-                                ArtistId = artistToMergeInto.Id,
-                                GenreId = artistGenre.GenreId
-                            });
-                        }                       
-                    }
-                }
-                var artistImages = DbContext.Images.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
-                if (artistImages != null)
-                {
-                    foreach (var artistImage in artistImages)
-                    {
-                        artistImage.ArtistId = artistToMergeInto.Id;
-                    }
-                }
-
-                try
-                {
-                    // Move any Artist and Artist Secondary images from ArtistToMerge into ArtistToMergeInto folder
-                    if (Directory.Exists(artistToMergeFolder))
-                    {
-                        var artistToMergeImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistToMergeFolder), ImageType.Artist);
-                        var artistToMergeSecondaryImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistToMergeFolder), ImageType.ArtistSecondary).ToList();
-                        // Primary Artist image
-                        if (artistToMergeImages.Any())
-                        {
-                            // If the ArtistToMergeInto already has a primary image then the ArtistToMerge primary image becomes a secondary image
-                            var artistToMergeIntoPrimaryImage = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistToMergeIntoFolder), ImageType.Artist).FirstOrDefault();
-                            if (artistToMergeIntoPrimaryImage != null)
-                            {
-                                artistToMergeSecondaryImages.Add(artistToMergeImages.First());
-                            }
-                            else
-                            {
-                                var artistImageFilename = Path.Combine(artistToMergeIntoFolder, ImageHelper.ArtistImageFilename);
-                                artistToMergeImages.First().MoveTo(artistImageFilename);
-                            }
-                        }
-                        // Secondary Artist images
-                        if (artistToMergeSecondaryImages.Any())
-                        {
-                            var looper = 0;
-                            foreach (var artistSecondaryImage in artistToMergeSecondaryImages)
-                            {
-                                var artistImageFilename = Path.Combine(artistToMergeIntoFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
-                                while (File.Exists(artistImageFilename))
-                                {
-                                    looper++;
-                                    artistImageFilename = Path.Combine(artistToMergeIntoFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
-                                }
-                                artistSecondaryImage.MoveTo(artistImageFilename);
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(ex, "MergeArtists: Error Moving Artist Primary and Secondary Images");
-                }
-
-                var userArtists = DbContext.UserArtists.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
-                if (artistImages != null)
-                {
-                    foreach (var userArtist in userArtists)
-                    {
-                        userArtist.ArtistId = artistToMergeInto.Id;
-                    }
-                }
-                var artistTracks = DbContext.Tracks.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
-                if (artistTracks != null)
-                {
-                    foreach (var artistTrack in artistTracks)
-                    {
-                        artistTrack.ArtistId = artistToMergeInto.Id;
-                    }
-                }
-                var artistReleases = DbContext.Releases.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
-                if (artistReleases != null)
-                {
-                    foreach (var artistRelease in artistReleases)
-                    {
-                        // See if there is already a release by the same name for the artist to merge into, if so then merge releases
-                        var artistToMergeHasRelease = DbContext.Releases.FirstOrDefault(x => x.ArtistId == artistToMerge.Id && x.Title == artistRelease.Title);
-                        if (artistToMergeHasRelease != null)
-                        {
-                            await ReleaseService.MergeReleases(user, artistRelease, artistToMergeHasRelease, false);
-                        }
-                        else
-                        {
-                            artistRelease.ArtistId = artistToMerge.Id;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex.ToString());
-            }
-
-            foreach (var release in DbContext.Releases.Include("Artist").Where(x => x.ArtistId == artistToMerge.Id).ToArray())
-            {
-                var originalReleaseFolder = release.ReleaseFileFolder(artistToMergeFolder);
-                await ReleaseService.UpdateRelease(user, release.Adapt<Release>(), originalReleaseFolder);
-            }
-            await DbContext.SaveChangesAsync();
-
-            await Delete(user, artistToMerge);
-            
-
-            result = true;
-
-            sw.Stop();
-            return new OperationResult<data.Artist>
-            {
-                Data = artistToMergeInto,
-                IsSuccess = result,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-        }
-
         public async Task<OperationResult<bool>> RefreshArtistMetadata(ApplicationUser user, Guid artistId)
         {
             SimpleContract.Requires<ArgumentOutOfRangeException>(artistId != Guid.Empty, "Invalid ArtistId");
@@ -671,6 +495,97 @@ namespace Roadie.Api.Services
                         sw.Stop();
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, ex.Serialize());
+                resultErrors.Add(ex);
+            }
+
+            return new OperationResult<bool>
+            {
+                Data = result,
+                IsSuccess = result,
+                Errors = resultErrors,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<OperationResult<bool>> ScanArtistReleasesFolders(ApplicationUser user, Guid artistId, string destinationFolder, bool doJustInfo)
+        {
+            SimpleContract.Requires<ArgumentOutOfRangeException>(artistId != Guid.Empty, "Invalid ArtistId");
+
+            var result = true;
+            var resultErrors = new List<Exception>();
+            var sw = new Stopwatch();
+            sw.Start();
+            try
+            {
+                var artist = DbContext.Artists
+                    .Include("Releases")
+                    .Include("Releases.Labels")
+                    .FirstOrDefault(x => x.RoadieId == artistId);
+                if (artist == null)
+                {
+                    Logger.LogWarning("Unable To Find Artist [{0}]", artistId);
+                    return new OperationResult<bool>();
+                }
+                var releaseScannedCount = 0;
+                var artistFolder = artist.ArtistFileFolder(Configuration);
+                if (!Directory.Exists(artistFolder))
+                {
+                    Logger.LogDebug($"ScanArtistReleasesFolders: ArtistFolder Not Found [{ artistFolder }] For Artist `{ artist }`");
+                    return new OperationResult<bool>();
+                }
+                var scannedArtistFolders = new List<string>();
+                // Scan known releases for changes
+                if (artist.Releases != null)
+                {
+                    foreach (var release in artist.Releases)
+                        try
+                        {
+                            result = result && (await ReleaseService.ScanReleaseFolder(user, Guid.Empty, doJustInfo, release)).Data;
+                            releaseScannedCount++;
+                            scannedArtistFolders.Add(release.ReleaseFileFolder(artistFolder));
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex, ex.Serialize());
+                        }
+                }
+                // Any folder found in Artist folder not already scanned scan
+                var nonReleaseFolders = from d in Directory.EnumerateDirectories(artistFolder)
+                                        where !(from r in scannedArtistFolders select r).Contains(d)
+                                        orderby d
+                                        select d;
+                foreach (var folder in nonReleaseFolders)
+                {
+                    await FileDirectoryProcessorService.Process(user, new DirectoryInfo(folder), doJustInfo);
+                }
+                if (!doJustInfo)
+                {
+                    Services.FileDirectoryProcessorService.DeleteEmptyFolders(new DirectoryInfo(artistFolder), Logger);
+                }
+                // Always update artist image if artist image is found on an artist rescan
+                var imageFiles = ImageHelper.ImageFilesInFolder(artistFolder, SearchOption.AllDirectories);
+                if (imageFiles != null && imageFiles.Any())
+                {
+                    var i = new FileInfo(imageFiles.First());
+                    var iName = i.Name.ToLower().Trim();
+                    if (ImageHelper.IsArtistImage(i))
+                    {
+                        // Read image and convert to jpeg
+                        artist.Thumbnail = ImageHelper.ResizeToThumbnail(File.ReadAllBytes(i.FullName), Configuration);
+                        artist.LastUpdated = DateTime.UtcNow;
+                        await DbContext.SaveChangesAsync();
+                        CacheManager.ClearRegion(artist.CacheRegion);
+                        Logger.LogInformation("Update Thumbnail using Artist File [{0}]", iName);
+                    }
+                }
+
+                sw.Stop();
+                CacheManager.ClearRegion(artist.CacheRegion);
+                Logger.LogInformation("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
@@ -773,11 +688,11 @@ namespace Roadie.Api.Services
                             // Ensure is jpeg first
                             artistSecondaryImage = ImageHelper.ConvertToJpegFormat(artistSecondaryImage);
 
-                            var artistImageFilename = Path.Combine(newArtistFolder,string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                            var artistImageFilename = Path.Combine(newArtistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
                             while (File.Exists(artistImageFilename))
                             {
                                 looper++;
-                                artistImageFilename = Path.Combine(newArtistFolder,string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                                artistImageFilename = Path.Combine(newArtistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
                             }
 
                             File.WriteAllBytes(artistImageFilename, artistSecondaryImage);
@@ -1317,6 +1232,200 @@ namespace Roadie.Api.Services
             };
         }
 
+        private OperationResult<data.Artist> GetByExternalIds(string musicBrainzId = null, string iTunesId = null, string amgId = null, string spotifyId = null)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var artist = (from a in DbContext.Artists
+                          where a.MusicBrainzId != null && musicBrainzId != null && a.MusicBrainzId == musicBrainzId ||
+                                a.ITunesId != null || iTunesId != null && a.ITunesId == iTunesId || a.AmgId != null ||
+                                amgId != null && a.AmgId == amgId || a.SpotifyId != null ||
+                                spotifyId != null && a.SpotifyId == spotifyId
+                          select a).FirstOrDefault();
+            sw.Stop();
+            if (artist == null || !artist.IsValid)
+                Logger.LogTrace(
+                    "ArtistFactory: Artist Not Found By External Ids: MusicbrainzId [{0}], iTunesIs [{1}], AmgId [{2}], SpotifyId [{3}]",
+                    musicBrainzId, iTunesId, amgId, spotifyId);
+            return new OperationResult<data.Artist>
+            {
+                IsSuccess = artist != null,
+                OperationTime = sw.ElapsedMilliseconds,
+                Data = artist
+            };
+        }
+
+        private async Task<OperationResult<data.Artist>> MergeArtists(ApplicationUser user, data.Artist artistToMerge, data.Artist artistToMergeInto)
+        {
+            SimpleContract.Requires<ArgumentNullException>(artistToMerge != null, "Invalid Artist");
+            SimpleContract.Requires<ArgumentNullException>(artistToMergeInto != null, "Invalid Artist");
+
+            var result = false;
+            var now = DateTime.UtcNow;
+
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var artistToMergeFolder = artistToMerge.ArtistFileFolder(Configuration);
+            var artistToMergeIntoFolder = artistToMergeInto.ArtistFileFolder(Configuration);
+
+            artistToMergeInto.RealName = artistToMergeInto.RealName ?? artistToMerge.RealName;
+            artistToMergeInto.MusicBrainzId = artistToMergeInto.MusicBrainzId ?? artistToMerge.MusicBrainzId;
+            artistToMergeInto.ITunesId = artistToMergeInto.ITunesId ?? artistToMerge.ITunesId;
+            artistToMergeInto.AmgId = artistToMergeInto.AmgId ?? artistToMerge.AmgId;
+            artistToMergeInto.SpotifyId = artistToMergeInto.SpotifyId ?? artistToMerge.SpotifyId;
+            artistToMergeInto.Thumbnail = artistToMergeInto.Thumbnail ?? artistToMerge.Thumbnail;
+            artistToMergeInto.Profile = artistToMergeInto.Profile ?? artistToMerge.Profile;
+            artistToMergeInto.BirthDate = artistToMergeInto.BirthDate ?? artistToMerge.BirthDate;
+            artistToMergeInto.BeginDate = artistToMergeInto.BeginDate ?? artistToMerge.BeginDate;
+            artistToMergeInto.EndDate = artistToMergeInto.EndDate ?? artistToMerge.EndDate;
+            if (!string.IsNullOrEmpty(artistToMerge.ArtistType) && !artistToMerge.ArtistType.Equals("Other", StringComparison.OrdinalIgnoreCase))
+            {
+                artistToMergeInto.ArtistType = artistToMergeInto.ArtistType ?? artistToMerge.ArtistType;
+            }
+            artistToMergeInto.BioContext = artistToMergeInto.BioContext ?? artistToMerge.BioContext;
+            artistToMergeInto.DiscogsId = artistToMergeInto.DiscogsId ?? artistToMerge.DiscogsId;
+            artistToMergeInto.Tags = artistToMergeInto.Tags.AddToDelimitedList(artistToMerge.Tags.ToListFromDelimited());
+            var altNames = artistToMerge.AlternateNames.ToListFromDelimited().ToList();
+            altNames.Add(artistToMerge.Name);
+            altNames.Add(artistToMerge.SortName);
+            artistToMergeInto.AlternateNames = artistToMergeInto.AlternateNames.AddToDelimitedList(altNames);
+            artistToMergeInto.URLs = artistToMergeInto.URLs.AddToDelimitedList(artistToMerge.URLs.ToListFromDelimited());
+            artistToMergeInto.ISNI = artistToMergeInto.ISNI.AddToDelimitedList(artistToMerge.ISNI.ToListFromDelimited());
+            artistToMergeInto.LastUpdated = now;
+
+            try
+            {
+                var artistGenres = DbContext.ArtistGenres.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
+                if (artistGenres != null)
+                {
+                    var existingArtistGenres = DbContext.ArtistGenres.Where(x => x.ArtistId == artistToMergeInto.Id).ToArray();
+                    foreach (var artistGenre in artistGenres)
+                    {
+                        var existing = existingArtistGenres.FirstOrDefault(x => x.GenreId == artistGenre.GenreId);
+                        // If not exist then add new for artist to merge into
+                        if (existing == null)
+                        {
+                            DbContext.ArtistGenres.Add(new data.ArtistGenre
+                            {
+                                ArtistId = artistToMergeInto.Id,
+                                GenreId = artistGenre.GenreId
+                            });
+                        }
+                    }
+                }
+                var artistImages = DbContext.Images.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
+                if (artistImages != null)
+                {
+                    foreach (var artistImage in artistImages)
+                    {
+                        artistImage.ArtistId = artistToMergeInto.Id;
+                    }
+                }
+
+                try
+                {
+                    // Move any Artist and Artist Secondary images from ArtistToMerge into ArtistToMergeInto folder
+                    if (Directory.Exists(artistToMergeFolder))
+                    {
+                        var artistToMergeImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistToMergeFolder), ImageType.Artist);
+                        var artistToMergeSecondaryImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistToMergeFolder), ImageType.ArtistSecondary).ToList();
+                        // Primary Artist image
+                        if (artistToMergeImages.Any())
+                        {
+                            // If the ArtistToMergeInto already has a primary image then the ArtistToMerge primary image becomes a secondary image
+                            var artistToMergeIntoPrimaryImage = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistToMergeIntoFolder), ImageType.Artist).FirstOrDefault();
+                            if (artistToMergeIntoPrimaryImage != null)
+                            {
+                                artistToMergeSecondaryImages.Add(artistToMergeImages.First());
+                            }
+                            else
+                            {
+                                var artistImageFilename = Path.Combine(artistToMergeIntoFolder, ImageHelper.ArtistImageFilename);
+                                artistToMergeImages.First().MoveTo(artistImageFilename);
+                            }
+                        }
+                        // Secondary Artist images
+                        if (artistToMergeSecondaryImages.Any())
+                        {
+                            var looper = 0;
+                            foreach (var artistSecondaryImage in artistToMergeSecondaryImages)
+                            {
+                                var artistImageFilename = Path.Combine(artistToMergeIntoFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                                while (File.Exists(artistImageFilename))
+                                {
+                                    looper++;
+                                    artistImageFilename = Path.Combine(artistToMergeIntoFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                                }
+                                artistSecondaryImage.MoveTo(artistImageFilename);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "MergeArtists: Error Moving Artist Primary and Secondary Images");
+                }
+
+                var userArtists = DbContext.UserArtists.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
+                if (artistImages != null)
+                {
+                    foreach (var userArtist in userArtists)
+                    {
+                        userArtist.ArtistId = artistToMergeInto.Id;
+                    }
+                }
+                var artistTracks = DbContext.Tracks.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
+                if (artistTracks != null)
+                {
+                    foreach (var artistTrack in artistTracks)
+                    {
+                        artistTrack.ArtistId = artistToMergeInto.Id;
+                    }
+                }
+                var artistReleases = DbContext.Releases.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
+                if (artistReleases != null)
+                {
+                    foreach (var artistRelease in artistReleases)
+                    {
+                        // See if there is already a release by the same name for the artist to merge into, if so then merge releases
+                        var artistToMergeHasRelease = DbContext.Releases.FirstOrDefault(x => x.ArtistId == artistToMerge.Id && x.Title == artistRelease.Title);
+                        if (artistToMergeHasRelease != null)
+                        {
+                            await ReleaseService.MergeReleases(user, artistRelease, artistToMergeHasRelease, false);
+                        }
+                        else
+                        {
+                            artistRelease.ArtistId = artistToMerge.Id;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex.ToString());
+            }
+
+            foreach (var release in DbContext.Releases.Include("Artist").Where(x => x.ArtistId == artistToMerge.Id).ToArray())
+            {
+                var originalReleaseFolder = release.ReleaseFileFolder(artistToMergeFolder);
+                await ReleaseService.UpdateRelease(user, release.Adapt<Release>(), originalReleaseFolder);
+            }
+            await DbContext.SaveChangesAsync();
+
+            await Delete(user, artistToMerge);
+
+            result = true;
+
+            sw.Stop();
+            return new OperationResult<data.Artist>
+            {
+                Data = artistToMergeInto,
+                IsSuccess = result,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
         private async Task<OperationResult<Image>> SaveImageBytes(ApplicationUser user, Guid id, byte[] imageBytes)
         {
             var sw = new Stopwatch();
@@ -1366,97 +1475,6 @@ namespace Roadie.Api.Services
                     Configuration.MediumImageSize.Height, true),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
-            };
-        }
-
-        public async Task<OperationResult<bool>> ScanArtistReleasesFolders(ApplicationUser user, Guid artistId, string destinationFolder, bool doJustInfo)
-        {
-            SimpleContract.Requires<ArgumentOutOfRangeException>(artistId != Guid.Empty, "Invalid ArtistId");
-
-            var result = true;
-            var resultErrors = new List<Exception>();
-            var sw = new Stopwatch();
-            sw.Start();
-            try
-            {
-                var artist = DbContext.Artists
-                    .Include("Releases")
-                    .Include("Releases.Labels")
-                    .FirstOrDefault(x => x.RoadieId == artistId);
-                if (artist == null)
-                {
-                    Logger.LogWarning("Unable To Find Artist [{0}]", artistId);
-                    return new OperationResult<bool>();
-                }
-                var releaseScannedCount = 0;
-                var artistFolder = artist.ArtistFileFolder(Configuration);
-                if (!Directory.Exists(artistFolder))
-                {
-                    Logger.LogDebug($"ScanArtistReleasesFolders: ArtistFolder Not Found [{ artistFolder }] For Artist `{ artist }`");
-                    return new OperationResult<bool>();
-                }
-                var scannedArtistFolders = new List<string>();
-                // Scan known releases for changes
-                if (artist.Releases != null)
-                {
-                    foreach (var release in artist.Releases)
-                        try
-                        {
-                            result = result && (await ReleaseService.ScanReleaseFolder(user, Guid.Empty, doJustInfo, release)).Data;
-                            releaseScannedCount++;
-                            scannedArtistFolders.Add(release.ReleaseFileFolder(artistFolder));
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.LogError(ex, ex.Serialize());
-                        }
-                }
-                // Any folder found in Artist folder not already scanned scan
-                var nonReleaseFolders = from d in Directory.EnumerateDirectories(artistFolder)
-                                        where !(from r in scannedArtistFolders select r).Contains(d)
-                                        orderby d
-                                        select d;
-                foreach (var folder in nonReleaseFolders)
-                {
-                    await FileDirectoryProcessorService.Process(user, new DirectoryInfo(folder), doJustInfo);
-                }
-                if (!doJustInfo)
-                {
-                    Services.FileDirectoryProcessorService.DeleteEmptyFolders(new DirectoryInfo(artistFolder), Logger);
-                }
-                // Always update artist image if artist image is found on an artist rescan
-                var imageFiles = ImageHelper.ImageFilesInFolder(artistFolder, SearchOption.AllDirectories);
-                if (imageFiles != null && imageFiles.Any())
-                {
-                    var i = new FileInfo(imageFiles.First());
-                    var iName = i.Name.ToLower().Trim();
-                    if (ImageHelper.IsArtistImage(i))
-                    {
-                        // Read image and convert to jpeg
-                        artist.Thumbnail = ImageHelper.ResizeToThumbnail(File.ReadAllBytes(i.FullName), Configuration);
-                        artist.LastUpdated = DateTime.UtcNow;
-                        await DbContext.SaveChangesAsync();
-                        CacheManager.ClearRegion(artist.CacheRegion);
-                        Logger.LogInformation("Update Thumbnail using Artist File [{0}]", iName);
-                    }
-                }
-
-                sw.Stop();
-                CacheManager.ClearRegion(artist.CacheRegion);
-                Logger.LogInformation("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, ex.Serialize());
-                resultErrors.Add(ex);
-            }
-
-            return new OperationResult<bool>
-            {
-                Data = result,
-                IsSuccess = result,
-                Errors = resultErrors,
-                OperationTime = sw.ElapsedMilliseconds
             };
         }
     }

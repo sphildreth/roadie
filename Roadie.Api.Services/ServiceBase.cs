@@ -125,6 +125,15 @@ namespace Roadie.Api.Services
             }, data.Label.CacheRegionUrn(id));
         }
 
+        protected data.Genre GetGenre(Guid id)
+        {
+            return CacheManager.Get(data.Genre.CacheUrn(id), () =>
+            {
+                return DbContext.Genres
+                    .FirstOrDefault(x => x.RoadieId == id);
+            }, data.Genre.CacheRegionUrn(id));
+        }
+
         protected data.Playlist GetPlaylist(Guid id)
         {
             return CacheManager.Get(data.Playlist.CacheUrn(id), () =>
@@ -243,6 +252,11 @@ namespace Roadie.Api.Services
         protected Image MakeLabelThumbnailImage(Guid id)
         {
             return MakeThumbnailImage(id, "label");
+        }
+
+        protected Image MakeGenreThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "genre");
         }
 
         protected string MakeLastFmUrl(string artistName, string releaseTitle)

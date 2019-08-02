@@ -211,8 +211,16 @@ namespace Roadie.Api.Services
                                      select a.Id;
             IQueryable<int> genreReleaseIds = null;
             var isFilteredToGenre = false;
-            if (!string.IsNullOrEmpty(request.FilterByGenre) || !string.IsNullOrEmpty(request.Filter) &&
-                request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase))
+            if(request.FilterToGenreId.HasValue)
+            {
+                genreReleaseIds = (from rg in DbContext.ReleaseGenres
+                                   join g in DbContext.Genres on rg.GenreId equals g.Id
+                                   where g.RoadieId == request.FilterToGenreId
+                                   select rg.ReleaseId)
+                                   .Distinct();
+                isFilteredToGenre = true;
+            }
+            else if (!string.IsNullOrEmpty(request.FilterByGenre) || !string.IsNullOrEmpty(request.Filter) && request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase))
             {
                 var genreFilter = request.FilterByGenre ??
                                   (request.Filter ?? string.Empty).Replace(":genre ", "",
@@ -221,7 +229,7 @@ namespace Roadie.Api.Services
                                    join g in DbContext.Genres on rg.GenreId equals g.Id
                                    where g.Name.Contains(genreFilter)
                                    select rg.ReleaseId)
-                    .Distinct();
+                                   .Distinct();
                 request.Filter = null;
                 isFilteredToGenre = true;
             }
@@ -314,9 +322,11 @@ namespace Roadie.Api.Services
 
             if (doRandomize ?? false)
             {
-                var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
+                var randomLimit = roadieUser?.RandomReleaseLimit ?? request.Limit;
                 request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
-                rows = result.OrderBy(x => x.RandomSortId).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                rows = result.OrderBy(x => x.RandomSortId)
+                             .Take(request.LimitValue)
+                             .ToArray();
             }
             else
             {

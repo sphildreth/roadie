@@ -77,7 +77,7 @@ namespace Roadie.Api.Services
             var cacheKey = string.Format("urn:label_by_id_operation:{0}:{1}", id,
                 includes == null ? "0" : string.Join("|", includes));
             var result = await CacheManager.GetAsync(cacheKey,
-                async () => { return await LabelByIdAction(id, includes); }, data.Artist.CacheRegionUrn(id));
+                async () => { return await LabelByIdAction(id, includes); }, data.Label.CacheRegionUrn(id));
             sw.Stop();
             if (result?.Data != null && roadieUser != null)
             {
@@ -157,9 +157,11 @@ namespace Roadie.Api.Services
             var rowCount = result.Count();
             if (doRandomize ?? false)
             {
-                var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
+                var randomLimit = roadieUser?.RandomReleaseLimit ?? request.Limit;
                 request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
-                rows = result.OrderBy(x => x.RandomSortId).Take(request.LimitValue).ToArray();
+                rows = result.OrderBy(x => x.RandomSortId)
+                             .Take(request.LimitValue)
+                             .ToArray();
             }
             else
             {
@@ -341,8 +343,7 @@ namespace Roadie.Api.Services
             result.Tags = label.Tags;
             result.URLs = label.URLs;
             result.Thumbnail = MakeLabelThumbnailImage(label.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(id, "label", Configuration.MediumImageSize.Width,
-                Configuration.MediumImageSize.Height);
+            result.MediumThumbnail = MakeThumbnailImage(id, "label", Configuration.MediumImageSize.Width,Configuration.MediumImageSize.Height);
             if (includes != null && includes.Any())
             {
                 if (includes.Contains("stats"))

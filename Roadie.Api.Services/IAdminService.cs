@@ -19,6 +19,8 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<bool>> DeleteLabel(ApplicationUser user, Guid labelId);
 
+        Task<OperationResult<bool>> DeleteGenre(ApplicationUser user, Guid genreId);
+
         Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles);
 
         Task<OperationResult<bool>> DeleteReleaseSecondaryImage(ApplicationUser user, Guid releaseId, int index);

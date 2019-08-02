@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Roadie.Library.Models.Users
 {
     [Serializable]
-    public class User
+    public class User : EntityModelBase
     {
         public const string ActionKeyUserRated = "__userrated__";
         public const string DefaultIncludes = "stats";
@@ -68,6 +68,10 @@ namespace Roadie.Library.Models.Users
 
         [Required] [MaxLength(20)] public string UserName { get; set; }
         public Image MediumThumbnail { get; set; }
+
+        public DateTime LastLogin { get; set; }
+        public DateTime LastApiAccess { get; set; }
+        public short? DefaultRowsPerPage { get; set; }
 
         public override string ToString()
         {

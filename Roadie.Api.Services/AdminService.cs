@@ -42,11 +42,12 @@ namespace Roadie.Api.Services
         private IReleaseService ReleaseService { get; }
 
         private ILabelService LabelService { get; }
+        private IGenreService GenreService { get; }
 
         public AdminService(IRoadieSettings configuration, IHttpEncoder httpEncoder, IHttpContext httpContext,
                             data.IRoadieDbContext context, ICacheManager cacheManager, ILogger<ArtistService> logger,
                             IHubContext<ScanActivityHub> scanActivityHub, IFileDirectoryProcessorService fileDirectoryProcessorService, IArtistService artistService,
-                            IReleaseService releaseService, IReleaseLookupEngine releaseLookupEngine, ILabelService labelService
+                            IReleaseService releaseService, IReleaseLookupEngine releaseLookupEngine, ILabelService labelService, IGenreService genreService
         ) 
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
@@ -57,6 +58,7 @@ namespace Roadie.Api.Services
             ArtistService = artistService;
             ReleaseService = releaseService;
             LabelService = labelService;
+            GenreService = genreService;
             ReleaseLookupEngine = releaseLookupEngine;
             FileDirectoryProcessorService = fileDirectoryProcessorService;
         }
@@ -157,6 +159,11 @@ namespace Roadie.Api.Services
                 {
                     Directory.CreateDirectory(Configuration.UserImageFolder);
                     Logger.LogInformation($"Created User Image Folder [{Configuration.UserImageFolder }]");
+                }
+                if (!Directory.Exists(Configuration.GenreImageFolder))
+                {
+                    Directory.CreateDirectory(Configuration.GenreImageFolder);
+                    Logger.LogInformation($"Created Genre Image Folder [{Configuration.GenreImageFolder }]");
                 }
                 if (!Directory.Exists(Configuration.PlaylistImageFolder))
                 {
@@ -264,7 +271,7 @@ namespace Roadie.Api.Services
             catch (Exception ex)
             {
                 Logger.LogError(ex);
-                await LogAndPublish("Error deleting artist secondary image.");
+                await LogAndPublish("Error deleting Label.");
                 errors.Add(ex);
             }
 
@@ -278,6 +285,42 @@ namespace Roadie.Api.Services
                 Errors = errors
             };
         }
+
+        public async Task<OperationResult<bool>> DeleteGenre(ApplicationUser user, Guid genreId)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var genre = DbContext.Genres.FirstOrDefault(x => x.RoadieId == genreId);
+            if (genre == null)
+            {
+                await LogAndPublish($"DeleteLabel Unknown Genre [{genreId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Genre Not Found [{genreId}]");
+            }
+
+            try
+            {
+                await GenreService.Delete(user, genreId);
+                CacheManager.ClearRegion(genre.CacheRegion);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+                await LogAndPublish("Error deleting Genre.");
+                errors.Add(ex);
+            }
+
+            sw.Stop();
+            await LogAndPublish($"DeleteGenre `{genre}`, By User `{user}`", LogLevel.Information);
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
 
         public async Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index)
         {
