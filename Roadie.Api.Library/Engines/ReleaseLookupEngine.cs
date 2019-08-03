@@ -274,7 +274,7 @@ namespace Roadie.Library.Engines
                         }
                     }
                     sw.Stop();
-                    Logger.LogInformation($"Added New Release: Elapsed Time [{ sw.ElapsedMilliseconds }], Release `{ release }`");
+                    Logger.LogTrace($"Added New Release: Elapsed Time [{ sw.ElapsedMilliseconds }], Release `{ release }`");
                 }
             }
             catch (Exception ex)
@@ -342,7 +342,7 @@ namespace Roadie.Library.Engines
                 sw.Stop();
                 if (release == null || !release.IsValid)
                 {
-                    Logger.LogInformation("ReleaseFactory: Release Not Found For Artist `{0}` MetaData [{1}]",
+                    Logger.LogTrace("ReleaseFactory: Release Not Found For Artist `{0}` MetaData [{1}]",
                         artist.ToString(), metaData.ToString());
                     if (doFindIfNotInDatabase)
                     {

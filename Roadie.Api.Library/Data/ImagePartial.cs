@@ -25,5 +25,10 @@ namespace Roadie.Library.Data
             if (Bytes == null || !Bytes.Any()) return null;
             return ImageHasher.AverageHash(Bytes).ToString();
         }
+
+        public override string ToString()
+        {
+            return $"Id [{Id}], RoadieId [{RoadieId}]";
+        }
     }
 }

@@ -34,7 +34,7 @@ namespace Roadie.Api.Controllers
         public IActionResult ClearCache()
         {
             CacheManager.Clear();
-            Logger.LogInformation("Cache Cleared");
+            Logger.LogWarning("Cache Cleared");
             return Ok();
         }
 

@@ -87,7 +87,7 @@ namespace Roadie.Api.Controllers
             var result = UserManager.ConfirmEmailAsync(user, code).Result;
             if (result.Succeeded)
             {
-                Logger.LogInformation("User [{0}] Confirmed Email Successfully", userid);
+                Logger.LogTrace("User [{0}] Confirmed Email Successfully", userid);
                 return Content($"Email for {RoadieSettings.SiteName} account confirmed successfully!");
             }
 
@@ -113,7 +113,7 @@ namespace Roadie.Api.Controllers
                     user.LastUpdated = now;
                     await UserManager.UpdateAsync(user);
                     var t = await TokenService.GenerateToken(user, UserManager);
-                    Logger.LogInformation($"Successfully authenticated User [{model.Username}]");
+                    Logger.LogTrace($"Successfully authenticated User [{model.Username}]");
                     if (!user.EmailConfirmed)
                         try
                         {
@@ -194,7 +194,7 @@ namespace Roadie.Api.Controllers
                     var tokenValidation = await AdminService.ValidateInviteToken(registerModel.InviteToken);
                     if(!tokenValidation.IsSuccess)
                     {
-                        Logger.LogInformation("Invalid Token");
+                        Logger.LogTrace("Invalid Invite Token");
                         return StatusCode((int)HttpStatusCode.BadRequest, new { Title = "Invite Token Is Required" });
                     }
                 }
@@ -217,7 +217,7 @@ namespace Roadie.Api.Controllers
 
                     await SignInManager.SignInAsync(user, false);
                     var t = await TokenService.GenerateToken(user, UserManager);
-                    Logger.LogInformation($"Successfully created and authenticated User [{registerModel.Username}]");
+                    Logger.LogTrace($"Successfully created and authenticated User [{registerModel.Username}]");
                     CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
                     var avatarUrl = $"{RoadieHttpContext.ImageBaseUrl}/user/{user.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
                     if (registerModel.InviteToken.HasValue)
@@ -307,7 +307,7 @@ namespace Roadie.Api.Controllers
             {
                 await EmailSender.SendEmailAsync(user.Email, $"Reset your {RoadieSettings.SiteName} password",
                     $"A request has been made to reset your password for your {RoadieSettings.SiteName} account. To proceed <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>click here</a>.");
-                Logger.LogInformation("User [{0}] Email [{1}] Requested Password Reset Callback [{2}]", username,
+                Logger.LogTrace("User [{0}] Email [{1}] Requested Password Reset Callback [{2}]", username,
                     user.Email, callbackUrl);
                 return Ok();
             }

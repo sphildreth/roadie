@@ -1,5 +1,4 @@
 ﻿using Mapster;
-using Microsoft.AspNet.OData;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -15,11 +14,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using System.Web.Http;
 using models = Roadie.Library.Models.Users;
 
 namespace Roadie.Api.Controllers
 {
-    public abstract class EntityControllerBase : ODataController
+    public abstract class EntityControllerBase : Controller
     {
         public const string ControllerCacheRegionUrn = "urn:controller_cache";
 
@@ -132,8 +132,7 @@ namespace Roadie.Api.Controllers
             };
             await playActivityService.NowPlaying(user, scrobble);
             sw.Stop();
-            Logger.LogInformation(
-                $"StreamTrack ElapsedTime [{sw.ElapsedMilliseconds}], Timings [{JsonConvert.SerializeObject(timings)}], StreamInfo `{info?.Data}`");
+            Logger.LogTrace($"StreamTrack ElapsedTime [{sw.ElapsedMilliseconds}], Timings [{JsonConvert.SerializeObject(timings)}], StreamInfo `{info?.Data}`");
             return new EmptyResult();
         }
 

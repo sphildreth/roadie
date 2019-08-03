@@ -65,8 +65,7 @@ namespace Roadie.Library.Scrobble
                 try
                 {
                     var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == roadieUser.UserId);
-                    userTrack = DbContext.UserTracks.FirstOrDefault(x =>
-                        x.UserId == roadieUser.Id && x.TrackId == track.Id);
+                    userTrack = DbContext.UserTracks.FirstOrDefault(x => x.UserId == user.Id && x.TrackId == track.Id);
                     if (userTrack == null)
                     {
                         userTrack = new data.UserTrack(now)

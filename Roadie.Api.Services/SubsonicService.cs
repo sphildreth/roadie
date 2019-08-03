@@ -126,7 +126,7 @@ namespace Roadie.Api.Services
                     .FirstOrDefault(x => x.UserName == request.u);
                 if (user == null)
                 {
-                    Logger.LogInformation($"Unknown User [{request.u}]");
+                    Logger.LogTrace($"Unknown User [{request.u}]");
                     return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>(
                         subsonic.ErrorCodes.WrongUsernameOrPassword, "Unknown Username");
                 }
@@ -163,12 +163,12 @@ namespace Roadie.Api.Services
 
                 if (user == null)
                 {
-                    Logger.LogInformation($"Invalid Credentials given for User [{request.u}]");
+                    Logger.LogTrace($"Invalid Credentials given for User [{request.u}]");
                     return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>(
                         subsonic.ErrorCodes.WrongUsernameOrPassword, "Unknown Username");
                 }
 
-                Logger.LogInformation(
+                Logger.LogTrace(
                     $"Subsonic: Successfully Authenticated User [{user}] via Application [{request.c}], Application Version [{request.v}]");
                 return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>
                 {
@@ -230,7 +230,7 @@ namespace Roadie.Api.Services
             var user = GetUser(roadieUser.UserId);
             CacheManager.ClearRegion(user.CacheRegion);
 
-            Logger.LogInformation(
+            Logger.LogTrace(
                 $"{(createdBookmark ? "Created" : "Updated")} Bookmark `{userBookmark}` for User `{roadieUser}`");
             return new subsonic.SubsonicOperationResult<subsonic.Response>
             {
@@ -326,7 +326,7 @@ namespace Roadie.Api.Services
             }
 
             await DbContext.SaveChangesAsync();
-            Logger.LogInformation(
+            Logger.LogTrace(
                 $"Subsonic: User `{roadieUser}` {(didCreate ? "created" : "modified")} Playlist `{playlist}` added [{songRoadieIds.Count()}] Tracks.");
             request.id = subsonic.Request.PlaylistdIdentifier + playlist.RoadieId;
             return await GetPlaylist(request, roadieUser);
@@ -355,7 +355,7 @@ namespace Roadie.Api.Services
                 var user = GetUser(roadieUser.UserId);
                 CacheManager.ClearRegion(user.CacheRegion);
 
-                Logger.LogInformation($"Subsonic: Deleted Bookmark `{userBookmark}` for User `{roadieUser}`");
+                Logger.LogTrace($"Subsonic: Deleted Bookmark `{userBookmark}` for User `{roadieUser}`");
             }
 
             return new subsonic.SubsonicOperationResult<subsonic.Response>
@@ -372,28 +372,27 @@ namespace Roadie.Api.Services
         /// <summary>
         ///     Deletes a saved playlist.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> DeletePlaylist(subsonic.Request request,
-            User roadieUser)
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> DeletePlaylist(subsonic.Request request,User roadieUser)
         {
-            if (!request.PlaylistId.HasValue)
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Playlist Id [{request.id}]");
-            var playlist = GetPlaylist(request.PlaylistId.Value);
-            if (playlist == null)
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Playlist Id [{request.TrackId.Value}]");
-            if (playlist.UserId != roadieUser.Id && !roadieUser.IsAdmin)
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.UserIsNotAuthorizedForGivenOperation,
-                    "User is not allowed to delete playlist.");
-            DbContext.Playlists.Remove(playlist);
-            await DbContext.SaveChangesAsync();
+            //request.PlaylistId.Value 
 
-            var user = GetUser(roadieUser.UserId);
-            CacheManager.ClearRegion(user.CacheRegion);
-
-            Logger.LogInformation($"Subsonic: Deleted Playlist `{playlist}` for User `{roadieUser}`");
-
+            var deleteResult = await PlaylistService.DeletePlaylist(roadieUser, request.PlaylistId.Value);
+            if (deleteResult == null || deleteResult.IsNotFoundResult)
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Playlist Id [{request.id}]");
+            }
+            if (!deleteResult.IsSuccess)
+            {
+                if (deleteResult.IsAccessDeniedResult)
+                {
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.UserIsNotAuthorizedForGivenOperation, "User is not allowed to delete playlist.");
+                }
+                if (deleteResult.Messages?.Any() ?? false)
+                {
+                    return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.Generic, deleteResult.Messages.First());
+                }
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.Generic, "An Error Occured");
+            }
             return new subsonic.SubsonicOperationResult<subsonic.Response>
             {
                 IsSuccess = true,

@@ -101,7 +101,7 @@ namespace Roadie.Library.Engines
                 sw.Stop();
                 if (label == null || !label.IsValid)
                 {
-                    Logger.LogInformation("LabelFactory: Label Not Found By Name [{0}]", labelName);
+                    Logger.LogTrace("LabelFactory: Label Not Found By Name [{0}]", labelName);
                     if (doFindIfNotInDatabase)
                     {
                         OperationResult<Label> LabelSearch = null;

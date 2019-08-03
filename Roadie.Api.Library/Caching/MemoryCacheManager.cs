@@ -97,11 +97,11 @@ namespace Roadie.Library.Caching
             {
                 r = await getItem();
                 Add(key, r, region);
-                Logger.LogInformation($"-+> Cache Miss for Key [{key}], Region [{region}]");
+                Logger.LogTrace($"-+> Cache Miss for Key [{key}], Region [{region}]");
             }
             else
             {
-                Logger.LogInformation($"-!> Cache Hit for Key [{key}], Region [{region}]");
+                Logger.LogTrace($"-!> Cache Hit for Key [{key}], Region [{region}]");
             }
 
             return r;

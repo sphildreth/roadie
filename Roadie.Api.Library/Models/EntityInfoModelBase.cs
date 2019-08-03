@@ -28,18 +28,10 @@ namespace Roadie.Library.Models
 
         public DateTime? LastUpdated { get; set; }
 
-        /// <summary>
-        ///     Random int to sort when Random Request
-        /// </summary>
-        [AdaptIgnore]
-        [JsonIgnore]
-        public int RandomSortId { get; set; }
-
         [MaxLength(250)] public string SortName { get; set; }
 
         public EntityInfoModelBase()
         {
-            RandomSortId = StaticRandom.Instance.Next();
         }
     }
 }

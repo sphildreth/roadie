@@ -35,7 +35,7 @@ namespace Roadie.Library.Models.Users
         [MaxLength(250)] public string FtpUrl { get; set; }
 
         [MaxLength(50)] public string FtpUsername { get; set; }
-        public int? Id { get; set; }
+        public new int? Id { get; set; }
         public bool IsAdmin { get; set; }
         public bool IsEditor { get; set; }
         public bool IsPrivate { get; set; }
@@ -73,9 +73,6 @@ namespace Roadie.Library.Models.Users
         public DateTime LastApiAccess { get; set; }
         public short? DefaultRowsPerPage { get; set; }
 
-        public override string ToString()
-        {
-            return $"Id [{Id}], RoadieId [{UserId}], UserName [{UserName}]";
-        }
+        public override string ToString() => $"Id [{Id}], RoadieId [{UserId}], UserName [{UserName}]";
     }
 }

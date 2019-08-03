@@ -26,8 +26,7 @@ namespace Roadie.Library.Models.Playlists
         public DataToken User { get; set; }
         public Image UserThumbnail { get; set; }
 
-        public static PlaylistList FromDataPlaylist(Data.Playlist playlist, ApplicationUser user,
-            Image playlistThumbnail, Image userThumbnail)
+        public static PlaylistList FromDataPlaylist(Data.Playlist playlist, ApplicationUser user, Image playlistThumbnail, Image userThumbnail)
         {
             return new PlaylistList
             {

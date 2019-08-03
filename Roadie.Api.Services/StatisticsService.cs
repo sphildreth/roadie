@@ -73,11 +73,13 @@ namespace Roadie.Api.Services
             var result = new List<DateAndCount>();
             var dateInfos = (from r in DbContext.Releases
                              orderby r.CreatedDate
-                             group r by r.CreatedDate.ToString("yyyy-MM-dd") into g
-                             select new
+                             select r.CreatedDate)
+                             .ToArray()
+                             .GroupBy(x => x.ToString("yyyy-MM-dd"))
+                             .Select(x => new
                              {
-                                 date = g.Key,
-                                 count = g.Count()
+                                 date = x.Key,
+                                 count = x.Count()
                              });
             foreach (var dateInfo in dateInfos)
             {

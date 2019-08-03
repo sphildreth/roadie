@@ -763,7 +763,7 @@ namespace Roadie.Api.Services
 
                     await DbContext.SaveChangesAsync();
                     CacheManager.ClearRegion(artist.CacheRegion);
-                    Logger.LogInformation("UpdatedArtistRank For Artist `{0}`", artist);
+                    Logger.LogTrace("UpdatedArtistRank For Artist `{0}`", artist);
                 }
             }
             catch (Exception ex)
@@ -899,7 +899,7 @@ namespace Roadie.Api.Services
 
                     await DbContext.SaveChangesAsync();
                     CacheManager.ClearRegion(release.CacheRegion);
-                    Logger.LogInformation("UpdateReleaseRank For Release `{0}`", release);
+                    Logger.LogTrace("UpdateReleaseRank For Release `{0}`", release);
                     if (updateArtistRank) await UpdateArtistsRankForRelease(release);
                 }
             }

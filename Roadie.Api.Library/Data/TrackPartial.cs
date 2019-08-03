@@ -69,7 +69,7 @@ namespace Roadie.Library.Data
 
         public override string ToString()
         {
-            return string.Format("Id [{0}], TrackNumber [{1}], Title [{2}]", Id, TrackNumber, Title);
+            return $"Id [{ Id }], Status [{ Status }], TrackNumber [{ TrackNumber }], Title [{ Title}]";
         }
 
         /// <summary>

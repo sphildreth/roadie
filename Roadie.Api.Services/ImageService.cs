@@ -106,7 +106,7 @@ namespace Roadie.Api.Services
             if (image.ArtistId.HasValue) CacheManager.ClearRegion(data.Artist.CacheRegionUrn(image.Artist.RoadieId));
             if (image.ReleaseId.HasValue) CacheManager.ClearRegion(data.Release.CacheRegionUrn(image.Release.RoadieId));
             CacheManager.ClearRegion(data.Image.CacheRegionUrn(id));
-            Logger.LogInformation($"Deleted Image [{id}], By User [{user}]");
+            Logger.LogWarning("User `{0}` deleted Image `{1}]`", user, image);
             sw.Stop();
             return new OperationResult<bool>
             {
@@ -241,7 +241,7 @@ namespace Roadie.Api.Services
                     artistFolder = artist.ArtistFileFolder(Configuration);
                     if (!Directory.Exists(artistFolder))
                     {
-                        Logger.LogWarning($"Artist Folder [{artistFolder}], Not Found For Artist `{artist}`");
+                        Logger.LogTrace($"Artist Folder [{artistFolder}], Not Found For Artist `{artist}`");
                     }
                     else
                     {
@@ -294,7 +294,7 @@ namespace Roadie.Api.Services
                     artistFolder = artist.ArtistFileFolder(Configuration);
                     if (!Directory.Exists(artistFolder))
                     {
-                        Logger.LogWarning($"Artist Folder [{artistFolder}], Not Found For Artist `{artist}`");
+                        Logger.LogTrace($"Artist Folder [{artistFolder}], Not Found For Artist `{artist}`");
                     }
                     else
                     {
@@ -593,7 +593,7 @@ namespace Roadie.Api.Services
                     artistFolder = release.Artist.ArtistFileFolder(Configuration);
                     if (!Directory.Exists(artistFolder))
                     {
-                        Logger.LogWarning($"Artist Folder [{artistFolder}], Not Found For Artist `{release.Artist}`");
+                        Logger.LogTrace($"Artist Folder [{artistFolder}], Not Found For Artist `{release.Artist}`");
                     }
                     else
                     {
@@ -656,7 +656,7 @@ namespace Roadie.Api.Services
                     artistFolder = release.Artist.ArtistFileFolder(Configuration);
                     if (!Directory.Exists(artistFolder))
                     {
-                        Logger.LogWarning($"Artist Folder [{artistFolder}], Not Found For Artist `{release.Artist}`");
+                        Logger.LogTrace($"Artist Folder [{artistFolder}], Not Found For Artist `{release.Artist}`");
                     }
                     else
                     {

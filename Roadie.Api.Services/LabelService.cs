@@ -59,7 +59,7 @@ namespace Roadie.Api.Services
                 File.Delete(labelImageFilename);
             }
 
-            Logger.LogInformation("User `{0}` deleted Label `{1}]`", user, label);
+            Logger.LogWarning("User `{0}` deleted Label `{1}]`", user, label);
             CacheManager.ClearRegion(label.CacheRegion);
             sw.Stop();
             return new OperationResult<bool>
@@ -120,6 +120,8 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
 
+            int? rowCount = null;
+
             if (!string.IsNullOrEmpty(request.Sort))
             {
                 request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
@@ -129,7 +131,24 @@ namespace Roadie.Api.Services
             var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue)
                 ? request.FilterValue.ToAlphanumericName()
                 : null;
+
+            int[] randomLabelIds = null;
+            if (doRandomize ?? false)
+            {
+                var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
+                // This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
+                var sql = @"select l.id 
+                            FROM `label` l
+                            order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)
+                            LIMIT 0, {0}";
+                randomLabelIds = (from l in DbContext.Labels.FromSql(sql, randomLimit)
+                                  select l.Id).ToArray();
+                rowCount = DbContext.Labels.Count();
+
+            }
+
             var result = from l in DbContext.Labels
+                         where randomLabelIds == null || randomLabelIds.Contains(l.Id)
                          where request.FilterValue == "" || ( 
                                    l.Name.Contains(request.FilterValue) ||
                                    l.SortName.Contains(request.FilterValue) ||
@@ -154,27 +173,27 @@ namespace Roadie.Api.Services
                              Thumbnail = MakeLabelThumbnailImage(l.RoadieId)
                          };
             LabelList[] rows = null;
-            var rowCount = result.Count();
+            rowCount = rowCount ?? result.Count();
             if (doRandomize ?? false)
             {
-                var randomLimit = roadieUser?.RandomReleaseLimit ?? request.Limit;
-                request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
-                rows = result.OrderBy(x => x.RandomSortId)
-                             .Take(request.LimitValue)
-                             .ToArray();
+                rows = result.ToArray();
             }
             else
             {
                 var sortBy = string.IsNullOrEmpty(request.Sort)
                     ? request.OrderValue(new Dictionary<string, string> { { "SortName", "ASC" }, { "Label.Text", "ASC" } })
                     : request.OrderValue();
-                rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                rows = result
+                        .OrderBy(sortBy)
+                        .Skip(request.SkipValue)
+                        .Take(request.LimitValue)
+                        .ToArray();
             }
 
             sw.Stop();
             return Task.FromResult(new Library.Models.Pagination.PagedResult<LabelList>
             {
-                TotalCount = rowCount,
+                TotalCount = rowCount.Value,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,

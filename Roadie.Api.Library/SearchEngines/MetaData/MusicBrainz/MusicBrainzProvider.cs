@@ -160,7 +160,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
             }
             else
             {
-                Logger.LogWarning("MusicBrainzArtist: ArtistName [{0}], No MusicBrainz Artist Found", query);
+                Logger.LogTrace("MusicBrainzArtist: ArtistName [{0}], No MusicBrainz Artist Found", query);
             }
             return new OperationResult<IEnumerable<ArtistSearchResult>>
             {
@@ -283,7 +283,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
 
             if (result == null)
             {
-                Logger.LogWarning("MusicBrainzArtist: ArtistName [{0}], ReleaseTitle [{0}], No MusicBrainz Release Found", artistName, query);
+                Logger.LogTrace("MusicBrainzArtist: ArtistName [{0}], ReleaseTitle [{0}], No MusicBrainz Release Found", artistName, query);
             }
             else
             {

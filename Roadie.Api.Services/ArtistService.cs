@@ -192,7 +192,7 @@ namespace Roadie.Api.Services
                     await DbContext.SaveChangesAsync();
                     // TODO delete artist folder if empty?
                     CacheManager.ClearRegion(artist.CacheRegion);
-                    Logger.LogInformation(string.Format("x DeleteArtist [{0}]", artist.Id));
+                    Logger.LogWarning("User `{0}` deleted Artist `{1}]`", user, artist);
                     isSuccess = true;
                 }
             }
@@ -216,6 +216,8 @@ namespace Roadie.Api.Services
         {
             var sw = new Stopwatch();
             sw.Start();
+
+            int? rowCount = null;
 
             IQueryable<int> favoriteArtistIds = null;
             if (request.FilterFavoriteOnly)
@@ -273,8 +275,29 @@ namespace Roadie.Api.Services
             var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue)
                 ? request.FilterValue.ToAlphanumericName()
                 : null;
+
+            int[] randomArtistIds = null;
+            if (doRandomize ??false)
+            {
+                var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
+                var userId = roadieUser?.Id ?? -1;
+
+                //// This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
+                var sql = @"select a.id
+                            FROM `artist` a
+                            WHERE(a.id NOT IN(select artistId FROM `userartist` where userId = {1} and isDisliked = 1))
+                            OR(a.id IN(select artistId FROM `userartist` where userId = {1} and isFavorite = 1)
+                            AND {2} = 0)
+                            order BY RIGHT(HEX((1 << 24) * (1 + RAND())), 6)
+                            LIMIT 0, {0}";
+                randomArtistIds = (from a in DbContext.Artists.FromSql(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0")                                   
+                                   select a.Id).ToArray();
+                rowCount = DbContext.Artists.Count();
+
+            }
             var result = (from a in DbContext.Artists
                           where !onlyWithReleases || a.ReleaseCount > 0
+                          where randomArtistIds == null || randomArtistIds.Contains(a.Id)
                           where request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId
                           where request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value
                           where request.FilterValue == "" || 
@@ -311,17 +334,14 @@ namespace Roadie.Api.Services
                               ReleaseCount = a.ReleaseCount,
                               TrackCount = a.TrackCount,
                               SortName = a.SortName
-                          }).Distinct();
+                          });
 
             ArtistList[] rows;
-            var rowCount = result.Count();
+            rowCount = rowCount ?? result.Count();
+
             if (doRandomize ?? false)
             {
-                var randomLimit = roadieUser?.RandomReleaseLimit ?? request.Limit;
-                request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
-                rows = result.OrderBy(x => x.RandomSortId)
-                             .Take(request.LimitValue)
-                             .ToArray();
+                rows = result.ToArray();
             }
             else
             {
@@ -379,7 +399,7 @@ namespace Roadie.Api.Services
             sw.Stop();
             return new Library.Models.Pagination.PagedResult<ArtistList>
             {
-                TotalCount = rowCount,
+                TotalCount = rowCount.Value,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
@@ -426,7 +446,7 @@ namespace Roadie.Api.Services
                 {
                     CacheManager.ClearRegion(artistToMerge.CacheRegion);
                     CacheManager.ClearRegion(mergeIntoArtist.CacheRegion);
-                    Logger.LogInformation("MergeArtists `{0}` => `{1}`, By User `{2}`", artistToMerge, mergeIntoArtist,
+                    Logger.LogWarning("MergeArtists `{0}` => `{1}`, By User `{2}`", artistToMerge, mergeIntoArtist,
                         user);
                 }
             }
@@ -487,7 +507,7 @@ namespace Roadie.Api.Services
                         await DbContext.SaveChangesAsync();
                         sw.Stop();
                         CacheManager.ClearRegion(artist.CacheRegion);
-                        Logger.LogInformation("Scanned RefreshArtistMetadata [{0}], OperationTime [{1}]",
+                        Logger.LogTrace("Scanned RefreshArtistMetadata [{0}], OperationTime [{1}]",
                             artist.ToString(), sw.ElapsedMilliseconds);
                     }
                     else
@@ -579,7 +599,7 @@ namespace Roadie.Api.Services
                         artist.LastUpdated = DateTime.UtcNow;
                         await DbContext.SaveChangesAsync();
                         CacheManager.ClearRegion(artist.CacheRegion);
-                        Logger.LogInformation("Update Thumbnail using Artist File [{0}]", iName);
+                        Logger.LogTrace("Update Thumbnail using Artist File [{0}]", iName);
                     }
                 }
 
@@ -675,7 +695,7 @@ namespace Roadie.Api.Services
                     didRenameArtist = true;
                     if (Directory.Exists(originalArtistFolder))
                     {
-                        Logger.LogInformation("Moving Artist From Folder [{0}] ->  [{1}]", originalArtistFolder, newArtistFolder);
+                        Logger.LogTrace("Moving Artist From Folder [{0}] ->  [{1}]", originalArtistFolder, newArtistFolder);
                         Directory.Move(originalArtistFolder, newArtistFolder);
                     }
                 }
@@ -1460,7 +1480,7 @@ namespace Roadie.Api.Services
                     if (!Directory.Exists(artistFolder))
                     {
                         Directory.CreateDirectory(artistFolder);
-                        Logger.LogInformation("Created Artist Folder [0] for `artist`", artistFolder, artist);
+                        Logger.LogTrace("Created Artist Folder [0] for `artist`", artistFolder, artist);
                     }
 
                     // Save unaltered image to artist file

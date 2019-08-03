@@ -15,9 +15,7 @@ namespace Roadie.Api
         public static IConfiguration Configuration { get; } = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", false, true)
-            .AddJsonFile(
-                $"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json",
-                true)
+            .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true)
             .AddEnvironmentVariables()
             .Build();
 
@@ -25,7 +23,6 @@ namespace Roadie.Api
         {
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(Configuration)
-                .WriteTo.RollingFileAlternate("logs", "errors", LogEventLevel.Error)
                 .CreateLogger();
 
             try
@@ -36,13 +33,11 @@ namespace Roadie.Api
 
 #if DEBUG
                 // Logging Output tests
-                Log.Verbose(
-                    ":: Log Test: Verbose (Trace,None)"); // Microsoft.Extensions.Logging.LogLevel.Trace and Microsoft.Extensions.Logging.LogLevel.None
+                Log.Verbose(":: Log Test: Verbose (Trace,None)"); // Microsoft.Extensions.Logging.LogLevel.Trace and Microsoft.Extensions.Logging.LogLevel.None
                 Log.Debug(":: Log Test: Debug"); // Microsoft.Extensions.Logging.LogLevel.Debug
                 Log.Information(":: Log Test: Information"); // Microsoft.Extensions.Logging.LogLevel.Information
                 Log.Warning(":: Log Test: Warning"); // Microsoft.Extensions.Logging.LogLevel.Warning
-                Log.Error(new Exception("Log Test Exception"),
-                    "Log Test Error Message"); // Microsoft.Extensions.Logging.LogLevel.Error
+                Log.Error(new Exception("Log Test Exception"), "Log Test Error Message"); // Microsoft.Extensions.Logging.LogLevel.Error
                 Log.Fatal(":: Log Test: Fatal (Critial)"); // Microsoft.Extensions.Logging.LogLevel.Critical
                 Trace.WriteLine(":: Log Test: Trace WriteLine()");
 #endif

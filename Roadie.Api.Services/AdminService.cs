@@ -35,8 +35,6 @@ namespace Roadie.Api.Services
 
         private IFileDirectoryProcessorService FileDirectoryProcessorService { get; }
 
-        private ILogger MessageLogger => EventMessageLogger as ILogger;
-
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
 
         private IReleaseService ReleaseService { get; }
@@ -501,7 +499,7 @@ namespace Roadie.Api.Services
                 }
 
                 sw.Stop();
-                await LogAndPublish($"DeleteTracks `{track}`, By User `{user}`", LogLevel.Information);
+                await LogAndPublish($"DeleteTracks `{track}`, By User `{user}`", LogLevel.Warning);
             }
             CacheManager.Clear();
             return new OperationResult<bool>
@@ -553,7 +551,7 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            await LogAndPublish($"DeleteUser `{user}`, By User `{user}`", LogLevel.Information);
+            await LogAndPublish($"DeleteUser `{user}`, By User `{user}`", LogLevel.Warning);
             CacheManager.Clear();
             return new OperationResult<bool>
             {
@@ -565,11 +563,9 @@ namespace Roadie.Api.Services
         }
 
         /// <summary>
-        ///     This is a very simple way to seed the database or setup configuration when the first (who becomes "Admin") user
-        ///     registers
+        ///     This is a very simple way to seed the database or setup configuration when the first (who becomes "Admin") user registers
         /// </summary>
-        public async Task<OperationResult<bool>> DoInitialSetup(ApplicationUser user,
-            UserManager<ApplicationUser> userManager)
+        public async Task<OperationResult<bool>> DoInitialSetup(ApplicationUser user, UserManager<ApplicationUser> userManager)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -700,7 +696,7 @@ namespace Roadie.Api.Services
             sw.Stop();
             await LogAndPublish(
                 $"ScanAllCollections, By User `{user}`, Updated Release Count [{updatedReleaseIds.Distinct().Count()}], ElapsedTime [{sw.ElapsedMilliseconds}]",
-                LogLevel.Information);
+                LogLevel.Warning);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -769,7 +765,6 @@ namespace Roadie.Api.Services
             });
             await DbContext.SaveChangesAsync();
             await UpdateArtistRank(artist.Id, true);
-            await LogAndPublish($"ScanArtist `{artist}`, By User `{user}`", LogLevel.Information);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -950,7 +945,7 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            Logger.LogInformation(string.Format("RescanCollection `{0}`, By User `{1}`, ElapsedTime [{2}]", collection,
+            Logger.LogWarning(string.Format("RescanCollection `{0}`, By User `{1}`, ElapsedTime [{2}]", collection,
                 user, sw.ElapsedMilliseconds));
 
             return new OperationResult<bool>
@@ -966,15 +961,13 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> ScanInboundFolder(ApplicationUser user, bool isReadOnly = false)
         {
             var d = new DirectoryInfo(Configuration.InboundFolder);
-            var dest = new DirectoryInfo(Configuration.LibraryFolder);
-            return await ScanFolder(user, d, dest, isReadOnly);
+            return await ScanFolder(user, d, isReadOnly);
         }
 
         public async Task<OperationResult<bool>> ScanLibraryFolder(ApplicationUser user, bool isReadOnly = false)
         {
             var d = new DirectoryInfo(Configuration.LibraryFolder);
-            var dest = new DirectoryInfo(Configuration.LibraryFolder);
-            return await ScanFolder(user, d, dest, isReadOnly);
+            return await ScanFolder(user, d, isReadOnly);
         }
 
         public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
@@ -1013,9 +1006,6 @@ namespace Roadie.Api.Services
                 TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
             });
             await DbContext.SaveChangesAsync();
-            await LogAndPublish(
-                $"ScanRelease `{release}`, By User `{user}`, WasDoneForInvalidTrackPlay [{wasDoneForInvalidTrackPlay}]",
-                LogLevel.Information);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -1025,10 +1015,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private void EventMessageLogger_Messages(object sender, EventMessage e)
-        {
-            Task.WaitAll(LogAndPublish(e.Message, e.Level));
-        }
+        private void EventMessageLogger_Messages(object sender, EventMessage e) => Task.WaitAll(LogAndPublish(e.Message, e.Level));
 
         private async Task LogAndPublish(string message, LogLevel level = LogLevel.Trace)
         {
@@ -1058,7 +1045,7 @@ namespace Roadie.Api.Services
             await ScanActivityHub.Clients.All.SendAsync("SendSystemActivity", message);
         }
 
-        private async Task<OperationResult<bool>> ScanFolder(ApplicationUser user, DirectoryInfo d, DirectoryInfo dest, bool isReadOnly)
+        private async Task<OperationResult<bool>> ScanFolder(ApplicationUser user, DirectoryInfo d, bool isReadOnly)
         {
             var sw = new Stopwatch();
             sw.Start();

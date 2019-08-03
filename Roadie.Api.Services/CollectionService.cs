@@ -154,7 +154,7 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            Logger.LogInformation($"DeleteCollection `{collection}`, By User `{user}`");
+            Logger.LogWarning($"DeleteCollection `{collection}`, By User `{user}`");
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -194,19 +194,43 @@ namespace Roadie.Api.Services
             }
 
             var result = from c in collections
+                         let collectionCount = (from crc in DbContext.CollectionReleases
+                                                where crc.CollectionId == c.Id
+                                                select crc.Id).Count()
                          where request.FilterValue.Length == 0 ||
                                request.FilterValue.Length > 0 && c.Name.Contains(request.Filter)
                          where request.FilterToStatusValue == Statuses.Ok || c.Status == request.FilterToStatusValue
-                         select CollectionList.FromDataCollection(c, (from crc in DbContext.CollectionReleases
-                                                                      where crc.CollectionId == c.Id
-                                                                      select crc.Id).Count(), MakeCollectionThumbnailImage(c.RoadieId));
+                         select new CollectionList
+                         {
+                             DatabaseId = c.Id,
+                             Collection = new DataToken
+                             {
+                                 Text = c.Name,
+                                 Value = c.RoadieId.ToString()
+                             },
+                             Id = c.RoadieId,
+                             CollectionCount = c.CollectionCount,
+                             CollectionType = (c.CollectionType ?? CollectionType.Unknown).ToString(),
+                             CollectionFoundCount = collectionCount,
+                             CreatedDate = c.CreatedDate,
+                             IsLocked = c.IsLocked,
+                             LastUpdated = c.LastUpdated,
+                             Thumbnail = MakeCollectionThumbnailImage(c.RoadieId)
+                         };
+
             var sortBy = string.IsNullOrEmpty(request.Sort)
                 ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } })
                 : request.OrderValue();
             var rowCount = result.Count();
-            var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            var rows = result
+                       .OrderBy(sortBy)
+                       .Skip(request.SkipValue)
+                       .Take(request.LimitValue)
+                       .ToArray();
             if (request.FilterToStatusValue == Statuses.Incomplete)
+            {
                 rows = rows.OrderByDescending(x => x.PercentComplete).ThenBy(x => x.SortName).ToArray();
+            }
             sw.Stop();
             return Task.FromResult(new Library.Models.Pagination.PagedResult<CollectionList>
             {

@@ -136,7 +136,7 @@ namespace Roadie.Library.MetaData.LastFm
                         dataStream.Close();
                     }
                     var xp = GetResponseAsXml(request);
-                    Logger.LogInformation($"LastFmHelper: RoadieUser `{roadieUser}` NowPlaying `{scrobble}` LastFmResult [{xp.InnerXml}]");
+                    Logger.LogTrace($"LastFmHelper: RoadieUser `{roadieUser}` NowPlaying `{scrobble}` LastFmResult [{xp.InnerXml}]");
                     result = true;
                 });
             }
@@ -303,8 +303,7 @@ namespace Roadie.Library.MetaData.LastFm
                 }
 
                 var xp = GetResponseAsXml(request);
-                Logger.LogInformation(
-                    $"LastFmHelper: RoadieUser `{roadieUser}` Scrobble `{scrobble}` LastFmResult [{xp.InnerXml}]");
+                Logger.LogTrace($"LastFmHelper: RoadieUser `{roadieUser}` Scrobble `{scrobble}` LastFmResult [{xp.InnerXml}]");
                 result = true;
             }
             catch (Exception ex)

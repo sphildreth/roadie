@@ -350,7 +350,7 @@ namespace Roadie.Api.Services
             timings.Add("SetTrackRating", sw.ElapsedMilliseconds);
 
             result.AdditionalData.Add("Timing", sw.ElapsedMilliseconds);
-            Logger.LogInformation(
+            Logger.LogTrace(
                 $"User `{roadieUser}` set rating [{rating}] on TrackId [{trackId}]. Result [{JsonConvert.SerializeObject(result)}]");
             return result;
         }
@@ -546,7 +546,7 @@ namespace Roadie.Api.Services
 
             CacheManager.ClearRegion(ApplicationUser.CacheRegionUrn(user.RoadieId));
 
-            Logger.LogInformation($"User `{user}` Updated LastFm SessionKey");
+            Logger.LogTrace($"User `{user}` Updated LastFm SessionKey");
 
             return new OperationResult<bool>
             {

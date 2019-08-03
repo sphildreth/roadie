@@ -1,5 +1,6 @@
 ﻿using Mapster;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Roadie.Library;
 using Roadie.Library.Caching;
@@ -69,7 +70,7 @@ namespace Roadie.Api.Services
                 File.Delete(genreImageFilename);
             }
 
-            Logger.LogInformation("User `{0}` deleted Genre `{1}]`", user, genre);
+            Logger.LogWarning("User `{0}` deleted Genre `{1}]`", user, genre);
             CacheManager.ClearRegion(genre.CacheRegion);
             sw.Stop();
             return new OperationResult<bool>
@@ -187,13 +188,31 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
 
+            int? rowCount = null;
+
             if (!string.IsNullOrEmpty(request.Sort))
             {
                 request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
                 request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
             }
 
+            int[] randomGenreIds = null;
+            if (doRandomize ?? false)
+            {
+                var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
+                // This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
+                var sql = @"select g.id 
+                            FROM `genre` g
+                            order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)
+                            LIMIT 0, {0}";
+                randomGenreIds = (from l in DbContext.Genres.FromSql(sql, randomLimit)
+                                  select l.Id).ToArray();
+                rowCount = DbContext.Genres.Count();
+
+            }
+
             var result = from g in DbContext.Genres
+                         where randomGenreIds == null || randomGenreIds.Contains(g.Id)
                          let releaseCount = (from rg in DbContext.ReleaseGenres
                                              where rg.GenreId == g.Id
                                              select rg.Id).Count()
@@ -218,12 +237,10 @@ namespace Roadie.Api.Services
                          };
 
             GenreList[] rows;
-            var rowCount = result.Count();
+            rowCount = rowCount ?? result.Count();
             if (doRandomize ?? false)
             {
-                var randomLimit = roadieUser?.RandomReleaseLimit ?? 100;
-                request.Limit = request.LimitValue > randomLimit ? randomLimit : request.LimitValue;
-                rows = result.OrderBy(x => x.RandomSortId).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                rows = result.ToArray();
             }
             else
             {
@@ -236,7 +253,7 @@ namespace Roadie.Api.Services
             sw.Stop();
             return Task.FromResult(new Library.Models.Pagination.PagedResult<GenreList>
             {
-                TotalCount = rowCount,
+                TotalCount = rowCount.Value,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,

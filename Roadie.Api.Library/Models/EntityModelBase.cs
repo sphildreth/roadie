@@ -41,7 +41,11 @@ namespace Roadie.Library.Models
 
         public DateTime? EndDate { get; set; }
 
-        [AdaptMember("RoadieId")] public virtual Guid? Id { get; set; }
+        /// <summary>
+        /// This is the exposed Id for API consumers, not the Database Id.
+        /// </summary>
+        [AdaptMember("RoadieId")]
+        public virtual Guid? Id { get; set; }
 
         public bool? IsLocked { get; set; }
 

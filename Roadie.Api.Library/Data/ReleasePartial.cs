@@ -107,7 +107,7 @@ namespace Roadie.Library.Data
 
         public override string ToString()
         {
-            return $"Id [{Id}], Title [{Title}], Release Date [{ReleaseYear}]";
+            return $"Id [{Id}], Status [{ Status }], LibraryStatus [{ LibraryStatus }], Title [{Title}], Release Date [{ReleaseYear}]";
         }
     }
 }

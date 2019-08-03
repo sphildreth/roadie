@@ -141,7 +141,7 @@ namespace Roadie.Library.MetaData.Audio
                     result.SetArtistName(artistNameReplaceKp.Key);
             }
 
-            Logger.LogInformation("File [{0}], TagSources [{1}] MetaData [{2}]", fileInfo.Name,
+            Logger.LogTrace("File [{0}], TagSources [{1}] MetaData [{2}]", fileInfo.Name,
                 string.Join(",", tagSources), result.ToString());
             return result;
         }

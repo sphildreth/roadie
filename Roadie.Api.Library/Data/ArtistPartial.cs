@@ -48,8 +48,7 @@ namespace Roadie.Library.Data
 
         public override string ToString()
         {
-            return string.Format("Id [{0}], Name [{1}], SortName [{2}], RoadieId [{3}]", Id, Name, SortNameValue,
-                RoadieId);
+            return $"Id [{ Id }], Status [{ Status }], Name [{ Name }], SortName [{ SortNameValue}], RoadieId [{ RoadieId}]";
         }
     }
 }

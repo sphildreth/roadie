@@ -109,7 +109,7 @@ namespace Roadie.Api.Services
             _addedArtistIds.AddRange(ArtistLookupEngine.AddedArtistIds);
             _addedReleaseIds.AddRange(ReleaseLookupEngine.AddedReleaseIds);
             _addedTrackIds.AddRange(ReleaseLookupEngine.AddedTrackIds);
-            Logger.LogInformation("** Completed! Processed Folder [{0}]: Processed Files [{1}] : Elapsed Time [{2}]", folder.FullName, processedFiles, sw.Elapsed);
+            Logger.LogInformation("Completed! Processed Folder [{0}]: Processed Files [{1}] : Elapsed Time [{2}]", folder.FullName, processedFiles, sw.Elapsed);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -143,7 +143,7 @@ namespace Roadie.Api.Services
                             if (!doJustInfo)
                             {
                                 fileInFolder.Delete();
-                                Logger.LogInformation("x Deleted File [{0}], Was found in in FileExtensionsToDelete",
+                                Logger.LogTrace("Deleted File [{0}], Was found in in FileExtensionsToDelete",
                                     fileInFolder.Name);
                             }
                         }

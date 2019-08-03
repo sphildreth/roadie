@@ -25,8 +25,7 @@ namespace Roadie.Library.Models.Collections
         public DataToken Release { get; set; }
         public Image Thumbnail { get; set; }
 
-        public static CollectionList FromDataCollection(Data.Collection collection, int foundCount,
-            Image collectionThumbnail)
+        public static CollectionList FromDataCollection(Data.Collection collection, int foundCount, Image collectionThumbnail)
         {
             return new CollectionList
             {

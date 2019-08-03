@@ -188,7 +188,7 @@ namespace Roadie.Api.Services
                 File.Delete(playlistImageFilename);
             }
 
-            Logger.LogInformation("User `{0}` deleted Playlist `{1}]`", user, playlist);
+            Logger.LogWarning("User `{0}` deleted Playlist `{1}]`", user, playlist);
             CacheManager.ClearRegion(playlist.CacheRegion);
             sw.Stop();
             return new OperationResult<bool>
@@ -199,14 +199,14 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<Library.Models.Pagination.PagedResult<PlaylistList>> List(PagedRequest request,
-            User roadieUser = null)
+        public Task<Library.Models.Pagination.PagedResult<PlaylistList>> List(PagedRequest request, User roadieUser = null)
         {
             var sw = new Stopwatch();
             sw.Start();
 
             var playlistWithArtistTrackIds = new int[0];
             if (request.FilterToArtistId.HasValue)
+            {
                 playlistWithArtistTrackIds = (from pl in DbContext.Playlists
                                               join pltr in DbContext.PlaylistTracks on pl.Id equals pltr.PlayListId
                                               join t in DbContext.Tracks on pltr.TrackId equals t.Id
@@ -215,9 +215,11 @@ namespace Roadie.Api.Services
                                               join a in DbContext.Artists on r.ArtistId equals a.Id
                                               where a.RoadieId == request.FilterToArtistId
                                               select pl.Id
-                    ).ToArray();
+                                             ).ToArray();
+            }
             var playlistReleaseTrackIds = new int[0];
             if (request.FilterToReleaseId.HasValue)
+            {
                 playlistReleaseTrackIds = (from pl in DbContext.Playlists
                                            join pltr in DbContext.PlaylistTracks on pl.Id equals pltr.PlayListId
                                            join t in DbContext.Tracks on pltr.TrackId equals t.Id
@@ -225,24 +227,46 @@ namespace Roadie.Api.Services
                                            join r in DbContext.Releases on rm.ReleaseId equals r.Id
                                            where r.RoadieId == request.FilterToReleaseId
                                            select pl.Id
-                    ).ToArray();
-
+                                           ).ToArray();
+            }
             var result = from pl in DbContext.Playlists
                          join u in DbContext.Users on pl.UserId equals u.Id
                          where request.FilterToPlaylistId == null || pl.RoadieId == request.FilterToPlaylistId
                          where request.FilterToArtistId == null || playlistWithArtistTrackIds.Contains(pl.Id)
                          where request.FilterToReleaseId == null || playlistReleaseTrackIds.Contains(pl.Id)
-                         where roadieUser == null && pl.IsPublic || roadieUser != null && u.RoadieId == roadieUser.UserId ||
-                               pl.IsPublic
-                         where request.FilterValue.Length == 0 || request.FilterValue.Length > 0 && pl.Name != null &&
-                               pl.Name.Contains(request.FilterValue)
-                         select PlaylistList.FromDataPlaylist(pl, u, MakePlaylistThumbnailImage(pl.RoadieId),
-                             MakeUserThumbnailImage(u.RoadieId));
+                         where roadieUser == null && pl.IsPublic || roadieUser != null && u.RoadieId == roadieUser.UserId || pl.IsPublic
+                         where request.FilterValue.Length == 0 || request.FilterValue.Length > 0 && pl.Name != null && pl.Name.Contains(request.FilterValue)
+                         select new PlaylistList
+                         {
+                             Playlist = new DataToken
+                             {
+                                 Text = pl.Name,
+                                 Value = pl.RoadieId.ToString()
+                             },
+                             User = new DataToken
+                             {
+                                 Text = u.UserName,
+                                 Value = u.RoadieId.ToString()
+                             },
+                             PlaylistCount = pl.TrackCount,
+                             IsPublic = pl.IsPublic,
+                             Duration = pl.Duration,
+                             TrackCount = pl.TrackCount,
+                             CreatedDate = pl.CreatedDate,
+                             LastUpdated = pl.LastUpdated,
+                             UserThumbnail = MakeUserThumbnailImage(u.RoadieId),
+                             Id = pl.RoadieId,
+                             Thumbnail = MakePlaylistThumbnailImage(pl.RoadieId)
+                         };
             var sortBy = string.IsNullOrEmpty(request.Sort)
                 ? request.OrderValue(new Dictionary<string, string> { { "Playlist.Text", "ASC" } })
                 : request.OrderValue();
             var rowCount = result.Count();
-            var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            var rows = result
+                       .OrderBy(sortBy)
+                       .Skip(request.SkipValue)
+                       .Take(request.LimitValue)
+                       .ToArray();
             sw.Stop();
             return Task.FromResult(new Library.Models.Pagination.PagedResult<PlaylistList>
             {

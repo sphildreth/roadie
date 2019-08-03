@@ -152,7 +152,7 @@ namespace Roadie.Library.Engines
                         inserted = await DbContext.SaveChangesAsync();
                     }
                     sw.Stop();
-                    Logger.LogInformation($"Added New Artist: Elapsed Time [{ sw.ElapsedMilliseconds }], Artist `{ artist }`");
+                    Logger.LogTrace($"Added New Artist: Elapsed Time [{ sw.ElapsedMilliseconds }], Artist `{ artist }`");
                 }
             }
             catch (Exception ex)
@@ -232,7 +232,7 @@ namespace Roadie.Library.Engines
                 sw.Stop();
                 if (artist == null || !artist.IsValid)
                 {
-                    Logger.LogInformation("ArtistLookupEngine: Artist Not Found By Name [{0}]", artistName);
+                    Logger.LogTrace("ArtistLookupEngine: Artist Not Found By Name [{0}]", artistName);
                     if (doFindIfNotInDatabase)
                     {
                         OperationResult<Artist> artistSearch = null;
