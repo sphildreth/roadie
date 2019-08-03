@@ -9,6 +9,7 @@ using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Playlists;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -36,7 +37,18 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> AddNewPlaylist([FromBody] Playlist model)
         {
             var result = await PlaylistService.AddNewPlaylist(await CurrentUserModel(), model);
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -46,9 +58,22 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> DeletePlaylist(Guid id)
         {
             var result = await PlaylistService.DeletePlaylist(await CurrentUserModel(), id);
-            if (result == null || result.IsNotFoundResult) return NotFound();
-            if (result != null && result.IsAccessDeniedResult) return StatusCode((int)HttpStatusCode.Forbidden);
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -57,10 +82,23 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await PlaylistService.ById(await CurrentUserModel(), id,
-                (inc ?? Playlist.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            var result = await PlaylistService.ById(await CurrentUserModel(), id,(inc ?? Playlist.DefaultIncludes).ToLower().Split(","));
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -81,8 +119,22 @@ namespace Roadie.Api.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var result = await PlaylistService.UpdatePlaylist(await CurrentUserModel(), playlist);
-            if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -92,8 +144,22 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> UpdateTracks(PlaylistTrackModifyRequest request)
         {
             var result = await PlaylistService.UpdatePlaylistTracks(await CurrentUserModel(), request);
-            if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
     }

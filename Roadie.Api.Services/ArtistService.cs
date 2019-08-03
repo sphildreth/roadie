@@ -619,7 +619,18 @@ namespace Roadie.Api.Services
                 .Include("Genres.Genre")
                 .FirstOrDefault(x => x.RoadieId == model.Id);
             if (artist == null)
+            {
                 return new OperationResult<bool>(true, $"Artist Not Found [{model.Id}]");
+            }
+            // If artist is being renamed, see if artist already exists with new model supplied name
+            if(artist.Name.ToAlphanumericName() != model.Name.ToAlphanumericName())
+            {
+                var existingArtist = DbContext.Artists.FirstOrDefault(x => x.Name == model.Name);
+                if(existingArtist != null)
+                {
+                    return new OperationResult<bool>($"Artist already exists with name [{ model.Name }].");
+                }
+            }
             try
             {
                 var now = DateTime.UtcNow;
@@ -653,12 +664,17 @@ namespace Roadie.Api.Services
                 artist.URLs = model.URLsList.ToDelimitedList();
 
                 var newArtistFolder = artist.ArtistFileFolder(Configuration);
+                // Rename artist folder to reflect new artist name
                 if (!newArtistFolder.Equals(originalArtistFolder, StringComparison.OrdinalIgnoreCase))
                 {
+                    // If folder already exists for new artist name that means another artist has that folder (usually sort name)
+                    if (Directory.Exists(newArtistFolder))
+                    {
+                        return new OperationResult<bool>($"Artist Folder [{ newArtistFolder }] already exists.");
+                    }
                     didRenameArtist = true;
                     if (Directory.Exists(originalArtistFolder))
                     {
-                        // Rename artist folder to reflect new artist name
                         Logger.LogInformation("Moving Artist From Folder [{0}] ->  [{1}]", originalArtistFolder, newArtistFolder);
                         Directory.Move(originalArtistFolder, newArtistFolder);
                     }

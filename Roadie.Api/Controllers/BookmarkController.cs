@@ -29,34 +29,6 @@ namespace Roadie.Api.Controllers
             BookmarkService = bookmarkService;
         }
 
-        //[EnableQuery]
-        //public IActionResult Get()
-        //{
-        //    return Ok(this._RoadieDbContext.Labels.ProjectToType<models.Label>());
-        //}
-
-        //[HttpGet("{id}")]
-        //[ProducesResponseType(200)]
-        //[ProducesResponseType(404)]
-        //public IActionResult Get(Guid id)
-        //{
-        //    var key = id.ToString();
-        //    var result = this._cacheManager.Get<models.Label>(key, () =>
-        //    {
-        //        var d = this._RoadieDbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
-        //        if (d != null)
-        //        {
-        //            return d.Adapt<models.Label>();
-        //        }
-        //        return null;
-        //    }, key);
-        //    if (result == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    return Ok(result);
-        //}
-
         [HttpGet]
         [ProducesResponseType(200)]
         public async Task<IActionResult> List([FromQuery] PagedRequest request)

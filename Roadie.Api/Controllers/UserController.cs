@@ -12,6 +12,7 @@ using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -273,13 +274,23 @@ namespace Roadie.Api.Controllers
             var user = await CurrentUserModel();
             var result = await UserService.UpdateProfile(user, model);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if(result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             var modelUser = await UserManager.FindByNameAsync(model.UserName);
             var t = await TokenService.GenerateToken(modelUser, UserManager);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
-            var avatarUrl =
-                $"{RoadieHttpContext.ImageBaseUrl}/user/{modelUser.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
+            var avatarUrl = $"{RoadieHttpContext.ImageBaseUrl}/user/{modelUser.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
             return Ok(new
             {
                 IsSuccess = true,

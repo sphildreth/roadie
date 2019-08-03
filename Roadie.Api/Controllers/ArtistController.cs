@@ -9,6 +9,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web;
@@ -80,7 +81,18 @@ namespace Roadie.Api.Controllers
             var result =
                 await ArtistService.MergeArtists(await UserManager.GetUserAsync(User), artistToMergeId, artistToMergeIntoId);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -93,7 +105,18 @@ namespace Roadie.Api.Controllers
             var result =
                 await ArtistService.SetReleaseImageByUrl(await UserManager.GetUserAsync(User), id, HttpUtility.UrlDecode(imageUrl));
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -103,10 +126,27 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> Update(models.Artist artist)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var result = await ArtistService.UpdateArtist(await UserManager.GetUserAsync(User), artist);
-            if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -118,7 +158,18 @@ namespace Roadie.Api.Controllers
         {
             var result = await ArtistService.UploadArtistImage(await UserManager.GetUserAsync(User), id, file);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
     }

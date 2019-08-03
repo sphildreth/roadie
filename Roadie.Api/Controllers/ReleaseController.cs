@@ -10,6 +10,7 @@ using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web;
@@ -78,7 +79,18 @@ namespace Roadie.Api.Controllers
         {
             var result = await ReleaseService.MergeReleases(await UserManager.GetUserAsync(User), releaseToMergeId, releaseToMergeIntoId, addAsMedia);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -90,7 +102,18 @@ namespace Roadie.Api.Controllers
         {
             var result = await ReleaseService.SetReleaseImageByUrl(await UserManager.GetUserAsync(User), id, HttpUtility.UrlDecode(imageUrl));
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -100,10 +123,23 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> Update(Release release)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var result = await ReleaseService.UpdateRelease(await UserManager.GetUserAsync(User), release);
-            if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -115,7 +151,18 @@ namespace Roadie.Api.Controllers
         {
             var result = await ReleaseService.UploadReleaseImage(await UserManager.GetUserAsync(User), id, file);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
     }

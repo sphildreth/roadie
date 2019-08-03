@@ -166,7 +166,10 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
             var playlist = DbContext.Playlists.FirstOrDefault(x => x.RoadieId == id);
-            if (playlist == null) return new OperationResult<bool>(true, string.Format("Playlist Not Found [{0}]", id));
+            if (playlist == null)
+            {
+                return new OperationResult<bool>(true, string.Format("Playlist Not Found [{0}]", id));
+            }
             if (!user.IsAdmin && user.Id != playlist.UserId)
             {
                 Logger.LogWarning("User `{0}` attempted to delete Playlist `{1}`", user, playlist);
@@ -288,7 +291,17 @@ namespace Roadie.Api.Services
             var errors = new List<Exception>();
             var playlist = DbContext.Playlists.FirstOrDefault(x => x.RoadieId == model.Id);
             if (playlist == null)
-                return new OperationResult<bool>(true, string.Format("Label Not Found [{0}]", model.Id));
+            {
+                return new OperationResult<bool>(true, string.Format("Playlist Not Found [{0}]", model.Id));
+            }
+            if (!user.IsAdmin && user.Id != playlist.UserId)
+            {
+                Logger.LogWarning("User `{0}` attempted to update Playlist `{1}`", user, playlist);
+                return new OperationResult<bool>("Access Denied")
+                {
+                    IsAccessDeniedResult = true
+                };
+            }
             try
             {
                 var now = DateTime.UtcNow;
@@ -349,7 +362,17 @@ namespace Roadie.Api.Services
             var errors = new List<Exception>();
             var playlist = DbContext.Playlists.Include(x => x.Tracks).FirstOrDefault(x => x.RoadieId == request.Id);
             if (playlist == null)
+            {
                 return new OperationResult<bool>(true, string.Format("Label Not Found [{0}]", request.Id));
+            }
+            if (!user.IsAdmin && user.Id != playlist.UserId)
+            {
+                Logger.LogWarning("User `{0}` attempted to update Playlist Tracks `{1}`", user, playlist);
+                return new OperationResult<bool>("Access Denied")
+                {
+                    IsAccessDeniedResult = true
+                };
+            }
             try
             {
                 var now = DateTime.UtcNow;

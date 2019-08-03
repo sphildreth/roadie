@@ -9,6 +9,7 @@ using Roadie.Library.Identity;
 using Roadie.Library.Models.Collections;
 using Roadie.Library.Models.Pagination;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -37,7 +38,18 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Add()
         {
             var result = CollectionService.Add(await CurrentUserModel());
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -48,7 +60,22 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> DeleteCollection(Guid id)
         {
             var result = await CollectionService.DeleteCollection(await CurrentUserModel(), id);
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -60,7 +87,18 @@ namespace Roadie.Api.Controllers
             var result = await CollectionService.ById(await CurrentUserModel(), id,
                 (inc ?? Collection.DefaultIncludes).ToLower().Split(","));
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -70,8 +108,7 @@ namespace Roadie.Api.Controllers
         {
             try
             {
-                var result = await CollectionService.List(await CurrentUserModel(),
-                    request);
+                var result = await CollectionService.List(await CurrentUserModel(), request);
                 if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
                 return Ok(result);
             }
@@ -93,10 +130,27 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> Update(Collection collection)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var result = await CollectionService.UpdateCollection(await CurrentUserModel(), collection);
-            if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
     }

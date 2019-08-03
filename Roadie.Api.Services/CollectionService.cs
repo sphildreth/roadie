@@ -132,7 +132,9 @@ namespace Roadie.Api.Services
             if (!user.IsEditor)
             {
                 Logger.LogWarning($"DeleteCollection: Access Denied: `{collection}`, By User `{user}`");
-                return new OperationResult<bool>("Access Denied");
+                var r = new OperationResult<bool>("Access Denied");
+                r.IsAccessDeniedResult = true;
+                return r;
             }
 
             try
@@ -237,8 +239,16 @@ namespace Roadie.Api.Services
                 {
                     return new OperationResult<bool>(true, string.Format("Collection Not Found [{0}]", model.Id));
                 }
+                // If collection is being renamed, see if collection already exists with new model supplied name
+                if (collection.Name.ToAlphanumericName() != model.Name.ToAlphanumericName())
+                {
+                    var existingCollection = DbContext.Collections.FirstOrDefault(x => x.Name == model.Name);
+                    if (existingCollection != null)
+                    {
+                        return new OperationResult<bool>($"Collection already exists with name [{ model.Name }].");
+                    }
+                }
             }
-
             collection.IsLocked = model.IsLocked;
             var oldPathToImage = collection.PathToImage(Configuration);
             var didChangeName = collection.Name != model.Name;

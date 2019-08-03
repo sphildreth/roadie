@@ -8,6 +8,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Enums;
 using Roadie.Library.Identity;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using models = Roadie.Library.Models;
@@ -39,7 +40,18 @@ namespace Roadie.Api.Controllers
             if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
             var result = await CommentService.AddNewArtistComment(await CurrentUserModel(), id, model.Cmt);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -51,7 +63,18 @@ namespace Roadie.Api.Controllers
             if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
             var result = await CommentService.AddNewCollectionComment(await CurrentUserModel(), id, model.Cmt);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -63,7 +86,18 @@ namespace Roadie.Api.Controllers
             if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
             var result = await CommentService.AddNewGenreComment(await CurrentUserModel(), id, model.Cmt);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -75,7 +109,18 @@ namespace Roadie.Api.Controllers
             if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
             var result = await CommentService.AddNewLabelComment(await CurrentUserModel(), id, model.Cmt);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -87,7 +132,18 @@ namespace Roadie.Api.Controllers
             if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
             var result = await CommentService.AddNewPlaylistComment(await CurrentUserModel(), id, model.Cmt);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -99,7 +155,18 @@ namespace Roadie.Api.Controllers
             if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
             var result = await CommentService.AddNewReleaseComment(await CurrentUserModel(), id, model.Cmt);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -111,7 +178,18 @@ namespace Roadie.Api.Controllers
             if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
             var result = await CommentService.AddNewTrackComment(await CurrentUserModel(), id, model.Cmt);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -122,7 +200,18 @@ namespace Roadie.Api.Controllers
         {
             var result = await CommentService.DeleteComment(await CurrentUserModel(), id);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 
@@ -133,7 +222,18 @@ namespace Roadie.Api.Controllers
         {
             var result = await CommentService.SetCommentReaction(await CurrentUserModel(), id, reaction);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
     }

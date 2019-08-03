@@ -1357,6 +1357,15 @@ namespace Roadie.Api.Services
             {
                 return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", model.Id));
             }
+            // If release is being renamed, see if release already exists for artist with new model supplied name
+            if (release.Title.ToAlphanumericName() != model.Title.ToAlphanumericName())
+            {
+                var existingRelease = DbContext.Releases.FirstOrDefault(x => x.Title == model.Title && x.ArtistId == release.ArtistId);
+                if (existingRelease != null)
+                {
+                    return new OperationResult<bool>($"Release already exists for Artist with title [{ model.Title }].");
+                }
+            }
             try
             {
                 var now = DateTime.UtcNow;

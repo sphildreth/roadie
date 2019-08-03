@@ -8,6 +8,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using models = Roadie.Library.Models;
@@ -75,7 +76,18 @@ namespace Roadie.Api.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var result = await TrackService.UpdateTrack(await CurrentUserModel(), track);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
     }

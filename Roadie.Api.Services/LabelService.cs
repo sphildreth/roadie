@@ -254,7 +254,19 @@ namespace Roadie.Api.Services
             sw.Start();
             var errors = new List<Exception>();
             var label = DbContext.Labels.FirstOrDefault(x => x.RoadieId == model.Id);
-            if (label == null) return new OperationResult<bool>(true, string.Format("Label Not Found [{0}]", model.Id));
+            if (label == null)
+            {
+                return new OperationResult<bool>(true, string.Format("Label Not Found [{0}]", model.Id));
+            }
+            // If label is being renamed, see if label already exists with new model supplied name
+            if (label.Name.ToAlphanumericName() != model.Name.ToAlphanumericName())
+            {
+                var existingLabel = DbContext.Labels.FirstOrDefault(x => x.Name == model.Name);
+                if (existingLabel != null)
+                {
+                    return new OperationResult<bool>($"Label already exists with name [{ model.Name }].");
+                }
+            }
             try
             {
                 var now = DateTime.UtcNow;

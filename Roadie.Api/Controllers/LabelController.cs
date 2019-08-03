@@ -9,6 +9,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web;
@@ -110,10 +111,23 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> Update(models.Label label)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var result = await LabelService.UpdateLabel(await CurrentUserModel(), label);
-            if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 

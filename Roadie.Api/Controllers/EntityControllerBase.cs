@@ -44,11 +44,19 @@ namespace Roadie.Api.Controllers
         protected async Task<models.User> CurrentUserModel()
         {
             if (_currentUser == null)
+            {
                 if (User.Identity.IsAuthenticated)
-                    _currentUser = await CacheManager.GetAsync($"urn:controller_user:{User.Identity.Name}",
-                        async () => { return UserModelForUser(await UserManager.GetUserAsync(User)); },
-                        ControllerCacheRegionUrn);
-            if (_currentUser == null) throw new UnauthorizedAccessException("Access Denied");
+                {
+                    _currentUser = await CacheManager.GetAsync($"urn:controller_user:{User.Identity.Name}", async () =>
+                    {
+                        return UserModelForUser(await UserManager.GetUserAsync(User));
+                    }, ControllerCacheRegionUrn);
+                }
+            }
+            if (_currentUser == null)
+            {
+                throw new UnauthorizedAccessException("Access Denied");
+            }
             return _currentUser;
         }
 

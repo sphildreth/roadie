@@ -9,6 +9,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web;
@@ -80,6 +81,14 @@ namespace Roadie.Api.Controllers
             }
             if (!result.IsSuccess)
             {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
             return Ok(result);
@@ -93,7 +102,18 @@ namespace Roadie.Api.Controllers
         {
             var result = await GenreService.UploadGenreImage(await CurrentUserModel(), id, file);
             if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
     }

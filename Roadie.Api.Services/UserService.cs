@@ -58,7 +58,9 @@ namespace Roadie.Api.Services
             {
                 if(user.UserId != id && !user.IsAdmin)
                 {
-                    return new OperationResult<User>(new Exception("Access Denied"));
+                    var r = new OperationResult<User>("Access Denied");
+                    r.IsAccessDeniedResult = true;
+                    return r;
                 }
             }
             var sw = Stopwatch.StartNew();
@@ -371,18 +373,16 @@ namespace Roadie.Api.Services
             }
             if (user.Id != userPerformingUpdate.Id && !userPerformingUpdate.IsAdmin)
             {
-                return new OperationResult<bool>
+                var r = new OperationResult<bool>("Access Denied")
                 {
-                    Errors = new List<Exception> { new Exception("Access Denied") }
+                    IsAccessDeniedResult = true
                 };
+                return r;
             }
             // Check concurrency stamp
             if (user.ConcurrencyStamp != userBeingUpdatedModel.ConcurrencyStamp)
             {
-                return new OperationResult<bool>
-                {
-                    Errors = new List<Exception> { new Exception("User data is stale.") }
-                };
+                return new OperationResult<bool>("User data is stale.");
             }
             // Check that username (if changed) doesn't already exist
             if (user.UserName != userBeingUpdatedModel.UserName)
@@ -390,10 +390,7 @@ namespace Roadie.Api.Services
                 var userByUsername = DbContext.Users.FirstOrDefault(x => x.NormalizedUserName == userBeingUpdatedModel.UserName.ToUpper());
                 if (userByUsername != null)
                 {
-                    return new OperationResult<bool>
-                    {
-                        Errors = new List<Exception> { new Exception("Username already in use") }
-                    };
+                    return new OperationResult<bool>("Username already in use");
                 }
             }
 
@@ -403,10 +400,7 @@ namespace Roadie.Api.Services
                 var userByEmail = DbContext.Users.FirstOrDefault(x => x.NormalizedEmail == userBeingUpdatedModel.Email.ToUpper());
                 if (userByEmail != null)
                 {
-                    return new OperationResult<bool>
-                    {
-                        Errors = new List<Exception> { new Exception("Email already in use") }
-                    };
+                    return new OperationResult<bool>("Email already in use");
                 }
             }
             var oldPathToImage = user.PathToImage(Configuration);
