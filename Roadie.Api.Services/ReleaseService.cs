@@ -192,8 +192,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(User roadieUser, PagedRequest request,
-            bool? doRandomize = false, IEnumerable<string> includes = null)
+        public Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -231,9 +230,7 @@ namespace Roadie.Api.Services
             }
             else if (!string.IsNullOrEmpty(request.FilterByGenre) || !string.IsNullOrEmpty(request.Filter) && request.Filter.StartsWith(":genre", StringComparison.OrdinalIgnoreCase))
             {
-                var genreFilter = request.FilterByGenre ??
-                                  (request.Filter ?? string.Empty).Replace(":genre ", "",
-                                      StringComparison.OrdinalIgnoreCase);
+                var genreFilter = request.FilterByGenre ?? (request.Filter ?? string.Empty).Replace(":genre ", "", StringComparison.OrdinalIgnoreCase);
                 genreReleaseIds = (from rg in DbContext.ReleaseGenres
                                    join g in DbContext.Genres on rg.GenreId equals g.Id
                                    where g.Name.Contains(genreFilter)
@@ -349,8 +346,8 @@ namespace Roadie.Api.Services
                               Thumbnail = MakeReleaseThumbnailImage(r.RoadieId),
                               TrackCount = r.TrackCount,
                               TrackPlayedCount = r.PlayedCount
-                          }
-                );
+                          });
+
             ReleaseList[] rows = null;
 
             rowCount = rowCount ?? result.Count();

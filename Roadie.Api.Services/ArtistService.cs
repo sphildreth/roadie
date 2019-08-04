@@ -933,11 +933,13 @@ namespace Roadie.Api.Services
             tsw.Stop();
             timings.Add("adaptArtist", tsw.ElapsedMilliseconds);
             result.Thumbnail = MakeArtistThumbnailImage(id);
-            result.MediumThumbnail = MakeThumbnailImage(id, "artist", Configuration.MediumImageSize.Width,
-                Configuration.MediumImageSize.Height);
+            result.MediumThumbnail = MakeThumbnailImage(id, "artist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             tsw.Restart();
             result.Genres = artist.Genres.Select(x => new DataToken
-            { Text = x.Genre.Name, Value = x.Genre.RoadieId.ToString() });
+            {
+                Text = x.Genre.Name,
+                Value = x.Genre.RoadieId.ToString()
+            });
             tsw.Stop();
             timings.Add("genres", tsw.ElapsedMilliseconds);
 
@@ -946,8 +948,12 @@ namespace Roadie.Api.Services
                 if (includes.Contains("releases"))
                 {
                     var dtoReleases = new List<ReleaseList>();
-                    foreach (var release in DbContext.Releases.Include("Medias").Include("Medias.Tracks")
-                        .Include("Medias.Tracks").Where(x => x.ArtistId == artist.Id).ToArray())
+                    foreach (var release in DbContext.Releases
+                                            .Include("Medias")
+                                            .Include("Medias.Tracks")
+                                            .Include("Medias.Tracks")
+                                            .Where(x => x.ArtistId == artist.Id)
+                                            .ToArray())
                     {
                         var releaseList = release.Adapt<ReleaseList>();
                         releaseList.Thumbnail = MakeReleaseThumbnailImage(release.RoadieId);
@@ -957,8 +963,10 @@ namespace Roadie.Api.Services
                             {
                                 var dtoMedia = releasemedia.Adapt<ReleaseMediaList>();
                                 var tracks = new List<TrackList>();
-                                foreach (var t in DbContext.Tracks.Where(x => x.ReleaseMediaId == releasemedia.Id)
-                                    .OrderBy(x => x.TrackNumber).ToArray())
+                                foreach (var t in DbContext.Tracks
+                                                            .Where(x => x.ReleaseMediaId == releasemedia.Id)
+                                                            .OrderBy(x => x.TrackNumber)
+                                                            .ToArray())
                                 {
                                     var track = t.Adapt<TrackList>();
                                     ArtistList trackArtist = null;
@@ -1210,7 +1218,10 @@ namespace Roadie.Api.Services
                         FilterToArtistId = artist.RoadieId
                     };
                     var r = await PlaylistService.List(pg);
-                    if (r.IsSuccess) result.PlaylistsWithArtistReleases = r.Rows.ToArray();
+                    if (r.IsSuccess)
+                    {
+                        result.PlaylistsWithArtistReleases = r.Rows.ToArray();
+                    } 
                     tsw.Stop();
                     timings.Add("playlists", tsw.ElapsedMilliseconds);
                 }
@@ -1218,21 +1229,28 @@ namespace Roadie.Api.Services
                 if (includes.Contains("contributions"))
                 {
                     tsw.Restart();
-                    result.ArtistContributionReleases = (from t in DbContext.Tracks
-                                                         join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                                         join r in DbContext.Releases.Include(x => x.Artist) on rm.ReleaseId equals r.Id
-                                                         where t.ArtistId == artist.Id
-                                                         group r by r.Id
-                            into rr
-                                                         select rr)
-                        .ToArray()
-                        .Select(rr => rr.First())
-                        .Select(r => ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl,
-                            MakeArtistThumbnailImage(r.Artist.RoadieId), MakeReleaseThumbnailImage(r.RoadieId)))
-                        .ToArray().OrderBy(x => x.Release.Text).ToArray();
-                    result.ArtistContributionReleases = result.ArtistContributionReleases.Any()
-                        ? result.ArtistContributionReleases
-                        : null;
+                    var artistContributingTracks = (from t in DbContext.Tracks
+                                                    join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                                    join r in DbContext.Releases on rm.ReleaseId equals r.Id
+                                                    where t.ArtistId == artist.Id
+                                                    select r.Id)
+                                                    .ToArray()
+                                                    .Distinct();
+
+                    if (artistContributingTracks?.Any() ?? false)
+                    {
+                        result.ArtistContributionReleases = (from r in DbContext.Releases.Include(x => x.Artist)
+                                                             where artistContributingTracks.Contains(r.Id)
+                                                             select r)
+                                                             .OrderBy(x => x.Title)
+                                                             .ToArray()
+                                                             .Select(r => ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, MakeArtistThumbnailImage(r.Artist.RoadieId), MakeReleaseThumbnailImage(r.RoadieId)));
+
+
+                        result.ArtistContributionReleases = result.ArtistContributionReleases.Any()
+                            ? result.ArtistContributionReleases
+                            : null;
+                    }
                     tsw.Stop();
                     timings.Add("contributions", tsw.ElapsedMilliseconds);
                 }
@@ -1246,9 +1264,12 @@ namespace Roadie.Api.Services
                                            where r.ArtistId == artist.Id
                                            orderby l.SortName
                                            select LabelList.FromDataLabel(l, MakeLabelThumbnailImage(l.RoadieId)))
-                        .ToArray()
-                        .GroupBy(x => x.Label.Value).Select(x => x.First()).OrderBy(x => x.SortName)
-                        .ThenBy(x => x.Label.Text).ToArray();
+                                          .ToArray()
+                                          .GroupBy(x => x.Label.Value)
+                                          .Select(x => x.First())
+                                          .OrderBy(x => x.SortName)
+                                          .ThenBy(x => x.Label.Text)
+                                          .ToArray();
                     result.ArtistLabels = result.ArtistLabels.Any() ? result.ArtistLabels : null;
                     tsw.Stop();
                     timings.Add("labels", tsw.ElapsedMilliseconds);
@@ -1257,9 +1278,7 @@ namespace Roadie.Api.Services
 
             sw.Stop();
             timings.Add("operation", sw.ElapsedMilliseconds);
-            Logger.LogDebug("ArtistByIdAction Timings: id [{0}], includes [{1}], timings [{3}]", id, includes,
-                JsonConvert.SerializeObject(timings));
-
+            Logger.LogDebug("ArtistByIdAction Timings: id [{0}], includes [{1}], timings [{3}]", id, includes, JsonConvert.SerializeObject(timings));
             return new OperationResult<Artist>
             {
                 Data = result,

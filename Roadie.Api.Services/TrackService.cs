@@ -192,16 +192,16 @@ namespace Roadie.Api.Services
                 var playlistTrackIds = new int[0];
                 if (request.FilterToPlaylistId.HasValue)
                 {
-                    var playlistTrackInfos = from plt in DbContext.PlaylistTracks
-                                             join p in DbContext.Playlists on plt.PlayListId equals p.Id
-                                             join t in DbContext.Tracks on plt.TrackId equals t.Id
-                                             where p.RoadieId == request.FilterToPlaylistId.Value
-                                             orderby plt.ListNumber
-                                             select new
-                                             {
-                                                 plt.ListNumber,
-                                                 t.Id
-                                             };
+                    var playlistTrackInfos = (from plt in DbContext.PlaylistTracks
+                                              join p in DbContext.Playlists on plt.PlayListId equals p.Id
+                                              join t in DbContext.Tracks on plt.TrackId equals t.Id
+                                              where p.RoadieId == request.FilterToPlaylistId.Value
+                                              orderby plt.ListNumber
+                                              select new
+                                              {
+                                                  plt.ListNumber,
+                                                  t.Id
+                                              }).ToArray();
 
                     rowCount = playlistTrackInfos.Count();
                     playListTrackPositions = playlistTrackInfos
@@ -507,10 +507,6 @@ namespace Roadie.Api.Services
 
                 if(doRandomize ?? false)
                 {
-                    //rows = result.OrderBy(x => x.Artist.RandomSortId)
-                    //              .ThenBy(x => x.RandomSortId)
-                    //              .ToArray();
-
                     rows = result.ToArray();
                 }
                 else

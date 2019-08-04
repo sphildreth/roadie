@@ -82,19 +82,19 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             sw.Start();
 
-            var cacheKey = string.Format("urn:collection_by_id_operation:{0}:{1}", id,
-                includes == null ? "0" : string.Join("|", includes));
-            var result = await CacheManager.GetAsync(cacheKey,
-                async () => { return await CollectionByIdAction(id, includes); }, data.Artist.CacheRegionUrn(id));
+            var cacheKey = string.Format("urn:collection_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
+            var result = await CacheManager.GetAsync(cacheKey, async () => 
+            {
+                return await CollectionByIdAction(id, includes);
+            }, data.Artist.CacheRegionUrn(id));
             sw.Stop();
             if (result?.Data != null && roadieUser != null)
             {
-                var userBookmarkResult =
-                    await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Collection);
+                var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Collection);
                 if (userBookmarkResult.IsSuccess)
-                    result.Data.UserBookmarked =
-                        userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) !=
-                        null;
+                {
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
+                }
                 if (result.Data.Comments.Any())
                 {
                     var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
@@ -337,9 +337,9 @@ namespace Roadie.Api.Services
             var collection = GetCollection(id);
 
             if (collection == null)
-                return Task.FromResult(new OperationResult<Collection>(true,
-                    string.Format("Collection Not Found [{0}]", id)));
-
+            {
+                return Task.FromResult(new OperationResult<Collection>(true, string.Format("Collection Not Found [{0}]", id)));
+            }
             var result = collection.Adapt<Collection>();
             var maintainer = DbContext.Users.FirstOrDefault(x => x.Id == collection.MaintainerId);
             result.Maintainer = new DataToken
@@ -376,19 +376,18 @@ namespace Roadie.Api.Services
                                        select new CollectionRelease
                                        {
                                            ListNumber = crc.ListNumber,
-                                           Release = ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl,
-                                               MakeArtistThumbnailImage(r.Artist.RoadieId), MakeReleaseThumbnailImage(r.RoadieId))
+                                           Release = ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, MakeArtistThumbnailImage(r.Artist.RoadieId), MakeReleaseThumbnailImage(r.RoadieId))
                                        }).ToArray();
 
                 if (includes.Contains("stats"))
                 {
                     var collectionReleases = from crc in DbContext.CollectionReleases
-                                             join r in DbContext.Releases.Include(x => x.Artist) on crc.ReleaseId equals r.Id
+                                             join r in DbContext.Releases on crc.ReleaseId equals r.Id
                                              where crc.CollectionId == collection.Id
                                              select r;
 
                     var collectionTracks = from crc in DbContext.CollectionReleases
-                                           join r in DbContext.Releases.Include(x => x.Artist) on crc.ReleaseId equals r.Id
+                                           join r in DbContext.Releases on crc.ReleaseId equals r.Id
                                            join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                            join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
                                            where crc.CollectionId == collection.Id
@@ -410,7 +409,9 @@ namespace Roadie.Api.Services
                 if (includes.Contains("comments"))
                 {
                     var collectionComments = DbContext.Comments.Include(x => x.User)
-                        .Where(x => x.CollectionId == collection.Id).OrderByDescending(x => x.CreatedDate).ToArray();
+                                                      .Where(x => x.CollectionId == collection.Id)
+                                                      .OrderByDescending(x => x.CreatedDate)
+                                                      .ToArray();
                     if (collectionComments.Any())
                     {
                         var comments = new List<Comment>();
@@ -422,15 +423,11 @@ namespace Roadie.Api.Services
                         {
                             var comment = collectionComment.Adapt<Comment>();
                             comment.DatabaseId = collectionComment.Id;
-                            comment.User = UserList.FromDataUser(collectionComment.User,
-                                MakeUserThumbnailImage(collectionComment.User.RoadieId));
-                            comment.DislikedCount = userCommentReactions.Count(x =>
-                                x.CommentId == collectionComment.Id && x.ReactionValue == CommentReaction.Dislike);
-                            comment.LikedCount = userCommentReactions.Count(x =>
-                                x.CommentId == collectionComment.Id && x.ReactionValue == CommentReaction.Like);
+                            comment.User = UserList.FromDataUser(collectionComment.User, MakeUserThumbnailImage(collectionComment.User.RoadieId));
+                            comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == collectionComment.Id && x.ReactionValue == CommentReaction.Dislike);
+                            comment.LikedCount = userCommentReactions.Count(x => x.CommentId == collectionComment.Id && x.ReactionValue == CommentReaction.Like);
                             comments.Add(comment);
                         }
-
                         result.Comments = comments;
                     }
                 }

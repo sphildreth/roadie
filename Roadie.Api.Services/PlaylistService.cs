@@ -460,8 +460,7 @@ namespace Roadie.Api.Services
             var maintainer = DbContext.Users.Include(x => x.UserRoles).Include("UserRoles.Role").FirstOrDefault(x => x.Id == playlist.UserId);
             result.Maintainer = UserList.FromDataUser(maintainer, MakeUserThumbnailImage(maintainer.RoadieId));
             result.Thumbnail = MakePlaylistThumbnailImage(playlist.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(id, "playlist", Configuration.MediumImageSize.Width,
-                Configuration.MediumImageSize.Height);
+            result.MediumThumbnail = MakeThumbnailImage(id, "playlist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             if (includes != null && includes.Any())
             {
                 var playlistTracks = (from pl in DbContext.Playlists
