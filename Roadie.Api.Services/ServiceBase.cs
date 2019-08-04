@@ -22,6 +22,11 @@ namespace Roadie.Api.Services
     {
         public static string TrackTokenSalt = "B0246908-FBD6-4E12-A96C-AF5B086115B3";
 
+        private static readonly Lazy<Hashids> hashIds = new Lazy<Hashids>(() =>
+        {
+            return new Hashids(TrackTokenSalt);
+        });
+
         protected readonly ICacheManager _cacheManager;
         protected readonly IRoadieSettings _configuration;
         protected readonly data.IRoadieDbContext _dbContext;
@@ -54,16 +59,21 @@ namespace Roadie.Api.Services
 
         public static bool ConfirmTrackPlayToken(ApplicationUser user, Guid trackRoadieId, string token)
         {
-            if (string.IsNullOrEmpty(token)) return false;
+            if (string.IsNullOrEmpty(token))
+            {
+                return false;
+            }
             return TrackPlayToken(user, trackRoadieId).Equals(token);
         }
 
         public static string TrackPlayToken(ApplicationUser user, Guid trackId)
         {
-            var hashids = new Hashids(TrackTokenSalt);
             var trackIdPart = BitConverter.ToInt32(trackId.ToByteArray(), 6);
-            if (trackIdPart < 0) trackIdPart *= -1;
-            var token = hashids.Encode(user.Id, SafeParser.ToNumber<int>(user.CreatedDate.Value.ToString("DDHHmmss")), trackIdPart);
+            if (trackIdPart < 0)
+            {
+                trackIdPart *= -1;
+            }
+            var token = hashIds.Value.Encode(user.Id, SafeParser.ToNumber<int>(user.CreatedDate.Value.ToString("DDHHmmss")), trackIdPart);
             return token;
         }
 
@@ -279,10 +289,9 @@ namespace Roadie.Api.Services
             return MakeThumbnailImage(id, "release");
         }
 
-        protected string MakeTrackPlayUrl(ApplicationUser user, int trackId, Guid trackRoadieId)
+        public static string MakeTrackPlayUrl(ApplicationUser user, string baseUrl, int trackId, Guid trackRoadieId)
         {
-            return
-                $"{HttpContext.BaseUrl}/play/track/{user.Id}/{TrackPlayToken(user, trackRoadieId)}/{trackRoadieId}.mp3";
+            return $"{baseUrl}/play/track/{user.Id}/{TrackPlayToken(user, trackRoadieId)}/{trackRoadieId}.mp3";
         }
 
         protected Image MakeTrackThumbnailImage(Guid id)

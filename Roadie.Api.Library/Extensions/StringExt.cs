@@ -365,5 +365,14 @@ namespace Roadie.Library.Extensions
             var uri = new Uri(input);
             return uri.Segments.Last();
         }
+
+        public static string ToCSV(this IEnumerable<string> input)
+        {
+            if(input == null || !input.Any())
+            {
+                return null;
+            }
+            return string.Join(",", input);
+        }
     }
 }

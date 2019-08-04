@@ -125,7 +125,7 @@ namespace Roadie.Api.Services
                     var user = GetUser(roadieUser.UserId);
                     foreach (var track in result.Data.Tracks)
                     {
-                        track.Track.TrackPlayUrl = MakeTrackPlayUrl(user, track.Track.DatabaseId, track.Track.Id);
+                        track.Track.TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.Track.DatabaseId, track.Track.Id);
                     }
                 }
 
@@ -444,15 +444,22 @@ namespace Roadie.Api.Services
 
         private Task<OperationResult<Playlist>> PlaylistByIdAction(Guid id, IEnumerable<string> includes = null)
         {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
             var sw = Stopwatch.StartNew();
             sw.Start();
 
+            tsw.Restart();
             var playlist = GetPlaylist(id);
+            tsw.Stop();
+            timings.Add("getPlaylist", tsw.ElapsedMilliseconds);
 
             if (playlist == null)
             {
                 return Task.FromResult(new OperationResult<Playlist>(true, string.Format("Playlist Not Found [{0}]", id)));
             }
+            tsw.Restart();
             var result = playlist.Adapt<Playlist>();
             result.AlternateNames = playlist.AlternateNames;
             result.Tags = playlist.Tags;
@@ -461,6 +468,8 @@ namespace Roadie.Api.Services
             result.Maintainer = UserList.FromDataUser(maintainer, MakeUserThumbnailImage(maintainer.RoadieId));
             result.Thumbnail = MakePlaylistThumbnailImage(playlist.RoadieId);
             result.MediumThumbnail = MakeThumbnailImage(id, "playlist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            tsw.Stop();
+            timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (includes != null && includes.Any())
             {
                 var playlistTracks = (from pl in DbContext.Playlists
@@ -471,6 +480,7 @@ namespace Roadie.Api.Services
 
                 if (includes.Contains("stats"))
                 {
+                    tsw.Restart();
                     result.Statistics = new ReleaseGroupingStatistics
                     {
                         ReleaseCount = result.ReleaseCount,
@@ -478,9 +488,12 @@ namespace Roadie.Api.Services
                         TrackSize = result.DurationTime,
                         FileSize = playlistTracks.Sum(x => (long?)x.t.FileSize).ToFileSize()
                     };
+                    tsw.Stop();
+                    timings.Add("stats", tsw.ElapsedMilliseconds);
                 }
                 if (includes.Contains("tracks"))
                 {
+                    tsw.Restart();
                     result.Tracks = (from plt in playlistTracks
                                      join rm in DbContext.ReleaseMedias on plt.t.ReleaseMediaId equals rm.Id
                                      join r in DbContext.Releases on rm.ReleaseId equals r.Id
@@ -502,9 +515,12 @@ namespace Roadie.Api.Services
                                              MakeArtistThumbnailImage(releaseArtist.RoadieId),
                                              MakeArtistThumbnailImage(trackArtist == null ? null : (Guid?)trackArtist.RoadieId))
                                      }).ToArray();
+                    tsw.Stop();
+                    timings.Add("tracks", tsw.ElapsedMilliseconds);
                 }
                 if (includes.Contains("comments"))
                 {
+                    tsw.Restart();
                     var playlistComments = DbContext.Comments.Include(x => x.User)
                                                     .Where(x => x.PlaylistId == playlist.Id)
                                                     .OrderByDescending(x => x.CreatedDate)
@@ -527,10 +543,13 @@ namespace Roadie.Api.Services
                         }
                         result.Comments = comments;
                     }
+                    tsw.Stop();
+                    timings.Add("comments", tsw.ElapsedMilliseconds);
                 }
             }
 
             sw.Stop();
+            Logger.LogInformation($"ByIdAction: Playlist `{ playlist }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
             return Task.FromResult(new OperationResult<Playlist>
             {
                 Data = result,

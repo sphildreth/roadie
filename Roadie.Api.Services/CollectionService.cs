@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -331,10 +332,16 @@ namespace Roadie.Api.Services
 
         private Task<OperationResult<Collection>> CollectionByIdAction(Guid id, IEnumerable<string> includes = null)
         {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
             var sw = Stopwatch.StartNew();
             sw.Start();
 
+            tsw.Restart();
             var collection = GetCollection(id);
+            tsw.Stop();
+            timings.Add("getCollection", tsw.ElapsedMilliseconds);
 
             if (collection == null)
             {
@@ -355,6 +362,8 @@ namespace Roadie.Api.Services
             result.CollectionFoundCount = (from crc in DbContext.CollectionReleases
                                            where crc.CollectionId == collection.Id
                                            select crc.Id).Count();
+            tsw.Stop();
+            timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (includes != null && includes.Any())
             {
                 if (includes.Contains("list"))
@@ -369,6 +378,8 @@ namespace Roadie.Api.Services
                 }
 
                 if (includes.Contains("releases"))
+                {
+                    tsw.Restart();
                     result.Releases = (from crc in DbContext.CollectionReleases
                                        join r in DbContext.Releases.Include(x => x.Artist) on crc.ReleaseId equals r.Id
                                        where crc.CollectionId == collection.Id
@@ -378,9 +389,13 @@ namespace Roadie.Api.Services
                                            ListNumber = crc.ListNumber,
                                            Release = ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, MakeArtistThumbnailImage(r.Artist.RoadieId), MakeReleaseThumbnailImage(r.RoadieId))
                                        }).ToArray();
+                    tsw.Stop();
+                    timings.Add("releases", tsw.ElapsedMilliseconds);
+                }
 
                 if (includes.Contains("stats"))
                 {
+                    tsw.Restart();
                     var collectionReleases = from crc in DbContext.CollectionReleases
                                              join r in DbContext.Releases on crc.ReleaseId equals r.Id
                                              where crc.CollectionId == collection.Id
@@ -404,10 +419,13 @@ namespace Roadie.Api.Services
                         TrackCount = collectionReleases.Sum(x => x.TrackCount),
                         TrackPlayedCount = collectionReleases.Sum(x => x.PlayedCount)
                     };
+                    tsw.Stop();
+                    timings.Add("stats", tsw.ElapsedMilliseconds);
                 }
 
                 if (includes.Contains("comments"))
                 {
+                    tsw.Restart();
                     var collectionComments = DbContext.Comments.Include(x => x.User)
                                                       .Where(x => x.CollectionId == collection.Id)
                                                       .OrderByDescending(x => x.CreatedDate)
@@ -430,9 +448,11 @@ namespace Roadie.Api.Services
                         }
                         result.Comments = comments;
                     }
+                    tsw.Stop();
+                    timings.Add("comments", tsw.ElapsedMilliseconds);
                 }
             }
-
+            Logger.LogInformation($"ByIdAction: Collection `{ collection }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
             sw.Stop();
             return Task.FromResult(new OperationResult<Collection>
             {

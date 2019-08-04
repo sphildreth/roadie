@@ -113,7 +113,7 @@ namespace Roadie.Api.Services
                             Text = track.Title,
                             Value = track.RoadieId.ToString()
                         };
-                        row.Track = models.TrackList.FromDataTrack(MakeTrackPlayUrl(user, track.Id, track.RoadieId),
+                        row.Track = models.TrackList.FromDataTrack(MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.Id, track.RoadieId),
                             track,
                             track.ReleaseMedia.MediaNumber,
                             track.ReleaseMedia.Release,
@@ -126,7 +126,7 @@ namespace Roadie.Api.Services
                             MakeArtistThumbnailImage(track.TrackArtist == null
                                 ? null
                                 : (Guid?)track.TrackArtist.RoadieId));
-                        row.Track.TrackPlayUrl = MakeTrackPlayUrl(user, track.Id, track.RoadieId);
+                        row.Track.TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.Id, track.RoadieId);
                         row.Thumbnail = MakeTrackThumbnailImage(track.RoadieId);
                         row.SortName = track.Title;
                         break;

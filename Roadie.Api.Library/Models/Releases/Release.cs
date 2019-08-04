@@ -79,5 +79,10 @@ namespace Roadie.Library.Models.Releases
 
         public short TrackCount { get; set; }
         public UserRelease UserRating { get; set; }
+
+        public override string ToString()
+        {
+            return $"Id [{ Id }], Title [{ Title }]";
+        }
     }
 }

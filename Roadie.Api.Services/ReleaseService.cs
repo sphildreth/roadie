@@ -25,6 +25,7 @@ using Roadie.Library.Models.Users;
 using Roadie.Library.Processors;
 using Roadie.Library.Utility;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -102,13 +103,28 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<Release>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
         {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
             var sw = Stopwatch.StartNew();
             sw.Start();
             var cacheKey = string.Format("urn:release_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
-            var result = await CacheManager.GetAsync(cacheKey,async () => { return await ReleaseByIdAction(id, includes); }, data.Artist.CacheRegionUrn(id));
+            var result = await CacheManager.GetAsync(cacheKey,async () => 
+            {
+                tsw.Restart();
+                var rr = await ReleaseByIdAction(id, includes);
+                tsw.Stop();
+                timings.Add("ReleaseByIdAction", tsw.ElapsedMilliseconds);
+                return rr;
+
+            }, data.Artist.CacheRegionUrn(id));
             if (result?.Data != null && roadieUser != null)
             {
+                tsw.Restart();
                 var release = GetRelease(id);
+                tsw.Stop();
+                timings.Add("getRelease", tsw.ElapsedMilliseconds);
+
                 var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Release);
                 if (userBookmarkResult.IsSuccess)
                 {
@@ -116,19 +132,26 @@ namespace Roadie.Api.Services
                 }
                 if (result.Data.Medias != null)
                 {
+                    tsw.Restart();
                     var user = GetUser(roadieUser.UserId);
-                    foreach (var media in result.Data.Medias)
+                    tsw.Stop();
+                    timings.Add("getUser", tsw.ElapsedMilliseconds);
+
+                    tsw.Restart();
+                    Parallel.ForEach(result.Data.Medias.SelectMany(x => x.Tracks), track =>
                     {
-                        foreach (var track in media.Tracks)
-                        {
-                            track.TrackPlayUrl = MakeTrackPlayUrl(user, track.DatabaseId, track.Id);
-                        }
-                    }
-                    var releaseTrackIds = result.Data.Medias.SelectMany(x => x.Tracks).Select(x => x.Id);
+                        track.TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.DatabaseId, track.Id);
+                    });     
+                    
+                    tsw.Stop();
+                    timings.Add("makeTrackPlayUrls", tsw.ElapsedMilliseconds);
+
+                    tsw.Restart();
+                    var releaseTrackIds = result.Data.Medias.SelectMany(x => x.Tracks).Select(x => x.Id).ToList();
                     var releaseUserTracks = (from ut in DbContext.UserTracks
                                              join t in DbContext.Tracks on ut.TrackId equals t.Id
+                                             where releaseTrackIds.Contains(t.RoadieId)
                                              where ut.UserId == roadieUser.Id
-                                             where (from x in releaseTrackIds select x).Contains(t.RoadieId)
                                              select new
                                              {
                                                  t,
@@ -142,6 +165,7 @@ namespace Roadie.Api.Services
                             {
                                 var releaseTrack = media.Tracks.FirstOrDefault(x => x.Id == releaseUserTrack.t.RoadieId);
                                 if (releaseTrack != null)
+                                {
                                     releaseTrack.UserRating = new UserTrack
                                     {
                                         Rating = releaseUserTrack.ut.Rating,
@@ -150,23 +174,30 @@ namespace Roadie.Api.Services
                                         LastPlayed = releaseUserTrack.ut.LastPlayed,
                                         PlayedCount = releaseUserTrack.ut.PlayedCount
                                     };
+                                }
                             }
                         }
                     }
+                    tsw.Stop();
+                    timings.Add("userTracks", tsw.ElapsedMilliseconds);
                 }
 
                 var userRelease =  DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == roadieUser.Id);
                 if (userRelease != null)
                 {
+                    tsw.Restart();
                     result.Data.UserRating = new UserRelease
                     {
                         IsDisliked = userRelease.IsDisliked ?? false,
                         IsFavorite = userRelease.IsFavorite ?? false,
                         Rating = userRelease.Rating
                     };
+                    tsw.Stop();
+                    timings.Add("userRelease", tsw.ElapsedMilliseconds);
                 }
                 if (result.Data.Comments.Any())
                 {
+                    tsw.Restart();
                     var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
                     var userCommentReactions = (from cr in DbContext.CommentReactions
                                                 where commentIds.Contains(cr.CommentId)
@@ -178,10 +209,13 @@ namespace Roadie.Api.Services
                         comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
                         comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
                     }
+                    tsw.Stop();
+                    timings.Add("userComments", tsw.ElapsedMilliseconds);
                 }
             }
 
             sw.Stop();
+            Logger.LogInformation($"ById Release: `{ result?.Data }`, includes [{ includes.ToCSV() }], timings [{ timings.ToTimings() }]");
             return new OperationResult<Release>(result.Messages)
             {
                 Data = result?.Data,
@@ -1659,15 +1693,22 @@ namespace Roadie.Api.Services
 
         private async Task<OperationResult<Release>> ReleaseByIdAction(Guid id, IEnumerable<string> includes = null)
         {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
             var sw = Stopwatch.StartNew();
             sw.Start();
 
+            tsw.Restart();
             var release = GetRelease(id);
+            tsw.Stop();
+            timings.Add("getRelease", tsw.ElapsedMilliseconds);
 
             if (release == null)
             {
                 return new OperationResult<Release>(true, string.Format("Release Not Found [{0}]", id));
             }
+            tsw.Restart();
             var result = release.Adapt<Release>();
             result.Artist = ArtistList.FromDataArtist(release.Artist, MakeArtistThumbnailImage(release.Artist.RoadieId));
             result.Thumbnail = MakeReleaseThumbnailImage(release.RoadieId);
@@ -1685,8 +1726,11 @@ namespace Roadie.Api.Services
             result.RankPosition = result.Rank > 0
                 ? SafeParser.ToNumber<int?>(DbContext.Releases.Count(x => x.Rank > result.Rank) + 1)
                 : null;
+            tsw.Stop();
+            timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (release.SubmissionId.HasValue)
             {
+                tsw.Restart();
                 var submission = DbContext.Submissions.Include(x => x.User).FirstOrDefault(x => x.Id == release.SubmissionId);
                 if (submission != null)
                 {
@@ -1704,20 +1748,27 @@ namespace Roadie.Api.Services
                         };
                     }
                 }
+                tsw.Stop();
+                timings.Add("submissions", tsw.ElapsedMilliseconds);
             }
+
 
             if (includes != null && includes.Any())
             {
                 if (includes.Contains("genres"))
                 {
+                    tsw.Restart();
                     result.Genres = release.Genres.Select(x => new DataToken
                     {
                         Text = x.Genre.Name,
                         Value = x.Genre.RoadieId.ToString()
                     });
+                    tsw.Stop();
+                    timings.Add("genres", tsw.ElapsedMilliseconds);
                 }
                 if (includes.Contains("stats"))
                 {
+                    tsw.Restart();
                     var releaseTracks = from r in DbContext.Releases
                                         join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                         join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
@@ -1750,10 +1801,13 @@ namespace Roadie.Api.Services
                     result.MaxMediaNumber = releaseMedias.Any() ? releaseMedias.Max(x => x.MediaNumber) : (short)0;
                     result.Statistics = releaseStats;
                     result.MediaCount = release.MediaCount ?? (short?)releaseStats?.MediaCount;
+                    tsw.Stop();
+                    timings.Add("stats", tsw.ElapsedMilliseconds);
                 }
 
                 if (includes.Contains("images"))
                 {
+                    tsw.Restart();
                     var releaseImages = DbContext.Images.Where(x => x.ReleaseId == release.Id).Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
                     if (releaseImages != null && releaseImages.Any())
                     {
@@ -1766,20 +1820,26 @@ namespace Roadie.Api.Services
                     {
                         result.Images = result.Images.Concat(releaseImagesInFolder.Select((x, i) => MakeFullsizeSecondaryImage(id, ImageType.ReleaseSecondary, i)));
                     }
+                    tsw.Stop();
+                    timings.Add("images", tsw.ElapsedMilliseconds);
                 }
 
                 if (includes.Contains("playlists"))
                 {
+                    tsw.Restart();
                     var pg = new PagedRequest
                     {
                         FilterToReleaseId = release.RoadieId
                     };
                     var r = await PlaylistService.List(pg);
                     if (r.IsSuccess) result.Playlists = r.Rows.ToArray();
+                    tsw.Stop();
+                    timings.Add("playlists", tsw.ElapsedMilliseconds);
                 }
 
                 if (includes.Contains("labels"))
                 {
+                    tsw.Restart();
                     var releaseLabels = (from l in DbContext.Labels
                                          join rl in DbContext.ReleaseLabels on l.Id equals rl.LabelId
                                          where rl.ReleaseId == release.Id
@@ -1823,10 +1883,13 @@ namespace Roadie.Api.Services
 
                         result.Labels = labels;
                     }
+                    tsw.Stop();
+                    timings.Add("labels", tsw.ElapsedMilliseconds);
                 }
 
                 if (includes.Contains("collections"))
                 {
+                    tsw.Restart();
                     var releaseCollections = DbContext.CollectionReleases.Include(x => x.Collection)
                                                       .Where(x => x.ReleaseId == release.Id)
                                                       .OrderBy(x => x.ListNumber)
@@ -1864,10 +1927,13 @@ namespace Roadie.Api.Services
                         }
                         result.Collections = collections;
                     }
+                    tsw.Stop();
+                    timings.Add("collections", tsw.ElapsedMilliseconds);
                 }
 
                 if (includes.Contains("comments"))
                 {
+                    tsw.Restart();
                     var releaseComments = DbContext.Comments.Include(x => x.User)
                                                             .Where(x => x.ReleaseId == release.Id)
                                                             .OrderByDescending(x => x.CreatedDate)
@@ -1890,10 +1956,13 @@ namespace Roadie.Api.Services
                         }
                         result.Comments = comments;
                     }
+                    tsw.Stop();
+                    timings.Add("comments", tsw.ElapsedMilliseconds);
                 }
 
                 if (includes.Contains("tracks"))
                 {
+                    tsw.Restart();
                     var releaseMedias = new List<ReleaseMediaList>();
                     foreach (var releaseMedia in release.Medias.OrderBy(x => x.MediaNumber))
                     {
@@ -1919,12 +1988,14 @@ namespace Roadie.Api.Services
                         rm.Tracks = rmTracks;
                         releaseMedias.Add(rm);
                     }
-
                     result.Medias = releaseMedias;
+                    tsw.Stop();
+                    timings.Add("tracks", tsw.ElapsedMilliseconds);
                 }
             }
 
             sw.Stop();
+            Logger.LogInformation($"ByIdAction: Release `{ release }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
             return new OperationResult<Release>
             {
                 Data = result,

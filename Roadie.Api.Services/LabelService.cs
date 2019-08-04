@@ -361,24 +361,34 @@ namespace Roadie.Api.Services
 
         private Task<OperationResult<Label>> LabelByIdAction(Guid id, IEnumerable<string> includes = null)
         {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
             var sw = Stopwatch.StartNew();
             sw.Start();
 
+            tsw.Restart();
             var label = GetLabel(id);
-
+            tsw.Stop();
+            timings.Add("GetLabel", tsw.ElapsedMilliseconds);
             if (label == null)
+            {
                 return Task.FromResult(new OperationResult<Label>(true, string.Format("Label Not Found [{0}]", id)));
-
+            }
+            tsw.Restart();
             var result = label.Adapt<Label>();
             result.AlternateNames = label.AlternateNames;
             result.Tags = label.Tags;
             result.URLs = label.URLs;
             result.Thumbnail = MakeLabelThumbnailImage(label.RoadieId);
             result.MediumThumbnail = MakeThumbnailImage(id, "label", Configuration.MediumImageSize.Width,Configuration.MediumImageSize.Height);
+            tsw.Stop();
+            timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (includes != null && includes.Any())
             {
                 if (includes.Contains("stats"))
                 {
+                    tsw.Restart();
                     var labelTracks = from l in DbContext.Labels
                                       join rl in DbContext.ReleaseLabels on l.Id equals rl.LabelId into rld
                                       from rl in rld.DefaultIfEmpty()
@@ -401,12 +411,17 @@ namespace Roadie.Api.Services
                         TrackSize = result.DurationTime,
                         FileSize = labelTracks.Sum(x => (long?)x.FileSize).ToFileSize()
                     };
+                    tsw.Stop();
+                    timings.Add("stats", tsw.ElapsedMilliseconds);
                 }
 
                 if (includes.Contains("comments"))
                 {
-                    var labelComments = DbContext.Comments.Include(x => x.User).Where(x => x.LabelId == label.Id)
-                        .OrderByDescending(x => x.CreatedDate).ToArray();
+                    tsw.Restart();
+                    var labelComments = DbContext.Comments.Include(x => x.User)
+                                                  .Where(x => x.LabelId == label.Id)
+                                                  .OrderByDescending(x => x.CreatedDate)
+                                                  .ToArray();
                     if (labelComments.Any())
                     {
                         var comments = new List<Comment>();
@@ -418,21 +433,20 @@ namespace Roadie.Api.Services
                         {
                             var comment = labelComment.Adapt<Comment>();
                             comment.DatabaseId = labelComment.Id;
-                            comment.User = UserList.FromDataUser(labelComment.User,
-                                MakeUserThumbnailImage(labelComment.User.RoadieId));
-                            comment.DislikedCount = userCommentReactions.Count(x =>
-                                x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Dislike);
-                            comment.LikedCount = userCommentReactions.Count(x =>
-                                x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Like);
+                            comment.User = UserList.FromDataUser(labelComment.User, MakeUserThumbnailImage(labelComment.User.RoadieId));
+                            comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Dislike);
+                            comment.LikedCount = userCommentReactions.Count(x => x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Like);
                             comments.Add(comment);
                         }
-
                         result.Comments = comments;
                     }
+                    tsw.Stop();
+                    timings.Add("stats", tsw.ElapsedMilliseconds);
                 }
             }
 
             sw.Stop();
+            Logger.LogInformation($"ByIdAction: Label `{ label }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
             return Task.FromResult(new OperationResult<Label>
             {
                 Data = result,

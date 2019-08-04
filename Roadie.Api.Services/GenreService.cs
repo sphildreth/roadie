@@ -2,9 +2,11 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Extensions;
 using Roadie.Library.Encoding;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
@@ -85,6 +87,9 @@ namespace Roadie.Api.Services
 
         private Task<OperationResult<Genre>> GenreByIdAction(Guid id, IEnumerable<string> includes = null)
         {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
             var sw = Stopwatch.StartNew();
             sw.Start();
 
@@ -93,15 +98,22 @@ namespace Roadie.Api.Services
             {
                 return Task.FromResult(new OperationResult<Genre>(true, string.Format("Genre Not Found [{0}]", id)));
             }
+            tsw.Stop();
+            timings.Add("getGenre", tsw.ElapsedMilliseconds);
+
+            tsw.Restart();
             var result = genre.Adapt<Genre>();
             result.AlternateNames = genre.AlternateNames;
             result.Tags = genre.Tags;
             result.Thumbnail = MakeLabelThumbnailImage(genre.RoadieId);
             result.MediumThumbnail = MakeThumbnailImage(id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            tsw.Stop();
+            timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (includes != null && includes.Any())
             {
                 if (includes.Contains("stats"))
                 {
+                    tsw.Restart();
                     var releaseCount = (from rg in DbContext.ReleaseGenres
                                         where rg.GenreId == genre.Id
                                         select rg.Id).Count();
@@ -113,9 +125,12 @@ namespace Roadie.Api.Services
                         ArtistCount = artistCount,
                         ReleaseCount = releaseCount
                     };
+                    tsw.Stop();
+                    timings.Add("stats", tsw.ElapsedMilliseconds);
                 }
             }
             sw.Stop();
+            Logger.LogInformation($"ByIdAction: Genre `{ genre }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
             return Task.FromResult(new OperationResult<Genre>
             {
                 Data = result,

@@ -8,6 +8,7 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
+using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.LastFm;
@@ -52,8 +53,6 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<User>> ById(User user, Guid id, IEnumerable<string> includes, bool isAccountSettingsEdit = false)
         {
-            var timings = new Dictionary<string, long>();
-            var tsw = new Stopwatch();
             if(isAccountSettingsEdit)
             {
                 if(user.UserId != id && !user.IsAdmin)
@@ -68,10 +67,7 @@ namespace Roadie.Api.Services
             var cacheKey = string.Format("urn:user_by_id_operation:{0}:{1}", id, isAccountSettingsEdit);
             var result = await CacheManager.GetAsync(cacheKey, async () =>
             {
-                tsw.Restart();
                 var rr = await UserByIdAction(id, includes);
-                tsw.Stop();
-                timings.Add("UserByIdAction", tsw.ElapsedMilliseconds);
                 return rr;
             }, ApplicationUser.CacheRegionUrn(id));
             sw.Stop();
@@ -84,8 +80,6 @@ namespace Roadie.Api.Services
                     result.Data.ConcurrencyStamp = null;
                 }
             }
-            timings.Add("operation", sw.ElapsedMilliseconds);
-            Logger.LogDebug("ById Timings: id [{0}]", id);
             return new OperationResult<User>(result.Messages)
             {
                 Data = result?.Data,
@@ -557,19 +551,31 @@ namespace Roadie.Api.Services
 
         private Task<OperationResult<User>> UserByIdAction(Guid id, IEnumerable<string> includes)
         {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
+            tsw.Restart();
             var user = GetUser(id);
+            tsw.Stop();
+            timings.Add("getUser", tsw.ElapsedMilliseconds);
+
             if (user == null)
             {
                 return Task.FromResult(new OperationResult<User>(true, string.Format("User Not Found [{0}]", id)));
             }
+            tsw.Restart();
             var model = user.Adapt<User>();
             model.MediumThumbnail = MakeThumbnailImage(id, "user", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             model.IsAdmin = user.UserRoles?.Any(x => x.Role?.NormalizedName == "ADMIN") ?? false;
             model.IsEditor = model.IsAdmin ? true : user.UserRoles?.Any(x => x.Role?.NormalizedName == "EDITOR") ?? false;
+            tsw.Stop();
+            timings.Add("adapt", tsw.ElapsedMilliseconds);
+
             if (includes != null && includes.Any())
             {
                 if (includes.Contains("stats"))
                 {
+                    tsw.Restart();
                     var userArtists = DbContext.UserArtists.Include(x => x.Artist).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserArtist[0];
                     var userReleases = DbContext.UserReleases.Include(x => x.Release).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserRelease[0];
                     var userTracks = DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserTrack[0];
@@ -631,7 +637,7 @@ namespace Roadie.Api.Services
                         LastPlayedTrack = lastPlayedTrack == null
                             ? null
                             : models.TrackList.FromDataTrack(
-                                MakeTrackPlayUrl(user, lastPlayedTrack.Id, lastPlayedTrack.RoadieId),
+                                MakeTrackPlayUrl(user, HttpContext.BaseUrl, lastPlayedTrack.Id, lastPlayedTrack.RoadieId),
                                 lastPlayedTrack,
                                 lastPlayedTrack.ReleaseMedia.MediaNumber,
                                 lastPlayedTrack.ReleaseMedia.Release,
@@ -658,7 +664,7 @@ namespace Roadie.Api.Services
                         MostPlayedTrack = mostPlayedTrack == null
                             ? null
                             : models.TrackList.FromDataTrack(
-                                MakeTrackPlayUrl(user, mostPlayedTrack.Id, mostPlayedTrack.RoadieId),
+                                MakeTrackPlayUrl(user, HttpContext.BaseUrl, mostPlayedTrack.Id, mostPlayedTrack.RoadieId),
                                 mostPlayedTrack,
                                 mostPlayedTrack.ReleaseMedia.MediaNumber,
                                 mostPlayedTrack.ReleaseMedia.Release,
@@ -682,8 +688,11 @@ namespace Roadie.Api.Services
                         FavoritedTracks = userTracks.Where(x => x.IsFavorite ?? false).Count(),
                         DislikedTracks = userTracks.Where(x => x.IsDisliked ?? false).Count()                        
                     };
+                    tsw.Stop();
+                    timings.Add("stats", tsw.ElapsedMilliseconds);
                 }
             }
+            Logger.LogInformation($"ByIdAction: User `{ user }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
             return Task.FromResult(new OperationResult<User>
             {
                 IsSuccess = true,

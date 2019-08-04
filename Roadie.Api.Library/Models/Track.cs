@@ -95,5 +95,10 @@ namespace Roadie.Library.Models
 
         public string TrackPlayUrl { get; set; }
         public UserTrack UserRating { get; set; }
+
+        public override string ToString()
+        {
+            return $"Id [{ Id }], Title [{ Title }]";
+        }
     }
 }

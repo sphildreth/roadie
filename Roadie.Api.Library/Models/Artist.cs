@@ -118,5 +118,10 @@ namespace Roadie.Library.Models
         {
             BandStatus = "1";
         }
+
+        public override string ToString()
+        {
+            return $"Id [{ Id }], Name [{ Name }]";
+        }
     }
 }

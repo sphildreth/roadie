@@ -102,28 +102,48 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<Track>> ById(User roadieUser, Guid id, IEnumerable<string> includes)
         {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
             var sw = Stopwatch.StartNew();
             sw.Start();
-            var cacheKey = string.Format("urn:track_by_id_operation:{0}:{1}", id,
-                includes == null ? "0" : string.Join("|", includes));
-            var result = await CacheManager.GetAsync(cacheKey,
-                async () => { return await TrackByIdAction(id, includes); }, data.Track.CacheRegionUrn(id));
+            var cacheKey = string.Format("urn:track_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
+            var result = await CacheManager.GetAsync(cacheKey, async () => 
+            {
+                tsw.Restart();
+                var rr = await TrackByIdAction(id, includes);
+                tsw.Stop();
+                timings.Add("TrackByIdAction", tsw.ElapsedMilliseconds);
+                return rr;
+
+            }, data.Track.CacheRegionUrn(id));
             if (result?.Data != null && roadieUser != null)
             {
+                tsw.Restart();
                 var user = GetUser(roadieUser.UserId);
+                tsw.Stop();
+                timings.Add("getUser", tsw.ElapsedMilliseconds);
+
+                tsw.Restart();
                 var track = GetTrack(id);
-                result.Data.TrackPlayUrl = MakeTrackPlayUrl(user, track.Id, track.RoadieId);
-                var userBookmarkResult =
-                    await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Track);
+                tsw.Stop();
+                timings.Add("getTrack", tsw.ElapsedMilliseconds);
+
+                result.Data.TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.Id, track.RoadieId);
+
+                tsw.Restart();
+                var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Track);
                 if (userBookmarkResult.IsSuccess)
                 {
                     result.Data.UserBookmarked =
                         userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == track.RoadieId.ToString()) !=
                         null;
                 }
+                tsw.Stop();
+                timings.Add("userBookmarks", tsw.ElapsedMilliseconds);
 
-                var userTrack =
-                    DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == roadieUser.Id);
+                tsw.Restart();
+                var userTrack = DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == roadieUser.Id);
                 if (userTrack != null)
                 {
                     result.Data.UserRating = new UserTrack
@@ -135,9 +155,13 @@ namespace Roadie.Api.Services
                         PlayedCount = userTrack.PlayedCount
                     };
                 }
+                tsw.Stop();
+                timings.Add("userTracks", tsw.ElapsedMilliseconds);
+
 
                 if (result.Data.Comments.Any())
                 {
+                    tsw.Restart();
                     var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
                     var userCommentReactions = (from cr in DbContext.CommentReactions
                                                 where commentIds.Contains(cr.CommentId)
@@ -150,10 +174,13 @@ namespace Roadie.Api.Services
                         comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
                         comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
                     }
+                    tsw.Stop();
+                    timings.Add("userComments", tsw.ElapsedMilliseconds);
                 }
             }
 
             sw.Stop();
+            Logger.LogInformation($"ById Track: `{ result?.Data }`, includes [{ includes.ToCSV() }], timings [{ timings.ToTimings() }]");
             return new OperationResult<Track>(result.Messages)
             {
                 Data = result?.Data,
@@ -541,7 +568,7 @@ namespace Roadie.Api.Services
                         TrackNumber = playListTrackPositions.ContainsKey(x.ti.Id)
                             ? playListTrackPositions[x.ti.Id]
                             : x.ti.TrackNumber,
-                        TrackPlayUrl = MakeTrackPlayUrl(user, x.ti.Id, x.ti.RoadieId)
+                        TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, x.ti.Id, x.ti.RoadieId)
                     });
                 string sortBy = null;
 
@@ -926,16 +953,22 @@ namespace Roadie.Api.Services
 
         private Task<OperationResult<Track>> TrackByIdAction(Guid id, IEnumerable<string> includes)
         {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
             var sw = Stopwatch.StartNew();
             sw.Start();
 
+            tsw.Restart();
             var track = GetTrack(id);
+            tsw.Stop();
+            timings.Add("getTrack", tsw.ElapsedMilliseconds);
 
             if (track == null)
             {
                 return Task.FromResult(new OperationResult<Track>(true, string.Format("Track Not Found [{0}]", id)));
             }
-
+            tsw.Restart();
             var result = track.Adapt<Track>();
             result.IsLocked = (track.IsLocked ?? false) ||
                               (track.ReleaseMedia.IsLocked ?? false) ||
@@ -952,8 +985,11 @@ namespace Roadie.Api.Services
                 HttpContext.BaseUrl, MakeArtistThumbnailImage(track.ReleaseMedia.Release.Artist.RoadieId),
                 MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId));
             result.ReleaseThumbnail = MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId);
+            tsw.Stop();
+            timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (track.ArtistId.HasValue)
             {
+                tsw.Restart();
                 var trackArtist = DbContext.Artists.FirstOrDefault(x => x.Id == track.ArtistId);
                 if (trackArtist == null)
                 {
@@ -966,12 +1002,15 @@ namespace Roadie.Api.Services
                     result.TrackArtistToken = result.TrackArtist.Artist;
                     result.TrackArtistThumbnail = MakeArtistThumbnailImage(trackArtist.RoadieId);
                 }
+                tsw.Stop();
+                timings.Add("trackArtist", tsw.ElapsedMilliseconds);
             }
 
             if (includes != null && includes.Any())
             {
                 if (includes.Contains("stats"))
                 {
+                    tsw.Restart();
                     result.Statistics = new TrackStatistics
                     {
                         FileSizeFormatted = ((long?)track.FileSize).ToFileSize(),
@@ -987,10 +1026,13 @@ namespace Roadie.Api.Services
                         result.Statistics.DislikedCount = userTracks.Count(x => x.IsDisliked ?? false);
                         result.Statistics.FavoriteCount = userTracks.Count(x => x.IsFavorite ?? false);
                     }
+                    tsw.Stop();
+                    timings.Add("stats", tsw.ElapsedMilliseconds);
                 }
 
                 if (includes.Contains("comments"))
                 {
+                    tsw.Restart();
                     var trackComments = DbContext.Comments.Include(x => x.User).Where(x => x.TrackId == track.Id)
                         .OrderByDescending(x => x.CreatedDate).ToArray();
                     if (trackComments.Any())
@@ -1015,10 +1057,13 @@ namespace Roadie.Api.Services
 
                         result.Comments = comments;
                     }
+                    tsw.Stop();
+                    timings.Add("comments", tsw.ElapsedMilliseconds);
                 }
             }
 
             sw.Stop();
+            Logger.LogInformation($"ByIdAction: Track `{ track }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
             return Task.FromResult(new OperationResult<Track>
             {
                 Data = result,

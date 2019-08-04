@@ -123,26 +123,27 @@ namespace Roadie.Api.Services
                 tsw.Restart();
                 var artist = GetArtist(id);
                 tsw.Stop();
-                timings.Add("GetArtist", tsw.ElapsedMilliseconds);
+                timings.Add("getArtist", tsw.ElapsedMilliseconds);
                 tsw.Restart();
                 var userBookmarkResult =
                     await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Artist);
                 if (userBookmarkResult.IsSuccess)
-                    result.Data.UserBookmarked =
-                        userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == artist.RoadieId.ToString()) !=
-                        null;
+                {
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == artist.RoadieId.ToString()) != null;
+                }
                 tsw.Stop();
                 timings.Add("userBookmarkResult", tsw.ElapsedMilliseconds);
                 tsw.Restart();
-                var userArtist =
-                    DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == roadieUser.Id);
+                var userArtist = DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == roadieUser.Id);
                 if (userArtist != null)
+                {
                     result.Data.UserRating = new UserArtist
                     {
                         IsDisliked = userArtist.IsDisliked ?? false,
                         IsFavorite = userArtist.IsFavorite ?? false,
                         Rating = userArtist.Rating
                     };
+                }
                 tsw.Stop();
                 timings.Add("userArtist", tsw.ElapsedMilliseconds);
 
@@ -156,21 +157,18 @@ namespace Roadie.Api.Services
                                                 select cr).ToArray();
                     foreach (var comment in result.Data.Comments)
                     {
-                        var userCommentReaction =
-                            userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
+                        var userCommentReaction = userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
                         comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
                         comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
                     }
 
                     tsw.Stop();
-                    timings.Add("commentReactions", tsw.ElapsedMilliseconds);
+                    timings.Add("userCommentReactions", tsw.ElapsedMilliseconds);
                 }
             }
 
             sw.Stop();
-            timings.Add("operation", sw.ElapsedMilliseconds);
-            Logger.LogDebug("ById Timings: id [{0}], includes [{1}], timings [{3}]", id, includes,
-                JsonConvert.SerializeObject(timings));
+            Logger.LogInformation($"ById Artist: `{ result?.Data }`, includes [{ includes.ToCSV() }], timings [{ timings.ToTimings() }]");
             return new OperationResult<Artist>(result.Messages)
             {
                 Data = result?.Data,
@@ -931,10 +929,10 @@ namespace Roadie.Api.Services
                 ? SafeParser.ToNumber<int?>(DbContext.Artists.Count(x => x.Rank > result.Rank) + 1)
                 : null;
             tsw.Stop();
-            timings.Add("adaptArtist", tsw.ElapsedMilliseconds);
+            timings.Add("adapt", tsw.ElapsedMilliseconds);
+            tsw.Restart();
             result.Thumbnail = MakeArtistThumbnailImage(id);
             result.MediumThumbnail = MakeThumbnailImage(id, "artist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
-            tsw.Restart();
             result.Genres = artist.Genres.Select(x => new DataToken
             {
                 Text = x.Genre.Name,
@@ -945,6 +943,7 @@ namespace Roadie.Api.Services
 
             if (includes != null && includes.Any())
             {
+                tsw.Restart();
                 if (includes.Contains("releases"))
                 {
                     var dtoReleases = new List<ReleaseList>();
@@ -991,6 +990,8 @@ namespace Roadie.Api.Services
                     }
 
                     result.Releases = dtoReleases;
+                    tsw.Stop();
+                    timings.Add("releases", tsw.ElapsedMilliseconds);
                 }
 
                 if (includes.Contains("stats"))
@@ -1277,8 +1278,7 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            timings.Add("operation", sw.ElapsedMilliseconds);
-            Logger.LogDebug("ArtistByIdAction Timings: id [{0}], includes [{1}], timings [{3}]", id, includes, JsonConvert.SerializeObject(timings));
+            Logger.LogInformation($"ByIdAction: Artist `{ artist }`: includes [{includes.ToCSV() }], timings: [{ timings.ToTimings() }]");
             return new OperationResult<Artist>
             {
                 Data = result,
