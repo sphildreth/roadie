@@ -13,7 +13,7 @@ using Release = Roadie.Library.Data.Release;
 namespace Roadie.Library.Models
 {
     [Serializable]
-    [DebuggerDisplay("Trackid [{ TrackId }], Track Name [{ TrackName }}")]
+    [DebuggerDisplay("Trackid [{ TrackId }], Track Name [{ TrackName }}, Release Name [{ ReleaseName }]")]
     public class TrackList : EntityInfoModelBase
     {
         public ArtistList Artist { get; set; }
@@ -56,6 +56,7 @@ namespace Roadie.Library.Models
         [JsonIgnore] public string TrackId => Track?.Value;
 
         [JsonIgnore] public string TrackName => Track?.Text;
+        [JsonIgnore] public string ReleaseName => Release?.Release?.Text;
         public int? TrackNumber { get; set; }
         public string TrackPlayUrl { get; set; }
         public UserTrack UserRating { get; set; }
