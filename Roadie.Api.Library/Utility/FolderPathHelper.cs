@@ -297,8 +297,7 @@ namespace Roadie.Library.Utility
         public static string TrackPath(IRoadieSettings configuration, Artist artist, Release release, Track track,
             string destinationFolder = null)
         {
-            var fileInfo = new FileInfo(TrackFullPath(configuration, artist.SortNameValue, release.Title,
-                release.ReleaseDate.Value, track.Title, track.TrackNumber, destinationFolder));
+            var fileInfo = new FileInfo(TrackFullPath(configuration, artist.SortNameValue, release.Title, release.ReleaseDate.Value, track.Title, track.TrackNumber, destinationFolder));
             return fileInfo.Directory.Name;
         }
 

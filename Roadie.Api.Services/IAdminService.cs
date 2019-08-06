@@ -45,7 +45,9 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<bool>> ScanLibraryFolder(ApplicationUser user, bool isReadOnly = false);
 
-        Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
+        Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseIds, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
+
+        Task<OperationResult<bool>> ScanReleases(ApplicationUser user, IEnumerable<Guid> releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
 
         Task<OperationResult<bool>> ValidateInviteToken(Guid? tokenId);
 

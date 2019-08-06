@@ -4,6 +4,7 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 
@@ -57,6 +58,16 @@ namespace Roadie.Library.Data
         public string PathToTrack(IRoadieSettings configuration)
         {
             return FolderPathHelper.PathForTrack(configuration, this);
+        }
+
+        public bool DoesFileForTrackExist(IRoadieSettings configuration)
+        {
+            var trackPath = PathToTrack(configuration);
+            if(string.IsNullOrEmpty(trackPath))
+            {
+                return false;
+            }
+            return File.Exists(trackPath);
         }
 
         /// <summary>

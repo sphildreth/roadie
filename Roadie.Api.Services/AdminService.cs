@@ -102,8 +102,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId,
-            bool doDeleteFiles = false)
+        public async Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId, bool doDeleteFiles = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -335,10 +334,12 @@ namespace Roadie.Api.Services
             try
             {
                 var artistFolder = artist.ArtistFileFolder(Configuration);
-                var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder),
-                    ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly);
+                var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly);
                 var artistImageFilename = artistImagesInFolder.Skip(index).FirstOrDefault();
-                if (artistImageFilename.Exists) artistImageFilename.Delete();
+                if (artistImageFilename.Exists)
+                {
+                    artistImageFilename.Delete();
+                }
                 CacheManager.ClearRegion(artist.CacheRegion);
             }
             catch (Exception ex)
@@ -359,8 +360,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId,
-            bool? doDeleteFiles)
+        public async Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -397,8 +397,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteReleaseSecondaryImage(ApplicationUser user, Guid releaseId,
-            int index)
+        public async Task<OperationResult<bool>> DeleteReleaseSecondaryImage(ApplicationUser user, Guid releaseId, int index)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -412,12 +411,13 @@ namespace Roadie.Api.Services
 
             try
             {
-                var releaseFolder =
-                    release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration));
-                var releaseImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder),
-                    ImageType.ReleaseSecondary, SearchOption.TopDirectoryOnly);
+                var releaseFolder = release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration));
+                var releaseImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder), ImageType.ReleaseSecondary, SearchOption.TopDirectoryOnly);
                 var releaseImageFilename = releaseImagesInFolder.Skip(index).FirstOrDefault();
-                if (releaseImageFilename.Exists) releaseImageFilename.Delete();
+                if (releaseImageFilename.Exists)
+                {
+                    releaseImageFilename.Delete();
+                }
                 CacheManager.ClearRegion(release.CacheRegion);
             }
             catch (Exception ex)
@@ -428,8 +428,7 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            await LogAndPublish($"DeleteReleaseSecondaryImage `{release}` Index [{index}], By User `{user}`",
-                LogLevel.Information);
+            await LogAndPublish($"DeleteReleaseSecondaryImage `{release}` Index [{index}], By User `{user}`", LogLevel.Information);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -483,9 +482,7 @@ namespace Roadie.Api.Services
                         }
                         catch (Exception ex)
                         {
-                            Logger.LogError(ex,
-                                string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath,
-                                    track.Id, ex.Serialize()));
+                            Logger.LogError(ex, string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath, track.Id, ex.Serialize()));
                         }
                     }
 
@@ -654,7 +651,10 @@ namespace Roadie.Api.Services
                     if (cr == null)
                     {
                         // If artist is already in result then add missing album to artist, if not then add artist then add missing album
-                        if (!missingData.ContainsKey(par.Artist)) missingData.Add(par.Artist, new List<string>());
+                        if (!missingData.ContainsKey(par.Artist))
+                        {
+                            missingData.Add(par.Artist, new List<string>());
+                        }
                         var r = $"[{collection.Name}]:[{par.Release}]";
                         missingData[par.Artist].Add(r);
                     }
@@ -683,7 +683,10 @@ namespace Roadie.Api.Services
                 try
                 {
                     var result = await ScanCollection(user, collection.RoadieId, isReadOnly, doPurgeFirst, false);
-                    if (!result.IsSuccess) errors.AddRange(result.Errors);
+                    if (!result.IsSuccess)
+                    {
+                        errors.AddRange(result.Errors);
+                    }
                     updatedReleaseIds.AddRange((int[])result.AdditionalData["updatedReleaseIds"]);
                 }
                 catch (Exception ex)
@@ -692,11 +695,12 @@ namespace Roadie.Api.Services
                     errors.Add(ex);
                 }
 
-            foreach (var updatedReleaseId in updatedReleaseIds.Distinct()) await UpdateReleaseRank(updatedReleaseId);
+            foreach (var updatedReleaseId in updatedReleaseIds.Distinct())
+            {
+                await UpdateReleaseRank(updatedReleaseId);
+            }
             sw.Stop();
-            await LogAndPublish(
-                $"ScanAllCollections, By User `{user}`, Updated Release Count [{updatedReleaseIds.Distinct().Count()}], ElapsedTime [{sw.ElapsedMilliseconds}]",
-                LogLevel.Warning);
+            await LogAndPublish($"ScanAllCollections, By User `{user}`, Updated Release Count [{updatedReleaseIds.Distinct().Count()}], ElapsedTime [{sw.ElapsedMilliseconds}]", LogLevel.Warning);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -723,6 +727,7 @@ namespace Roadie.Api.Services
                 }
             }
             sw.Stop();
+            await LogAndPublish($"** Completed! ScanArtists: Artist Count [{ artistIds.Count() }], Elapsed Time [{sw.Elapsed}]");
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -827,9 +832,7 @@ namespace Roadie.Api.Services
                                              select a).ToArray();
                         if (!artistResults.Any())
                         {
-                            await LogAndPublish(
-                                $"Unable To Find Artist [{csvRelease.Artist}], SearchName [{artistSpecialSearchName}]",
-                                LogLevel.Warning);
+                            await LogAndPublish($"Unable To Find Artist [{csvRelease.Artist}], SearchName [{artistSpecialSearchName}]", LogLevel.Warning);
                             csvRelease.Status = Statuses.Missing;
                             DbContext.CollectionMissings.Add(new data.CollectionMissing
                             {
@@ -856,9 +859,7 @@ namespace Roadie.Api.Services
 
                         if (release == null)
                         {
-                            await LogAndPublish(
-                                $"Unable To Find Release [{csvRelease.Release}] for Artist [{csvRelease.Artist}], SearchName [{artistSearchName}]",
-                                LogLevel.Warning);
+                            await LogAndPublish($"Unable To Find Release [{csvRelease.Release}] for Artist [{csvRelease.Artist}], SearchName [{artistSearchName}]", LogLevel.Warning);
                             csvRelease.Status = Statuses.Missing;
                             DbContext.CollectionMissings.Add(new data.CollectionMissing
                             {
@@ -895,7 +896,10 @@ namespace Roadie.Api.Services
                             updated = true;
                         }
 
-                        if (updated && !updatedReleaseIds.Any(x => x == release.Id)) updatedReleaseIds.Add(release.Id);
+                        if (updated && !updatedReleaseIds.Any(x => x == release.Id))
+                        {
+                            updatedReleaseIds.Add(release.Id);
+                        }
                         releaseIdsInCollection.Add(release.Id);
                     }
 
@@ -925,16 +929,18 @@ namespace Roadie.Api.Services
                                                       select cr).ToArray();
                     if (collectionReleasesToRemove.Any())
                     {
-                        await LogAndPublish(
-                            $"Removing [{collectionReleasesToRemove.Count()}] Stale Release Records from Collection.",
-                            LogLevel.Information);
+                        await LogAndPublish($"Removing [{collectionReleasesToRemove.Count()}] Stale Release Records from Collection.", LogLevel.Information);
                         DbContext.CollectionReleases.RemoveRange(collectionReleasesToRemove);
                     }
 
                     await DbContext.SaveChangesAsync();
                     if (doUpdateRanks)
+                    {
                         foreach (var updatedReleaseId in updatedReleaseIds)
+                        {
                             await UpdateReleaseRank(updatedReleaseId);
+                        }
+                    }
                     CacheManager.ClearRegion(collection.CacheRegion);
                 }
             }
@@ -945,8 +951,7 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            Logger.LogWarning(string.Format("RescanCollection `{0}`, By User `{1}`, ElapsedTime [{2}]", collection,
-                user, sw.ElapsedMilliseconds));
+            Logger.LogWarning(string.Format("RescanCollection `{0}`, By User `{1}`, ElapsedTime [{2}]", collection, user, sw.ElapsedMilliseconds));
 
             return new OperationResult<bool>
             {
@@ -968,6 +973,32 @@ namespace Roadie.Api.Services
         {
             var d = new DirectoryInfo(Configuration.LibraryFolder);
             return await ScanFolder(user, d, isReadOnly);
+        }
+
+        public async Task<OperationResult<bool>> ScanReleases(ApplicationUser user, IEnumerable<Guid> releaseIds, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
+        {
+            var sw = Stopwatch.StartNew();
+
+            var errors = new List<Exception>();
+            foreach (var releaseId in releaseIds)
+            {
+                var result = await ScanRelease(user, releaseId, isReadOnly, wasDoneForInvalidTrackPlay);
+                if (!result.IsSuccess)
+                {
+                    if (result.Errors?.Any() ?? false)
+                    {
+                        errors.AddRange(result.Errors);
+                    }
+                }
+            }
+            sw.Stop();
+            await LogAndPublish($"** Completed! ScanReleases: Release Count [{ releaseIds.Count() }], Elapsed Time [{sw.Elapsed}]");
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
         }
 
         public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)

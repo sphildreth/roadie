@@ -1187,9 +1187,18 @@ namespace Roadie.Api.Services
                                                  select t).ToArray();
                             foreach (var releaseTrack in releaseTracks)
                             {
-                                releaseTrack.FilePath = releasePath;
+                                releaseTrack.FilePath = FolderPathHelper.TrackPath(Configuration, release.Artist, release, releaseTrack);
+                                if (!releaseTrack.DoesFileForTrackExist(Configuration))
+                                {
+                                    releaseTrack.Hash = null;
+                                    releaseTrack.Status = Statuses.Missing;
+                                }
+                                else
+                                {
+                                    releaseTrack.Hash = HashHelper.CreateMD5(release.RoadieId + releaseTrack.GetHashCode().ToString());
+                                    releaseTrack.Status = Statuses.Ok;
+                                }
                                 releaseTrack.LastUpdated = now;
-                                releaseTrack.Hash = HashHelper.CreateMD5(release.RoadieId + releaseTrack.GetHashCode().ToString());
                             }
                             release.LastUpdated = now;
                             await DbContext.SaveChangesAsync();
