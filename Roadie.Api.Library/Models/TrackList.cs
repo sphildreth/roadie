@@ -9,6 +9,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using Release = Roadie.Library.Data.Release;
+using Roadie.Library.Enums;
 
 namespace Roadie.Library.Models
 {
@@ -57,6 +58,8 @@ namespace Roadie.Library.Models
 
         [JsonIgnore] public string TrackName => Track?.Text;
         [JsonIgnore] public string ReleaseName => Release?.Release?.Text;
+        public Statuses? Status { get; set; }
+        public string StatusVerbose => (Status ?? Statuses.Missing).ToString();
         public int? TrackNumber { get; set; }
         public string TrackPlayUrl { get; set; }
         public UserTrack UserRating { get; set; }

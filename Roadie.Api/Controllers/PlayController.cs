@@ -93,7 +93,9 @@ namespace Roadie.Api.Controllers
             var user = UserManager.Users.FirstOrDefault(x => x.Id == userId);
             if (user == null) return StatusCode((int)HttpStatusCode.Unauthorized);
             if (!ServiceBase.ConfirmTrackPlayToken(user, id, trackPlayToken))
+            {
                 return StatusCode((int)HttpStatusCode.Unauthorized);
+            }
             return await base.StreamTrack(id, TrackService, PlayActivityService, UserModelForUser(user));
         }
     }

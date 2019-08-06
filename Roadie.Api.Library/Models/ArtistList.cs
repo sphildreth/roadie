@@ -1,4 +1,5 @@
-﻿using Roadie.Library.Models.Users;
+﻿using Roadie.Library.Enums;
+using Roadie.Library.Models.Users;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,6 +21,8 @@ namespace Roadie.Library.Models
         public Image Thumbnail { get; set; }
         public int? TrackCount { get; set; }
         public UserArtist UserRating { get; set; }
+        public Statuses? Status { get; set; }
+        public string StatusVerbose => (Status ?? Statuses.Missing).ToString();
 
         public static ArtistList FromDataArtist(Data.Artist artist, Image thumbnail)
         {
@@ -41,7 +44,8 @@ namespace Roadie.Library.Models
                 PlayedCount = artist.PlayedCount,
                 ReleaseCount = artist.ReleaseCount,
                 TrackCount = artist.TrackCount,
-                SortName = artist.SortName
+                SortName = artist.SortName,
+                Status = artist.Status
             };
         }
     }

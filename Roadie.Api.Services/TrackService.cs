@@ -337,53 +337,6 @@ namespace Roadie.Api.Services
                                      .ToArray();
                 }
 
-
-                // sph; this doesn't seem to actually randomize releases very much repeat themselves
-
-                //if (doRandomize ?? false)
-                //{
-                //    var randomLimit = roadieUser?.RandomReleaseLimit ?? request.LimitValue;
-                //    var userId = roadieUser?.Id ?? -1;
-
-                //    // This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
-                //    var sql = @"select t.id, ROUND(RAND() * t.id) 'rand_ind'
-                //                FROM `track` t
-                //                JOIN `releasemedia` rm on(t.releaseMediaId = rm.id)
-                //                JOIN `release` r on(rm.releaseId = r.id)
-                //                WHERE (t.id NOT IN(select trackId FROM `usertrack` where userId = {1} and isDisliked = 1)
-                //                       AND r.id NOT IN(select releaseId FROM `userrelease` where userId = {1} and isDisliked = 1)
-                //                       AND r.artistId NOT IN(select artistId FROM `userartist` where userId = {1} and isDisliked = 1)
-                //                       AND t.artistId NOT IN(select artistId FROM `userartist` where userId = {1} and isDisliked = 1))
-                //                AND (t.id IN(select trackId FROM `usertrack` where userId = {1} and isFavorite = 1)
-                //                    OR {2} = 0)
-                //                AND (t.rating > 0 
-                //                    OR {3} = 0)
-                //                ORDER BY rand_ind
-                //                LIMIT 0, {0}";
-
-                //    randomTrackIds = TrackList.Shuffle((from tr in DbContext.Tracks.FromSql(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0", request.FilterRatedOnly ? "1" : "0")
-                //                                        join t in DbContext.Tracks on tr.Id equals t.Id
-                //                                        join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                //                                        join r in DbContext.Releases on rm.ReleaseId equals r.Id
-                //                                        join a in DbContext.Artists on r.ArtistId equals a.Id
-                //                                        select new TrackList
-                //                                        {
-                //                                            DatabaseId = t.Id,
-                //                                            Track = new DataToken { Value = t.RoadieId.ToString(), Text= t.Title },
-                //                                            Artist = new ArtistList
-                //                                            {
-                //                                                Artist = new DataToken { Value = a.RoadieId.ToString(), Text = a.Name }
-                //                                            },
-                //                                            Release = new ReleaseList
-                //                                            {
-                //                                                Release = new DataToken { Value = r.RoadieId.ToString(), Text = r.Title }
-                //                                            }
-                //                                        }).ToArray())
-                //                                        .Select(x => x.DatabaseId)
-                //                                        .ToArray();
-                //    rowCount = DbContext.Tracks.Count();
-                //}
-
                 Guid?[] filterToTrackIds = null;
                 if (request.FilterToTrackId.HasValue || request.FilterToTrackIds != null)
                 {
@@ -457,6 +410,7 @@ namespace Roadie.Api.Services
                                           t.Rating,
                                           t.Tags,
                                           t.TrackNumber,
+                                          t.Status,
                                           t.Title
                                       },
                                       rmi = new
@@ -552,6 +506,7 @@ namespace Roadie.Api.Services
                             Text = x.ti.Title,
                             Value = x.ti.RoadieId.ToString()
                         },
+                        Status = x.ti.Status,
                         Artist = x.ra,
                         CreatedDate = x.ti.CreatedDate,
                         Duration = x.ti.Duration,

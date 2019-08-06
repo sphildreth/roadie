@@ -22,10 +22,8 @@ using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Statistics;
 using Roadie.Library.Models.Users;
-using Roadie.Library.Processors;
 using Roadie.Library.Utility;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -43,6 +41,7 @@ namespace Roadie.Api.Services
     {
         private List<int> _addedTrackIds = new List<int>();
 
+        public IEnumerable<int> AddedTrackIds => _addedTrackIds;
         private IArtistLookupEngine ArtistLookupEngine { get; }
 
         private IAudioMetaDataHelper AudioMetaDataHelper { get; }
@@ -64,8 +63,6 @@ namespace Roadie.Api.Services
         private IPlaylistService PlaylistService { get; }
 
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
-
-        public IEnumerable<int> AddedTrackIds => _addedTrackIds;
 
         public ReleaseService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
@@ -109,15 +106,14 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             sw.Start();
             var cacheKey = string.Format("urn:release_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
-            var result = await CacheManager.GetAsync(cacheKey,async () => 
-            {
-                tsw.Restart();
-                var rr = await ReleaseByIdAction(id, includes);
-                tsw.Stop();
-                timings.Add("ReleaseByIdAction", tsw.ElapsedMilliseconds);
-                return rr;
-
-            }, data.Artist.CacheRegionUrn(id));
+            var result = await CacheManager.GetAsync(cacheKey, async () =>
+             {
+                 tsw.Restart();
+                 var rr = await ReleaseByIdAction(id, includes);
+                 tsw.Stop();
+                 timings.Add("ReleaseByIdAction", tsw.ElapsedMilliseconds);
+                 return rr;
+             }, data.Artist.CacheRegionUrn(id));
             if (result?.Data != null && roadieUser != null)
             {
                 tsw.Restart();
@@ -141,8 +137,8 @@ namespace Roadie.Api.Services
                     Parallel.ForEach(result.Data.Medias.SelectMany(x => x.Tracks), track =>
                     {
                         track.TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.DatabaseId, track.Id);
-                    });     
-                    
+                    });
+
                     tsw.Stop();
                     timings.Add("makeTrackPlayUrls", tsw.ElapsedMilliseconds);
 
@@ -182,7 +178,7 @@ namespace Roadie.Api.Services
                     timings.Add("userTracks", tsw.ElapsedMilliseconds);
                 }
 
-                var userRelease =  DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == roadieUser.Id);
+                var userRelease = DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == roadieUser.Id);
                 if (userRelease != null)
                 {
                     tsw.Restart();
@@ -226,6 +222,197 @@ namespace Roadie.Api.Services
             };
         }
 
+        /// <summary>
+        ///     See if the given release has properties that have been modified that affect the folder structure, if so then handle
+        ///     necessary operations for changes
+        /// </summary>
+        /// <param name="release">Release that has been modified</param>
+        /// <param name="oldReleaseFolder">Folder for release before any changes</param>
+        /// <returns></returns>
+        public async Task<OperationResult<bool>> CheckAndChangeReleaseTitle(data.Release release, string oldReleaseFolder)
+        {
+            SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
+            SimpleContract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(oldReleaseFolder), "Invalid Release Old Folder");
+
+            var sw = new Stopwatch();
+            sw.Start();
+            var now = DateTime.UtcNow;
+
+            var result = false;
+            var artistFolder = release.Artist.ArtistFileFolder(Configuration);
+            var newReleaseFolder = release.ReleaseFileFolder(artistFolder);
+            if (newReleaseFolder != oldReleaseFolder)
+            {
+                if (Directory.Exists(oldReleaseFolder))
+                {
+                    Directory.Move(oldReleaseFolder, newReleaseFolder);
+                    Logger.LogInformation($"Moved Release Folder From [{ oldReleaseFolder }] -> [{ newReleaseFolder }]");
+                }
+                else if (!Directory.Exists(newReleaseFolder))
+                {
+                    Directory.CreateDirectory(newReleaseFolder);
+                }
+                var releaseDirectoryInfo = new DirectoryInfo(newReleaseFolder);
+                // Update and move tracks under new release folder
+                foreach (var releaseMedia in DbContext.ReleaseMedias.Where(x => x.ReleaseId == release.Id).ToArray())
+                    // Update the track path to have the new album title. This is needed because future scans might not work properly without updating track title.
+                    foreach (var track in DbContext.Tracks.Where(x => x.ReleaseMediaId == releaseMedia.Id).ToArray())
+                    {
+                        track.FilePath = Path.Combine(releaseDirectoryInfo.Parent.Name, releaseDirectoryInfo.Name);
+                        var trackPath = track.PathToTrack(Configuration);
+                        var trackFileInfo = new FileInfo(trackPath);
+                        if (trackFileInfo.Exists)
+                        {
+                            // Update the tracks release tags
+                            var audioMetaData = await AudioMetaDataHelper.GetInfo(trackFileInfo);
+                            audioMetaData.Release = release.Title;
+                            AudioMetaDataHelper.WriteTags(audioMetaData, trackFileInfo);
+
+                            // Update track path
+                            track.Status = Statuses.Ok;
+                            track.Hash = HashHelper.CreateMD5(release.ArtistId + trackFileInfo.LastWriteTimeUtc.GetHashCode().ToString() + audioMetaData.GetHashCode());
+                            track.LastUpdated = now;
+                        }
+                        else
+                        {
+                            track.Hash = null;
+                            track.Status = Statuses.Missing;
+                        }
+                        CacheManager.ClearRegion(track.CacheRegion);
+                    }
+
+                await DbContext.SaveChangesAsync();
+
+                // Clean up any empty folders for the artist
+                FolderPathHelper.DeleteEmptyFoldersForArtist(Configuration, release.Artist);
+            }
+
+            sw.Stop();
+            CacheManager.ClearRegion(release.CacheRegion);
+            if (release.Artist != null) CacheManager.ClearRegion(release.Artist.CacheRegion);
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = result,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<OperationResult<bool>> Delete(ApplicationUser user, data.Release release, bool doDeleteFiles = false, bool doUpdateArtistCounts = true)
+        {
+            SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
+            SimpleContract.Requires<ArgumentNullException>(release.Artist != null, "Invalid Artist");
+
+            var releaseCacheRegion = release.CacheRegion;
+            var artistCacheRegion = release.Artist.CacheRegion;
+
+            var result = false;
+            var sw = new Stopwatch();
+            sw.Start();
+            if (doDeleteFiles)
+            {
+                var releaseTracks = (from r in DbContext.Releases
+                                     join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                     join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                     where r.Id == release.Id
+                                     select t).ToArray();
+                foreach (var track in releaseTracks)
+                {
+                    string trackPath = null;
+                    try
+                    {
+                        trackPath = track.PathToTrack(Configuration);
+                        if (File.Exists(trackPath))
+                        {
+                            File.Delete(trackPath);
+                            Logger.LogWarning("For Release [{0}], Deleted File [{1}]", release.Id, trackPath);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex,
+                            string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath,
+                                track.Id, ex.Serialize()));
+                    }
+                }
+
+                try
+                {
+                    FolderPathHelper.DeleteEmptyFoldersForArtist(Configuration, release.Artist);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex);
+                }
+            }
+
+            var releaseLabelIds = DbContext.ReleaseLabels.Where(x => x.ReleaseId == release.Id).Select(x => x.LabelId).ToArray();
+            DbContext.Releases.Remove(release);
+            var i = await DbContext.SaveChangesAsync();
+            result = true;
+            try
+            {
+                CacheManager.ClearRegion(releaseCacheRegion);
+                CacheManager.ClearRegion(artistCacheRegion);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex,
+                    string.Format("Error Clearing Cache For Release [{0}] Exception [{1}]", release.Id,
+                        ex.Serialize()));
+            }
+
+            var now = DateTime.UtcNow;
+            if (doUpdateArtistCounts) await UpdateArtistCounts(release.Artist.Id, now);
+            if (releaseLabelIds != null && releaseLabelIds.Any())
+                foreach (var releaseLabelId in releaseLabelIds)
+                    await UpdateLabelCounts(releaseLabelId, now);
+            sw.Stop();
+            Logger.LogWarning("User `{0}` deleted Release `{1}]`", user, release);
+            return new OperationResult<bool>
+            {
+                Data = result,
+                IsSuccess = result,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<OperationResult<bool>> DeleteReleases(ApplicationUser user, IEnumerable<Guid> releaseIds, bool doDeleteFiles = false)
+        {
+            SimpleContract.Requires<ArgumentNullException>(releaseIds != null && releaseIds.Any(),
+                "No Release Ids Found");
+            var result = false;
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var now = DateTime.UtcNow;
+            var releases = (from r in DbContext.Releases.Include(r => r.Artist)
+                            where releaseIds.Contains(r.RoadieId)
+                            select r
+                ).ToArray();
+
+            var artistIds = releases.Select(x => x.ArtistId).Distinct().ToArray();
+
+            foreach (var release in releases)
+            {
+                var defaultResult = await Delete(user, release, doDeleteFiles, false);
+                result &= defaultResult.IsSuccess;
+            }
+
+            foreach (var artistId in artistIds)
+            {
+                await UpdateArtistCounts(artistId, now);
+            }
+            sw.Stop();
+
+            return new OperationResult<bool>
+            {
+                Data = result,
+                IsSuccess = result,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
         public Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
         {
             var sw = new Stopwatch();
@@ -253,7 +440,7 @@ namespace Roadie.Api.Services
             }
             IQueryable<int> genreReleaseIds = null;
             var isFilteredToGenre = false;
-            if(request.FilterToGenreId.HasValue)
+            if (request.FilterToGenreId.HasValue)
             {
                 genreReleaseIds = (from rg in DbContext.ReleaseGenres
                                    join g in DbContext.Genres on rg.GenreId equals g.Id
@@ -317,19 +504,17 @@ namespace Roadie.Api.Services
                 var userId = roadieUser?.Id ?? -1;
 
                 // This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
-                var sql = @"select r.id 
+                var sql = @"select r.id
                             FROM `release` r
                             WHERE (r.id NOT IN (select releaseId FROM `userrelease` where userId = {1} and isDisliked = 1))
-                            OR (r.id IN (select releaseId FROM `userrelease` where userId = {1} and isFavorite = 1) 
-                                AND {2} = 0) 
+                            OR (r.id IN (select releaseId FROM `userrelease` where userId = {1} and isFavorite = 1)
+                                AND {2} = 0)
                             order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)
                             LIMIT 0, {0}";
                 randomReleaseIds = (from a in DbContext.Releases.FromSql(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0")
-                                   select a.Id).ToArray();
+                                    select a.Id).ToArray();
                 rowCount = DbContext.Releases.Count();
-
             }
-
 
             var result = (from r in DbContext.Releases
                           join a in DbContext.Artists on r.ArtistId equals a.Id
@@ -339,17 +524,17 @@ namespace Roadie.Api.Services
                           where request.FilterToCollectionId == null || collectionReleaseIds.Contains(r.Id)
                           where !request.FilterFavoriteOnly || favoriteReleaseIds.Contains(r.Id)
                           where !isFilteredToGenre || genreReleaseIds.Contains(r.Id)
-                          where request.FilterFromYear == null || 
+                          where request.FilterFromYear == null ||
                                 r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear
-                          where request.FilterToYear == null || 
+                          where request.FilterToYear == null ||
                                 r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear
-                          where request.FilterValue == "" || 
-                                r.Title.Contains(request.FilterValue) || 
+                          where request.FilterValue == "" ||
+                                r.Title.Contains(request.FilterValue) ||
                                 r.AlternateNames.Contains(request.FilterValue) ||
                                 r.AlternateNames.Contains(normalizedFilterValue)
-                          where !isEqualFilter || 
+                          where !isEqualFilter ||
                                 r.Title.Equals(request.FilterValue) ||
-                                r.AlternateNames.Equals(request.FilterValue) || 
+                                r.AlternateNames.Equals(request.FilterValue) ||
                                 r.AlternateNames.Equals(normalizedFilterValue)
                           select new ReleaseList
                           {
@@ -582,8 +767,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<bool>> MergeReleases(ApplicationUser user, Guid releaseToMergeId,
-            Guid releaseToMergeIntoId, bool addAsMedia)
+        public async Task<OperationResult<bool>> MergeReleases(ApplicationUser user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -646,8 +830,7 @@ namespace Roadie.Api.Services
         /// <param name="releaseToMergeInto">The release to merge into</param>
         /// <param name="addAsMedia">If true then add a ReleaseMedia to the release to be merged into</param>
         /// <returns></returns>
-        public async Task<OperationResult<bool>> MergeReleases(ApplicationUser user, data.Release releaseToMerge, data.Release releaseToMergeInto,
-            bool addAsMedia)
+        public async Task<OperationResult<bool>> MergeReleases(ApplicationUser user, data.Release releaseToMerge, data.Release releaseToMergeInto, bool addAsMedia)
         {
             SimpleContract.Requires<ArgumentNullException>(releaseToMerge != null, "Invalid Release");
             SimpleContract.Requires<ArgumentNullException>(releaseToMergeInto != null, "Invalid Release");
@@ -889,123 +1072,6 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> Delete(ApplicationUser user, data.Release release, bool doDeleteFiles = false, bool doUpdateArtistCounts = true)
-        {
-            SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
-            SimpleContract.Requires<ArgumentNullException>(release.Artist != null, "Invalid Artist");
-
-            var releaseCacheRegion = release.CacheRegion;
-            var artistCacheRegion = release.Artist.CacheRegion;
-
-            var result = false;
-            var sw = new Stopwatch();
-            sw.Start();
-            if (doDeleteFiles)
-            {
-                var releaseTracks = (from r in DbContext.Releases
-                                     join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                     join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                     where r.Id == release.Id
-                                     select t).ToArray();
-                foreach (var track in releaseTracks)
-                {
-                    string trackPath = null;
-                    try
-                    {
-                        trackPath = track.PathToTrack(Configuration);
-                        if (File.Exists(trackPath))
-                        {
-                            File.Delete(trackPath);
-                            Logger.LogWarning("For Release [{0}], Deleted File [{1}]", release.Id, trackPath);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogError(ex,
-                            string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath,
-                                track.Id, ex.Serialize()));
-                    }
-                }
-
-                try
-                {
-                    FolderPathHelper.DeleteEmptyFoldersForArtist(Configuration, release.Artist);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(ex);
-                }
-            }
-
-            var releaseLabelIds = DbContext.ReleaseLabels.Where(x => x.ReleaseId == release.Id).Select(x => x.LabelId).ToArray();
-            DbContext.Releases.Remove(release);
-            var i = await DbContext.SaveChangesAsync();
-            result = true;
-            try
-            {
-                CacheManager.ClearRegion(releaseCacheRegion);
-                CacheManager.ClearRegion(artistCacheRegion);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex,
-                    string.Format("Error Clearing Cache For Release [{0}] Exception [{1}]", release.Id,
-                        ex.Serialize()));
-            }
-
-            var now = DateTime.UtcNow;
-            if (doUpdateArtistCounts) await UpdateArtistCounts(release.Artist.Id, now);
-            if (releaseLabelIds != null && releaseLabelIds.Any())
-                foreach (var releaseLabelId in releaseLabelIds)
-                    await UpdateLabelCounts(releaseLabelId, now);
-            sw.Stop();
-            Logger.LogWarning("User `{0}` deleted Release `{1}]`", user, release);
-            return new OperationResult<bool>
-            {
-                Data = result,
-                IsSuccess = result,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-        }
-
-        public async Task<OperationResult<bool>> DeleteReleases(ApplicationUser user, IEnumerable<Guid> releaseIds, bool doDeleteFiles = false)
-        {
-            SimpleContract.Requires<ArgumentNullException>(releaseIds != null && releaseIds.Any(),
-                "No Release Ids Found");
-            var result = false;
-            var sw = new Stopwatch();
-            sw.Start();
-
-            var now = DateTime.UtcNow;
-            var releases = (from r in DbContext.Releases.Include(r => r.Artist)
-                            where releaseIds.Contains(r.RoadieId)
-                            select r
-                ).ToArray();
-
-            var artistIds = releases.Select(x => x.ArtistId).Distinct().ToArray();
-
-            foreach (var release in releases)
-            {
-                var defaultResult = await Delete(user, release, doDeleteFiles, false);
-                result &= defaultResult.IsSuccess;
-            }
-
-            foreach (var artistId in artistIds)
-            {
-                await UpdateArtistCounts(artistId, now);
-            }
-            sw.Stop();
-
-            return new OperationResult<bool>
-            {
-                Data = result,
-                IsSuccess = result,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-        }
-
-
-
         public Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id)
         {
             var release = GetRelease(id);
@@ -1068,11 +1134,6 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<Image>> SetReleaseImageByUrl(ApplicationUser user, Guid id, string imageUrl)
-        {
-            return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
-        }
-
         /// <summary>
         ///     For the given ReleaseId, Scan folder adding new, removing not found and updating DB tracks for tracks found
         /// </summary>
@@ -1099,6 +1160,7 @@ namespace Roadie.Api.Services
                     Logger.LogCritical("Unable To Find Release [{0}]", releaseId);
                     return new OperationResult<bool>();
                 }
+                var now = DateTime.UtcNow;
 
                 // This is recorded from metadata and if set then used to gauage if the release is complete
                 short? totalTrackCount = null;
@@ -1107,10 +1169,42 @@ namespace Roadie.Api.Services
                 var releaseDirectory = new DirectoryInfo(releasePath);
                 if (!Directory.Exists(releasePath))
                 {
-                    Logger.LogWarning("Unable To Find Release Folder [{0}] For Release `{1}`", releasePath, release.ToString());
+                    // Get the First Track for the Release from DB (if any) and see if the path on it is set, if so rename to "correct" path
+                    //  this happens with the logic change from folder naming and almost always case change which causes issues with Linux systems.
+                    var firstTrack = (from t in DbContext.Tracks
+                                      join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                      where rm.ReleaseId == release.Id
+                                      select t).FirstOrDefault();
+                    if(firstTrack?.FilePath != null)
+                    {
+                        var trackPath = Path.GetDirectoryName(firstTrack.PathToTrack(Configuration));
+                        if (Directory.Exists(trackPath) && !releasePath.Equals(trackPath))
+                        {
+                            Directory.Move(trackPath, releasePath);
+                            var releaseTracks = (from t in DbContext.Tracks
+                                                 join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                                 where rm.ReleaseId == release.Id
+                                                 select t).ToArray();
+                            foreach (var releaseTrack in releaseTracks)
+                            {
+                                releaseTrack.FilePath = releasePath;
+                                releaseTrack.LastUpdated = now;
+                                releaseTrack.Hash = HashHelper.CreateMD5(release.RoadieId + releaseTrack.GetHashCode().ToString());
+                            }
+                            release.LastUpdated = now;
+                            await DbContext.SaveChangesAsync();
+                            Logger.LogWarning($"Release `{ release }`: Updated Release Track Path From [{ trackPath }] to [{ releasePath }]");
+                        }
+                        else
+                        {
+                            Logger.LogWarning($"Unable To Find Release Folder [{releasePath}], and Track path [{ trackPath }] For Release `{release}`");
+                        }
+                    }
+                    else
+                    {
+                        Logger.LogWarning($"Unable To Find Release Folder [{releasePath}] For Release `{release}`");
+                    }
                 }
-                var now = DateTime.UtcNow;
-
                 #region Get Tracks for Release from DB and set as missing any not found in Folder
 
                 foreach (var releaseMedia in DbContext.ReleaseMedias.Where(x => x.ReleaseId == release.Id).ToArray())
@@ -1259,7 +1353,7 @@ namespace Roadie.Api.Services
                                 {
                                     if (audioMetaData.TrackArtists.Count() == 1)
                                     {
-                                        var trackArtistData = await ArtistLookupEngine.GetByName( new AudioMetaData { Artist = audioMetaData.TrackArtist }, true);
+                                        var trackArtistData = await ArtistLookupEngine.GetByName(new AudioMetaData { Artist = audioMetaData.TrackArtist }, true);
                                         if (trackArtistData.IsSuccess && release.ArtistId != trackArtistData.Data.Id)
                                         {
                                             trackArtistId = trackArtistData.Data.Id;
@@ -1426,6 +1520,10 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<Image>> SetReleaseImageByUrl(ApplicationUser user, Guid id, string imageUrl)
+        {
+            return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
+        }
 
         public async Task<OperationResult<bool>> UpdateRelease(ApplicationUser user, Release model, string originalReleaseFolder = null)
         {
@@ -1603,82 +1701,6 @@ namespace Roadie.Api.Services
             };
         }
 
-        /// <summary>
-        ///     See if the given release has properties that have been modified that affect the folder structure, if so then handle
-        ///     necessary operations for changes
-        /// </summary>
-        /// <param name="release">Release that has been modified</param>
-        /// <param name="oldReleaseFolder">Folder for release before any changes</param>
-        /// <returns></returns>
-        public async Task<OperationResult<bool>> CheckAndChangeReleaseTitle(data.Release release, string oldReleaseFolder)
-        {
-            SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
-            SimpleContract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(oldReleaseFolder), "Invalid Release Old Folder");
-
-            var sw = new Stopwatch();
-            sw.Start();
-            var now = DateTime.UtcNow;
-
-            var result = false;
-            var artistFolder = release.Artist.ArtistFileFolder(Configuration);
-            var newReleaseFolder = release.ReleaseFileFolder(artistFolder);
-            if (newReleaseFolder != oldReleaseFolder) 
-            {
-                if (Directory.Exists(oldReleaseFolder))
-                {
-                    Directory.Move(oldReleaseFolder, newReleaseFolder);
-                    Logger.LogInformation($"Moved Release Folder From [{ oldReleaseFolder }] -> [{ newReleaseFolder }]");
-                }                
-                else if (!Directory.Exists(newReleaseFolder))
-                {
-                    Directory.CreateDirectory(newReleaseFolder);
-                }
-                var releaseDirectoryInfo = new DirectoryInfo(newReleaseFolder);
-                // Update and move tracks under new release folder
-                foreach (var releaseMedia in DbContext.ReleaseMedias.Where(x => x.ReleaseId == release.Id).ToArray())
-                    // Update the track path to have the new album title. This is needed because future scans might not work properly without updating track title.
-                    foreach (var track in DbContext.Tracks.Where(x => x.ReleaseMediaId == releaseMedia.Id).ToArray())
-                    {
-                        track.FilePath = Path.Combine(releaseDirectoryInfo.Parent.Name, releaseDirectoryInfo.Name);
-                        var trackPath = track.PathToTrack(Configuration);
-                        var trackFileInfo = new FileInfo(trackPath);
-                        if (trackFileInfo.Exists)
-                        {
-                            // Update the tracks release tags
-                            var audioMetaData = await AudioMetaDataHelper.GetInfo(trackFileInfo);
-                            audioMetaData.Release = release.Title;
-                            AudioMetaDataHelper.WriteTags(audioMetaData, trackFileInfo);
-
-                            // Update track path
-                            track.Status = Statuses.Ok;
-                            track.Hash = HashHelper.CreateMD5(release.ArtistId + trackFileInfo.LastWriteTimeUtc.GetHashCode().ToString() + audioMetaData.GetHashCode());
-                            track.LastUpdated = now;
-                        }
-                        else
-                        {
-                            track.Hash = null;
-                            track.Status = Statuses.Missing;
-                        }
-                        CacheManager.ClearRegion(track.CacheRegion);
-                    }
-
-                await DbContext.SaveChangesAsync();
-
-                // Clean up any empty folders for the artist
-                FolderPathHelper.DeleteEmptyFoldersForArtist(Configuration, release.Artist);
-            }
-
-            sw.Stop();
-            CacheManager.ClearRegion(release.CacheRegion);
-            if (release.Artist != null) CacheManager.ClearRegion(release.Artist.CacheRegion);
-
-            return new OperationResult<bool>
-            {
-                IsSuccess = result,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-        }
-
         public async Task<OperationResult<Image>> UploadReleaseImage(ApplicationUser user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
@@ -1751,7 +1773,6 @@ namespace Roadie.Api.Services
                 tsw.Stop();
                 timings.Add("submissions", tsw.ElapsedMilliseconds);
             }
-
 
             if (includes != null && includes.Any())
             {
@@ -2047,6 +2068,5 @@ namespace Roadie.Api.Services
                 Errors = errors
             };
         }
-
     }
 }

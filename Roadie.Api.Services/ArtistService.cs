@@ -331,7 +331,8 @@ namespace Roadie.Api.Services
                               PlayedCount = a.PlayedCount,
                               ReleaseCount = a.ReleaseCount,
                               TrackCount = a.TrackCount,
-                              SortName = a.SortName
+                              SortName = a.SortName,
+                              Status = a.Status
                           });
 
             ArtistList[] rows;

@@ -67,6 +67,7 @@ namespace Roadie.Library.Models.Releases
             : null;
 
         public Statuses? Status { get; set; }
+        public string StatusVerbose => (Status ?? Statuses.Missing).ToString();
         public Image Thumbnail { get; set; }
         public int? TrackCount { get; set; }
         public int? TrackPlayedCount { get; set; }

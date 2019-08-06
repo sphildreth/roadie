@@ -73,11 +73,13 @@ namespace Roadie.Api.Controllers
             if (track == null || (track?.IsNotFoundResult ?? false))
             {
                 if (track?.Errors != null && (track?.Errors.Any() ?? false))
-                    Logger.LogCritical(
-                        $"StreamTrack: ById Invalid For TrackId [{id}] OperationResult Errors [{string.Join('|', track?.Errors ?? new Exception[0])}], For User [{currentUser}]");
+                {
+                    Logger.LogCritical($"StreamTrack: ById Invalid For TrackId [{id}] OperationResult Errors [{string.Join('|', track?.Errors ?? new Exception[0])}], For User [{currentUser}]");
+                }
                 else
-                    Logger.LogCritical(
-                        $"StreamTrack: ById Invalid For TrackId [{id}] OperationResult Messages [{string.Join('|', track?.Messages ?? new string[0])}], For User [{currentUser}]");
+                {
+                    Logger.LogCritical($"StreamTrack: ById Invalid For TrackId [{id}] OperationResult Messages [{string.Join('|', track?.Messages ?? new string[0])}], For User [{currentUser}]");
+                }
                 return NotFound("Unknown TrackId");
             }
 
