@@ -84,7 +84,31 @@ namespace Roadie.Library.Tests
                 },
                 new Models.TrackList
                 {
-                    Track = new Models.DataToken { Value = "A2_R5", Text = "A2_R5" },
+                    Track = new Models.DataToken { Value = "A2_R5_1", Text = "A2_R5_1" },
+                    Artist = new Models.ArtistList
+                    {
+                        Artist = new Models.DataToken { Value = "A2", Text = "A2" }
+                    },
+                    Release = new Models.Releases.ReleaseList
+                    {
+                        Release = new Models.DataToken { Value = "R5", Text = "R5" }
+                    }
+                },
+                new Models.TrackList
+                {
+                    Track = new Models.DataToken { Value = "A2_R5_2", Text = "A2_R5_2" },
+                    Artist = new Models.ArtistList
+                    {
+                        Artist = new Models.DataToken { Value = "A2", Text = "A2" }
+                    },
+                    Release = new Models.Releases.ReleaseList
+                    {
+                        Release = new Models.DataToken { Value = "R5", Text = "R5" }
+                    }
+                },
+                new Models.TrackList
+                {
+                    Track = new Models.DataToken { Value = "A2_R5_3", Text = "A2_R5_3" },
                     Artist = new Models.ArtistList
                     {
                         Artist = new Models.DataToken { Value = "A2", Text = "A2" }
@@ -177,6 +201,18 @@ namespace Roadie.Library.Tests
                     {
                         Release = new Models.DataToken { Value = "R12", Text = "R12" }
                     }
+                },
+                new Models.TrackList
+                {
+                    Track = new Models.DataToken { Value ="A10_R13", Text = "A10_R13" },
+                    Artist = new Models.ArtistList
+                    {
+                        Artist = new Models.DataToken { Value = "A10", Text = "A10" }
+                    },
+                    Release = new Models.Releases.ReleaseList
+                    {
+                        Release = new Models.DataToken { Value = "R13", Text = "R13" }
+                    }
                 }
             };
 
@@ -184,8 +220,8 @@ namespace Roadie.Library.Tests
             var lastTrack = shuffledTracks.First();
             foreach(var track in shuffledTracks.Skip(1))
             {
-                Assert.NotEqual(track.Artist.Artist.Text, lastTrack.Artist.Artist.Text);
-                Assert.NotEqual(track.Release.Release.Text, lastTrack.Release.Release.Text);
+                Assert.False(track.Artist.Artist.Text == lastTrack.Artist.Artist.Text &&
+                            track.Release.Release.Text == lastTrack.Release.Release.Text);
                 lastTrack = track;
             }
 

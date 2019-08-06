@@ -306,31 +306,33 @@ namespace Roadie.Api.Services
                         favoriteTrackIds = new int[0].AsQueryable();
                         request.FilterFavoriteOnly = false;
                     }
-                    randomTrackIds = TrackList.Shuffle((from t in DbContext.Tracks
-                                                        join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                                        join r in DbContext.Releases on rm.ReleaseId equals r.Id
-                                                        join a in DbContext.Artists on r.ArtistId equals a.Id
-                                                        where !request.FilterRatedOnly || request.FilterRatedOnly && t.Rating > 0
-                                                        where !dislikedArtistIds.Contains(r.ArtistId)
-                                                        where !dislikedArtistIds.Contains(t.ArtistId ?? 0)
-                                                        where !dislikedReleaseIds.Contains(r.Id)
-                                                        where !dislikedTrackIds.Contains(t.Id)
-                                                        where favoritedTrackIds == null || favoritedTrackIds.Contains(t.Id)
-                                                        where t.Hash != null
-                                                        select new TrackList
-                                                        {
-                                                            DatabaseId = t.Id,
-                                                            Artist = new ArtistList
-                                                            {
-                                                                Artist = new DataToken { Value = a.RoadieId.ToString(), Text = a.Name }
-                                                            },
-                                                            Release = new ReleaseList
-                                                            {
-                                                                Release = new DataToken { Value = r.RoadieId.ToString(), Text = r.Title }
-                                                            }
-                                                        })
-                                                        .OrderBy(x => x.RandomSortId)
-                                                        .Take(randomLimit))
+                    randomTrackIds = (from t in DbContext.Tracks
+                                        join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                        join r in DbContext.Releases on rm.ReleaseId equals r.Id
+                                        join a in DbContext.Artists on r.ArtistId equals a.Id
+                                        where !request.FilterRatedOnly || request.FilterRatedOnly && t.Rating > 0
+                                        where !dislikedArtistIds.Contains(r.ArtistId)
+                                        where !dislikedArtistIds.Contains(t.ArtistId ?? 0)
+                                        where !dislikedReleaseIds.Contains(r.Id)
+                                        where !dislikedTrackIds.Contains(t.Id)
+                                        where favoritedTrackIds == null || favoritedTrackIds.Contains(t.Id)
+                                        where t.Hash != null
+                                        select new TrackList
+                                        {
+                                            DatabaseId = t.Id,
+                                            Artist = new ArtistList
+                                            {
+                                                Artist = new DataToken { Value = a.RoadieId.ToString(), Text = a.Name }
+                                            },
+                                            Release = new ReleaseList
+                                            {
+                                                Release = new DataToken { Value = r.RoadieId.ToString(), Text = r.Title }
+                                            }
+                                        })
+                                        .OrderBy(x => x.Artist.RandomSortId)
+                                        .ThenBy(x => x.RandomSortId)
+                                        .ThenBy(x => x.RandomSortId)
+                                        .Take(randomLimit)
                                      .Select(x => x.DatabaseId)
                                      .ToArray();
                 }
@@ -598,7 +600,7 @@ namespace Roadie.Api.Services
 
                 if(doRandomize ?? false)
                 {
-                    rows = result.ToArray();
+                    rows = TrackList.Shuffle(result).ToArray();
                 }
                 else
                 {

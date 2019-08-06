@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Mapster;
+using Newtonsoft.Json;
+using Roadie.Library.Utility;
+using System;
 
 namespace Roadie.Library.Models
 {
@@ -45,6 +48,18 @@ namespace Roadie.Library.Models
         ///     This is the value to submit or the Key (Guid) of the item
         /// </summary>
         public string Value { get; set; }
+
+        /// <summary>
+        ///     Random int to sort when Random Request
+        /// </summary>
+        [AdaptIgnore]
+        [JsonIgnore]
+        public int RandomSortId { get; set; }
+
+        public DataToken()
+        {
+            RandomSortId = StaticRandom.Instance.Next();
+        }
 
         public override string ToString()
         {
