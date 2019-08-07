@@ -2340,13 +2340,13 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleArtistStar(Guid artistId, ApplicationUser user,
-            bool starred)
+        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleArtistStar(Guid artistId, ApplicationUser user, bool starred)
         {
             var r = await ToggleArtistFavorite(artistId, user, starred);
             if (r.IsNotFoundResult)
-                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound,
-                    $"Invalid Artist Id [{artistId}]");
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Artist Id [{artistId}]");
+            }
             return new subsonic.SubsonicOperationResult<bool>
             {
                 IsSuccess = r.IsSuccess,
@@ -2354,13 +2354,13 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleReleaseStar(Guid releaseId,
-            ApplicationUser user, bool starred)
+        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleReleaseStar(Guid releaseId, ApplicationUser user, bool starred)
         {
             var r = await ToggleReleaseFavorite(releaseId, user, starred);
             if (r.IsNotFoundResult)
-                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound,
-                    $"Invalid Release Id [{releaseId}]");
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release Id [{releaseId}]");
+            }
             return new subsonic.SubsonicOperationResult<bool>
             {
                 IsSuccess = r.IsSuccess,
@@ -2368,13 +2368,13 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleTrackStar(Guid trackId, ApplicationUser user,
-            bool starred)
+        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleTrackStar(Guid trackId, ApplicationUser user, bool starred)
         {
             var r = await ToggleTrackFavorite(trackId, user, starred);
             if (r.IsNotFoundResult)
-                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound,
-                    $"Invalid Track Id [{trackId}]");
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{trackId}]");
+            }
             return new subsonic.SubsonicOperationResult<bool>
             {
                 IsSuccess = r.IsSuccess,

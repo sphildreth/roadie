@@ -499,8 +499,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        protected async Task<OperationResult<bool>> ToggleArtistFavorite(Guid artistId, ApplicationUser user,
-            bool isFavorite)
+        protected async Task<OperationResult<bool>> ToggleArtistFavorite(Guid artistId, ApplicationUser user, bool isFavorite)
         {
             var artist = DbContext.Artists
                 .Include(x => x.Genres)
@@ -536,8 +535,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        protected async Task<OperationResult<bool>> ToggleReleaseDisliked(Guid releaseId, ApplicationUser user,
-            bool isDisliked)
+        protected async Task<OperationResult<bool>> ToggleReleaseDisliked(Guid releaseId, ApplicationUser user,  bool isDisliked)
         {
             var release = DbContext.Releases
                 .Include(x => x.Artist)
@@ -547,9 +545,11 @@ namespace Roadie.Api.Services
                 .Include("Medias.Tracks")
                 .Include("Medias.Tracks.TrackArtist")
                 .FirstOrDefault(x => x.RoadieId == releaseId);
-            if (release == null) return new OperationResult<bool>(true, $"Invalid Release Id [{releaseId}]");
-            var userRelease =
-                DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == user.Id);
+            if (release == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Release Id [{releaseId}]");
+            }
+            var userRelease =  DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == user.Id);
             if (userRelease == null)
             {
                 userRelease = new data.UserRelease
@@ -590,9 +590,11 @@ namespace Roadie.Api.Services
                 .Include("Medias.Tracks")
                 .Include("Medias.Tracks.TrackArtist")
                 .FirstOrDefault(x => x.RoadieId == releaseId);
-            if (release == null) return new OperationResult<bool>(true, $"Invalid Release Id [{releaseId}]");
-            var userRelease =
-                DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == user.Id);
+            if (release == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Release Id [{releaseId}]");
+            }
+            var userRelease = DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == user.Id);
             if (userRelease == null)
             {
                 userRelease = new data.UserRelease
@@ -622,8 +624,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        protected async Task<OperationResult<bool>> ToggleTrackDisliked(Guid trackId, ApplicationUser user,
-            bool isDisliked)
+        protected async Task<OperationResult<bool>> ToggleTrackDisliked(Guid trackId, ApplicationUser user, bool isDisliked)
         {
             var track = DbContext.Tracks
                 .Include(x => x.ReleaseMedia)
@@ -631,7 +632,10 @@ namespace Roadie.Api.Services
                 .Include(x => x.ReleaseMedia.Release.Artist)
                 .Include(x => x.TrackArtist)
                 .FirstOrDefault(x => x.RoadieId == trackId);
-            if (track == null) return new OperationResult<bool>(true, $"Invalid Track Id [{trackId}]");
+            if (track == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Track Id [{trackId}]");
+            }
             var userTrack = DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == user.Id);
             if (userTrack == null)
             {
@@ -663,8 +667,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        protected async Task<OperationResult<bool>> ToggleTrackFavorite(Guid trackId, ApplicationUser user,
-            bool isFavorite)
+        protected async Task<OperationResult<bool>> ToggleTrackFavorite(Guid trackId, ApplicationUser user, bool isFavorite)
         {
             var track = DbContext.Tracks
                 .Include(x => x.ReleaseMedia)
@@ -672,7 +675,10 @@ namespace Roadie.Api.Services
                 .Include(x => x.ReleaseMedia.Release.Artist)
                 .Include(x => x.TrackArtist)
                 .FirstOrDefault(x => x.RoadieId == trackId);
-            if (track == null) return new OperationResult<bool>(true, $"Invalid Track Id [{trackId}]");
+            if (track == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Track Id [{trackId}]");
+            }
             var userTrack = DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == user.Id);
             if (userTrack == null)
             {
@@ -696,6 +702,8 @@ namespace Roadie.Api.Services
             CacheManager.ClearRegion(track.CacheRegion);
             CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
             CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
+
+            Logger.LogDebug($"ToggleTrackFavorite: User `{ user }`, Track `{ track }`, isFavorite: [{ isFavorite }]");
 
             return new OperationResult<bool>
             {

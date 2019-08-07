@@ -172,9 +172,15 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> SetArtistBookmark(Guid artistId, User roadieUser, bool isBookmarked)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            }
             var artist = GetArtist(artistId);
-            if (artist == null) return new OperationResult<bool>(true, $"Invalid Artist [{artistId}]");
+            if (artist == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Artist [{artistId}]");
+            }
             var result = await SetBookmark(user, BookmarkType.Artist, artist.Id, isBookmarked);
 
             CacheManager.ClearRegion(artist.CacheRegion);
@@ -189,21 +195,30 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> SetArtistDisliked(Guid artistId, User roadieUser, bool isDisliked)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            }
             return await ToggleArtistDisliked(artistId, user, isDisliked);
         }
 
         public async Task<OperationResult<bool>> SetArtistFavorite(Guid artistId, User roadieUser, bool isFavorite)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            }
             return await ToggleArtistFavorite(artistId, user, isFavorite);
         }
 
         public async Task<OperationResult<short>> SetArtistRating(Guid artistId, User roadieUser, short rating)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<short>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<short>(true, $"Invalid User [{roadieUser}]");
+            }
             return await base.SetArtistRating(artistId, user, rating);
         }
 
@@ -211,9 +226,15 @@ namespace Roadie.Api.Services
             bool isBookmarked)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            }
             var collection = GetCollection(collectionId);
-            if (collection == null) return new OperationResult<bool>(true, $"Invalid Collection [{collectionId}]");
+            if (collection == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Collection [{collectionId}]");
+            }
             var result = await SetBookmark(user, BookmarkType.Collection, collection.Id, isBookmarked);
 
             CacheManager.ClearRegion(collection.CacheRegion);
@@ -228,9 +249,15 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> SetLabelBookmark(Guid labelId, User roadieUser, bool isBookmarked)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            }
             var label = GetLabel(labelId);
-            if (label == null) return new OperationResult<bool>(true, $"Invalid Label [{labelId}]");
+            if (label == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Label [{labelId}]");
+            }
             var result = await SetBookmark(user, BookmarkType.Label, label.Id, isBookmarked);
 
             CacheManager.ClearRegion(label.CacheRegion);
@@ -246,9 +273,15 @@ namespace Roadie.Api.Services
             bool isBookmarked)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            }
             var playlist = GetPlaylist(playlistId);
-            if (playlist == null) return new OperationResult<bool>(true, $"Invalid Playlist [{playlistId}]");
+            if (playlist == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Playlist [{playlistId}]");
+            }
             var result = await SetBookmark(user, BookmarkType.Playlist, playlist.Id, isBookmarked);
 
             CacheManager.ClearRegion(playlist.CacheRegion);
@@ -263,9 +296,15 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> SetReleaseBookmark(Guid releaseid, User roadieUser, bool isBookmarked)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            }
             var release = GetRelease(releaseid);
-            if (release == null) return new OperationResult<bool>(true, $"Invalid Release [{releaseid}]");
+            if (release == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Release [{releaseid}]");
+            }
             var result = await SetBookmark(user, BookmarkType.Release, release.Id, isBookmarked);
 
             CacheManager.ClearRegion(release.CacheRegion);
@@ -280,30 +319,45 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> SetReleaseDisliked(Guid releaseId, User roadieUser, bool isDisliked)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            }
             return await ToggleReleaseDisliked(releaseId, user, isDisliked);
         }
 
         public async Task<OperationResult<bool>> SetReleaseFavorite(Guid releaseId, User roadieUser, bool isFavorite)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            }
             return await ToggleReleaseFavorite(releaseId, user, isFavorite);
         }
 
         public async Task<OperationResult<short>> SetReleaseRating(Guid releaseId, User roadieUser, short rating)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<short>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<short>(true, $"Invalid User [{roadieUser}]");
+            }
             return await base.SetReleaseRating(releaseId, user, rating);
         }
 
         public async Task<OperationResult<bool>> SetTrackBookmark(Guid trackId, User roadieUser, bool isBookmarked)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            }
             var track = GetTrack(trackId);
-            if (track == null) return new OperationResult<bool>(true, $"Invalid Track [{trackId}]");
+            if (track == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Track [{trackId}]");
+            }
             var result = await SetBookmark(user, BookmarkType.Track, track.Id, isBookmarked);
 
             CacheManager.ClearRegion(track.CacheRegion);
@@ -318,14 +372,20 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> SetTrackDisliked(Guid trackId, User roadieUser, bool isDisliked)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            }
             return await ToggleTrackDisliked(trackId, user, isDisliked);
         }
 
         public async Task<OperationResult<bool>> SetTrackFavorite(Guid trackId, User roadieUser, bool isFavorite)
         {
             var user = GetUser(roadieUser.UserId);
-            if (user == null) return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
+            }
             return await ToggleTrackFavorite(trackId, user, isFavorite);
         }
 
@@ -337,7 +397,10 @@ namespace Roadie.Api.Services
             sw.Stop();
             timings.Add("GetUser", sw.ElapsedMilliseconds);
 
-            if (user == null) return new OperationResult<short>(true, $"Invalid User [{roadieUser}]");
+            if (user == null)
+            {
+                return new OperationResult<short>(true, $"Invalid User [{roadieUser}]");
+            }
             sw.Start();
             var result = await base.SetTrackRating(trackId, user, rating);
             sw.Stop();
@@ -353,7 +416,10 @@ namespace Roadie.Api.Services
             string token)
         {
             var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == userId);
-            if (user == null) return new OperationResult<bool>(true, $"User Not Found [{userId}]");
+            if (user == null)
+            {
+                return new OperationResult<bool>(true, $"User Not Found [{userId}]");
+            }
             if (integrationName == "lastfm") return await UpdateLastFMSessionKey(user, token);
             throw new NotImplementedException();
         }
