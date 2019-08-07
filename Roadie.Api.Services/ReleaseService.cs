@@ -672,7 +672,6 @@ namespace Roadie.Api.Services
                                     Text = par.Release
                                 },
                                 Status = Statuses.Missing,
-                                CssClass = "missing",
                                 ArtistThumbnail = new Image($"{HttpContext.ImageBaseUrl}/unknown.jpg"),
                                 Thumbnail = new Image($"{HttpContext.ImageBaseUrl}/unknown.jpg"),
                                 ListNumber = par.Position
@@ -1175,7 +1174,7 @@ namespace Roadie.Api.Services
                                       join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                       where rm.ReleaseId == release.Id
                                       select t).FirstOrDefault();
-                    if(firstTrack?.FilePath != null)
+                    if (firstTrack?.FilePath != null)
                     {
                         var trackPath = Path.GetDirectoryName(firstTrack.PathToTrack(Configuration));
                         if (Directory.Exists(trackPath) && !releasePath.Equals(trackPath))
@@ -1214,6 +1213,7 @@ namespace Roadie.Api.Services
                         Logger.LogWarning($"Unable To Find Release Folder [{releasePath}] For Release `{release}`");
                     }
                 }
+
                 #region Get Tracks for Release from DB and set as missing any not found in Folder
 
                 foreach (var releaseMedia in DbContext.ReleaseMedias.Where(x => x.ReleaseId == release.Id).ToArray())
@@ -1246,7 +1246,9 @@ namespace Roadie.Api.Services
 
                 #region Scan Folder and Add or Update Existing Tracks from Files
 
-                var existingReleaseMedia = DbContext.ReleaseMedias.Include(x => x.Tracks).Where(x => x.ReleaseId == release.Id).ToList();
+                var existingReleaseMedia = DbContext.ReleaseMedias.Include(x => x.Tracks)
+                                                                  .Where(x => x.ReleaseId == release.Id)
+                                                                  .ToList();
                 var foundInFolderTracks = new List<data.Track>();
                 short totalNumberOfTracksFound = 0;
                 // This is the number of tracks metadata says the release should have (releaseMediaNumber, TotalNumberOfTracks)
@@ -2007,7 +2009,7 @@ namespace Roadie.Api.Services
                                 Value = track.RoadieId.ToString()
                             };
                             t.MediaNumber = rm.MediaNumber;
-                            t.CssClass = string.IsNullOrEmpty(track.Hash) ? "Missing" : "Ok";
+                            t.Status = track.Status;
                             t.TrackArtist = track.TrackArtist != null
                                 ? ArtistList.FromDataArtist(track.TrackArtist,
                                     MakeArtistThumbnailImage(track.TrackArtist.RoadieId))

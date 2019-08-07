@@ -168,6 +168,7 @@ namespace Roadie.Library.Models
                 ReleaseDate = release.ReleaseDate,
                 PlayedCount = track.PlayedCount,
                 Rating = track.Rating,
+                Status = track.Status,
                 Title = track.Title,
                 TrackPlayUrl = trackPlayUrl,
                 Thumbnail = trackThumbnail

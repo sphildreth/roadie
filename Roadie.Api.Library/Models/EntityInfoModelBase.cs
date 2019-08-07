@@ -11,8 +11,6 @@ namespace Roadie.Library.Models
     {
         public DateTime? CreatedDate { get; set; }
 
-        public string CssClass { get; set; }
-
         /// <summary>
         ///     This is the "id" of the record in the database and is only used during composition, not stored in cache and not
         ///     returned in results.
