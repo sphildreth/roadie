@@ -29,35 +29,57 @@ namespace Roadie.Library.Imaging
 
         public static byte[] ConvertToJpegFormat(byte[] imageBytes)
         {
-            if (imageBytes == null) return null;
-            using (var outStream = new MemoryStream())
+            if (imageBytes == null)
             {
-                IImageFormat imageFormat = null;
-                using (var image = Image.Load(imageBytes, out imageFormat))
-                {
-                    image.Save(outStream, ImageFormats.Jpeg);
-                }
-                return outStream.ToArray();
+                return null;
             }
+
+            try
+            {
+                using (var outStream = new MemoryStream())
+                {
+                    IImageFormat imageFormat = null;
+                    using (var image = Image.Load(imageBytes, out imageFormat))
+                    {
+                        image.Save(outStream, ImageFormats.Jpeg);
+                    }
+                    return outStream.ToArray();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Error Converting Image to Jpg [{ ex.Message }]");
+
+            }
+            return null;
         }
 
         public static byte[] ConvertToGifFormat(byte[] imageBytes)
         {
             if (imageBytes == null) return null;
-            using (var outStream = new MemoryStream())
+            try
             {
-                IImageFormat imageFormat = null;
-                using (var image = Image.Load(imageBytes, out imageFormat))
+                using (var outStream = new MemoryStream())
                 {
-                    image.Save(outStream, ImageFormats.Gif);
+                    IImageFormat imageFormat = null;
+                    using (var image = Image.Load(imageBytes, out imageFormat))
+                    {
+                        image.Save(outStream, ImageFormats.Gif);
+                    }
+                    return outStream.ToArray();
                 }
-                return outStream.ToArray();
             }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Error Converting Image to Gif [{ ex.Message }]");
+
+            }
+            return null;
         }
 
 
-        public static IEnumerable<FileInfo> FindImagesByName(DirectoryInfo directory, string name,
-            SearchOption folderSearchOptions = SearchOption.AllDirectories)
+        public static IEnumerable<FileInfo> FindImagesByName(DirectoryInfo directory, string name, SearchOption folderSearchOptions = SearchOption.AllDirectories)
         {
             var result = new List<FileInfo>();
             if (directory == null || !directory.Exists || string.IsNullOrEmpty(name)) return result;
@@ -78,8 +100,7 @@ namespace Roadie.Library.Imaging
             return result;
         }
 
-        public static IEnumerable<FileInfo> FindImageTypeInDirectory(DirectoryInfo directory, ImageType type,
-            SearchOption folderSearchOptions = SearchOption.AllDirectories)
+        public static IEnumerable<FileInfo> FindImageTypeInDirectory(DirectoryInfo directory, ImageType type, SearchOption folderSearchOptions = SearchOption.AllDirectories)
         {
             var result = new List<FileInfo>();
             if (directory == null || !directory.Exists) return result;
@@ -273,14 +294,14 @@ namespace Roadie.Library.Imaging
         /// </summary>
         public static byte[] ResizeToThumbnail(byte[] imageBytes, IRoadieSettings configuration)
         {
-            if(!imageBytes.Any())
+            if(!imageBytes?.Any() ?? false)
             {
                 return imageBytes;
             }
             var width = configuration?.ThumbnailImageSize?.Width ?? 80;
             var height = configuration?.ThumbnailImageSize?.Height ?? 80;
-            var result = ImageHelper.ResizeImage(ImageHelper.ConvertToJpegFormat(imageBytes), width, height, true).Item2;
-            if(result.Length >= ImageHelper.MaximumThumbnailByteSize)
+            var result = ImageHelper.ResizeImage(ImageHelper.ConvertToJpegFormat(imageBytes), width, height, true)?.Item2;
+            if(result?.Length >= ImageHelper.MaximumThumbnailByteSize)
             {
                 Trace.WriteLine($"Thumbnail larger than maximum size after resizing to [{configuration.ThumbnailImageSize.Width}x{configuration.ThumbnailImageSize.Height}] Thumbnail Size [{result.Length}]");
                 result = new byte[0];

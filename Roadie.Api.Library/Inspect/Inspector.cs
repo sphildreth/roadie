@@ -153,7 +153,7 @@ namespace Roadie.Library.Inspect
             return token;
         }
 
-        public void Inspect(bool doCopy, bool isReadOnly, string directoryToInspect, string destination, bool dontAppendSubFolder, bool dontDeleteEmptyFolders)
+        public void Inspect(bool doCopy, bool isReadOnly, string directoryToInspect, string destination, bool dontAppendSubFolder, bool dontDeleteEmptyFolders, bool dontRunPreScripts)
         {
             Configuration.Inspector.IsInReadOnlyMode = isReadOnly;
             Configuration.Inspector.DoCopyFiles = doCopy;
@@ -167,18 +167,26 @@ namespace Roadie.Library.Inspect
             Console.WriteLine($"✨ Inspector Start, UTC [{DateTime.UtcNow.ToString("s")}]");
             Console.ResetColor();
 
+            string scriptResult = null;
             // Run PreInspect script
-            var scriptResult = RunScript(Configuration.Processing.PreInspectScript, doCopy, isReadOnly,
-                directoryToInspect, destination);
-            if (!string.IsNullOrEmpty(scriptResult))
+            if(!dontRunPreScripts)
             {
                 Console.BackgroundColor = ConsoleColor.Blue;
                 Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine(
-                    $"PreInspectScript Results: {Environment.NewLine + scriptResult + Environment.NewLine}");
+                Console.WriteLine($"Skipping PreInspectScript.");
                 Console.ResetColor();
             }
-
+            else
+            {            
+                scriptResult = RunScript(Configuration.Processing.PreInspectScript, doCopy, isReadOnly, directoryToInspect, destination);
+                if (!string.IsNullOrEmpty(scriptResult))
+                {
+                    Console.BackgroundColor = ConsoleColor.Blue;
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.WriteLine($"PreInspectScript Results: {Environment.NewLine + scriptResult + Environment.NewLine}");
+                    Console.ResetColor();
+                }
+            }
             // Create a new destination subfolder for each Inspector run by Current timestamp
             var dest = Path.Combine(destination, DateTime.UtcNow.ToString("yyyyMMddHHmm"));
             if (isReadOnly || dontAppendSubFolder) dest = destination;
@@ -477,8 +485,7 @@ namespace Roadie.Library.Inspect
             }
 
             // Run PreInspect script
-            scriptResult = RunScript(Configuration.Processing.PostInspectScript, doCopy, isReadOnly, directoryToInspect,
-                destination);
+            scriptResult = RunScript(Configuration.Processing.PostInspectScript, doCopy, isReadOnly, directoryToInspect, destination);
             if (!string.IsNullOrEmpty(scriptResult))
             {
                 Console.BackgroundColor = ConsoleColor.Blue;
@@ -575,6 +582,7 @@ namespace Roadie.Library.Inspect
 
             try
             {
+                Console.WriteLine($"Running Script: [{ scriptFilename }]");
                 var script = File.ReadAllText(scriptFilename);
                 using (var ps = PowerShell.Create())
                 {

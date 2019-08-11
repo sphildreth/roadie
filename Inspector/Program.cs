@@ -24,12 +24,15 @@ namespace Inspector
         [Option("-r", "Only show what would be done, don't modify any files", CommandOptionType.NoValue)]
         public bool IsReadOnly { get; }
 
+        [Option("-ss", "Don't Run Prescript", CommandOptionType.SingleOrNoValue)]
+        public bool DontRunPreScript { get; }
+
         public static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
 
         private void OnExecute()
         {
             var inspector = new Roadie.Library.Inspect.Inspector();
-            inspector.Inspect(DoCopy, IsReadOnly, Folder, Destination ?? Folder, DontAppendSubFolder, IsReadOnly ? true : DontDeleteEmptyFolders);
+            inspector.Inspect(DoCopy, IsReadOnly, Folder, Destination ?? Folder, DontAppendSubFolder, IsReadOnly ? true : DontDeleteEmptyFolders, DontRunPreScript);
         }
     }
 }

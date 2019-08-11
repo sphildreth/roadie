@@ -11,6 +11,7 @@ using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
+using Roadie.Library.MetaData.Audio;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
@@ -32,14 +33,17 @@ namespace Roadie.Api.Services
     {
         private IAdminService AdminService { get; }
 
+        private IAudioMetaDataHelper AudioMetaDataHelper { get; }
+
         private IBookmarkService BookmarkService { get; }
 
         public TrackService(IRoadieSettings configuration, IHttpEncoder httpEncoder,IHttpContext httpContext,
                             data.IRoadieDbContext dbContext, ICacheManager cacheManager,ILogger<TrackService> logger,
-                            IBookmarkService bookmarkService, IAdminService adminService)
+                            IBookmarkService bookmarkService, IAdminService adminService, IAudioMetaDataHelper audioMetaDataHelper)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
             BookmarkService = bookmarkService;
+            AudioMetaDataHelper = audioMetaDataHelper;
             AdminService = adminService;
         }
 
@@ -841,6 +845,9 @@ namespace Roadie.Api.Services
 
             try
             {
+                var originalTitle = track.Title;
+                var originalTrackNumber  = track.TrackNumber;
+                var originalFilename = track.PathToTrack(Configuration);
                 var now = DateTime.UtcNow;
                 track.IsLocked = model.IsLocked;
                 track.Status = SafeParser.ToEnum<Statuses>(model.Status);
@@ -856,15 +863,16 @@ namespace Roadie.Api.Services
                     ? null
                     : string.Join("\n", model.PartTitlesList);
 
+                data.Artist trackArtist = null;
                 if (model.TrackArtistToken != null)
                 {
                     var artistId = SafeParser.ToGuid(model.TrackArtistToken.Value);
                     if (artistId.HasValue)
                     {
-                        var artist = GetArtist(artistId.Value);
-                        if (artist != null)
+                        trackArtist = GetArtist(artistId.Value);
+                        if (trackArtist != null)
                         {
-                            track.ArtistId = artist.Id;
+                            track.ArtistId = trackArtist.Id;
                         }
                     }
                 }
@@ -885,11 +893,29 @@ namespace Roadie.Api.Services
                     didChangeThumbnail = true;
                 }
 
+                // See if Title was changed if so then  modify DB Filename and rename track
+                var shouldFileNameBeUpdated = originalTitle != track.Title || originalTrackNumber != track.TrackNumber;
+                if(shouldFileNameBeUpdated)
+                {
+                    track.FileName = FolderPathHelper.TrackFileName(Configuration, track.Title, track.TrackNumber, track.ReleaseMedia.MediaNumber, track.ReleaseMedia.TrackCount);
+                    File.Move(originalFilename, track.PathToTrack(Configuration));
+                }
                 track.LastUpdated = now;
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync();               
+
+                var trackFileInfo = new FileInfo(track.PathToTrack(Configuration));
+                var audioMetaData = await AudioMetaDataHelper.GetInfo(trackFileInfo);
+                if (audioMetaData != null)
+                {
+                    audioMetaData.Title = track.Title;
+                    if (trackArtist != null)
+                    {
+                        audioMetaData.Artist = trackArtist.Name;
+                    }
+                    AudioMetaDataHelper.WriteTags(audioMetaData, trackFileInfo);
+                }
                 CacheManager.ClearRegion(track.CacheRegion);
-                Logger.LogInformation(
-                    $"UpdateTrack `{track}` By User `{user}`: Edited Track [{didChangeTrack}], Uploaded new image [{didChangeThumbnail}]");
+                Logger.LogInformation($"UpdateTrack `{track}` By User `{user}`: Edited Track [{didChangeTrack}], Uploaded new image [{didChangeThumbnail}]");
             }
             catch (Exception ex)
             {

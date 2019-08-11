@@ -142,7 +142,7 @@ namespace Roadie.Library.Data
 
         public override string ToString()
         {
-            return $"Id [{Id}], Name [{Name}]";
+            return $"Id [{Id}], Name [{Name}], RoadieId [{RoadieId}]";
         }
     }
 

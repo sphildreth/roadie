@@ -409,6 +409,7 @@ namespace Roadie.Library.MetaData.ID3Tags
                 }
 
                 if (!isSuccess)
+                {
                     if (ID3v1Tag.DoesTagExist(fileName))
                     {
                         IID3v1Tag id3v1 = new ID3v1Tag(fileName);
@@ -427,12 +428,12 @@ namespace Roadie.Library.MetaData.ID3Tags
                         result.Year = date?.Year ?? SafeParser.ToNumber<int?>(id3v1.Year);
                         isSuccess = result.IsValid;
                     }
+                }
             }
             catch (Exception ex)
             {
                 message = ex.ToString();
-                Logger.LogError(ex,
-                    "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
+                Logger.LogError(ex, "MetaDataForFileFromTagLib Filename [" + fileName + "] Error [" + ex.Serialize() + "]");
             }
 
             sw.Stop();

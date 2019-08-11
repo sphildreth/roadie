@@ -193,8 +193,7 @@ namespace Roadie.Library.FilePlugins
                                 releaseImage.Delete();
                             }
 
-                            Logger.LogDebug("Found Release Image File [{0}], Moved to release folder",
-                                releaseImage.Name);
+                            Logger.LogTrace("Found Release Image File [{0}], Moved to release folder", releaseImage.Name);
                         }
                     }
 
@@ -222,8 +221,7 @@ namespace Roadie.Library.FilePlugins
                                     releaseImage.Delete();
                                 }
 
-                                Logger.LogDebug("Found Release Image File [{0}], Moved to release folder [{1}]",
-                                    releaseImage.Name, releaseImageFilename);
+                                Logger.LogTrace("Found Release Image File [{0}], Moved to release folder [{1}]", releaseImage.Name, releaseImageFilename);
                             }
                         }
                     }

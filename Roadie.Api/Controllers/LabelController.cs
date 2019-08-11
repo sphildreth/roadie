@@ -38,10 +38,15 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await LabelService.ById(await CurrentUserModel(), id,
-                (inc ?? models.Label.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            var result = await LabelService.ById(await CurrentUserModel(), id, (inc ?? models.Label.DefaultIncludes).ToLower().Split(","));
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
             return Ok(result);
         }
 

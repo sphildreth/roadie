@@ -81,12 +81,11 @@ namespace Roadie.Api.Services
             sw.Stop();
             if (result?.Data != null && roadieUser != null)
             {
-                var userBookmarkResult =
-                    await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Label);
+                var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Label);
                 if (userBookmarkResult.IsSuccess)
-                    result.Data.UserBookmarked =
-                        userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) !=
-                        null;
+                {
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
+                }
                 if (result.Data.Comments.Any())
                 {
                     var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
@@ -96,8 +95,7 @@ namespace Roadie.Api.Services
                                                 select cr).ToArray();
                     foreach (var comment in result.Data.Comments)
                     {
-                        var userCommentReaction =
-                            userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
+                        var userCommentReaction = userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
                         comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
                         comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
                     }
@@ -441,7 +439,7 @@ namespace Roadie.Api.Services
                         result.Comments = comments;
                     }
                     tsw.Stop();
-                    timings.Add("stats", tsw.ElapsedMilliseconds);
+                    timings.Add("comments", tsw.ElapsedMilliseconds);
                 }
             }
 

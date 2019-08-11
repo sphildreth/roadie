@@ -42,5 +42,10 @@ namespace Roadie.Library.Data
         {
             return $"urn:label_by_id:{Id}";
         }
+
+        public override string ToString()
+        {
+            return $"Id [{Id}], Name [{Name}], RoadieId [{RoadieId}]";
+        }
     }
 }

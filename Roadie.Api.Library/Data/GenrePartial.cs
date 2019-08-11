@@ -28,5 +28,10 @@ namespace Roadie.Library.Data
         {
             return $"urn:genre_by_id:{Id}";
         }
+
+        public override string ToString()
+        {
+            return $"Id [{Id}], Name [{Name}], RoadieId [{RoadieId}]";
+        }
     }
 }

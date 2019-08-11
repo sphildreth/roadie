@@ -401,12 +401,19 @@ namespace Roadie.Api.Services
                 if (result?.Data?.Bytes != null)
                 {
                     var resized = ImageHelper.ResizeImage(result?.Data?.Bytes, newWidth, newHeight, force);
-                    result.Data.Bytes = resized.Item2;
-                    result.ETag = EtagHelper.GenerateETag(HttpEncoder, result.Data.Bytes);
-                    result.LastModified = DateTime.UtcNow;
-                    if (resized.Item1)
+                    if (resized != null)
                     {
-                        Logger.LogTrace($"{type}: Resized [{id}], Width [{ newWidth}], Height [{ newHeight}], Forced [{ force }]");
+                        result.Data.Bytes = resized.Item2;
+                        result.ETag = EtagHelper.GenerateETag(HttpEncoder, result.Data.Bytes);
+                        result.LastModified = DateTime.UtcNow;
+                        if (resized.Item1)
+                        {
+                            Logger.LogTrace($"{type}: Resized [{id}], Width [{ newWidth}], Height [{ newHeight}], Forced [{ force }]");
+                        }
+                    }
+                    else
+                    {
+                        Logger.LogTrace($"{type}: Image [{id}] Request returned Null Image, Forced [{ force }]");
                     }
                 }
 

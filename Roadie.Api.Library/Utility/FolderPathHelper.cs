@@ -131,8 +131,7 @@ namespace Roadie.Library.Utility
         /// </summary>
         /// <param name="track">Populate track database record</param>
         /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
-        public static string PathForTrackThumbnail(IRoadieSettings configuration, Track track,
-            string destinationFolder = null)
+        public static string PathForTrackThumbnail(IRoadieSettings configuration, Track track, string destinationFolder = null)
         {
             destinationFolder = destinationFolder ?? configuration.LibraryFolder;
             if (string.IsNullOrEmpty(track.FilePath) || string.IsNullOrEmpty(track.FileName)) return null;
@@ -166,8 +165,7 @@ namespace Roadie.Library.Utility
         public static string TrackFileName(IRoadieSettings configuration, AudioMetaData metaData)
         {
             var fileInfo = new FileInfo(metaData.Filename);
-            return TrackFileName(configuration, metaData.Release, metaData.TrackNumber ?? 0, metaData.Disc,
-                metaData.TotalTrackNumbers, fileInfo.Extension.ToLower());
+            return TrackFileName(configuration, metaData.Release, metaData.TrackNumber ?? 0, metaData.Disc, metaData.TotalTrackNumbers, fileInfo.Extension.ToLower());
         }
 
         /// <summary>
@@ -178,8 +176,7 @@ namespace Roadie.Library.Utility
         /// <param name="discNumber">Optional disc number defaults to 0</param>
         /// <param name="totalTrackNumber">Optional Total Tracks defaults to TrackNumber</param>
         /// <param name="fileExtension">Optional File Extension defaults to mp3</param>
-        public static string TrackFileName(IRoadieSettings configuration, string trackTitle, short trackNumber,
-            int? discNumber = null, int? totalTrackNumber = null, string fileExtension = "mp3")
+        public static string TrackFileName(IRoadieSettings configuration, string trackTitle, short trackNumber, int? discNumber = null, int? totalTrackNumber = null, string fileExtension = "mp3")
         {
             SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(trackTitle), "Invalid Track Title");
             SimpleContract.Requires<ArgumentException>(trackNumber > 0, "Invalid Track Number");
