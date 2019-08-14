@@ -778,6 +778,8 @@ namespace Roadie.Api.Services
                 }
             }
 
+            var disableCaching = true;
+
             var contentDurationTimeSpan = TimeSpan.FromMilliseconds(track.Duration ?? 0);
             var info = new TrackStreamInfo
             {
@@ -786,7 +788,6 @@ namespace Roadie.Api.Services
                     $"attachment; filename=\"{HttpEncoder.UrlEncode(track.FileName).ToContentDispositionFriendly()}\"",
                 ContentDuration = contentDurationTimeSpan.TotalSeconds.ToString()
             };
-            var cacheTimeout = 86400; // 24 hours
             var contentLength = endBytes - beginBytes + 1;
             info.Track = new DataToken
             {
@@ -800,9 +801,19 @@ namespace Roadie.Api.Services
             info.IsFullRequest = beginBytes == 0 && endBytes == trackFileInfo.Length - 1;
             info.IsEndRangeRequest = beginBytes > 0 && endBytes != trackFileInfo.Length - 1;
             info.LastModified = (track.LastUpdated ?? track.CreatedDate).ToString("R");
-            info.Etag = track.Etag;
-            info.CacheControl = $"public, max-age={cacheTimeout.ToString()} ";
-            info.Expires = DateTime.UtcNow.AddMinutes(cacheTimeout).ToString("R");
+            if (!disableCaching)
+            {
+                var cacheTimeout = 86400; // 24 hours
+                info.CacheControl = $"public, max-age={cacheTimeout.ToString()} ";
+                info.Expires = DateTime.UtcNow.AddMinutes(cacheTimeout).ToString("R");
+                info.Etag = track.Etag;
+            }
+            else
+            {
+                info.CacheControl = "no-store, must-revalidate, no-cache, max-age=0";
+                info.Pragma = "no-cache";
+                info.Expires = "Mon, 01 Jan 1990 00:00:00 GMT";
+            }          
             var bytesToRead = (int)(endBytes - beginBytes) + 1;
             var trackBytes = new byte[bytesToRead];
             using (var fs = trackFileInfo.OpenRead())

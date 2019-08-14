@@ -650,6 +650,15 @@ namespace Roadie.Api.Services
                     return new OperationResult<bool>($"Artist already exists with name [{ model.Name }].");
                 }
             }
+            // If artist sortname is being modified, see if artist already exists with new model supplied sort name
+            if ((artist.SortName?.ToAlphanumericName() ?? string.Empty) != (model.SortName?.ToAlphanumericName() ?? string.Empty))
+            {
+                var existingArtist = DbContext.Artists.FirstOrDefault(x => x.SortName == model.SortName);
+                if (existingArtist != null)
+                {
+                    return new OperationResult<bool>($"Artist already exists with sort name [{ model.SortName }].");
+                }
+            }
             try
             {
                 var now = DateTime.UtcNow;
@@ -689,12 +698,20 @@ namespace Roadie.Api.Services
                     // If folder already exists for new artist name that means another artist has that folder (usually sort name)
                     if (Directory.Exists(newArtistFolder))
                     {
-                        return new OperationResult<bool>($"Artist Folder [{ newArtistFolder }] already exists.");
+                        // Set sortname to be unique and try again
+                        var oldSortName = artist.SortName;
+                        artist.SortName = $"{ artist.SortName} [{ artist.Id }]";
+                        Logger.LogTrace($"Updated Artist SortName From [{ oldSortName }] to [{ artist.SortName }]");
+                        newArtistFolder = artist.ArtistFileFolder(Configuration);
+                        if (Directory.Exists(newArtistFolder))
+                        {
+                            return new OperationResult<bool>($"Artist Folder [{ newArtistFolder }] already exists.");
+                        }
                     }
                     didRenameArtist = true;
                     if (Directory.Exists(originalArtistFolder))
                     {
-                        Logger.LogTrace("Moving Artist From Folder [{0}] ->  [{1}]", originalArtistFolder, newArtistFolder);
+                        Logger.LogTrace($"Moving Artist From Folder [{originalArtistFolder}] ->  [{newArtistFolder}]");
                         Directory.Move(originalArtistFolder, newArtistFolder);
                     }
                 }

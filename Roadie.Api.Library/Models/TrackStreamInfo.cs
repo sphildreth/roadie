@@ -18,6 +18,7 @@
         public bool IsEndRangeRequest { get; set; }
         public bool IsFullRequest { get; set; }
         public string LastModified { get; set; }
+        public string Pragma { get; set; }
         public DataToken Track { get; set; }
 
         public override string ToString()

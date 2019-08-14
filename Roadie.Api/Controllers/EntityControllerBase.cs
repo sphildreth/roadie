@@ -117,11 +117,17 @@ namespace Roadie.Api.Controllers
 
             Response.Headers.Add("Content-Length", info.Data.ContentLength);
             Response.ContentType = info.Data.ContentType;
-            Response.StatusCode =
-                info.Data.IsFullRequest ? (int)HttpStatusCode.OK : (int)HttpStatusCode.PartialContent;
+            Response.StatusCode = info.Data.IsFullRequest ? (int)HttpStatusCode.OK : (int)HttpStatusCode.PartialContent;
             Response.Headers.Add("Last-Modified", info.Data.LastModified);
-            Response.Headers.Add("ETag", info.Data.Etag);
+            if (!string.IsNullOrEmpty(info.Data.Etag))
+            {
+                Response.Headers.Add("ETag", info.Data.Etag);
+            }
             Response.Headers.Add("Cache-Control", info.Data.CacheControl);
+            if (!string.IsNullOrEmpty(info.Data.Pragma))
+            {
+                Response.Headers.Add("Pragma", info.Data.Pragma);
+            }
             Response.Headers.Add("Expires", info.Data.Expires);
 
             await Response.Body.WriteAsync(info.Data.Bytes, 0, info.Data.Bytes.Length);
