@@ -12,10 +12,6 @@ using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.Audio;
-using Roadie.Library.MetaData.FileName;
-using Roadie.Library.MetaData.ID3Tags;
-using Roadie.Library.MetaData.LastFm;
-using Roadie.Library.MetaData.MusicBrainz;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Collections;
 using Roadie.Library.Models.Pagination;
@@ -48,53 +44,24 @@ namespace Roadie.Api.Services
 
         private IBookmarkService BookmarkService { get; }
 
-        private ICollectionService CollectionService { get; }
-
-        private IFileNameHelper FileNameHelper { get; }
-
-        private IID3TagsHelper ID3TagsHelper { get; }
-
-        private ILabelLookupEngine LabelLookupEngine { get; }
-
-        private ILastFmHelper LastFmHelper { get; }
-
-        private IMusicBrainzProvider MusicBrainzProvider { get; }
-
         private IPlaylistService PlaylistService { get; }
-
-        private IReleaseLookupEngine ReleaseLookupEngine { get; }
 
         public ReleaseService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
             data.IRoadieDbContext dbContext,
             ICacheManager cacheManager,
-            ICollectionService collectionService,
             IPlaylistService playlistService,
             ILogger<ReleaseService> logger,
             IBookmarkService bookmarkService,
             IArtistLookupEngine artistLookupEngine,
-            IReleaseLookupEngine releaseLookupEngine,
-            IMusicBrainzProvider musicBrainzProvider,
-            ILastFmHelper lastFmHelper,
-            IFileNameHelper fileNameHelper,
-            IID3TagsHelper id3tagsHelper,
-            IAudioMetaDataHelper audioMetaDataHelper,
-            ILabelLookupEngine labelLookupEngine)
+            IAudioMetaDataHelper audioMetaDataHelper
+        )
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
-            CollectionService = collectionService;
             PlaylistService = playlistService;
             BookmarkService = bookmarkService;
-
-            MusicBrainzProvider = musicBrainzProvider;
-            LastFmHelper = lastFmHelper;
-            FileNameHelper = fileNameHelper;
-            ID3TagsHelper = id3tagsHelper;
-
             ArtistLookupEngine = artistLookupEngine;
-            LabelLookupEngine = labelLookupEngine;
-            ReleaseLookupEngine = releaseLookupEngine;
             AudioMetaDataHelper = audioMetaDataHelper;
         }
 
@@ -1688,7 +1655,7 @@ namespace Roadie.Api.Services
                 release.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
                 await CheckAndChangeReleaseTitle(release, originalReleaseFolder);
-                // Update release ID3 Tags 
+                // Update release ID3 Tags
                 foreach (var mp3 in Directory.GetFiles(releaseFolder, "*.mp3", SearchOption.AllDirectories))
                 {
                     var trackFileInfo = new FileInfo(mp3);
@@ -1697,7 +1664,7 @@ namespace Roadie.Api.Services
                     {
                         audioMetaData.Year = release.ReleaseYear;
                         audioMetaData.Release = release.Title;
-                        if(artist != null)
+                        if (artist != null)
                         {
                             audioMetaData.Artist = artist.Name;
                         }

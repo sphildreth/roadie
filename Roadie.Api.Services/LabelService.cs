@@ -44,32 +44,6 @@ namespace Roadie.Api.Services
             BookmarkService = bookmarkService;
         }
 
-        public async Task<OperationResult<bool>> Delete(ApplicationUser user, Guid id)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var label = DbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
-            if (label == null) return new OperationResult<bool>(true, string.Format("Label Not Found [{0}]", id));
-            DbContext.Labels.Remove(label);
-            await DbContext.SaveChangesAsync();
-
-            var labelImageFilename = label.PathToImage(Configuration);
-            if(File.Exists(labelImageFilename))
-            {
-                File.Delete(labelImageFilename);
-            }
-
-            Logger.LogWarning("User `{0}` deleted Label `{1}]`", user, label);
-            CacheManager.ClearRegion(label.CacheRegion);
-            sw.Stop();
-            return new OperationResult<bool>
-            {
-                IsSuccess = true,
-                Data = true,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-        }
-
         public async Task<OperationResult<Label>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
@@ -112,6 +86,32 @@ namespace Roadie.Api.Services
             };
         }
 
+        public async Task<OperationResult<bool>> Delete(ApplicationUser user, Guid id)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var label = DbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
+            if (label == null) return new OperationResult<bool>(true, string.Format("Label Not Found [{0}]", id));
+            DbContext.Labels.Remove(label);
+            await DbContext.SaveChangesAsync();
+
+            var labelImageFilename = label.PathToImage(Configuration);
+            if (File.Exists(labelImageFilename))
+            {
+                File.Delete(labelImageFilename);
+            }
+
+            Logger.LogWarning("User `{0}` deleted Label `{1}]`", user, label);
+            CacheManager.ClearRegion(label.CacheRegion);
+            sw.Stop();
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
         public Task<Library.Models.Pagination.PagedResult<LabelList>> List(User roadieUser, PagedRequest request,
             bool? doRandomize = false)
         {
@@ -135,19 +135,18 @@ namespace Roadie.Api.Services
             {
                 var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
                 // This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
-                var sql = @"select l.id 
+                var sql = @"select l.id
                             FROM `label` l
                             order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)
                             LIMIT 0, {0}";
                 randomLabelIds = (from l in DbContext.Labels.FromSql(sql, randomLimit)
                                   select l.Id).ToArray();
                 rowCount = DbContext.Labels.Count();
-
             }
 
             var result = from l in DbContext.Labels
                          where randomLabelIds == null || randomLabelIds.Contains(l.Id)
-                         where request.FilterValue == "" || ( 
+                         where request.FilterValue == "" || (
                                    l.Name.Contains(request.FilterValue) ||
                                    l.SortName.Contains(request.FilterValue) ||
                                    l.AlternateNames.Contains(request.FilterValue) ||
@@ -317,7 +316,7 @@ namespace Roadie.Api.Services
                 var labelImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (labelImage != null)
                 {
-                    // Save unaltered label image 
+                    // Save unaltered label image
                     File.WriteAllBytes(label.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(labelImage));
                     label.Thumbnail = ImageHelper.ResizeToThumbnail(labelImage, Configuration);
                 }
@@ -379,7 +378,7 @@ namespace Roadie.Api.Services
             result.Tags = label.Tags;
             result.URLs = label.URLs;
             result.Thumbnail = MakeLabelThumbnailImage(label.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(id, "label", Configuration.MediumImageSize.Width,Configuration.MediumImageSize.Height);
+            result.MediumThumbnail = MakeThumbnailImage(id, "label", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (includes != null && includes.Any())
@@ -466,7 +465,7 @@ namespace Roadie.Api.Services
                 label.Thumbnail = imageBytes;
                 if (label.Thumbnail != null)
                 {
-                    // Save unaltered label image 
+                    // Save unaltered label image
                     File.WriteAllBytes(label.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(imageBytes));
                     label.Thumbnail = ImageHelper.ResizeToThumbnail(label.Thumbnail, Configuration);
                 }

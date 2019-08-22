@@ -35,18 +35,17 @@ namespace Roadie.Api.Services
 
         private IFileDirectoryProcessorService FileDirectoryProcessorService { get; }
 
+        private IGenreService GenreService { get; }
+        private ILabelService LabelService { get; }
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
 
         private IReleaseService ReleaseService { get; }
-
-        private ILabelService LabelService { get; }
-        private IGenreService GenreService { get; }
 
         public AdminService(IRoadieSettings configuration, IHttpEncoder httpEncoder, IHttpContext httpContext,
                             data.IRoadieDbContext context, ICacheManager cacheManager, ILogger<ArtistService> logger,
                             IHubContext<ScanActivityHub> scanActivityHub, IFileDirectoryProcessorService fileDirectoryProcessorService, IArtistService artistService,
                             IReleaseService releaseService, IReleaseLookupEngine releaseLookupEngine, ILabelService labelService, IGenreService genreService
-        ) 
+        )
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
             ScanActivityHub = scanActivityHub;
@@ -137,143 +136,38 @@ namespace Roadie.Api.Services
             };
         }
 
-        /// <summary>
-        /// Perform checks/setup on start of application
-        /// </summary>
-        public void PerformStartUpTasks()
-        {
-            var sw = Stopwatch.StartNew();
-
-            #region Setup Configured storage folders
-            try
-            {
-                if (!Directory.Exists(Configuration.LibraryFolder))
-                {
-                    Directory.CreateDirectory(Configuration.LibraryFolder);
-                    Logger.LogInformation($"Created Library Folder [{Configuration.LibraryFolder }]");
-                }
-                if (!Directory.Exists(Configuration.UserImageFolder))
-                {
-                    Directory.CreateDirectory(Configuration.UserImageFolder);
-                    Logger.LogInformation($"Created User Image Folder [{Configuration.UserImageFolder }]");
-                }
-                if (!Directory.Exists(Configuration.GenreImageFolder))
-                {
-                    Directory.CreateDirectory(Configuration.GenreImageFolder);
-                    Logger.LogInformation($"Created Genre Image Folder [{Configuration.GenreImageFolder }]");
-                }
-                if (!Directory.Exists(Configuration.PlaylistImageFolder))
-                {
-                    Directory.CreateDirectory(Configuration.PlaylistImageFolder);
-                    Logger.LogInformation($"Created Playlist Image Folder [{Configuration.PlaylistImageFolder }]");
-                }
-                if (!Directory.Exists(Configuration.CollectionImageFolder))
-                {
-                    Directory.CreateDirectory(Configuration.CollectionImageFolder);
-                    Logger.LogInformation($"Created Collection Image Folder [{Configuration.CollectionImageFolder }]");
-                }
-                if (!Directory.Exists(Configuration.LabelImageFolder))
-                {
-                    Directory.CreateDirectory(Configuration.LabelImageFolder);
-                    Logger.LogInformation($"Created Label Image Folder [{Configuration.LabelImageFolder}]");
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Error setting up storage folders. Ensure application has create folder permissions.");
-                throw;
-            }
-            #endregion
-            sw.Stop();
-            Logger.LogInformation($"Administration startup tasks completed, elapsed time [{ sw.ElapsedMilliseconds }]");
-        }
-
-        public async Task<OperationResult<bool>> ValidateInviteToken(Guid? tokenId)
+        public async Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index)
         {
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
-            if(tokenId == null)
+            var artist = DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
+            if (artist == null)
             {
-                return new OperationResult<bool>(true, $"Invalid Invite TokenId [{tokenId}]");
-            }
-            var token = DbContext.InviteTokens.FirstOrDefault(x => x.RoadieId == tokenId);
-            if(token == null)
-            {
-                return new OperationResult<bool>(true, $"Invite Token Not Found [{tokenId}]");
-            }
-            if(token.ExpiresDate < DateTime.UtcNow || token.Status == Statuses.Expired)
-            {
-                token.Status = Statuses.Expired;
-                token.LastUpdated = DateTime.UtcNow;
-                await DbContext.SaveChangesAsync();
-                return new OperationResult<bool>(true, $"Invite Token [{tokenId}] Expired [{ token.ExpiresDate }]");
-            }
-            if(token.Status == Statuses.Complete)
-            {
-                return new OperationResult<bool>(true, $"Invite Token [{tokenId}] Already Used");
-            }
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data = true,
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-        public async Task<OperationResult<bool>> UpdateInviteTokenUsed(Guid? tokenId)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-            if (tokenId == null)
-            {
-                return new OperationResult<bool>(true, $"Invalid Invite TokenId [{tokenId}]");
-            }
-            var token = DbContext.InviteTokens.FirstOrDefault(x => x.RoadieId == tokenId);
-            if (token == null)
-            {
-                return new OperationResult<bool>(true, $"Invite Token Not Found [{tokenId}]");
-            }
-            token.Status = Statuses.Complete;
-            token.LastUpdated = DateTime.UtcNow;
-            await DbContext.SaveChangesAsync();
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data = true,
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-        public async Task<OperationResult<bool>> DeleteLabel(ApplicationUser user, Guid labelId)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-            var label = DbContext.Labels.FirstOrDefault(x => x.RoadieId == labelId);
-            if (label == null)
-            {
-                await LogAndPublish($"DeleteLabel Unknown Label [{labelId}]", LogLevel.Warning);
-                return new OperationResult<bool>(true, $"Label Not Found [{labelId}]");
+                await LogAndPublish($"DeleteArtistSecondaryImage Unknown Artist [{artistId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Artist Not Found [{artistId}]");
             }
 
             try
             {
-                await LabelService.Delete(user, labelId);
-                CacheManager.ClearRegion(label.CacheRegion);
+                var artistFolder = artist.ArtistFileFolder(Configuration);
+                var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly);
+                var artistImageFilename = artistImagesInFolder.Skip(index).FirstOrDefault();
+                if (artistImageFilename.Exists)
+                {
+                    artistImageFilename.Delete();
+                }
+                CacheManager.ClearRegion(artist.CacheRegion);
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex);
-                await LogAndPublish("Error deleting Label.");
+                await LogAndPublish("Error deleting artist secondary image.");
                 errors.Add(ex);
             }
 
             sw.Stop();
-            await LogAndPublish($"DeleteLabel `{label}`, By User `{user}`", LogLevel.Information);
+            await LogAndPublish($"DeleteArtistSecondaryImage `{artist}` Index [{index}], By User `{user}`", LogLevel.Information);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -318,39 +212,32 @@ namespace Roadie.Api.Services
             };
         }
 
-
-        public async Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index)
+        public async Task<OperationResult<bool>> DeleteLabel(ApplicationUser user, Guid labelId)
         {
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
-            var artist = DbContext.Artists.FirstOrDefault(x => x.RoadieId == artistId);
-            if (artist == null)
+            var label = DbContext.Labels.FirstOrDefault(x => x.RoadieId == labelId);
+            if (label == null)
             {
-                await LogAndPublish($"DeleteArtistSecondaryImage Unknown Artist [{artistId}]", LogLevel.Warning);
-                return new OperationResult<bool>(true, $"Artist Not Found [{artistId}]");
+                await LogAndPublish($"DeleteLabel Unknown Label [{labelId}]", LogLevel.Warning);
+                return new OperationResult<bool>(true, $"Label Not Found [{labelId}]");
             }
 
             try
             {
-                var artistFolder = artist.ArtistFileFolder(Configuration);
-                var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly);
-                var artistImageFilename = artistImagesInFolder.Skip(index).FirstOrDefault();
-                if (artistImageFilename.Exists)
-                {
-                    artistImageFilename.Delete();
-                }
-                CacheManager.ClearRegion(artist.CacheRegion);
+                await LabelService.Delete(user, labelId);
+                CacheManager.ClearRegion(label.CacheRegion);
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex);
-                await LogAndPublish("Error deleting artist secondary image.");
+                await LogAndPublish("Error deleting Label.");
                 errors.Add(ex);
             }
 
             sw.Stop();
-            await LogAndPublish($"DeleteArtistSecondaryImage `{artist}` Index [{index}], By User `{user}`", LogLevel.Information);
+            await LogAndPublish($"DeleteLabel `{label}`, By User `{user}`", LogLevel.Information);
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),
@@ -506,7 +393,6 @@ namespace Roadie.Api.Services
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };
-
         }
 
         public async Task<OperationResult<bool>> DeleteUser(ApplicationUser applicationUser, Guid userId)
@@ -670,6 +556,60 @@ namespace Roadie.Api.Services
             });
         }
 
+        /// <summary>
+        /// Perform checks/setup on start of application
+        /// </summary>
+        public void PerformStartUpTasks()
+        {
+            var sw = Stopwatch.StartNew();
+
+            #region Setup Configured storage folders
+
+            try
+            {
+                if (!Directory.Exists(Configuration.LibraryFolder))
+                {
+                    Directory.CreateDirectory(Configuration.LibraryFolder);
+                    Logger.LogInformation($"Created Library Folder [{Configuration.LibraryFolder }]");
+                }
+                if (!Directory.Exists(Configuration.UserImageFolder))
+                {
+                    Directory.CreateDirectory(Configuration.UserImageFolder);
+                    Logger.LogInformation($"Created User Image Folder [{Configuration.UserImageFolder }]");
+                }
+                if (!Directory.Exists(Configuration.GenreImageFolder))
+                {
+                    Directory.CreateDirectory(Configuration.GenreImageFolder);
+                    Logger.LogInformation($"Created Genre Image Folder [{Configuration.GenreImageFolder }]");
+                }
+                if (!Directory.Exists(Configuration.PlaylistImageFolder))
+                {
+                    Directory.CreateDirectory(Configuration.PlaylistImageFolder);
+                    Logger.LogInformation($"Created Playlist Image Folder [{Configuration.PlaylistImageFolder }]");
+                }
+                if (!Directory.Exists(Configuration.CollectionImageFolder))
+                {
+                    Directory.CreateDirectory(Configuration.CollectionImageFolder);
+                    Logger.LogInformation($"Created Collection Image Folder [{Configuration.CollectionImageFolder }]");
+                }
+                if (!Directory.Exists(Configuration.LabelImageFolder))
+                {
+                    Directory.CreateDirectory(Configuration.LabelImageFolder);
+                    Logger.LogInformation($"Created Label Image Folder [{Configuration.LabelImageFolder}]");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error setting up storage folders. Ensure application has create folder permissions.");
+                throw;
+            }
+
+            #endregion Setup Configured storage folders
+
+            sw.Stop();
+            Logger.LogInformation($"Administration startup tasks completed, elapsed time [{ sw.ElapsedMilliseconds }]");
+        }
+
         public async Task<OperationResult<bool>> ScanAllCollections(ApplicationUser user, bool isReadOnly = false,
             bool doPurgeFirst = false)
         {
@@ -705,32 +645,6 @@ namespace Roadie.Api.Services
             {
                 IsSuccess = !errors.Any(),
                 Data = true,
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-        public async Task<OperationResult<bool>> ScanArtists(ApplicationUser user, IEnumerable<Guid> artistIds, bool isReadOnly = false)
-        {
-            var sw = Stopwatch.StartNew();
-
-            var errors = new List<Exception>();
-            foreach (var artistId in artistIds)
-            {
-                var result = await ScanArtist(user, artistId, isReadOnly);
-                if (!result.IsSuccess)
-                {
-                    if (result.Errors?.Any() ?? false)
-                    {
-                        errors.AddRange(result.Errors);
-                    }
-                }
-            }
-            sw.Stop();
-            await LogAndPublish($"** Completed! ScanArtists: Artist Count [{ artistIds.Count() }], Elapsed Time [{sw.Elapsed}]");
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };
@@ -774,6 +688,32 @@ namespace Roadie.Api.Services
             {
                 IsSuccess = !errors.Any(),
                 AdditionalData = new Dictionary<string, object> { { "artistAverage", artist.Rating } },
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> ScanArtists(ApplicationUser user, IEnumerable<Guid> artistIds, bool isReadOnly = false)
+        {
+            var sw = Stopwatch.StartNew();
+
+            var errors = new List<Exception>();
+            foreach (var artistId in artistIds)
+            {
+                var result = await ScanArtist(user, artistId, isReadOnly);
+                if (!result.IsSuccess)
+                {
+                    if (result.Errors?.Any() ?? false)
+                    {
+                        errors.AddRange(result.Errors);
+                    }
+                }
+            }
+            sw.Stop();
+            await LogAndPublish($"** Completed! ScanArtists: Artist Count [{ artistIds.Count() }], Elapsed Time [{sw.Elapsed}]");
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };
@@ -975,32 +915,6 @@ namespace Roadie.Api.Services
             return await ScanFolder(user, d, isReadOnly);
         }
 
-        public async Task<OperationResult<bool>> ScanReleases(ApplicationUser user, IEnumerable<Guid> releaseIds, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
-        {
-            var sw = Stopwatch.StartNew();
-
-            var errors = new List<Exception>();
-            foreach (var releaseId in releaseIds)
-            {
-                var result = await ScanRelease(user, releaseId, isReadOnly, wasDoneForInvalidTrackPlay);
-                if (!result.IsSuccess)
-                {
-                    if (result.Errors?.Any() ?? false)
-                    {
-                        errors.AddRange(result.Errors);
-                    }
-                }
-            }
-            sw.Stop();
-            await LogAndPublish($"** Completed! ScanReleases: Release Count [{ releaseIds.Count() }], Elapsed Time [{sw.Elapsed}]");
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
         public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
         {
             var sw = new Stopwatch();
@@ -1037,6 +951,92 @@ namespace Roadie.Api.Services
                 TimeSpanInSeconds = (int)sw.Elapsed.TotalSeconds
             });
             await DbContext.SaveChangesAsync();
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> ScanReleases(ApplicationUser user, IEnumerable<Guid> releaseIds, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
+        {
+            var sw = Stopwatch.StartNew();
+
+            var errors = new List<Exception>();
+            foreach (var releaseId in releaseIds)
+            {
+                var result = await ScanRelease(user, releaseId, isReadOnly, wasDoneForInvalidTrackPlay);
+                if (!result.IsSuccess)
+                {
+                    if (result.Errors?.Any() ?? false)
+                    {
+                        errors.AddRange(result.Errors);
+                    }
+                }
+            }
+            sw.Stop();
+            await LogAndPublish($"** Completed! ScanReleases: Release Count [{ releaseIds.Count() }], Elapsed Time [{sw.Elapsed}]");
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> UpdateInviteTokenUsed(Guid? tokenId)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            if (tokenId == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Invite TokenId [{tokenId}]");
+            }
+            var token = DbContext.InviteTokens.FirstOrDefault(x => x.RoadieId == tokenId);
+            if (token == null)
+            {
+                return new OperationResult<bool>(true, $"Invite Token Not Found [{tokenId}]");
+            }
+            token.Status = Statuses.Complete;
+            token.LastUpdated = DateTime.UtcNow;
+            await DbContext.SaveChangesAsync();
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> ValidateInviteToken(Guid? tokenId)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            if (tokenId == null)
+            {
+                return new OperationResult<bool>(true, $"Invalid Invite TokenId [{tokenId}]");
+            }
+            var token = DbContext.InviteTokens.FirstOrDefault(x => x.RoadieId == tokenId);
+            if (token == null)
+            {
+                return new OperationResult<bool>(true, $"Invite Token Not Found [{tokenId}]");
+            }
+            if (token.ExpiresDate < DateTime.UtcNow || token.Status == Statuses.Expired)
+            {
+                token.Status = Statuses.Expired;
+                token.LastUpdated = DateTime.UtcNow;
+                await DbContext.SaveChangesAsync();
+                return new OperationResult<bool>(true, $"Invite Token [{tokenId}] Expired [{ token.ExpiresDate }]");
+            }
+            if (token.Status == Statuses.Complete)
+            {
+                return new OperationResult<bool>(true, $"Invite Token [{tokenId}] Already Used");
+            }
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),

@@ -37,10 +37,9 @@ namespace Roadie.Api.Services
 
         private IAudioMetaDataHelper AudioMetaDataHelper { get; }
 
+        private IFileProcessor FileProcessor { get; }
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
         private IReleaseService ReleaseService { get; }
-
-        private IFileProcessor FileProcessor { get; }
 
         public FileDirectoryProcessorService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,

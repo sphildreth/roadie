@@ -372,9 +372,9 @@ namespace Roadie.Api.Services
         /// <summary>
         ///     Deletes a saved playlist.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> DeletePlaylist(subsonic.Request request,User roadieUser)
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> DeletePlaylist(subsonic.Request request, User roadieUser)
         {
-            //request.PlaylistId.Value 
+            //request.PlaylistId.Value
 
             var deleteResult = await PlaylistService.DeletePlaylist(roadieUser, request.PlaylistId.Value);
             if (deleteResult == null || deleteResult.IsNotFoundResult)
@@ -2221,7 +2221,7 @@ namespace Roadie.Api.Services
         private subsonic.Child SubsonicChildForTrack(TrackList t)
         {
             var userRating = t.UserRating?.Rating ?? 0;
-            if(userRating > 0)
+            if (userRating > 0)
             {
                 // This is done as many subsonic apps think rating "1" is don't play song, versus a minimum indication of like as intended for Roadie.
                 // To disable this set the configuration SubsonicRatingBoost to 0

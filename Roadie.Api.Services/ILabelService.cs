@@ -14,9 +14,9 @@ namespace Roadie.Api.Services
     {
         Task<OperationResult<Label>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null);
 
-        Task<PagedResult<LabelList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false);
-
         Task<OperationResult<bool>> Delete(ApplicationUser user, Guid id);
+
+        Task<PagedResult<LabelList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false);
 
         Task<OperationResult<bool>> MergeLabelsIntoLabel(ApplicationUser user, Guid intoLabelId, IEnumerable<Guid> labelIdsToMerge);
 

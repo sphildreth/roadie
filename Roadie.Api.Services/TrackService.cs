@@ -37,8 +37,8 @@ namespace Roadie.Api.Services
 
         private IBookmarkService BookmarkService { get; }
 
-        public TrackService(IRoadieSettings configuration, IHttpEncoder httpEncoder,IHttpContext httpContext,
-                            data.IRoadieDbContext dbContext, ICacheManager cacheManager,ILogger<TrackService> logger,
+        public TrackService(IRoadieSettings configuration, IHttpEncoder httpEncoder, IHttpContext httpContext,
+                            data.IRoadieDbContext dbContext, ICacheManager cacheManager, ILogger<TrackService> logger,
                             IBookmarkService bookmarkService, IAdminService adminService, IAudioMetaDataHelper audioMetaDataHelper)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
@@ -112,14 +112,13 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             sw.Start();
             var cacheKey = string.Format("urn:track_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
-            var result = await CacheManager.GetAsync(cacheKey, async () => 
+            var result = await CacheManager.GetAsync(cacheKey, async () =>
             {
                 tsw.Restart();
                 var rr = await TrackByIdAction(id, includes);
                 tsw.Stop();
                 timings.Add("TrackByIdAction", tsw.ElapsedMilliseconds);
                 return rr;
-
             }, data.Track.CacheRegionUrn(id));
             if (result?.Data != null && roadieUser != null)
             {
@@ -161,7 +160,6 @@ namespace Roadie.Api.Services
                 }
                 tsw.Stop();
                 timings.Add("userTracks", tsw.ElapsedMilliseconds);
-
 
                 if (result.Data.Comments.Any())
                 {
@@ -311,28 +309,28 @@ namespace Roadie.Api.Services
                         request.FilterFavoriteOnly = false;
                     }
                     randomTrackIds = (from t in DbContext.Tracks
-                                        join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                        join r in DbContext.Releases on rm.ReleaseId equals r.Id
-                                        join a in DbContext.Artists on r.ArtistId equals a.Id
-                                        where !request.FilterRatedOnly || request.FilterRatedOnly && t.Rating > 0
-                                        where !dislikedArtistIds.Contains(r.ArtistId)
-                                        where !dislikedArtistIds.Contains(t.ArtistId ?? 0)
-                                        where !dislikedReleaseIds.Contains(r.Id)
-                                        where !dislikedTrackIds.Contains(t.Id)
-                                        where favoritedTrackIds == null || favoritedTrackIds.Contains(t.Id)
-                                        where t.Hash != null
-                                        select new TrackList
-                                        {
-                                            DatabaseId = t.Id,
-                                            Artist = new ArtistList
-                                            {
-                                                Artist = new DataToken { Value = a.RoadieId.ToString(), Text = a.Name }
-                                            },
-                                            Release = new ReleaseList
-                                            {
-                                                Release = new DataToken { Value = r.RoadieId.ToString(), Text = r.Title }
-                                            }
-                                        })
+                                      join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                      join r in DbContext.Releases on rm.ReleaseId equals r.Id
+                                      join a in DbContext.Artists on r.ArtistId equals a.Id
+                                      where !request.FilterRatedOnly || request.FilterRatedOnly && t.Rating > 0
+                                      where !dislikedArtistIds.Contains(r.ArtistId)
+                                      where !dislikedArtistIds.Contains(t.ArtistId ?? 0)
+                                      where !dislikedReleaseIds.Contains(r.Id)
+                                      where !dislikedTrackIds.Contains(t.Id)
+                                      where favoritedTrackIds == null || favoritedTrackIds.Contains(t.Id)
+                                      where t.Hash != null
+                                      select new TrackList
+                                      {
+                                          DatabaseId = t.Id,
+                                          Artist = new ArtistList
+                                          {
+                                              Artist = new DataToken { Value = a.RoadieId.ToString(), Text = a.Name }
+                                          },
+                                          Release = new ReleaseList
+                                          {
+                                              Release = new DataToken { Value = r.RoadieId.ToString(), Text = r.Title }
+                                          }
+                                      })
                                         .OrderBy(x => x.Artist.RandomSortId)
                                         .ThenBy(x => x.RandomSortId)
                                         .ThenBy(x => x.RandomSortId)
@@ -539,7 +537,7 @@ namespace Roadie.Api.Services
                 if (request.Action == User.ActionKeyUserRated)
                 {
                     sortBy = string.IsNullOrEmpty(request.Sort)
-                        ? request.OrderValue(new Dictionary<string, string>{{"UserTrack.Rating", "DESC"}, {"MediaNumber", "ASC"}, {"TrackNumber", "ASC"}})
+                        ? request.OrderValue(new Dictionary<string, string> { { "UserTrack.Rating", "DESC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } })
                         : request.OrderValue();
                 }
                 else
@@ -557,7 +555,7 @@ namespace Roadie.Api.Services
                     }
                 }
 
-                if(doRandomize ?? false)
+                if (doRandomize ?? false)
                 {
                     rows = TrackList.Shuffle(result).ToArray();
                 }
@@ -670,7 +668,7 @@ namespace Roadie.Api.Services
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Error In List, Request [{0}], User [{1}]", JsonConvert.SerializeObject(request),roadieUser);
+                Logger.LogError(ex, "Error In List, Request [{0}], User [{1}]", JsonConvert.SerializeObject(request), roadieUser);
                 return Task.FromResult(new Library.Models.Pagination.PagedResult<TrackList>
                 {
                     Message = "An Error has occured"
@@ -813,7 +811,7 @@ namespace Roadie.Api.Services
                 info.CacheControl = "no-store, must-revalidate, no-cache, max-age=0";
                 info.Pragma = "no-cache";
                 info.Expires = "Mon, 01 Jan 1990 00:00:00 GMT";
-            }          
+            }
             var bytesToRead = (int)(endBytes - beginBytes) + 1;
             var trackBytes = new byte[bytesToRead];
             using (var fs = trackFileInfo.OpenRead())
@@ -857,7 +855,7 @@ namespace Roadie.Api.Services
             try
             {
                 var originalTitle = track.Title;
-                var originalTrackNumber  = track.TrackNumber;
+                var originalTrackNumber = track.TrackNumber;
                 var originalFilename = track.PathToTrack(Configuration);
                 var now = DateTime.UtcNow;
                 track.IsLocked = model.IsLocked;
@@ -906,13 +904,13 @@ namespace Roadie.Api.Services
 
                 // See if Title was changed if so then  modify DB Filename and rename track
                 var shouldFileNameBeUpdated = originalTitle != track.Title || originalTrackNumber != track.TrackNumber;
-                if(shouldFileNameBeUpdated)
+                if (shouldFileNameBeUpdated)
                 {
                     track.FileName = FolderPathHelper.TrackFileName(Configuration, track.Title, track.TrackNumber, track.ReleaseMedia.MediaNumber, track.ReleaseMedia.TrackCount);
                     File.Move(originalFilename, track.PathToTrack(Configuration));
                 }
                 track.LastUpdated = now;
-                await DbContext.SaveChangesAsync();               
+                await DbContext.SaveChangesAsync();
 
                 var trackFileInfo = new FileInfo(track.PathToTrack(Configuration));
                 var audioMetaData = await AudioMetaDataHelper.GetInfo(trackFileInfo);

@@ -9,17 +9,15 @@ namespace Roadie.Api.Services
 {
     public interface IAdminService
     {
-        void PerformStartUpTasks();
-
         Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId);
 
         Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId, bool doDeleteFiles = false);
 
         Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index);
 
-        Task<OperationResult<bool>> DeleteLabel(ApplicationUser user, Guid labelId);
-
         Task<OperationResult<bool>> DeleteGenre(ApplicationUser user, Guid genreId);
+
+        Task<OperationResult<bool>> DeleteLabel(ApplicationUser user, Guid labelId);
 
         Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles);
 
@@ -32,6 +30,8 @@ namespace Roadie.Api.Services
         Task<OperationResult<bool>> DoInitialSetup(ApplicationUser user, UserManager<ApplicationUser> userManager);
 
         Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleases(ApplicationUser user);
+
+        void PerformStartUpTasks();
 
         Task<OperationResult<bool>> ScanAllCollections(ApplicationUser user, bool isReadOnly = false, bool doPurgeFirst = false);
 
@@ -49,8 +49,8 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<bool>> ScanReleases(ApplicationUser user, IEnumerable<Guid> releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
 
-        Task<OperationResult<bool>> ValidateInviteToken(Guid? tokenId);
-
         Task<OperationResult<bool>> UpdateInviteTokenUsed(Guid? tokenId);
+
+        Task<OperationResult<bool>> ValidateInviteToken(Guid? tokenId);
     }
 }

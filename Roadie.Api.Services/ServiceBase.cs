@@ -22,17 +22,22 @@ namespace Roadie.Api.Services
     {
         public static string TrackTokenSalt = "B0246908-FBD6-4E12-A96C-AF5B086115B3";
 
-        private static readonly Lazy<Hashids> hashIds = new Lazy<Hashids>(() =>
-        {
-            return new Hashids(TrackTokenSalt);
-        });
-
         protected readonly ICacheManager _cacheManager;
+
         protected readonly IRoadieSettings _configuration;
+
         protected readonly data.IRoadieDbContext _dbContext;
+
         protected readonly IHttpContext _httpContext;
+
         protected readonly IHttpEncoder _httpEncoder;
+
         protected readonly ILogger _logger;
+
+        private static readonly Lazy<Hashids> hashIds = new Lazy<Hashids>(() =>
+                                                        {
+                                                            return new Hashids(TrackTokenSalt);
+                                                        });
 
         protected ICacheManager CacheManager => _cacheManager;
 
@@ -64,6 +69,11 @@ namespace Roadie.Api.Services
                 return false;
             }
             return TrackPlayToken(user, trackRoadieId).Equals(token);
+        }
+
+        public static string MakeTrackPlayUrl(ApplicationUser user, string baseUrl, int trackId, Guid trackRoadieId)
+        {
+            return $"{baseUrl}/play/track/{user.Id}/{TrackPlayToken(user, trackRoadieId)}/{trackRoadieId}.mp3";
         }
 
         public static string TrackPlayToken(ApplicationUser user, Guid trackId)
@@ -126,15 +136,6 @@ namespace Roadie.Api.Services
             }, data.Collection.CacheRegionUrn(id));
         }
 
-        protected data.Label GetLabel(Guid id)
-        {
-            return CacheManager.Get(data.Label.CacheUrn(id), () =>
-            {
-                return DbContext.Labels
-                    .FirstOrDefault(x => x.RoadieId == id);
-            }, data.Label.CacheRegionUrn(id));
-        }
-
         protected data.Genre GetGenre(Guid id)
         {
             return CacheManager.Get(data.Genre.CacheUrn(id), () =>
@@ -142,6 +143,15 @@ namespace Roadie.Api.Services
                 return DbContext.Genres
                     .FirstOrDefault(x => x.RoadieId == id);
             }, data.Genre.CacheRegionUrn(id));
+        }
+
+        protected data.Label GetLabel(Guid id)
+        {
+            return CacheManager.Get(data.Label.CacheUrn(id), () =>
+            {
+                return DbContext.Labels
+                    .FirstOrDefault(x => x.RoadieId == id);
+            }, data.Label.CacheRegionUrn(id));
         }
 
         protected data.Playlist GetPlaylist(Guid id)
@@ -245,8 +255,13 @@ namespace Roadie.Api.Services
                 $"{HttpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}/{Configuration.SmallImageSize.Width}/{Configuration.SmallImageSize.Height}");
         }
 
+        protected Image MakeGenreThumbnailImage(Guid id)
+        {
+            return MakeThumbnailImage(id, "genre");
+        }
+
         protected Image MakeImage(Guid id, int width = 200, int height = 200, string caption = null,
-            bool includeCachebuster = false)
+                    bool includeCachebuster = false)
         {
             return new Image(
                 $"{HttpContext.ImageBaseUrl}/{id}/{width}/{height}/{(includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty)}",
@@ -262,11 +277,6 @@ namespace Roadie.Api.Services
         protected Image MakeLabelThumbnailImage(Guid id)
         {
             return MakeThumbnailImage(id, "label");
-        }
-
-        protected Image MakeGenreThumbnailImage(Guid id)
-        {
-            return MakeThumbnailImage(id, "genre");
         }
 
         protected string MakeLastFmUrl(string artistName, string releaseTitle)
@@ -287,11 +297,6 @@ namespace Roadie.Api.Services
         protected Image MakeReleaseThumbnailImage(Guid id)
         {
             return MakeThumbnailImage(id, "release");
-        }
-
-        public static string MakeTrackPlayUrl(ApplicationUser user, string baseUrl, int trackId, Guid trackRoadieId)
-        {
-            return $"{baseUrl}/play/track/{user.Id}/{TrackPlayToken(user, trackRoadieId)}/{trackRoadieId}.mp3";
         }
 
         protected Image MakeTrackThumbnailImage(Guid id)
@@ -535,7 +540,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        protected async Task<OperationResult<bool>> ToggleReleaseDisliked(Guid releaseId, ApplicationUser user,  bool isDisliked)
+        protected async Task<OperationResult<bool>> ToggleReleaseDisliked(Guid releaseId, ApplicationUser user, bool isDisliked)
         {
             var release = DbContext.Releases
                 .Include(x => x.Artist)
@@ -549,7 +554,7 @@ namespace Roadie.Api.Services
             {
                 return new OperationResult<bool>(true, $"Invalid Release Id [{releaseId}]");
             }
-            var userRelease =  DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == user.Id);
+            var userRelease = DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == user.Id);
             if (userRelease == null)
             {
                 userRelease = new data.UserRelease
@@ -717,13 +722,13 @@ namespace Roadie.Api.Services
             var artist = DbContext.Artists.FirstOrDefault(x => x.Id == artistId);
             if (artist != null)
             {
-                artist.ReleaseCount = DbContext.Releases.Where(x => x.ArtistId == artistId).Count();                
+                artist.ReleaseCount = DbContext.Releases.Where(x => x.ArtistId == artistId).Count();
                 artist.TrackCount = (from r in DbContext.Releases
                                      join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                      join tr in DbContext.Tracks on rm.Id equals tr.ReleaseMediaId
                                      where tr.ArtistId == artistId || r.ArtistId == artistId
                                      select tr).Count();
-                
+
                 artist.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
                 CacheManager.ClearRegion(artist.CacheRegion);

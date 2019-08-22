@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using Roadie.Library;
+using Roadie.Library.Identity;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Roadie.Library;
-using Roadie.Library.Identity;
 
 namespace Roadie.Api.Services
 {

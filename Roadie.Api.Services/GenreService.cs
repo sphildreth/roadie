@@ -2,12 +2,11 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
-using Roadie.Library.Extensions;
 using Roadie.Library.Encoding;
+using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.Models;
@@ -42,7 +41,7 @@ namespace Roadie.Api.Services
             var sw = Stopwatch.StartNew();
             sw.Start();
             var cacheKey = string.Format("urn:genre_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
-            var result = await CacheManager.GetAsync(cacheKey, async () => 
+            var result = await CacheManager.GetAsync(cacheKey, async () =>
             {
                 return await GenreByIdAction(id, includes);
             }, data.Genre.CacheRegionUrn(id));
@@ -83,7 +82,99 @@ namespace Roadie.Api.Services
             };
         }
 
+        public Task<Library.Models.Pagination.PagedResult<GenreList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
 
+            int? rowCount = null;
+
+            if (!string.IsNullOrEmpty(request.Sort))
+            {
+                request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
+                request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
+            }
+
+            int[] randomGenreIds = null;
+            if (doRandomize ?? false)
+            {
+                var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
+                // This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
+                var sql = @"select g.id
+                            FROM `genre` g
+                            order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)
+                            LIMIT 0, {0}";
+                randomGenreIds = (from l in DbContext.Genres.FromSql(sql, randomLimit)
+                                  select l.Id).ToArray();
+                rowCount = DbContext.Genres.Count();
+            }
+
+            var result = from g in DbContext.Genres
+                         where randomGenreIds == null || randomGenreIds.Contains(g.Id)
+                         let releaseCount = (from rg in DbContext.ReleaseGenres
+                                             where rg.GenreId == g.Id
+                                             select rg.Id).Count()
+                         let artistCount = (from rg in DbContext.ArtistGenres
+                                            where rg.GenreId == g.Id
+                                            select rg.Id).Count()
+                         where request.FilterValue.Length == 0 || g.Name.Contains(request.FilterValue)
+                         select new GenreList
+                         {
+                             DatabaseId = g.Id,
+                             Id = g.RoadieId,
+                             Genre = new DataToken
+                             {
+                                 Text = g.Name,
+                                 Value = g.RoadieId.ToString()
+                             },
+                             ReleaseCount = releaseCount,
+                             ArtistCount = artistCount,
+                             CreatedDate = g.CreatedDate,
+                             LastUpdated = g.LastUpdated,
+                             Thumbnail = MakeGenreThumbnailImage(g.RoadieId)
+                         };
+
+            GenreList[] rows;
+            rowCount = rowCount ?? result.Count();
+            if (doRandomize ?? false)
+            {
+                rows = result.ToArray();
+            }
+            else
+            {
+                var sortBy = string.IsNullOrEmpty(request.Sort)
+                    ? request.OrderValue(new Dictionary<string, string> { { "Genre.Text", "ASC" } })
+                    : request.OrderValue();
+                rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+            }
+
+            sw.Stop();
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<GenreList>
+            {
+                TotalCount = rowCount.Value,
+                CurrentPage = request.PageValue,
+                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
+                OperationTime = sw.ElapsedMilliseconds,
+                Rows = rows
+            });
+        }
+
+        public async Task<OperationResult<Image>> SetGenreImageByUrl(User user, Guid id, string imageUrl)
+        {
+            return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
+        }
+
+        public async Task<OperationResult<Image>> UploadGenreImage(User user, Guid id, IFormFile file)
+        {
+            var bytes = new byte[0];
+            using (var ms = new MemoryStream())
+            {
+                file.CopyTo(ms);
+                bytes = ms.ToArray();
+            }
+
+            return await SaveImageBytes(user, id, bytes);
+        }
 
         private Task<OperationResult<Genre>> GenreByIdAction(Guid id, IEnumerable<string> includes = null)
         {
@@ -139,24 +230,6 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<Image>> UploadGenreImage(User user, Guid id, IFormFile file)
-        {
-            var bytes = new byte[0];
-            using (var ms = new MemoryStream())
-            {
-                file.CopyTo(ms);
-                bytes = ms.ToArray();
-            }
-
-            return await SaveImageBytes(user, id, bytes);
-        }
-
-        public async Task<OperationResult<Image>> SetGenreImageByUrl(User user, Guid id, string imageUrl)
-        {
-            return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
-        }
-
-
         private async Task<OperationResult<Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
         {
             var sw = new Stopwatch();
@@ -170,7 +243,7 @@ namespace Roadie.Api.Services
                 genre.Thumbnail = imageBytes;
                 if (genre.Thumbnail != null)
                 {
-                    // Save unaltered label image 
+                    // Save unaltered label image
                     File.WriteAllBytes(genre.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(imageBytes));
                     genre.Thumbnail = ImageHelper.ResizeToThumbnail(genre.Thumbnail, Configuration);
                 }
@@ -195,85 +268,6 @@ namespace Roadie.Api.Services
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };
-        }
-
-
-        public Task<Library.Models.Pagination.PagedResult<GenreList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-
-            int? rowCount = null;
-
-            if (!string.IsNullOrEmpty(request.Sort))
-            {
-                request.Sort = request.Sort.Replace("createdDate", "createdDateTime");
-                request.Sort = request.Sort.Replace("lastUpdated", "lastUpdatedDateTime");
-            }
-
-            int[] randomGenreIds = null;
-            if (doRandomize ?? false)
-            {
-                var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
-                // This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
-                var sql = @"select g.id 
-                            FROM `genre` g
-                            order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)
-                            LIMIT 0, {0}";
-                randomGenreIds = (from l in DbContext.Genres.FromSql(sql, randomLimit)
-                                  select l.Id).ToArray();
-                rowCount = DbContext.Genres.Count();
-
-            }
-
-            var result = from g in DbContext.Genres
-                         where randomGenreIds == null || randomGenreIds.Contains(g.Id)
-                         let releaseCount = (from rg in DbContext.ReleaseGenres
-                                             where rg.GenreId == g.Id
-                                             select rg.Id).Count()
-                         let artistCount = (from rg in DbContext.ArtistGenres
-                                            where rg.GenreId == g.Id
-                                            select rg.Id).Count()
-                         where request.FilterValue.Length == 0 || g.Name.Contains(request.FilterValue)
-                         select new GenreList
-                         {
-                             DatabaseId = g.Id,
-                             Id = g.RoadieId,
-                             Genre = new DataToken
-                             {
-                                 Text = g.Name,
-                                 Value = g.RoadieId.ToString()
-                             },
-                             ReleaseCount = releaseCount,
-                             ArtistCount = artistCount,
-                             CreatedDate = g.CreatedDate,
-                             LastUpdated = g.LastUpdated,
-                             Thumbnail = MakeGenreThumbnailImage(g.RoadieId)
-                         };
-
-            GenreList[] rows;
-            rowCount = rowCount ?? result.Count();
-            if (doRandomize ?? false)
-            {
-                rows = result.ToArray();
-            }
-            else
-            {
-                var sortBy = string.IsNullOrEmpty(request.Sort)
-                    ? request.OrderValue(new Dictionary<string, string> { { "Genre.Text", "ASC" } })
-                    : request.OrderValue();
-                rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
-            }
-
-            sw.Stop();
-            return Task.FromResult(new Library.Models.Pagination.PagedResult<GenreList>
-            {
-                TotalCount = rowCount.Value,
-                CurrentPage = request.PageValue,
-                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
-                OperationTime = sw.ElapsedMilliseconds,
-                Rows = rows
-            });
         }
     }
 }

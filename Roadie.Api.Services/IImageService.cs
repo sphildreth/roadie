@@ -2,7 +2,6 @@
 using Roadie.Library;
 using Roadie.Library.Identity;
 using Roadie.Library.Models;
-using Roadie.Library.Models.Users;
 using Roadie.Library.SearchEngines.Imaging;
 using System;
 using System.Collections.Generic;
@@ -26,9 +25,9 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<bool>> Delete(ApplicationUser user, Guid id);
 
-        Task<FileOperationResult<Image>> LabelImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
-
         Task<FileOperationResult<Image>> GenreImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+
+        Task<FileOperationResult<Image>> LabelImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
         Task<FileOperationResult<Image>> PlaylistImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 

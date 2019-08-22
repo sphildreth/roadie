@@ -53,9 +53,9 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<User>> ById(User user, Guid id, IEnumerable<string> includes, bool isAccountSettingsEdit = false)
         {
-            if(isAccountSettingsEdit)
+            if (isAccountSettingsEdit)
             {
-                if(user.UserId != id && !user.IsAdmin)
+                if (user.UserId != id && !user.IsAdmin)
                 {
                     var r = new OperationResult<User>("Access Denied");
                     r.IsAccessDeniedResult = true;
@@ -74,9 +74,9 @@ namespace Roadie.Api.Services
             if (result?.Data != null)
             {
                 result.Data.Avatar = MakeUserThumbnailImage(id);
-                if(!isAccountSettingsEdit)
+                if (!isAccountSettingsEdit)
                 {
-                    result.Data.ApiToken = null;                    
+                    result.Data.ApiToken = null;
                     result.Data.ConcurrencyStamp = null;
                 }
             }
@@ -502,11 +502,11 @@ namespace Roadie.Api.Services
                 {
                     imageData = ImageHelper.ConvertToGifFormat(imageData);
 
-                    // Save unaltered user image 
+                    // Save unaltered user image
                     File.WriteAllBytes(user.PathToImage(Configuration), imageData);
                     // Update thumbnail
                     user.Avatar = ImageHelper.ResizeImage(imageData, Configuration.ThumbnailImageSize.Width, Configuration.ThumbnailImageSize.Height);
-                    if(user.Avatar.Length >= ImageHelper.MaximumThumbnailByteSize)
+                    if (user.Avatar.Length >= ImageHelper.MaximumThumbnailByteSize)
                     {
                         user.Avatar = null;
                     }
@@ -752,7 +752,7 @@ namespace Roadie.Api.Services
                         RatedTracks = userTracks.Where(x => x.Rating > 0).Count(),
                         PlayedTracks = userTracks.Where(x => x.PlayedCount.HasValue).Select(x => x.PlayedCount).Sum(),
                         FavoritedTracks = userTracks.Where(x => x.IsFavorite ?? false).Count(),
-                        DislikedTracks = userTracks.Where(x => x.IsDisliked ?? false).Count()                        
+                        DislikedTracks = userTracks.Where(x => x.IsDisliked ?? false).Count()
                     };
                     tsw.Stop();
                     timings.Add("stats", tsw.ElapsedMilliseconds);

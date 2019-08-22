@@ -1,7 +1,6 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -84,7 +83,7 @@ namespace Roadie.Api.Services
             sw.Start();
 
             var cacheKey = string.Format("urn:collection_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
-            var result = await CacheManager.GetAsync(cacheKey, async () => 
+            var result = await CacheManager.GetAsync(cacheKey, async () =>
             {
                 return await CollectionByIdAction(id, includes);
             }, data.Artist.CacheRegionUrn(id));
@@ -179,7 +178,6 @@ namespace Roadie.Api.Services
                                join a in DbContext.Artists on r.ArtistId equals a.Id
                                where a.RoadieId == artistId
                                select c).Distinct();
-
             }
             else if (releaseId.HasValue)
             {
@@ -302,7 +300,7 @@ namespace Roadie.Api.Services
             var collectionImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
             if (collectionImage != null)
             {
-                // Save unaltered collection image 
+                // Save unaltered collection image
                 File.WriteAllBytes(collection.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(collectionImage));
                 // Update Thumbnail
                 collection.Thumbnail = ImageHelper.ResizeToThumbnail(collectionImage, Configuration);

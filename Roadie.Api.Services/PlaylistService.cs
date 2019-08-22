@@ -113,7 +113,7 @@ namespace Roadie.Api.Services
             sw.Start();
             var cacheKey = string.Format("urn:playlist_by_id_operation:{0}:{1}", id,
                 includes == null ? "0" : string.Join("|", includes));
-            var result = await CacheManager.GetAsync(cacheKey, async () => 
+            var result = await CacheManager.GetAsync(cacheKey, async () =>
             {
                 return await PlaylistByIdAction(id, includes);
             }, data.Artist.CacheRegionUrn(id));
@@ -351,7 +351,7 @@ namespace Roadie.Api.Services
                 var playlistImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (playlistImage != null)
                 {
-                    // Save unaltered playlist image 
+                    // Save unaltered playlist image
                     File.WriteAllBytes(playlist.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(playlistImage));
                     // Update thumbnail
                     playlist.Thumbnail = ImageHelper.ResizeToThumbnail(playlistImage, Configuration);

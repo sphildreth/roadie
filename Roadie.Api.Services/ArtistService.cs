@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -13,9 +12,6 @@ using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.Audio;
-using Roadie.Library.MetaData.FileName;
-using Roadie.Library.MetaData.ID3Tags;
-using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
@@ -30,7 +26,6 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
-using mb = Roadie.Library.MetaData.MusicBrainz;
 
 namespace Roadie.Api.Services
 {
@@ -45,19 +40,8 @@ namespace Roadie.Api.Services
         private ICollectionService CollectionService { get; }
 
         private IFileDirectoryProcessorService FileDirectoryProcessorService { get; }
-        private IFileNameHelper FileNameHelper { get; }
-
-        private IID3TagsHelper ID3TagsHelper { get; }
-
-        private ILabelLookupEngine LabelLookupEngine { get; }
-
-        private ILastFmHelper LastFmHelper { get; }
-
-        private mb.IMusicBrainzProvider MusicBrainzProvider { get; }
 
         private IPlaylistService PlaylistService { get; }
-
-        private IReleaseLookupEngine ReleaseLookupEngine { get; }
 
         private IReleaseService ReleaseService { get; }
 
@@ -72,13 +56,7 @@ namespace Roadie.Api.Services
             IBookmarkService bookmarkService,
             IReleaseService releaseService,
             IArtistLookupEngine artistLookupEngine,
-            mb.IMusicBrainzProvider musicBrainzProvider,
-            ILastFmHelper lastFmHelper,
-            IFileNameHelper fileNameHelper,
-            IID3TagsHelper id3tagsHelper,
             IAudioMetaDataHelper audioMetaDataHelper,
-            IReleaseLookupEngine releaseLookupEngine,
-            ILabelLookupEngine labelLookupEngine,
             IFileDirectoryProcessorService fileDirectoryProcessorService
         )
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
@@ -86,18 +64,8 @@ namespace Roadie.Api.Services
             CollectionService = collectionService;
             PlaylistService = playlistService;
             BookmarkService = bookmarkService;
-
-            MusicBrainzProvider = musicBrainzProvider;
-            LastFmHelper = lastFmHelper;
-            FileNameHelper = fileNameHelper;
-            ID3TagsHelper = id3tagsHelper;
-
             ArtistLookupEngine = artistLookupEngine;
-            LabelLookupEngine = labelLookupEngine;
-            ReleaseLookupEngine = releaseLookupEngine;
-
             AudioMetaDataHelper = audioMetaDataHelper;
-
             ReleaseService = releaseService;
             FileDirectoryProcessorService = fileDirectoryProcessorService;
         }
@@ -238,7 +206,7 @@ namespace Roadie.Api.Services
             }
             IQueryable<int> genreArtistIds = null;
             var isFilteredToGenre = false;
-            if(request.FilterToGenreId.HasValue)
+            if (request.FilterToGenreId.HasValue)
             {
                 genreArtistIds = (from ag in DbContext.ArtistGenres
                                   join g in DbContext.Genres on ag.GenreId equals g.Id
@@ -275,7 +243,7 @@ namespace Roadie.Api.Services
                 : null;
 
             int[] randomArtistIds = null;
-            if (doRandomize ??false)
+            if (doRandomize ?? false)
             {
                 var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
                 var userId = roadieUser?.Id ?? -1;
@@ -288,27 +256,26 @@ namespace Roadie.Api.Services
                             AND {2} = 0)
                             order BY RIGHT(HEX((1 << 24) * (1 + RAND())), 6)
                             LIMIT 0, {0}";
-                randomArtistIds = (from a in DbContext.Artists.FromSql(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0")                                   
+                randomArtistIds = (from a in DbContext.Artists.FromSql(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0")
                                    select a.Id).ToArray();
                 rowCount = DbContext.Artists.Count();
-
             }
             var result = (from a in DbContext.Artists
                           where !onlyWithReleases || a.ReleaseCount > 0
                           where randomArtistIds == null || randomArtistIds.Contains(a.Id)
                           where request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId
                           where request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value
-                          where request.FilterValue == "" || 
-                                a.Name.Contains(request.FilterValue) || 
+                          where request.FilterValue == "" ||
+                                a.Name.Contains(request.FilterValue) ||
                                 a.SortName.Contains(request.FilterValue) ||
                                 a.RealName.Contains(request.FilterValue) ||
-                                a.AlternateNames.Contains(request.FilterValue) || 
-                                a.AlternateNames.Contains(normalizedFilterValue)                                
-                          where !isEqualFilter || 
-                                a.Name.Equals(request.FilterValue) || 
+                                a.AlternateNames.Contains(request.FilterValue) ||
+                                a.AlternateNames.Contains(normalizedFilterValue)
+                          where !isEqualFilter ||
+                                a.Name.Equals(request.FilterValue) ||
                                 a.SortName.Equals(request.FilterValue) ||
                                 a.RealName.Equals(request.FilterValue) ||
-                                a.AlternateNames.Equals(request.FilterValue) || 
+                                a.AlternateNames.Equals(request.FilterValue) ||
                                 a.AlternateNames.Equals(normalizedFilterValue)
                           where !request.FilterFavoriteOnly || favoriteArtistIds.Contains(a.Id)
                           where request.FilterToLabelId == null || labelArtistIds.Contains(a.Id)
@@ -642,10 +609,10 @@ namespace Roadie.Api.Services
                 return new OperationResult<bool>(true, $"Artist Not Found [{model.Id}]");
             }
             // If artist is being renamed, see if artist already exists with new model supplied name
-            if(artist.Name.ToAlphanumericName() != model.Name.ToAlphanumericName())
+            if (artist.Name.ToAlphanumericName() != model.Name.ToAlphanumericName())
             {
                 var existingArtist = DbContext.Artists.FirstOrDefault(x => x.Name == model.Name);
-                if(existingArtist != null)
+                if (existingArtist != null)
                 {
                     return new OperationResult<bool>($"Artist already exists with name [{ model.Name }].");
                 }
@@ -1240,7 +1207,7 @@ namespace Roadie.Api.Services
                     if (r.IsSuccess)
                     {
                         result.PlaylistsWithArtistReleases = r.Rows.ToArray();
-                    } 
+                    }
                     tsw.Stop();
                     timings.Add("playlists", tsw.ElapsedMilliseconds);
                 }
@@ -1264,7 +1231,6 @@ namespace Roadie.Api.Services
                                                              .OrderBy(x => x.Title)
                                                              .ToArray()
                                                              .Select(r => ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, MakeArtistThumbnailImage(r.Artist.RoadieId), MakeReleaseThumbnailImage(r.RoadieId)));
-
 
                         result.ArtistContributionReleases = result.ArtistContributionReleases.Any()
                             ? result.ArtistContributionReleases
