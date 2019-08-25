@@ -386,14 +386,14 @@ namespace Roadie.Api.Services
                                   where t.Hash != null
                                   where randomTrackIds == null || randomTrackIds.Contains(t.Id)
                                   where filterToTrackIds == null || filterToTrackIds.Contains(t.RoadieId)
-                                  where releaseId == null || releaseId != null && r.RoadieId == releaseId
+                                  where releaseId == null || r.RoadieId == releaseId
                                   where request.FilterMinimumRating == null || t.Rating >= request.FilterMinimumRating.Value
-                                  where request.FilterValue == "" || t.Title.Contains(request.FilterValue) || t.AlternateNames.Contains(request.FilterValue) || t.AlternateNames.Contains(normalizedFilterValue) || t.PartTitles.Contains(request.FilterValue)
+                                  where request.FilterValue == "" || (trackArtist != null && trackArtist.Name.Contains(request.FilterValue)) || t.Title.Contains(request.FilterValue) || t.AlternateNames.Contains(request.FilterValue) || t.AlternateNames.Contains(normalizedFilterValue) || t.PartTitles.Contains(request.FilterValue)
                                   where !isEqualFilter || t.Title.Equals(request.FilterValue) || t.AlternateNames.Equals(request.FilterValue) || t.AlternateNames.Equals(normalizedFilterValue) || t.PartTitles.Equals(request.FilterValue)
                                   where !request.FilterFavoriteOnly || favoriteTrackIds.Contains(t.Id)
                                   where request.FilterToPlaylistId == null || playlistTrackIds.Contains(t.Id)
                                   where !request.FilterTopPlayedOnly || topTrackids.Contains(t.Id)
-                                  where request.FilterToArtistId == null || request.FilterToArtistId != null && (t.TrackArtist != null && t.TrackArtist.RoadieId == request.FilterToArtistId || r.Artist.RoadieId == request.FilterToArtistId)
+                                  where request.FilterToArtistId == null || (request.FilterToArtistId != null && ((t.TrackArtist != null && t.TrackArtist.RoadieId == request.FilterToArtistId) || r.Artist.RoadieId == request.FilterToArtistId))
                                   where !request.IsHistoryRequest || t.PlayedCount > 0
                                   where request.FilterToCollectionId == null || collectionTrackIds.Contains(t.Id)
                                   select new

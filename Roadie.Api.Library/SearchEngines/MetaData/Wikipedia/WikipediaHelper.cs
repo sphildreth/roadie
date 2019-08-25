@@ -29,7 +29,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
             client.ExecuteAsync<api>(request, response =>
             {
                 ArtistSearchResult data = null;
-                if (response?.Data?.query?.pages != null && (response?.Data?.query?.pages?.Any() ?? false))
+                if (response?.Data?.query?.pages?.Any() ?? false)
                 {
                     data = new ArtistSearchResult
                     {
@@ -39,7 +39,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
                 tcs.SetResult(new OperationResult<IEnumerable<ArtistSearchResult>>
                 {
                     IsSuccess = data != null,
-                    Data = new[] { data }
+                    Data = data != null ? new[] { data } : null
                 });
             });
             return tcs.Task;

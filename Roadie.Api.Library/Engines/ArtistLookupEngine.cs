@@ -606,11 +606,11 @@ namespace Roadie.Library.Engines
                         if (wikipediaResult.IsSuccess)
                         {
                             var w = wikipediaResult?.Data?.FirstOrDefault();
-                            if (w != null)
+                            if (!string.IsNullOrEmpty(w?.Bio))
                             {
                                 result.CopyTo(new Artist
                                 {
-                                    BioContext = HttpEncoder.HtmlEncode(w.Bio ?? string.Empty)
+                                    BioContext = HttpEncoder.HtmlEncode(w.Bio)
                                 });
                             }
                         }
