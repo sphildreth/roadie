@@ -50,6 +50,18 @@ namespace Roadie.Library.Scrobble
             Scrobblers = scrobblers;
         }
 
+        public ScrobbleHandler(IRoadieSettings configuration, ILogger logger, data.IRoadieDbContext dbContext, ICacheManager cacheManager, RoadieScrobbler roadieScrobbler)
+        {
+            Logger = logger;
+            Configuration = configuration;
+            DbContext = dbContext;
+            var scrobblers = new List<IScrobblerIntegration>
+            {
+                roadieScrobbler
+            };
+            Scrobblers = scrobblers;
+        }
+
         /// <summary>
         ///     Send Now Playing Requests
         /// </summary>
@@ -70,7 +82,10 @@ namespace Roadie.Library.Scrobble
         public async Task<OperationResult<bool>> Scrobble(User user, ScrobbleInfo scrobble)
         {
             var s = GetScrobbleInfoDetails(scrobble);
-            foreach (var scrobbler in Scrobblers) await Task.Run(async () => await scrobbler.Scrobble(user, s));
+            foreach (var scrobbler in Scrobblers)
+            {
+                await Task.Run(async () => await scrobbler.Scrobble(user, s));
+            }
             return new OperationResult<bool>
             {
                 Data = true,

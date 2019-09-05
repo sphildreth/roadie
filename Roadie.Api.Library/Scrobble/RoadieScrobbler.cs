@@ -14,11 +14,18 @@ namespace Roadie.Library.Scrobble
 {
     public class RoadieScrobbler : ScrobblerIntegrationBase, IRoadieScrobbler
     {
+
+        public RoadieScrobbler(IRoadieSettings configuration, ILogger logger, data.IRoadieDbContext dbContext, ICacheManager cacheManager)
+            : base(configuration, logger, dbContext, cacheManager, null)
+        {
+        }
+
         public RoadieScrobbler(IRoadieSettings configuration, ILogger<RoadieScrobbler> logger, data.IRoadieDbContext dbContext,
-            ICacheManager cacheManager, IHttpContext httpContext)
+                               ICacheManager cacheManager, IHttpContext httpContext)
             : base(configuration, logger, dbContext, cacheManager, httpContext)
         {
         }
+
 
         /// <summary>
         ///     For Roadie we only add a user play on the full scrobble event, otherwise we get double track play numbers.
@@ -39,14 +46,17 @@ namespace Roadie.Library.Scrobble
         {
             try
             {
-                // If less than half of duration then do nothing
-                if (scrobble.ElapsedTimeOfTrackPlayed.TotalSeconds < scrobble.TrackDuration.TotalSeconds / 2)
+                // If a user and If less than half of duration then do nothing
+                if (roadieUser != null && 
+                    scrobble.ElapsedTimeOfTrackPlayed.TotalSeconds < scrobble.TrackDuration.TotalSeconds / 2)
+                {
+                    Logger.LogTrace("Skipping Scrobble, Playback did not exceed minimum elapsed time");
                     return new OperationResult<bool>
                     {
                         Data = true,
                         IsSuccess = true
                     };
-
+                }
                 var sw = Stopwatch.StartNew();
                 var track = DbContext.Tracks
                     .Include(x => x.ReleaseMedia)
@@ -55,35 +65,44 @@ namespace Roadie.Library.Scrobble
                     .Include(x => x.TrackArtist)
                     .FirstOrDefault(x => x.RoadieId == scrobble.TrackId);
                 if (track == null)
+                {
                     return new OperationResult<bool>($"Scrobble: Unable To Find Track [{scrobble.TrackId}]");
+                }
                 if (!track.IsValid)
-                    return new OperationResult<bool>(
-                        $"Scrobble: Invalid Track. Track Id [{scrobble.TrackId}], FilePath [{track.FilePath}], Filename [{track.FileName}]");
+                {
+                    return new OperationResult<bool>($"Scrobble: Invalid Track. Track Id [{scrobble.TrackId}], FilePath [{track.FilePath}], Filename [{track.FileName}]");
+                }
                 data.UserTrack userTrack = null;
                 var now = DateTime.UtcNow;
                 var success = false;
                 try
                 {
-                    var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == roadieUser.UserId);
-                    userTrack = DbContext.UserTracks.FirstOrDefault(x => x.UserId == user.Id && x.TrackId == track.Id);
-                    if (userTrack == null)
+                    if (roadieUser != null)
                     {
-                        userTrack = new data.UserTrack(now)
+                        var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == roadieUser.UserId);
+                        userTrack = DbContext.UserTracks.FirstOrDefault(x => x.UserId == user.Id && x.TrackId == track.Id);
+                        if (userTrack == null)
                         {
-                            UserId = user.Id,
-                            TrackId = track.Id
-                        };
-                        DbContext.UserTracks.Add(userTrack);
-                    }
+                            userTrack = new data.UserTrack(now)
+                            {
+                                UserId = user.Id,
+                                TrackId = track.Id
+                            };
+                            DbContext.UserTracks.Add(userTrack);
+                        }
 
-                    userTrack.LastPlayed = now;
-                    userTrack.PlayedCount = (userTrack.PlayedCount ?? 0) + 1;
+                        userTrack.LastPlayed = now;
+                        userTrack.PlayedCount = (userTrack.PlayedCount ?? 0) + 1;
+
+                        CacheManager.ClearRegion(user.CacheRegion);
+                    }
 
                     track.PlayedCount = (track.PlayedCount ?? 0) + 1;
                     track.LastPlayed = now;
 
-                    var release = DbContext.Releases.Include(x => x.Artist)
-                        .FirstOrDefault(x => x.RoadieId == track.ReleaseMedia.Release.RoadieId);
+                    var release = DbContext.Releases
+                                           .Include(x => x.Artist)
+                                           .FirstOrDefault(x => x.RoadieId == track.ReleaseMedia.Release.RoadieId);
                     release.LastPlayed = now;
                     release.PlayedCount = (release.PlayedCount ?? 0) + 1;
 
@@ -112,18 +131,16 @@ namespace Roadie.Library.Scrobble
                     CacheManager.ClearRegion(track.CacheRegion);
                     CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);
                     CacheManager.ClearRegion(track.ReleaseMedia.Release.Artist.CacheRegion);
-                    CacheManager.ClearRegion(user.CacheRegion);
 
                     success = true;
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex,
-                        $"Error in Scrobble, Creating UserTrack: User `{roadieUser}` TrackId [{track.Id}");
+                    Logger.LogError(ex,$"Error in Scrobble, Creating UserTrack: User `{roadieUser}` TrackId [{track.Id}");
                 }
 
                 sw.Stop();
-                Logger.LogInformation($"RoadieScrobbler: RoadieUser `{roadieUser}` Scrobble `{scrobble}`");
+                Logger.LogInformation($"RoadieScrobbler: RoadieUser `{ (roadieUser == null ? "None" : roadieUser.ToString()) }` Scrobble `{scrobble}`");
                 return new OperationResult<bool>
                 {
                     Data = success,

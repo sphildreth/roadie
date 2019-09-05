@@ -247,14 +247,15 @@ namespace Roadie.Library.MetaData.Audio
             try
             {
                 var metaDataFromFile = ID3TagsHelper.MetaDataForFile(fileInfo.FullName);
-                if (metaDataFromFile.IsSuccess) return metaDataFromFile.Data;
+                if (metaDataFromFile.IsSuccess)
+                {
+                    return metaDataFromFile.Data;
+                }
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex,
-                    string.Format("Error With ID3TagsHelper.MetaDataForFile From File [{0}]", fileInfo.FullName));
+                Logger.LogError(ex, string.Format("Error With ID3TagsHelper.MetaDataForFile From File [{0}]", fileInfo.FullName));
             }
-
             return new AudioMetaData
             {
                 Filename = fileInfo.FullName

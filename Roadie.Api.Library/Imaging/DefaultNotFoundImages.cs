@@ -44,6 +44,12 @@ namespace Roadie.Library.Imaging
             Logger = logger;
         }
 
+        public DefaultNotFoundImages(ILogger logger, IRoadieSettings configuration)
+        {
+            Configuration = configuration;
+            Logger = logger;
+        }
+
         private static Image MakeImageFromFile(string filename)
         {
             if (!File.Exists(filename)) return new Image();

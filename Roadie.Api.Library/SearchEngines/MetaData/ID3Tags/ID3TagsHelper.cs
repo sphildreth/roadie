@@ -22,6 +22,8 @@ namespace Roadie.Library.MetaData.ID3Tags
 {
     public class ID3TagsHelper : MetaDataProviderBase, IID3TagsHelper
     {
+        public const int MaximumDiscNumber = 500; // Damnit Karajan
+
         public ID3TagsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<ID3TagsHelper> logger)
             : base(configuration, cacheManager, logger)
         {
@@ -29,21 +31,39 @@ namespace Roadie.Library.MetaData.ID3Tags
 
         public static int DetermineDiscNumber(AudioMetaData metaData)
         {
-            var maxDiscNumber = 500; // Damnit Karajan
-            for (var i = maxDiscNumber; i > 0; i--)
+            for (var i = MaximumDiscNumber; i > 0; i--)
+            {
                 if (Regex.IsMatch(metaData.Filename, @"(cd\s*(0*" + i + "))", RegexOptions.IgnoreCase))
+                {
                     return i;
+                }
+            }
             return 1;
         }
 
         public static string DetermineMissingRequiredMetaData(AudioMetaData metaData)
         {
             var result = new List<string>();
-            if (string.IsNullOrEmpty(metaData.Artist)) result.Add("Artist Name (TPE1)");
-            if (string.IsNullOrEmpty(metaData.Release)) result.Add("Release Title (TALB)");
-            if (string.IsNullOrEmpty(metaData.Title)) result.Add("Track Title (TIT2)");
-            if ((metaData.Year ?? 0) < 1) result.Add("Release Year (TYER | TDRC | TORY | TDOR)");
-            if ((metaData.TrackNumber ?? 0) < 1) result.Add("TrackNumber (TRCK)");
+            if (string.IsNullOrEmpty(metaData.Artist))
+            {
+                result.Add("Artist Name (TPE1)");
+            }
+            if (string.IsNullOrEmpty(metaData.Release))
+            {
+                result.Add("Release Title (TALB)");
+            }
+            if (string.IsNullOrEmpty(metaData.Title))
+            {
+                result.Add("Track Title (TIT2)");
+            }
+            if ((metaData.Year ?? 0) < 1)
+            {
+                result.Add("Release Year (TYER | TDRC | TORY | TDOR)");
+            }
+            if ((metaData.TrackNumber ?? 0) < 1)
+            {
+                result.Add("TrackNumber (TRCK)");
+            }
             return string.Join(", ", result);
         }
 
@@ -194,24 +214,42 @@ namespace Roadie.Library.MetaData.ID3Tags
         {
             var r = new OperationResult<AudioMetaData>();
             var result = MetaDataForFileFromIdSharp(fileName);
-            if (result.Messages != null && result.Messages.Any())
+            if (result.Messages?.Any() == true)
+            {
                 foreach (var m in result.Messages)
+                {
                     r.AddMessage(m);
-            if (result.Errors != null && result.Errors.Any())
+                }
+            }
+            if (result.Errors?.Any() == true)
+            {
                 foreach (var e in result.Errors)
+                {
                     r.AddError(e);
+                }
+            }
             if (!result.IsSuccess)
             {
                 result = MetaDataForFileFromATL(fileName);
-                if (result.Messages != null && result.Messages.Any())
+                if (result.Messages?.Any() == true)
+                {
                     foreach (var m in result.Messages)
+                    {
                         r.AddMessage(m);
-                if (result.Errors != null && result.Errors.Any())
+                    }
+                }
+                if (result.Errors?.Any() == true)
+                {
                     foreach (var e in result.Errors)
+                    {
                         r.AddError(e);
+                    }
+                }
             }
-
-            if (!result.IsSuccess) r.AddMessage($"Missing Data `[{DetermineMissingRequiredMetaData(result.Data)}]`");
+            if (!result.IsSuccess)
+            {
+                r.AddMessage($"Missing Data `[{DetermineMissingRequiredMetaData(result.Data)}]`");
+            }
             r.Data = result.Data;
             r.IsSuccess = result.IsSuccess;
             return r;

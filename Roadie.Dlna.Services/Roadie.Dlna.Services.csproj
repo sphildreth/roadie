@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <Platforms>AnyCPU;x64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Roadie.Api.Library\Roadie.Library.csproj" />
+    <ProjectReference Include="..\Roadie.Api.Services\Roadie.Api.Services.csproj" />
+    <ProjectReference Include="..\Roadie.Dlna\Roadie.Dlna.csproj" />
+  </ItemGroup>
+
+</Project>

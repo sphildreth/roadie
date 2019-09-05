@@ -6,9 +6,12 @@ namespace Roadie.Library.Utility
 {
     public static class EtagHelper
     {
-        public static bool CompareETag(IHttpEncoder encoder, EntityTagHeaderValue eTagLeft,
-            EntityTagHeaderValue eTagRight)
+        public static bool CompareETag(IHttpEncoder encoder, EntityTagHeaderValue eTagLeft, EntityTagHeaderValue eTagRight)
         {
+            if(encoder == null)
+            {
+                return false;
+            }
             if (eTagLeft == null && eTagRight == null) return true;
             if (eTagLeft == null && eTagRight != null) return false;
             if (eTagRight == null && eTagLeft != null) return false;
@@ -17,6 +20,10 @@ namespace Roadie.Library.Utility
 
         public static bool CompareETag(IHttpEncoder encoder, EntityTagHeaderValue eTag, byte[] bytes)
         {
+            if (encoder == null)
+            {
+                return false;
+            }
             if (eTag == null && (bytes == null || !bytes.Any())) return true;
             if (eTag == null && bytes != null || bytes.Any()) return false;
             if (eTag != null && (bytes == null || !bytes.Any())) return false;

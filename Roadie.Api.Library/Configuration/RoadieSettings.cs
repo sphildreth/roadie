@@ -15,6 +15,14 @@ namespace Roadie.Library.Configuration
 
         public string BehindProxyHost { get; set; }
 
+        public string CollectionImageFolder
+        {
+            get
+            {
+                return Path.Combine(ImageFolder ?? LibraryFolder, "__roadie_images", "collections");
+            }
+        }
+
         /// <summary>
         ///     Set to the Roadie Database for DbDataReader operations
         /// </summary>
@@ -27,41 +35,16 @@ namespace Roadie.Library.Configuration
 
         public Converting Converting { get; set; }
 
+        public short DefaultRowsPerPage { get; set; }
         public string DefaultTimeZone { get; set; }
+
+        public Dlna Dlna { get; set; }
 
         public IEnumerable<string> DontDoMetaDataProvidersSearchArtists { get; set; }
 
         public IEnumerable<string> FileExtensionsToDelete { get; set; }
 
         public FilePlugins FilePlugins { get; set; }
-
-        public string InboundFolder { get; set; }
-
-        public Inspector Inspector { get; set; }
-
-        public Integrations Integrations { get; set; }
-
-        public ImageSize LargeImageSize { get; set; }
-
-        public string LibraryFolder { get; set; }
-
-        public string ImageFolder { get; set; }
-
-        public string LabelImageFolder
-        {
-            get
-            {
-                return Path.Combine(ImageFolder ?? LibraryFolder, "__roadie_images", "labels");
-            }
-        }
-
-        public string CollectionImageFolder
-        {
-            get
-            {
-                return Path.Combine(ImageFolder ?? LibraryFolder, "__roadie_images", "collections");
-            }
-        }
 
         public string GenreImageFolder
         {
@@ -71,6 +54,35 @@ namespace Roadie.Library.Configuration
             }
         }
 
+        public string ImageFolder { get; set; }
+        public string InboundFolder { get; set; }
+
+        public Inspector Inspector { get; set; }
+
+        public Integrations Integrations { get; set; }
+
+        /// <summary>
+        /// If true then don't allow new registrations
+        /// </summary>
+        public bool IsRegistrationClosed { get; set; }
+
+        public string LabelImageFolder
+        {
+            get
+            {
+                return Path.Combine(ImageFolder ?? LibraryFolder, "__roadie_images", "labels");
+            }
+        }
+
+        public ImageSize LargeImageSize { get; set; }
+
+        public string LibraryFolder { get; set; }
+        public string ListenAddress { get; set; }
+
+        public ImageSize MaximumImageSize { get; set; }
+
+        public ImageSize MediumImageSize { get; set; }
+
         public string PlaylistImageFolder
         {
             get
@@ -79,25 +91,16 @@ namespace Roadie.Library.Configuration
             }
         }
 
-        public string UserImageFolder
-        {
-            get
-            {
-                return Path.Combine(LibraryFolder, "__roadie_images", "users");
-            }
-        }
-
-        public string ListenAddress { get; set; }
-
-        public ImageSize MaximumImageSize { get; set; }
-
-        public ImageSize MediumImageSize { get; set; }
-
         public Processing Processing { get; set; }
 
         public bool RecordNoResultSearches { get; set; }
 
         public RedisCache Redis { get; set; }
+
+        /// <summary>
+        /// Place to hold cache repositories used by SearchEngine and MetaData engines
+        /// </summary>
+        public string SearchEngineReposFolder { get; set; }
 
         public string SecretKey { get; set; }
 
@@ -117,31 +120,28 @@ namespace Roadie.Library.Configuration
 
         public bool SmtpUseSSl { get; set; }
 
+        public short? SubsonicRatingBoost { get; set; }
+
         public ImageSize ThumbnailImageSize { get; set; }
 
         public Dictionary<string, string> TrackPathReplace { get; set; }
-
-        public bool UseSSLBehindProxy { get; set; }
-
-        public string WebsocketAddress { get; set; }
-
-        public short? SubsonicRatingBoost { get; set; }
 
         /// <summary>
         /// When true require a "invite" token to exist for a user to register.
         /// </summary>
         public bool UseRegistrationTokens { get; set; }
 
-        /// <summary>
-        /// If true then don't allow new registrations
-        /// </summary>
-        public bool IsRegistrationClosed { get; set; }
-        /// <summary>
-        /// Place to hold cache repositories used by SearchEngine and MetaData engines
-        /// </summary>
-        public string SearchEngineReposFolder { get; set; }
+        public string UserImageFolder
+        {
+            get
+            {
+                return Path.Combine(LibraryFolder, "__roadie_images", "users");
+            }
+        }
 
-        public short DefaultRowsPerPage { get; set; }
+        public bool UseSSLBehindProxy { get; set; }
+
+        public string WebsocketAddress { get; set; }
 
         public RoadieSettings()
         {
@@ -152,7 +152,7 @@ namespace Roadie.Library.Configuration
             };
             DefaultTimeZone = "US / Central";
             DontDoMetaDataProvidersSearchArtists = new List<string> { "Various Artists", "Sound Tracks" };
-            FileExtensionsToDelete = new List<string>{ ".accurip", ".bmp", ".cue", ".dat", ".db", ".exe", ".htm", ".html", ".ini", ".log", ".jpg", ".jpeg", ".par", ".par2", ".pdf", ".png", ".md5", ".mht", ".mpg", ".m3u", ".nfo", ".nzb", ".pls", ".sfv", ".srr", ".txt", ".url" };
+            FileExtensionsToDelete = new List<string> { ".accurip", ".bmp", ".cue", ".dat", ".db", ".exe", ".htm", ".html", ".ini", ".log", ".jpg", ".jpeg", ".par", ".par2", ".pdf", ".png", ".md5", ".mht", ".mpg", ".m3u", ".nfo", ".nzb", ".pls", ".sfv", ".srr", ".txt", ".url" };
             InboundFolder = "M:/inbound";
             LargeImageSize = new ImageSize { Width = 500, Height = 500 };
             LibraryFolder = "M:/library";
@@ -174,6 +174,8 @@ namespace Roadie.Library.Configuration
             Converting = new Converting();
             Integrations = new Integrations();
             Processing = new Processing();
+            Dlna = new Dlna();
+
         }
     }
 }

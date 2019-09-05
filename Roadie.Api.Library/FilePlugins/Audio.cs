@@ -25,7 +25,7 @@ namespace Roadie.Library.FilePlugins
 
         public IAudioMetaDataHelper AudioMetaDataHelper { get; }
 
-        public override string[] HandlesTypes => new string[1] { "audio/mpeg" };
+        public override string[] HandlesTypes => new string[1] { MimeTypeHelper.Mp3MimeType };
 
         public Audio(IRoadieSettings configuration, IHttpEncoder httpEncoder, ICacheManager cacheManager,
                      ILogger logger, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine,

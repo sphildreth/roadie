@@ -47,6 +47,11 @@ namespace Roadie.Api.Services
             AdminService = adminService;
         }
 
+        public TrackService(IRoadieSettings configuration, data.IRoadieDbContext dbContext, ICacheManager cacheManager, ILogger logger)
+            : base(configuration, null, dbContext, cacheManager, logger, null)
+        {
+        }
+
         public static long DetermineByteEndFromHeaders(IHeaderDictionary headers, long fileLength)
         {
             var defaultFileLength = fileLength - 1;
@@ -393,7 +398,7 @@ namespace Roadie.Api.Services
                                   where !request.FilterFavoriteOnly || favoriteTrackIds.Contains(t.Id)
                                   where request.FilterToPlaylistId == null || playlistTrackIds.Contains(t.Id)
                                   where !request.FilterTopPlayedOnly || topTrackids.Contains(t.Id)
-                                  where request.FilterToArtistId == null || (request.FilterToArtistId != null && ((t.TrackArtist != null && t.TrackArtist.RoadieId == request.FilterToArtistId) || r.Artist.RoadieId == request.FilterToArtistId))
+                                  where request.FilterToArtistId == null || ((t.TrackArtist != null && t.TrackArtist.RoadieId == request.FilterToArtistId) || r.Artist.RoadieId == request.FilterToArtistId)
                                   where !request.IsHistoryRequest || t.PlayedCount > 0
                                   where request.FilterToCollectionId == null || collectionTrackIds.Contains(t.Id)
                                   select new
@@ -694,8 +699,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes,
-            long endBytes, User roadieUser)
+        public async Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes, User roadieUser)
         {
             var track = DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
             if (!(track?.IsValid ?? true))
@@ -705,7 +709,7 @@ namespace Roadie.Api.Services
                                join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                where rm.Id == track.ReleaseMediaId
                                select r).FirstOrDefault();
-                if (!release.IsLocked ?? false)
+                if (!release.IsLocked ?? false && roadieUser != null)
                 {
                     await AdminService.ScanRelease(new ApplicationUser
                     {
@@ -744,7 +748,7 @@ namespace Roadie.Api.Services
                                join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                where rm.Id == track.ReleaseMediaId
                                select r).FirstOrDefault();
-                if (!release.IsLocked ?? false)
+                if (!release.IsLocked ?? false && roadieUser != null)
                 {
                     await AdminService.ScanRelease(new ApplicationUser
                     {
@@ -781,9 +785,8 @@ namespace Roadie.Api.Services
             var contentDurationTimeSpan = TimeSpan.FromMilliseconds(track.Duration ?? 0);
             var info = new TrackStreamInfo
             {
-                FileName = HttpEncoder.UrlEncode(track.FileName).ToContentDispositionFriendly(),
-                ContentDisposition =
-                    $"attachment; filename=\"{HttpEncoder.UrlEncode(track.FileName).ToContentDispositionFriendly()}\"",
+                FileName = HttpEncoder?.UrlEncode(track.FileName).ToContentDispositionFriendly(),
+                ContentDisposition = $"attachment; filename=\"{HttpEncoder?.UrlEncode(track.FileName).ToContentDispositionFriendly()}\"",
                 ContentDuration = contentDurationTimeSpan.TotalSeconds.ToString()
             };
             var contentLength = endBytes - beginBytes + 1;

@@ -1,4 +1,6 @@
-﻿namespace Roadie.Library.Models
+﻿using Roadie.Library.Utility;
+
+namespace Roadie.Library.Models
 {
     public sealed class TrackStreamInfo
     {
@@ -10,7 +12,7 @@
         public string ContentDuration { get; set; }
         public string ContentLength { get; set; }
         public string ContentRange { get; set; }
-        public string ContentType => "audio/mpeg";
+        public string ContentType => MimeTypeHelper.Mp3MimeType;
         public long EndBytes { get; set; }
         public string Etag { get; set; }
         public string Expires { get; set; }

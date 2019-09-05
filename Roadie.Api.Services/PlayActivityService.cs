@@ -27,22 +27,23 @@ namespace Roadie.Api.Services
 
         protected IScrobbleHandler ScrobblerHandler { get; }
 
-        public PlayActivityService(IRoadieSettings configuration,
-                            IHttpEncoder httpEncoder,
-            IHttpContext httpContext,
-            data.IRoadieDbContext dbContext,
-            ICacheManager cacheManager,
-            ILogger<PlayActivityService> logger,
-            IScrobbleHandler scrobbleHandler,
-            IHubContext<PlayActivityHub> playActivityHub)
+        public PlayActivityService(IRoadieSettings configuration, IHttpEncoder httpEncoder,IHttpContext httpContext,
+                                   data.IRoadieDbContext dbContext, ICacheManager cacheManager,ILogger<PlayActivityService> logger,
+                                   IScrobbleHandler scrobbleHandler, IHubContext<PlayActivityHub> playActivityHub)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
             PlayActivityHub = playActivityHub;
             ScrobblerHandler = scrobbleHandler;
         }
 
-        public Task<Library.Models.Pagination.PagedResult<PlayActivityList>> List(PagedRequest request,
-            User roadieUser = null, DateTime? newerThan = null)
+        public PlayActivityService(IRoadieSettings configuration, data.IRoadieDbContext dbContext, ICacheManager cacheManager, 
+                                   ILogger logger, ScrobbleHandler scrobbleHandler)
+            : base(configuration, null, dbContext, cacheManager, logger, null)
+        {
+            ScrobblerHandler = scrobbleHandler;
+        }
+
+        public Task<Library.Models.Pagination.PagedResult<PlayActivityList>> List(PagedRequest request,User roadieUser = null, DateTime? newerThan = null)
         {
             try
             {
@@ -63,9 +64,8 @@ namespace Roadie.Api.Services
                              where !request.FilterRatedOnly || roadieUser == null && t.Rating > 0 ||
                                    roadieUser != null && usertrack.Rating > 0
                              where request.FilterValue.Length == 0 || request.FilterValue.Length > 0 && (
-                                       t.Title != null && t.Title.ToLower().Contains(request.Filter.ToLower()) ||
-                                       t.AlternateNames != null && t.AlternateNames.ToLower().Contains(request.Filter.ToLower())
-                                   )
+                                       t.Title != null && t.Title.Contains(request.Filter, StringComparison.OrdinalIgnoreCase) ||
+                                       t.AlternateNames != null && t.AlternateNames.Contains(request.Filter, StringComparison.OrdinalIgnoreCase))
                              select new PlayActivityList
                              {
                                  Release = new DataToken
@@ -147,7 +147,10 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> Scrobble(User roadieUser, ScrobbleInfo scrobble)
         {
             var scrobbleResult = await ScrobblerHandler.Scrobble(roadieUser, scrobble);
-            if (!scrobbleResult.IsSuccess) return scrobbleResult;
+            if (!scrobbleResult.IsSuccess)
+            {
+                return scrobbleResult;
+            }
             await PublishPlayActivity(roadieUser, scrobble, false);
             return scrobbleResult;
         }
@@ -155,7 +158,7 @@ namespace Roadie.Api.Services
         private async Task PublishPlayActivity(User roadieUser, ScrobbleInfo scrobble, bool isNowPlaying)
         {
             // Only broadcast if the user is not public and played duration is more than half of duration
-            if (!roadieUser.IsPrivate &&
+            if (roadieUser?.IsPrivate != true && 
                 scrobble.ElapsedTimeOfTrackPlayed.TotalSeconds > scrobble.TrackDuration.TotalSeconds / 2)
             {
                 var sw = Stopwatch.StartNew();

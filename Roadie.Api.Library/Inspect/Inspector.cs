@@ -263,7 +263,7 @@ namespace Roadie.Library.Inspect
                                 Console.ForegroundColor = ConsoleColor.DarkYellow;
                                 Console.WriteLine(
                                     $"╟ ❗ INVALID: Missing: {ID3TagsHelper.DetermineMissingRequiredMetaData(originalMetaData)}");
-                                Console.WriteLine($"╟ [{JsonConvert.SerializeObject(tagLib, Formatting.Indented)}]");
+                                Console.WriteLine($"╟ [{JsonConvert.SerializeObject(tagLib, Newtonsoft.Json.Formatting.Indented)}]");
                                 Console.ResetColor();
                             }
 

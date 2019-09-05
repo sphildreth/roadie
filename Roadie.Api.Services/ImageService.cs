@@ -44,6 +44,13 @@ namespace Roadie.Api.Services
             ImageSearchManager = imageSearchManager;
         }
 
+        public ImageService(IRoadieSettings configuration, data.IRoadieDbContext dbContext, ICacheManager cacheManager, 
+                            ILogger logger, DefaultNotFoundImages defaultNotFoundImages)
+            : base(configuration, null, dbContext, cacheManager, logger, null)
+        {
+            DefaultNotFoundImages = defaultNotFoundImages;
+        }
+
         public async Task<FileOperationResult<Image>> ArtistImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
         {
             return await GetImageFileOperation("ArtistImage",
@@ -118,7 +125,7 @@ namespace Roadie.Api.Services
                 id,
                 width,
                 height,
-                async () => { return await GenreImageAction(id, etag); },
+                async () => await GenreImageAction(id, etag),
                 etag);
         }
 
@@ -129,7 +136,7 @@ namespace Roadie.Api.Services
                 id,
                 width,
                 height,
-                async () => { return await LabelImageAction(id, etag); },
+                async () => await LabelImageAction(id, etag),
                 etag);
         }
 
@@ -140,7 +147,7 @@ namespace Roadie.Api.Services
                 id,
                 width,
                 height,
-                async () => { return await PlaylistImageAction(id, etag); },
+                async () => await PlaylistImageAction(id, etag),
                 etag);
         }
 
@@ -151,7 +158,7 @@ namespace Roadie.Api.Services
                 id,
                 width,
                 height,
-                async () => { return await ReleaseImageAction(id, etag); },
+                async () => await ReleaseImageAction(id, etag),
                 etag);
         }
 
@@ -199,7 +206,7 @@ namespace Roadie.Api.Services
                 id,
                 width,
                 height,
-                async () => { return await TrackImageAction(id, width, height, etag); },
+                async () => await TrackImageAction(id, width, height, etag),
                 etag);
         }
 
@@ -210,7 +217,7 @@ namespace Roadie.Api.Services
                 id,
                 width,
                 height,
-                async () => { return await UserImageAction(id, etag); },
+                async () => await UserImageAction(id, etag),
                 etag);
         }
 
@@ -365,9 +372,13 @@ namespace Roadie.Api.Services
         {
             var imageEtag = EtagHelper.GenerateETag(HttpEncoder, image.Bytes);
             if (EtagHelper.CompareETag(HttpEncoder, etag, imageEtag))
+            {
                 return new FileOperationResult<Image>(OperationMessages.NotModified);
-            if (!image?.Bytes?.Any() ?? false)
+            }
+            if (image?.Bytes?.Any() != true)
+            {
                 return new FileOperationResult<Image>(string.Format("ImageById Not Set [{0}]", id));
+            }
             return new FileOperationResult<Image>(image?.Bytes?.Any() ?? false
                 ? OperationMessages.OkMessage
                 : OperationMessages.NoImageDataFound)
@@ -427,8 +438,14 @@ namespace Roadie.Api.Services
             {
                 var sw = Stopwatch.StartNew();
                 var result = (await CacheManager.GetAsync($"urn:{type}_by_id_operation:{id}", action, regionUrn)).Adapt<FileOperationResult<Image>>();
-                if (!result.IsSuccess) return new FileOperationResult<Image>(result.IsNotFoundResult, result.Messages);
-                if (result.ETag == etag) return new FileOperationResult<Image>(OperationMessages.NotModified);
+                if (!result.IsSuccess)
+                {
+                    return new FileOperationResult<Image>(result.IsNotFoundResult, result.Messages);
+                }
+                if (result.ETag == etag && etag != null)
+                {
+                    return new FileOperationResult<Image>(OperationMessages.NotModified);
+                }
                 var force = width.HasValue || height.HasValue;
                 var newWidth = width ?? Configuration.MaximumImageSize.Width;
                 var newHeight = height ?? Configuration.MaximumImageSize.Height;
@@ -624,7 +641,7 @@ namespace Roadie.Api.Services
                     CreatedDate = release.CreatedDate,
                     LastUpdated = release.LastUpdated
                 };
-                if (release.Thumbnail == null || !release.Thumbnail.Any())
+                if (release.Thumbnail?.Any() != true)
                 {
                     image = DefaultNotFoundImages.Release;
                 }

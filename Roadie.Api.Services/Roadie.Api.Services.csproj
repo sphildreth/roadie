@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
@@ -11,12 +11,13 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.5.0" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.0.18" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.0.19" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Roadie.Api.Hubs\Roadie.Api.Hubs.csproj" />
     <ProjectReference Include="..\Roadie.Api.Library\Roadie.Library.csproj" />
+    <ProjectReference Include="..\Roadie.Dlna\Roadie.Dlna.csproj" />
   </ItemGroup>
 
 </Project>

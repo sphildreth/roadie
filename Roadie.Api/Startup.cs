@@ -18,6 +18,7 @@ using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Roadie.Api.Hubs;
 using Roadie.Api.ModelBinding;
 using Roadie.Api.Services;
+using Roadie.Dlna.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
@@ -227,6 +228,8 @@ namespace Roadie.Api
             services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<ILookupService, LookupService>();
             services.AddScoped<ICommentService, CommentService>();
+
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, DlnaHostService>();
 
             var securityKey = new SymmetricSecurityKey(Encoding.Default.GetBytes(_configuration["Tokens:PrivateKey"]));            
 

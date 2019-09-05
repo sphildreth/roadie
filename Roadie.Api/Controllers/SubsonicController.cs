@@ -687,7 +687,7 @@ namespace Roadie.Api.Controllers
             }
 
             Logger.LogTrace(
-                $"Subsonic Request: Method [{method}], Accept Header [{acceptHeader}], Path [{queryPath}], Query String [{queryString}], Posted Body [{postBody}], Response Error Code [{response?.ErrorCode}], Request [{JsonConvert.SerializeObject(request, Formatting.Indented)}] ResponseType [{responseType}]");
+                $"Subsonic Request: Method [{method}], Accept Header [{acceptHeader}], Path [{queryPath}], Query String [{queryString}], Posted Body [{postBody}], Response Error Code [{response?.ErrorCode}], Request [{JsonConvert.SerializeObject(request, Newtonsoft.Json.Formatting.Indented)}] ResponseType [{responseType}]");
             if (response?.ErrorCode.HasValue ?? false) return SendError(request, response);
             if (request.IsJSONRequest)
             {

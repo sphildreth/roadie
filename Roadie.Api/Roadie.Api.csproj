@@ -33,7 +33,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.2.3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="Serilog.AspNetCore" Version="2.1.1" />
+    <PackageReference Include="Serilog.AspNetCore" Version="3.0.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="2.1.3" />
     <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
     <PackageReference Include="Serilog.Exceptions" Version="5.3.1" />
@@ -42,7 +42,7 @@
     <PackageReference Include="Serilog.Sinks.LiteDB.NetStandard" Version="1.0.14" />
     <PackageReference Include="Serilog.Sinks.RollingFileAlternate" Version="2.0.9" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.5.0" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.0.18" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.0.19" />
   </ItemGroup>
 
   <ItemGroup>
@@ -53,6 +53,7 @@
     <ProjectReference Include="..\Roadie.Api.Hubs\Roadie.Api.Hubs.csproj" />
     <ProjectReference Include="..\Roadie.Api.Library\Roadie.Library.csproj" />
     <ProjectReference Include="..\Roadie.Api.Services\Roadie.Api.Services.csproj" />
+    <ProjectReference Include="..\Roadie.Dlna.Services\Roadie.Dlna.Services.csproj" />
   </ItemGroup>
 
 </Project>
