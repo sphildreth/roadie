@@ -27,6 +27,13 @@ Built on:
 * [EF Core](https://docs.microsoft.com/en-us/ef/core/)
 * [Cachemanager](http://cachemanager.michaco.net/)
 
+Core Features:
+---------
+* Ability to scan folder and add music to library.
+* Metadata engines for ID3 Tag and Image lookups.
+* Full Subsonic API emulation allowing for any Subsonic client to be used with Roadie.
+* [UPnP and DLNA](https://github.com/sphildreth/roadie/wiki/DLNA)
+
 Metadata Providers:
 ---------
 * ID3 Tags (via [idsharp.tagging](https://github.com/RandallFlagg/IdSharpCore))
