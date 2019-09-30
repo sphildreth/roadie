@@ -37,7 +37,7 @@ namespace Roadie.Api.Services
                 {
                     UserCount = DbContext.Users.Count(),
                     CollectionCount = DbContext.Collections.Count(),
-                    PlayedCount = DbContext.Playlists.Count(),
+                    PlaylistCount = DbContext.Playlists.Count(),
                     ArtistCount = DbContext.Artists.Count(),
                     LabelCount = DbContext.Labels.Count(),
                     ReleaseCount = DbContext.Releases.Count(),

@@ -152,7 +152,7 @@ namespace Roadie.Library.Configuration
             };
             DefaultTimeZone = "US / Central";
             DontDoMetaDataProvidersSearchArtists = new List<string> { "Various Artists", "Sound Tracks" };
-            FileExtensionsToDelete = new List<string> { ".accurip", ".bmp", ".cue", ".dat", ".db", ".exe", ".htm", ".html", ".ini", ".log", ".jpg", ".jpeg", ".par", ".par2", ".pdf", ".png", ".md5", ".mht", ".mpg", ".m3u", ".nfo", ".nzb", ".pls", ".sfv", ".srr", ".txt", ".url" };
+            FileExtensionsToDelete = new List<string> { ".accurip", ".bmp", ".cue", ".dat", ".db", ".exe", ".gif", ".htm", ".html", ".ini", ".log", ".jpg", ".jpeg", ".par", ".par2", ".pdf", ".png", ".md5", ".mht", ".mpg", ".m3u", ".nfo", ".nzb", ".pls", ".sfv", ".srr", ".txt", ".url" };
             InboundFolder = "M:/inbound";
             LargeImageSize = new ImageSize { Width = 500, Height = 500 };
             LibraryFolder = "M:/library";
