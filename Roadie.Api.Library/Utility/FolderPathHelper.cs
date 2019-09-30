@@ -30,12 +30,15 @@ namespace Roadie.Library.Utility
         public static void DeleteEmptyDirs(string dir, bool deleteDirIfEmpty = true)
         {
             if (string.IsNullOrEmpty(dir))
+            {
                 throw new ArgumentException("Starting directory is a null reference or an empty string", "dir");
+            }
             try
             {
                 foreach (var d in Directory.EnumerateDirectories(dir)) DeleteEmptyDirs(d);
                 var entries = Directory.EnumerateFileSystemEntries(dir);
                 if (!entries.Any() && deleteDirIfEmpty)
+                {
                     try
                     {
                         Directory.Delete(dir);
@@ -46,6 +49,7 @@ namespace Roadie.Library.Utility
                     catch (DirectoryNotFoundException)
                     {
                     }
+                }
             }
             catch (UnauthorizedAccessException)
             {
@@ -101,12 +105,8 @@ namespace Roadie.Library.Utility
         ///     For given artist delete any empty folders
         /// </summary>
         /// <param name="artist">Populated Artist database record</param>
-        /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
-        /// <returns></returns>
-        public static bool DeleteEmptyFoldersForArtist(IRoadieSettings configuration, Artist artist,
-            string destinationFolder = null)
+        public static bool DeleteEmptyFoldersForArtist(IRoadieSettings configuration, Artist artist)
         {
-            destinationFolder = destinationFolder ?? configuration.LibraryFolder;
             SimpleContract.Requires<ArgumentException>(artist != null, "Invalid Artist");
             return DeleteEmptyFolders(new DirectoryInfo(artist.ArtistFileFolder(configuration)));
         }
@@ -134,7 +134,10 @@ namespace Roadie.Library.Utility
         public static string PathForTrackThumbnail(IRoadieSettings configuration, Track track, string destinationFolder = null)
         {
             destinationFolder = destinationFolder ?? configuration.LibraryFolder;
-            if (string.IsNullOrEmpty(track.FilePath) || string.IsNullOrEmpty(track.FileName)) return null;
+            if (string.IsNullOrEmpty(track.FilePath) || string.IsNullOrEmpty(track.FileName))
+            {
+                return null;
+            }
             var fileName = Path.ChangeExtension(track.FileName, ".jpg");
             var directoryInfo = new DirectoryInfo(Path.Combine(destinationFolder, track.FilePath, fileName));
             return directoryInfo.FullName;
@@ -152,9 +155,7 @@ namespace Roadie.Library.Utility
             SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(releaseTitle), "Invalid Release Title");
             SimpleContract.Requires<ArgumentException>(releaseDate != DateTime.MinValue, "Invalid Release Date");
 
-            var directoryInfo = new DirectoryInfo(Path.Combine(artistFolder,
-                string.Format("{1}{0}", releaseTitle.ToTitleCase(false).ToFolderNameFriendly(),
-                    string.Format("[{0}] ", releaseDate.ToString("yyyy")))));
+            var directoryInfo = new DirectoryInfo(Path.Combine(artistFolder, string.Format("{1}{0}", releaseTitle.ToTitleCase(false).ToFolderNameFriendly(), string.Format("[{0}] ", releaseDate.ToString("yyyy")))));
             return directoryInfo.FullName;
         }
 
@@ -211,14 +212,12 @@ namespace Roadie.Library.Utility
         ///     Returns the Full path (FQDN) for given Track details
         /// </summary>
         /// <param name="metaData">Populated Track MetaData</param>
-        /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
         /// <param name="artistFolder">Optional ArtistFolder default is to get from MetaData artist</param>
-        public static string TrackFullPath(IRoadieSettings configuration, AudioMetaData metaData,
-            string destinationFolder = null, string artistFolder = null, string releaseFolder = null)
+        public static string TrackFullPath(IRoadieSettings configuration, AudioMetaData metaData, string artistFolder = null, string releaseFolder = null)
         {
             return TrackFullPath(configuration, metaData.Artist, metaData.Release,
                 SafeParser.ToDateTime(metaData.Year).Value,
-                metaData.Title, metaData.TrackNumber ?? 0, destinationFolder, metaData.Disc ?? 0,
+                metaData.Title, metaData.TrackNumber ?? 0, metaData.Disc ?? 0,
                 metaData.TotalTrackNumbers ?? 0,
                 artistFolder: artistFolder,
                 releaseFolder: releaseFolder);
@@ -232,12 +231,7 @@ namespace Roadie.Library.Utility
         /// <param name="track">Track</param>
         /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
         /// <returns></returns>
-        public static string TrackFullPath(IRoadieSettings configuration, Artist artist, Release release, Track track,
-            string destinationFolder = null)
-        {
-            return TrackFullPath(configuration, artist.SortNameValue, release.Title, release.ReleaseDate.Value,
-                track.Title, track.TrackNumber, destinationFolder);
-        }
+        public static string TrackFullPath(IRoadieSettings configuration, Artist artist, Release release, Track track) => TrackFullPath(configuration, artist.SortNameValue, release.Title, release.ReleaseDate.Value, track.Title, track.TrackNumber);
 
         /// <summary>
         ///     Return the full path (FQDN) for given Track details
@@ -251,15 +245,12 @@ namespace Roadie.Library.Utility
         /// <param name="totalTrackNumber">Optional Total Tracks defaults to TrackNumber</param>
         /// <param name="fileExtension">Optional File Extension defaults to mp3</param>
         public static string TrackFullPath(IRoadieSettings configuration, string artistSortName, string releaseTitle,
-            DateTime releaseDate, string trackTitle, short trackNumber, string destinationFolder = null,
-            int? discNumber = null, int? totalTrackNumber = null, string fileExtension = "mp3",
+            DateTime releaseDate, string trackTitle, short trackNumber, int? discNumber = null, int? totalTrackNumber = null, string fileExtension = "mp3",
             string artistFolder = null, string releaseFolder = null)
         {
-            destinationFolder = destinationFolder ?? configuration.LibraryFolder;
             artistFolder = artistFolder ?? ArtistPath(configuration, artistSortName);
             releaseFolder = releaseFolder ?? ReleasePath(artistFolder, releaseTitle, releaseDate);
-            var trackFileName = TrackFileName(configuration, trackTitle, trackNumber, discNumber, totalTrackNumber,
-                fileExtension);
+            var trackFileName = TrackFileName(configuration, trackTitle, trackNumber, discNumber, totalTrackNumber, fileExtension);
 
             var result = Path.Combine(artistFolder, releaseFolder, trackFileName);
             var resultInfo = new DirectoryInfo(result);
@@ -290,11 +281,9 @@ namespace Roadie.Library.Utility
         /// <param name="artist">Artist For release</param>
         /// <param name="release">Release</param>
         /// <param name="track">Track</param>
-        /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
-        public static string TrackPath(IRoadieSettings configuration, Artist artist, Release release, Track track,
-            string destinationFolder = null)
+        public static string TrackPath(IRoadieSettings configuration, Artist artist, Release release, Track track)
         {
-            var fileInfo = new FileInfo(TrackFullPath(configuration, artist.SortNameValue, release.Title, release.ReleaseDate.Value, track.Title, track.TrackNumber, destinationFolder));
+            var fileInfo = new FileInfo(TrackFullPath(configuration, artist.SortNameValue, release.Title, release.ReleaseDate.Value, track.Title, track.TrackNumber));
             return fileInfo.Directory.Name;
         }
 
@@ -308,13 +297,10 @@ namespace Roadie.Library.Utility
         /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
         /// <param name="discNumber">Optional disc number defaults to 0</param>
         /// <param name="totalTrackNumber">Optional Total Tracks defaults to TrackNumber</param>
-        /// <param name="fileExtension">Optional File Extension defaults to mp3</param>
         public static string TrackPath(IRoadieSettings configuration, string artistSortName, string releaseTitle,
-            DateTime releaseDate, string trackTitle, short trackNumber, string destinationFolder = null,
-            int? discNumber = null, int? totalTrackNumber = null, string fileExtension = "mp3")
+            DateTime releaseDate, string trackTitle, short trackNumber, int? discNumber = null, int? totalTrackNumber = null)
         {
-            var fileInfo = new FileInfo(TrackFullPath(configuration, artistSortName, releaseTitle, releaseDate,
-                trackTitle, trackNumber, destinationFolder, discNumber, totalTrackNumber));
+            var fileInfo = new FileInfo(TrackFullPath(configuration, artistSortName, releaseTitle, releaseDate, trackTitle, trackNumber, discNumber, totalTrackNumber));
             return fileInfo.Directory.Name;
         }
     }

@@ -90,7 +90,7 @@ namespace Roadie.Library.FilePlugins
                     return new OperationResult<bool>("Unable To Find Release Folder");
                 }
 
-                destinationName = FolderPathHelper.TrackFullPath(Configuration, metaData, Configuration.LibraryFolder, artistFolder, releaseFolder);
+                destinationName = FolderPathHelper.TrackFullPath(Configuration, metaData, artistFolder, releaseFolder);
                 Logger.LogTrace(
                     "Info: FileInfo [{0}], Artist Folder [{1}], Release Folder [{1}], Destination Name [{3}]",
                     fileInfo.FullName, artistFolder, releaseFolder, destinationName);

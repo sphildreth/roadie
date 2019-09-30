@@ -790,7 +790,7 @@ namespace Roadie.Api.Services
         }
 
         /// <summary>
-        ///     Merge one release into another one
+        /// Merge one release into another one
         /// </summary>
         /// <param name="releaseToMerge">The release to be merged</param>
         /// <param name="releaseToMergeInto">The release to merge into</param>
@@ -905,12 +905,13 @@ namespace Roadie.Api.Services
 
                 // Move tracks for releaseToMergeInto into correct folders
                 if (mergedTracksToMove.Any())
+                {
                     foreach (var track in mergedTracksToMove)
                     {
                         var oldTrackPath = track.PathToTrack(Configuration);
-                        var newTrackPath = FolderPathHelper.TrackFullPath(Configuration, releaseToMerge.Artist, releaseToMerge, track);
+                        var newTrackPath = FolderPathHelper.TrackFullPath(Configuration, releaseToMergeInto.Artist, releaseToMergeInto, track);
                         var trackFile = new FileInfo(oldTrackPath);
-                        if (!newTrackPath.ToLower().Equals(oldTrackPath.ToLower()))
+                        if(!newTrackPath.Equals(oldTrackPath, StringComparison.OrdinalIgnoreCase))
                         {
                             var audioMetaData = await AudioMetaDataHelper.GetInfo(trackFile);
                             track.FilePath = FolderPathHelper.TrackPath(Configuration, releaseToMergeInto.Artist, releaseToMergeInto, track);
@@ -919,6 +920,7 @@ namespace Roadie.Api.Services
                             File.Move(oldTrackPath, newTrackPath);
                         }
                     }
+                }
 
                 // Cleanup folders
                 Services.FileDirectoryProcessorService.DeleteEmptyFolders(new DirectoryInfo(releaseToMergeIntoArtistFolder), Logger);
