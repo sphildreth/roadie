@@ -87,9 +87,9 @@ namespace Roadie.Api.Services
             return token;
         }
 
-        public Image MakeThumbnailImage(Guid id, string type, int? width = null, int? height = null, bool includeCachebuster = false)
+        public static Image MakeThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string type, int? width = null, int? height = null, bool includeCachebuster = false)
         {
-            return MakeImage(id, type, width ?? Configuration.ThumbnailImageSize.Width, height ?? Configuration.ThumbnailImageSize.Height, null, includeCachebuster);
+            return MakeImage(configuration, httpContext, id, type, width ?? configuration.ThumbnailImageSize.Width, height ?? configuration.ThumbnailImageSize.Height, null, includeCachebuster);
         }
 
         protected IEnumerable<int> ArtistIdsForRelease(int releaseId)
@@ -227,56 +227,65 @@ namespace Roadie.Api.Services
             }, ApplicationUser.CacheRegionUrn(id.Value));
         }
 
-        protected Image MakeArtistThumbnailImage(Guid? id)
+        protected static Image MakeArtistThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid? id)
         {
             if (!id.HasValue) return null;
-            return MakeThumbnailImage(id.Value, "artist");
+            return MakeThumbnailImage(configuration, httpContext, id.Value, "artist");
         }
 
-        protected Image MakeCollectionThumbnailImage(Guid id)
+        protected static Image MakeCollectionThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
         {
-            return MakeThumbnailImage(id, "collection");
+            return MakeThumbnailImage(configuration, httpContext, id, "collection");
         }
 
-        protected Image MakeFullsizeImage(Guid id, string caption = null)
+        protected static Image MakeFullsizeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string caption = null)
         {
-            return new Image($"{HttpContext.ImageBaseUrl}/{id}", caption,
-                $"{HttpContext.ImageBaseUrl}/{id}/{Configuration.SmallImageSize.Width}/{Configuration.SmallImageSize.Height}");
+            return new Image($"{httpContext.ImageBaseUrl}/{id}", caption,
+                $"{httpContext.ImageBaseUrl}/{id}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
         }
 
-        protected Image MakeFullsizeSecondaryImage(Guid id, ImageType type, int imageId, string caption = null)
+        protected static Image MakeFullsizeSecondaryImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, ImageType type, int imageId, string caption = null)
         {
             if (type == ImageType.ArtistSecondary)
             {
-                return new Image($"{HttpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}", caption,
-                    $"{HttpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}/{Configuration.SmallImageSize.Width}/{Configuration.SmallImageSize.Height}");
+                return new Image($"{httpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}", caption,
+                    $"{httpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
             }
-            return new Image($"{HttpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}", caption,
-                $"{HttpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}/{Configuration.SmallImageSize.Width}/{Configuration.SmallImageSize.Height}");
+            return new Image($"{httpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}", caption,
+                $"{httpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
         }
 
-        protected Image MakeGenreThumbnailImage(Guid id)
+        protected static Image MakeGenreThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
         {
-            return MakeThumbnailImage(id, "genre");
+            return MakeThumbnailImage(configuration, httpContext, id, "genre");
         }
 
-        protected Image MakeImage(Guid id, int width = 200, int height = 200, string caption = null,
-                    bool includeCachebuster = false)
+        protected static Image MakeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, int width = 200, int height = 200, string caption = null, bool includeCachebuster = false)
         {
             return new Image(
-                $"{HttpContext.ImageBaseUrl}/{id}/{width}/{height}/{(includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty)}",
+                $"{httpContext.ImageBaseUrl}/{id}/{width}/{height}/{(includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty)}",
                 caption,
-                $"{HttpContext.ImageBaseUrl}/{id}/{Configuration.SmallImageSize.Width}/{Configuration.SmallImageSize.Height}");
+                $"{httpContext.ImageBaseUrl}/{id}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
         }
 
-        protected Image MakeImage(Guid id, string type, IImageSize imageSize)
+        protected static Image MakeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string type, IImageSize imageSize)
         {
-            return MakeImage(id, type, imageSize.Width, imageSize.Height);
+            return MakeImage(configuration, httpContext, id, type, imageSize.Width, imageSize.Height);
+        }
+        private static Image MakeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string type, int? width, int? height, string caption = null, bool includeCachebuster = false)
+        {
+            if (width.HasValue && height.HasValue && (width.Value != configuration.ThumbnailImageSize.Width ||
+                                                      height.Value != configuration.ThumbnailImageSize.Height))
+                return new Image(
+                    $"{httpContext.ImageBaseUrl}/{type}/{id}/{width}/{height}/{(includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty)}",
+                    caption,
+                    $"{httpContext.ImageBaseUrl}/{type}/{id}/{configuration.ThumbnailImageSize.Width}/{configuration.ThumbnailImageSize.Height}");
+            return new Image($"{httpContext.ImageBaseUrl}/{type}/{id}", caption, null);
         }
 
-        protected Image MakeLabelThumbnailImage(Guid id)
+        protected static Image MakeLabelThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
         {
-            return MakeThumbnailImage(id, "label");
+            return MakeThumbnailImage(configuration, httpContext, id, "label");
         }
 
         protected string MakeLastFmUrl(string artistName, string releaseTitle)
@@ -289,24 +298,24 @@ namespace Roadie.Api.Services
             return new Image($"{HttpContext.ImageBaseUrl}/{type}.jpg", null, null);
         }
 
-        protected Image MakePlaylistThumbnailImage(Guid id)
+        protected static Image MakePlaylistThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
         {
-            return MakeThumbnailImage(id, "playlist");
+            return MakeThumbnailImage(configuration, httpContext, id, "playlist");
         }
 
-        protected Image MakeReleaseThumbnailImage(Guid id)
+        protected static Image MakeReleaseThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
         {
-            return MakeThumbnailImage(id, "release");
+            return MakeThumbnailImage(configuration, httpContext, id, "release");
         }
 
-        protected Image MakeTrackThumbnailImage(Guid id)
+        protected static Image MakeTrackThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
         {
-            return MakeThumbnailImage(id, "track");
+            return MakeThumbnailImage(configuration, httpContext, id, "track");
         }
 
-        protected Image MakeUserThumbnailImage(Guid id)
+        protected static Image MakeUserThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
         {
-            return MakeThumbnailImage(id, "user");
+            return MakeThumbnailImage(configuration, httpContext, id, "user");
         }
 
         protected async Task<OperationResult<short>> SetArtistRating(Guid artistId, ApplicationUser user, short rating)
@@ -932,16 +941,6 @@ namespace Roadie.Api.Services
             }
         }
 
-        private Image MakeImage(Guid id, string type, int? width, int? height, string caption = null,
-            bool includeCachebuster = false)
-        {
-            if (width.HasValue && height.HasValue && (width.Value != Configuration.ThumbnailImageSize.Width ||
-                                                      height.Value != Configuration.ThumbnailImageSize.Height))
-                return new Image(
-                    $"{HttpContext.ImageBaseUrl}/{type}/{id}/{width}/{height}/{(includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty)}",
-                    caption,
-                    $"{HttpContext.ImageBaseUrl}/{type}/{id}/{Configuration.ThumbnailImageSize.Width}/{Configuration.ThumbnailImageSize.Height}");
-            return new Image($"{HttpContext.ImageBaseUrl}/{type}/{id}", caption, null);
-        }
+
     }
 }

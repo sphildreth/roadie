@@ -290,58 +290,37 @@ namespace Roadie.Api.Services
                     var randomLimit = roadieUser?.RandomReleaseLimit ?? request.LimitValue;
                     var userId = roadieUser?.Id ?? -1;
 
-                    // Select random tracks that are not disliked Artist, Release or Track by user.
-                    var dislikedArtistIds = (from ua in DbContext.UserArtists
-                                             where ua.UserId == userId
-                                             where ua.IsDisliked == true
-                                             select ua.ArtistId).ToArray();
-                    var dislikedReleaseIds = (from ur in DbContext.UserReleases
-                                              where ur.UserId == userId
-                                              where ur.IsDisliked == true
-                                              select ur.ReleaseId).ToArray();
-                    var dislikedTrackIds = (from ut in DbContext.UserTracks
-                                            where ut.UserId == userId
-                                            where ut.IsDisliked == true
-                                            select ut.TrackId).ToArray();
-                    int[] favoritedTrackIds = null;
-                    if (request.FilterFavoriteOnly)
-                    {
-                        favoritedTrackIds = (from ut in DbContext.UserTracks
-                                             where ut.UserId == userId
-                                             where ut.IsFavorite == true
-                                             select ut.TrackId).ToArray();
-                        favoriteTrackIds = new int[0].AsQueryable();
-                        request.FilterFavoriteOnly = false;
-                    }
-                    randomTrackIds = (from t in DbContext.Tracks
-                                      join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                      join r in DbContext.Releases on rm.ReleaseId equals r.Id
-                                      join a in DbContext.Artists on r.ArtistId equals a.Id
-                                      where !request.FilterRatedOnly || request.FilterRatedOnly && t.Rating > 0
-                                      where !dislikedArtistIds.Contains(r.ArtistId)
-                                      where !dislikedArtistIds.Contains(t.ArtistId ?? 0)
-                                      where !dislikedReleaseIds.Contains(r.Id)
-                                      where !dislikedTrackIds.Contains(t.Id)
-                                      where favoritedTrackIds == null || favoritedTrackIds.Contains(t.Id)
-                                      where t.Hash != null
-                                      select new TrackList
-                                      {
-                                          DatabaseId = t.Id,
-                                          Artist = new ArtistList
-                                          {
-                                              Artist = new DataToken { Value = a.RoadieId.ToString(), Text = a.Name }
-                                          },
-                                          Release = new ReleaseList
-                                          {
-                                              Release = new DataToken { Value = r.RoadieId.ToString(), Text = r.Title }
-                                          }
-                                      })
-                                        .OrderBy(x => x.Artist.RandomSortId)
-                                        .ThenBy(x => x.RandomSortId)
-                                        .ThenBy(x => x.RandomSortId)
-                                        .Take(randomLimit)
-                                     .Select(x => x.DatabaseId)
-                                     .ToArray();
+                    // This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
+                    var sql = @"SELECT t.id
+                                FROM `track` t 
+                                # Artist is not disliked
+                                WHERE ((t.id NOT IN (select tt.id 
+                                                    FROM `track` tt
+                                                    JOIN `releasemedia` rm on (tt.releaseMediaId = rm.id)                    
+                                                    JOIN `userartist` ua on (rm.id = ua.artistId)
+                                                    WHERE ua.userId = {1} AND ua.isDisliked = 1))
+                                 # Release is not disliked                    
+                                 AND (t.id NOT IN (select tt.id 
+                                                  FROM `track` tt 
+                                                  JOIN `releasemedia` rm on (tt.releaseMediaId = rm.id)
+                                                  JOIN `userrelease` ur on (rm.releaseId = ur.releaseId)
+                                                  WHERE ur.userId = {1} AND ur.isDisliked = 1))                    
+                                 # Track is not disliked                  
+                                 AND (t.id NOT IN (select tt.id 
+                                                  FROM `track` tt 
+                                                  JOIN `usertrack` ut on (tt.id = ut.trackId)
+                                                  WHERE ut.userId = {1} AND ut.isDisliked = 1)))
+                                # If toggled then only favorites                  
+                                OR (t.id IN (select tt.id 
+                                             FROM `track` tt
+			                                 JOIN `usertrack` ut on (tt.id = ut.trackId)
+	                                         WHERE ut.userId = {1} AND ut.isFavorite = 1) AND {2} = 1)                 
+                                order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)                    
+                                LIMIT 0, {0};";
+                    randomTrackIds = (from a in DbContext.Releases.FromSqlRaw(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0")
+                                        select a.Id).ToArray();
+                    rowCount = DbContext.Releases.Count();
+
                 }
 
                 Guid?[] filterToTrackIds = null;
@@ -438,7 +417,7 @@ namespace Roadie.Api.Services
                                               Text = r.Title,
                                               Value = r.RoadieId.ToString()
                                           },
-                                          ArtistThumbnail = MakeArtistThumbnailImage(releaseArtist.RoadieId),
+                                          ArtistThumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, releaseArtist.RoadieId),
                                           CreatedDate = r.CreatedDate,
                                           Duration = r.Duration,
                                           LastPlayed = r.LastPlayed,
@@ -450,7 +429,7 @@ namespace Roadie.Api.Services
                                           ReleaseDateDateTime = r.ReleaseDate,
                                           ReleasePlayUrl = $"{HttpContext.BaseUrl}/play/release/{r.RoadieId}",
                                           Status = r.Status,
-                                          Thumbnail = MakeReleaseThumbnailImage(r.RoadieId),
+                                          Thumbnail = MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId),
                                           TrackCount = r.TrackCount,
                                           TrackPlayedCount = r.PlayedCount
                                       },
@@ -471,7 +450,7 @@ namespace Roadie.Api.Services
                                               ReleaseCount = trackArtist.ReleaseCount,
                                               TrackCount = trackArtist.TrackCount,
                                               SortName = trackArtist.SortName,
-                                              Thumbnail = MakeArtistThumbnailImage(trackArtist.RoadieId)
+                                              Thumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, trackArtist.RoadieId)
                                           },
                                       ra = new ArtistList
                                       {
@@ -488,7 +467,7 @@ namespace Roadie.Api.Services
                                           ReleaseCount = releaseArtist.ReleaseCount,
                                           TrackCount = releaseArtist.TrackCount,
                                           SortName = releaseArtist.SortName,
-                                          Thumbnail = MakeArtistThumbnailImage(releaseArtist.RoadieId)
+                                          Thumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, releaseArtist.RoadieId)
                                       }
                                   };
 
@@ -526,12 +505,10 @@ namespace Roadie.Api.Services
                         Rating = x.ti.Rating,
                         Release = x.rl,
                         ReleaseDate = x.rl.ReleaseDateDateTime,
-                        Thumbnail = MakeTrackThumbnailImage(x.ti.RoadieId),
+                        Thumbnail = MakeTrackThumbnailImage(Configuration, HttpContext, x.ti.RoadieId),
                         Title = x.ti.Title,
                         TrackArtist = x.ta,
-                        TrackNumber = playListTrackPositions.ContainsKey(x.ti.Id)
-                            ? playListTrackPositions[x.ti.Id]
-                            : x.ti.TrackNumber,
+                        TrackNumber = x.ti.TrackNumber,
                         TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, x.ti.Id, x.ti.RoadieId)
                     });
                 string sortBy = null;
@@ -572,7 +549,6 @@ namespace Roadie.Api.Services
                             .Take(request.LimitValue)
                             .ToArray();
                 }
-
                 if (rows.Any() && roadieUser != null)
                 {
                     var rowIds = rows.Select(x => x.DatabaseId).ToArray();
@@ -658,7 +634,13 @@ namespace Roadie.Api.Services
                     foreach (var row in rows)
                     {
                         row.FavoriteCount = favoriteUserTrackRatings.Where(x => x.TrackId == row.DatabaseId).Count();
+                        row.TrackNumber = playListTrackPositions.ContainsKey(row.DatabaseId) ? playListTrackPositions[row.DatabaseId] : row.TrackNumber;
                     }
+                }
+
+                if(playListTrackPositions.Any())
+                {
+                    rows = rows.OrderBy(x => x.TrackNumber).ToArray();
                 }
 
                 sw.Stop();
@@ -969,17 +951,16 @@ namespace Roadie.Api.Services
                               (track.ReleaseMedia.IsLocked ?? false) ||
                               (track.ReleaseMedia.Release.IsLocked ?? false) ||
                               (track.ReleaseMedia.Release.Artist.IsLocked ?? false);
-            result.Thumbnail = MakeTrackThumbnailImage(id);
-            result.MediumThumbnail = MakeThumbnailImage(id, "track", Configuration.MediumImageSize.Width,
-                Configuration.MediumImageSize.Height);
+            result.Thumbnail = MakeTrackThumbnailImage(Configuration, HttpContext, id);
+            result.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "track", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             result.ReleaseMediaId = track.ReleaseMedia.RoadieId.ToString();
             result.Artist = ArtistList.FromDataArtist(track.ReleaseMedia.Release.Artist,
-                MakeArtistThumbnailImage(track.ReleaseMedia.Release.Artist.RoadieId));
-            result.ArtistThumbnail = MakeArtistThumbnailImage(track.ReleaseMedia.Release.Artist.RoadieId);
+                MakeArtistThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.Artist.RoadieId));
+            result.ArtistThumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.Artist.RoadieId);
             result.Release = ReleaseList.FromDataRelease(track.ReleaseMedia.Release, track.ReleaseMedia.Release.Artist,
-                HttpContext.BaseUrl, MakeArtistThumbnailImage(track.ReleaseMedia.Release.Artist.RoadieId),
-                MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId));
-            result.ReleaseThumbnail = MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId);
+                HttpContext.BaseUrl, MakeArtistThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.Artist.RoadieId),
+                MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId));
+            result.ReleaseThumbnail = MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId);
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (track.ArtistId.HasValue)
@@ -993,9 +974,9 @@ namespace Roadie.Api.Services
                 else
                 {
                     result.TrackArtist =
-                        ArtistList.FromDataArtist(trackArtist, MakeArtistThumbnailImage(trackArtist.RoadieId));
+                        ArtistList.FromDataArtist(trackArtist, MakeArtistThumbnailImage(Configuration, HttpContext, trackArtist.RoadieId));
                     result.TrackArtistToken = result.TrackArtist.Artist;
-                    result.TrackArtistThumbnail = MakeArtistThumbnailImage(trackArtist.RoadieId);
+                    result.TrackArtistThumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, trackArtist.RoadieId);
                 }
                 tsw.Stop();
                 timings.Add("trackArtist", tsw.ElapsedMilliseconds);
@@ -1042,7 +1023,7 @@ namespace Roadie.Api.Services
                             var comment = trackComment.Adapt<Comment>();
                             comment.DatabaseId = trackComment.Id;
                             comment.User = UserList.FromDataUser(trackComment.User,
-                                MakeUserThumbnailImage(trackComment.User.RoadieId));
+                                MakeUserThumbnailImage(Configuration, HttpContext, trackComment.User.RoadieId));
                             comment.DislikedCount = userCommentReactions.Count(x =>
                                 x.CommentId == trackComment.Id && x.ReactionValue == CommentReaction.Dislike);
                             comment.LikedCount = userCommentReactions.Count(x =>

@@ -80,10 +80,10 @@ namespace Roadie.Api.Services
                                      releaseArtist,
                                      trackArtist,
                                      HttpContext.BaseUrl,
-                                     MakeTrackThumbnailImage(t.RoadieId),
-                                     MakeReleaseThumbnailImage(r.RoadieId),
-                                     MakeArtistThumbnailImage(releaseArtist.RoadieId),
-                                     MakeArtistThumbnailImage(trackArtist == null ? null : (Guid?)trackArtist.RoadieId)),
+                                     MakeTrackThumbnailImage(Configuration, HttpContext, t.RoadieId),
+                                     MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId),
+                                     MakeArtistThumbnailImage(Configuration, HttpContext, releaseArtist.RoadieId),
+                                     MakeArtistThumbnailImage(Configuration, HttpContext, trackArtist == null ? null : (Guid?)trackArtist.RoadieId)),
                                  User = new DataToken
                                  {
                                      Text = u.UserName,
@@ -107,10 +107,10 @@ namespace Roadie.Api.Services
                                  UserRating = usertrack.Rating,
                                  TrackPlayUrl = $"{HttpContext.BaseUrl}/play/track/{t.RoadieId}.mp3",
                                  ArtistThumbnail =
-                                     MakeArtistThumbnailImage(
+                                     MakeArtistThumbnailImage(Configuration, HttpContext,
                                          trackArtist != null ? trackArtist.RoadieId : releaseArtist.RoadieId),
-                                 ReleaseThumbnail = MakeReleaseThumbnailImage(r.RoadieId),
-                                 UserThumbnail = MakeUserThumbnailImage(u.RoadieId)
+                                 ReleaseThumbnail = MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId),
+                                 UserThumbnail = MakeUserThumbnailImage(Configuration, HttpContext, u.RoadieId)
                              };
 
                 var sortBy = string.IsNullOrEmpty(request.Sort)
@@ -197,10 +197,10 @@ namespace Roadie.Api.Services
                         track.ReleaseMedia.Release.Artist,
                         track.TrackArtist,
                         HttpContext.BaseUrl,
-                        MakeTrackThumbnailImage(track.RoadieId),
-                        MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId),
-                        MakeArtistThumbnailImage(track.ReleaseMedia.Release.Artist.RoadieId),
-                        MakeArtistThumbnailImage(track.TrackArtist == null
+                        MakeTrackThumbnailImage(Configuration, HttpContext, track.RoadieId),
+                        MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId),
+                        MakeArtistThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.Artist.RoadieId),
+                        MakeArtistThumbnailImage(Configuration, HttpContext, track.TrackArtist == null
                             ? null
                             : (Guid?)track.TrackArtist.RoadieId)),
                     User = new DataToken
@@ -208,17 +208,17 @@ namespace Roadie.Api.Services
                         Text = roadieUser.UserName,
                         Value = roadieUser.UserId.ToString()
                     },
-                    ArtistThumbnail = MakeArtistThumbnailImage(track.TrackArtist != null
+                    ArtistThumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, track.TrackArtist != null
                         ? track.TrackArtist.RoadieId
                         : track.ReleaseMedia.Release.Artist.RoadieId),
                     PlayedDateDateTime = scrobble.TimePlayed,
                     IsNowPlaying = isNowPlaying,
                     Rating = track.Rating,
                     ReleasePlayUrl = $"{HttpContext.BaseUrl}/play/release/{track.ReleaseMedia.Release.RoadieId}",
-                    ReleaseThumbnail = MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId),
+                    ReleaseThumbnail = MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId),
                     TrackPlayUrl = $"{HttpContext.BaseUrl}/play/track/{track.RoadieId}.mp3",
                     UserRating = userTrack?.Rating,
-                    UserThumbnail = MakeUserThumbnailImage(roadieUser.UserId)
+                    UserThumbnail = MakeUserThumbnailImage(Configuration, HttpContext, roadieUser.UserId)
                 };
                 try
                 {

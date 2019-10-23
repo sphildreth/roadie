@@ -73,7 +73,7 @@ namespace Roadie.Api.Services
             sw.Stop();
             if (result?.Data != null)
             {
-                result.Data.Avatar = MakeUserThumbnailImage(id);
+                result.Data.Avatar = MakeUserThumbnailImage(Configuration, HttpContext, id);
                 if (!isAccountSettingsEdit)
                 {
                     result.Data.ApiToken = null;
@@ -113,7 +113,7 @@ namespace Roadie.Api.Services
                              IsEditor = u.UserRoles.Any(x => x.Role.Name == "Editor"),
                              IsAdmin = u.UserRoles.Any(x => x.Role.Name == "Admin"),
                              IsPrivate = u.IsPrivate,
-                             Thumbnail = MakeUserThumbnailImage(u.RoadieId),
+                             Thumbnail = MakeUserThumbnailImage(Configuration, HttpContext, u.RoadieId),
                              CreatedDate = u.CreatedDate,
                              LastUpdated = u.LastUpdated,
                              RegisteredDate = u.RegisteredOn,
@@ -615,7 +615,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private Task<OperationResult<User>> UserByIdAction(Guid id, IEnumerable<string> includes)
+        private async Task<OperationResult<User>> UserByIdAction(Guid id, IEnumerable<string> includes)
         {
             var timings = new Dictionary<string, long>();
             var tsw = new Stopwatch();
@@ -627,11 +627,11 @@ namespace Roadie.Api.Services
 
             if (user == null)
             {
-                return Task.FromResult(new OperationResult<User>(true, string.Format("User Not Found [{0}]", id)));
+                return new OperationResult<User>(true, string.Format("User Not Found [{0}]", id));
             }
             tsw.Restart();
             var model = user.Adapt<User>();
-            model.MediumThumbnail = MakeThumbnailImage(id, "user", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            model.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "user", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             model.IsAdmin = user.UserRoles?.Any(x => x.Role?.NormalizedName == "ADMIN") ?? false;
             model.IsEditor = model.IsAdmin ? true : user.UserRoles?.Any(x => x.Role?.NormalizedName == "EDITOR") ?? false;
             tsw.Stop();
@@ -645,37 +645,31 @@ namespace Roadie.Api.Services
                     var userArtists = DbContext.UserArtists.Include(x => x.Artist).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserArtist[0];
                     var userReleases = DbContext.UserReleases.Include(x => x.Release).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserRelease[0];
                     var userTracks = DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserTrack[0];
-                    var mostPlayedArtist = (from a in DbContext.Artists
-                                            join r in DbContext.Releases on a.Id equals r.ArtistId
-                                            join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                            join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                            join ut in DbContext.UserTracks on t.Id equals ut.TrackId
-                                            where ut.UserId == user.Id
-                                            select new { a, ut.PlayedCount })
-                                            .GroupBy(a => a.a)
-                                            .Select(x => new
-                                            {
-                                                Artist = x.Key,
-                                                Played = x.Sum(t => t.PlayedCount)
-                                            })
-                                            .OrderByDescending(x => x.Played)
-                                            .FirstOrDefault();
-                    var mostPlayedReleaseId = (from r in DbContext.Releases
-                                               join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                               join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                               join ut in DbContext.UserTracks on t.Id equals ut.TrackId
-                                               where ut.UserId == user.Id
-                                               select new { r, ut.PlayedCount })
-                                            .GroupBy(r => r.r)
-                                            .Select(x => new
-                                            {
-                                                Release = x.Key,
-                                                Played = x.Sum(t => t.PlayedCount)
-                                            })
-                                            .OrderByDescending(x => x.Played)
-                                            .Select(x => x.Release.RoadieId)
-                                            .FirstOrDefault();
-                    var mostPlayedRelease = GetRelease(mostPlayedReleaseId);
+
+                    // This is MySQL specific
+                    var sql = @"select a.*
+                                FROM `usertrack` ut
+                                join `track` t on (ut.trackId = t.id)
+                                join `releasemedia` rm on (t.releaseMediaId = rm.id)
+                                join `release` r on (rm.releaseId = r.id)
+                                join `artist` a on (r.artistId = a.id)
+                                where ut.userId = {0}
+                                group by r.id
+                                order by SUM(ut.playedCount) desc
+                                LIMIT 1";
+                    var mostPlayedArtist = await DbContext.Artists.FromSqlRaw(sql, user.Id).FirstOrDefaultAsync();
+
+                    // This is MySQL specific
+                    sql = @"SELECT r.*
+                            FROM `usertrack` ut
+                            join `track` t on (ut.trackId = t.id)
+                            join `releasemedia` rm on (t.releaseMediaId = rm.id)
+                            join `release` r on (rm.releaseId = r.id)
+                            WHERE ut.userId = {0}
+                            GROUP by r.id
+                            ORDER by SUM(ut.playedCount) desc
+                            LIMIT 1";
+                    var mostPlayedRelease = await DbContext.Releases.FromSqlRaw(sql, user.Id).FirstOrDefaultAsync();
                     var mostPlayedTrackUserTrack = userTracks.OrderByDescending(x => x.PlayedCount)
                                                              .FirstOrDefault();
                     var lastPlayedTrackUserTrack = userTracks.OrderByDescending(x => x.LastPlayed)
@@ -710,23 +704,23 @@ namespace Roadie.Api.Services
                                 lastPlayedTrack.ReleaseMedia.Release.Artist,
                                 lastPlayedTrack.TrackArtist,
                                 HttpContext.BaseUrl,
-                                MakeTrackThumbnailImage(lastPlayedTrack.RoadieId),
-                                MakeReleaseThumbnailImage(lastPlayedTrack.ReleaseMedia.Release.RoadieId),
-                                MakeArtistThumbnailImage(lastPlayedTrack.ReleaseMedia.Release.Artist.RoadieId),
-                                MakeArtistThumbnailImage(lastPlayedTrack.TrackArtist == null
+                                MakeTrackThumbnailImage(Configuration, HttpContext, lastPlayedTrack.RoadieId),
+                                MakeReleaseThumbnailImage(Configuration, HttpContext, lastPlayedTrack.ReleaseMedia.Release.RoadieId),
+                                MakeArtistThumbnailImage(Configuration, HttpContext, lastPlayedTrack.ReleaseMedia.Release.Artist.RoadieId),
+                                MakeArtistThumbnailImage(Configuration, HttpContext, lastPlayedTrack.TrackArtist == null
                                     ? null
                                     : (Guid?)lastPlayedTrack.TrackArtist.RoadieId)),
                         MostPlayedArtist = mostPlayedArtist == null
                             ? null
-                            : models.ArtistList.FromDataArtist(mostPlayedArtist.Artist,
-                                MakeArtistThumbnailImage(mostPlayedArtist.Artist.RoadieId)),
+                            : models.ArtistList.FromDataArtist(mostPlayedArtist,
+                                MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedArtist.RoadieId)),
                         MostPlayedRelease = mostPlayedRelease == null
                             ? null
                             : ReleaseList.FromDataRelease(mostPlayedRelease,
                                 mostPlayedRelease.Artist,
                                 HttpContext.BaseUrl,
-                                MakeArtistThumbnailImage(mostPlayedRelease.Artist.RoadieId),
-                                MakeReleaseThumbnailImage(mostPlayedRelease.RoadieId)),
+                                MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedRelease.Artist.RoadieId),
+                                MakeReleaseThumbnailImage(Configuration, HttpContext, mostPlayedRelease.RoadieId)),
                         MostPlayedTrack = mostPlayedTrack == null
                             ? null
                             : models.TrackList.FromDataTrack(
@@ -737,10 +731,10 @@ namespace Roadie.Api.Services
                                 mostPlayedTrack.ReleaseMedia.Release.Artist,
                                 mostPlayedTrack.TrackArtist,
                                 HttpContext.BaseUrl,
-                                MakeTrackThumbnailImage(mostPlayedTrack.RoadieId),
-                                MakeReleaseThumbnailImage(mostPlayedTrack.ReleaseMedia.Release.RoadieId),
-                                MakeArtistThumbnailImage(mostPlayedTrack.ReleaseMedia.Release.Artist.RoadieId),
-                                MakeArtistThumbnailImage(mostPlayedTrack.TrackArtist == null
+                                MakeTrackThumbnailImage(Configuration, HttpContext, mostPlayedTrack.RoadieId),
+                                MakeReleaseThumbnailImage(Configuration, HttpContext, mostPlayedTrack.ReleaseMedia.Release.RoadieId),
+                                MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedTrack.ReleaseMedia.Release.Artist.RoadieId),
+                                MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedTrack.TrackArtist == null
                                     ? null
                                     : (Guid?)mostPlayedTrack.TrackArtist.RoadieId)),
                         RatedArtists = userArtists.Where(x => x.Rating > 0).Count(),
@@ -759,11 +753,11 @@ namespace Roadie.Api.Services
                 }
             }
             Logger.LogInformation($"ByIdAction: User `{ user }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
-            return Task.FromResult(new OperationResult<User>
+            return new OperationResult<User>
             {
                 IsSuccess = true,
                 Data = model
-            });
+            };
         }
     }
 }

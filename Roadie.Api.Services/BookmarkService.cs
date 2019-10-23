@@ -79,8 +79,8 @@ namespace Roadie.Api.Services
                             Value = artist.RoadieId.ToString()
                         };
                         row.Artist =
-                            models.ArtistList.FromDataArtist(artist, MakeArtistThumbnailImage(artist.RoadieId));
-                        row.Thumbnail = MakeArtistThumbnailImage(artist.RoadieId);
+                            models.ArtistList.FromDataArtist(artist, MakeArtistThumbnailImage(Configuration, HttpContext, artist.RoadieId));
+                        row.Thumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, artist.RoadieId);
                         row.SortName = artist.SortName ?? artist.Name;
                         break;
 
@@ -94,9 +94,9 @@ namespace Roadie.Api.Services
                             Value = release.RoadieId.ToString()
                         };
                         row.Release = ReleaseList.FromDataRelease(release, release.Artist, HttpContext.BaseUrl,
-                            MakeArtistThumbnailImage(release.Artist.RoadieId),
-                            MakeReleaseThumbnailImage(release.RoadieId));
-                        row.Thumbnail = MakeReleaseThumbnailImage(release.RoadieId);
+                            MakeArtistThumbnailImage(Configuration, HttpContext, release.Artist.RoadieId),
+                            MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId));
+                        row.Thumbnail = MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId);
                         row.SortName = release.Title;
                         break;
 
@@ -120,14 +120,14 @@ namespace Roadie.Api.Services
                             track.ReleaseMedia.Release.Artist,
                             track.TrackArtist,
                             HttpContext.BaseUrl,
-                            MakeTrackThumbnailImage(track.RoadieId),
-                            MakeReleaseThumbnailImage(track.ReleaseMedia.Release.RoadieId),
-                            MakeArtistThumbnailImage(track.ReleaseMedia.Release.Artist.RoadieId),
-                            MakeArtistThumbnailImage(track.TrackArtist == null
+                            MakeTrackThumbnailImage(Configuration, HttpContext, track.RoadieId),
+                            MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId),
+                            MakeArtistThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.Artist.RoadieId),
+                            MakeArtistThumbnailImage(Configuration, HttpContext, track.TrackArtist == null
                                 ? null
                                 : (Guid?)track.TrackArtist.RoadieId));
                         row.Track.TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.Id, track.RoadieId);
-                        row.Thumbnail = MakeTrackThumbnailImage(track.RoadieId);
+                        row.Thumbnail = MakeTrackThumbnailImage(Configuration, HttpContext, track.RoadieId);
                         row.SortName = track.Title;
                         break;
 
@@ -142,9 +142,9 @@ namespace Roadie.Api.Services
                             Value = playlist.RoadieId.ToString()
                         };
                         row.Playlist = PlaylistList.FromDataPlaylist(playlist, playlist.User,
-                            MakePlaylistThumbnailImage(playlist.RoadieId),
-                            MakeUserThumbnailImage(playlist.User.RoadieId));
-                        row.Thumbnail = MakePlaylistThumbnailImage(playlist.RoadieId);
+                            MakePlaylistThumbnailImage(Configuration, HttpContext, playlist.RoadieId),
+                            MakeUserThumbnailImage(Configuration, HttpContext, playlist.User.RoadieId));
+                        row.Thumbnail = MakePlaylistThumbnailImage(Configuration, HttpContext, playlist.RoadieId);
                         row.SortName = playlist.Name;
                         break;
 
@@ -159,8 +159,8 @@ namespace Roadie.Api.Services
                         row.Collection = CollectionList.FromDataCollection(collection,
                             (from crc in DbContext.CollectionReleases
                              where crc.CollectionId == collection.Id
-                             select crc.Id).Count(), MakeCollectionThumbnailImage(collection.RoadieId));
-                        row.Thumbnail = MakeCollectionThumbnailImage(collection.RoadieId);
+                             select crc.Id).Count(), MakeCollectionThumbnailImage(Configuration, HttpContext, collection.RoadieId));
+                        row.Thumbnail = MakeCollectionThumbnailImage(Configuration, HttpContext, collection.RoadieId);
                         row.SortName = collection.SortName ?? collection.Name;
                         break;
 
@@ -172,8 +172,8 @@ namespace Roadie.Api.Services
                             Text = label.Name,
                             Value = label.RoadieId.ToString()
                         };
-                        row.Label = models.LabelList.FromDataLabel(label, MakeLabelThumbnailImage(label.RoadieId));
-                        row.Thumbnail = MakeLabelThumbnailImage(label.RoadieId);
+                        row.Label = models.LabelList.FromDataLabel(label, MakeLabelThumbnailImage(Configuration, HttpContext, label.RoadieId));
+                        row.Thumbnail = MakeLabelThumbnailImage(Configuration, HttpContext, label.RoadieId);
                         row.SortName = label.SortName ?? label.Name;
                         break;
                 }

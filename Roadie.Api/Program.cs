@@ -1,9 +1,8 @@
-﻿using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Serilog;
-using Serilog.Events;
-using Serilog.Sinks.RollingFileAlternate;
+using Serilog.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -12,6 +11,7 @@ namespace Roadie.Api
 {
     public class Program
     {
+
         public static IConfiguration Configuration { get; } = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", false, true)
@@ -48,7 +48,7 @@ namespace Roadie.Api
                 Console.WriteLine(@"(__\_) \__/ \_/\_/(____/(__)(____)  \_/\_/(__)  (__) ");
                 Console.WriteLine("");
 
-                CreateWebHostBuilder(args).Build().Run();
+                CreateHostBuilder(args).Build().Run();
             }
             catch (Exception ex)
             {
@@ -60,12 +60,13 @@ namespace Roadie.Api
             }
         }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args)
-        {
-            return WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>()
-                .UseSerilog();
-        }
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+             Host.CreateDefaultBuilder(args)
+                 .ConfigureWebHostDefaults(webBuilder =>
+                 {
+                     webBuilder.UseStartup<Startup>();
+                 })
+                 .UseSerilog();
     }
 
     public class LoggingTraceListener : TraceListener

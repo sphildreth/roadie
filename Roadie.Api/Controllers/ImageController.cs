@@ -20,11 +20,11 @@ namespace Roadie.Api.Controllers
     {
         private IImageService ImageService { get; }
 
-        public ImageController(IImageService imageService, ILoggerFactory logger, ICacheManager cacheManager,
+        public ImageController(IImageService imageService, ILogger<ImageController> logger, ICacheManager cacheManager,
                     UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.ImageController");
+            Logger = logger;
             ImageService = imageService;
         }
 

@@ -23,12 +23,12 @@ namespace Roadie.Api.Controllers
     {
         private ICollectionService CollectionService { get; }
 
-        public CollectionController(ICollectionService collectionService, ILoggerFactory logger,
+        public CollectionController(ICollectionService collectionService, ILogger<CollectionController> logger,
                     ICacheManager cacheManager,
             UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.CollectionController");
+            Logger = logger;
             CollectionService = collectionService;
         }
 

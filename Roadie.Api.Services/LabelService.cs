@@ -139,7 +139,7 @@ namespace Roadie.Api.Services
                             FROM `label` l
                             order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)
                             LIMIT 0, {0}";
-                randomLabelIds = (from l in DbContext.Labels.FromSql(sql, randomLimit)
+                randomLabelIds = (from l in DbContext.Labels.FromSqlRaw(sql, randomLimit)
                                   select l.Id).ToArray();
                 rowCount = DbContext.Labels.Count();
             }
@@ -167,7 +167,7 @@ namespace Roadie.Api.Services
                              ArtistCount = l.ArtistCount,
                              ReleaseCount = l.ReleaseCount,
                              TrackCount = l.TrackCount,
-                             Thumbnail = MakeLabelThumbnailImage(l.RoadieId)
+                             Thumbnail = MakeLabelThumbnailImage(Configuration, HttpContext, l.RoadieId)
                          };
             LabelList[] rows = null;
             rowCount = rowCount ?? result.Count();
@@ -377,8 +377,8 @@ namespace Roadie.Api.Services
             result.AlternateNames = label.AlternateNames;
             result.Tags = label.Tags;
             result.URLs = label.URLs;
-            result.Thumbnail = MakeLabelThumbnailImage(label.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(id, "label", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            result.Thumbnail = MakeLabelThumbnailImage(Configuration, HttpContext, label.RoadieId);
+            result.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "label", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (includes != null && includes.Any())
@@ -430,7 +430,7 @@ namespace Roadie.Api.Services
                         {
                             var comment = labelComment.Adapt<Comment>();
                             comment.DatabaseId = labelComment.Id;
-                            comment.User = UserList.FromDataUser(labelComment.User, MakeUserThumbnailImage(labelComment.User.RoadieId));
+                            comment.User = UserList.FromDataUser(labelComment.User, MakeUserThumbnailImage(Configuration, HttpContext, labelComment.User.RoadieId));
                             comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Dislike);
                             comment.LikedCount = userCommentReactions.Count(x => x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Like);
                             comments.Add(comment);
@@ -486,8 +486,7 @@ namespace Roadie.Api.Services
             return new OperationResult<Image>
             {
                 IsSuccess = !errors.Any(),
-                Data = MakeThumbnailImage(id, "label", Configuration.MediumImageSize.Width,
-                    Configuration.MediumImageSize.Height, true),
+                Data = MakeThumbnailImage(Configuration, HttpContext, id, "label", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };

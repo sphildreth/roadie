@@ -214,7 +214,7 @@ namespace Roadie.Api.Services
                              CreatedDate = c.CreatedDate,
                              IsLocked = c.IsLocked,
                              LastUpdated = c.LastUpdated,
-                             Thumbnail = MakeCollectionThumbnailImage(c.RoadieId)
+                             Thumbnail = MakeCollectionThumbnailImage(Configuration, HttpContext, c.RoadieId)
                          };
 
             var sortBy = string.IsNullOrEmpty(request.Sort)
@@ -355,8 +355,8 @@ namespace Roadie.Api.Services
             result.AlternateNames = collection.AlternateNames;
             result.Tags = collection.Tags;
             result.URLs = collection.URLs;
-            result.Thumbnail = MakeCollectionThumbnailImage(collection.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(id, "collection", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            result.Thumbnail = MakeCollectionThumbnailImage(Configuration, HttpContext, collection.RoadieId);
+            result.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "collection", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             result.CollectionFoundCount = (from crc in DbContext.CollectionReleases
                                            where crc.CollectionId == collection.Id
                                            select crc.Id).Count();
@@ -385,7 +385,7 @@ namespace Roadie.Api.Services
                                        select new CollectionRelease
                                        {
                                            ListNumber = crc.ListNumber,
-                                           Release = ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, MakeArtistThumbnailImage(r.Artist.RoadieId), MakeReleaseThumbnailImage(r.RoadieId))
+                                           Release = ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, MakeArtistThumbnailImage(Configuration, HttpContext, r.Artist.RoadieId), MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId))
                                        }).ToArray();
                     tsw.Stop();
                     timings.Add("releases", tsw.ElapsedMilliseconds);
@@ -439,7 +439,7 @@ namespace Roadie.Api.Services
                         {
                             var comment = collectionComment.Adapt<Comment>();
                             comment.DatabaseId = collectionComment.Id;
-                            comment.User = UserList.FromDataUser(collectionComment.User, MakeUserThumbnailImage(collectionComment.User.RoadieId));
+                            comment.User = UserList.FromDataUser(collectionComment.User, MakeUserThumbnailImage(Configuration, HttpContext, collectionComment.User.RoadieId));
                             comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == collectionComment.Id && x.ReactionValue == CommentReaction.Dislike);
                             comment.LikedCount = userCommentReactions.Count(x => x.CommentId == collectionComment.Id && x.ReactionValue == CommentReaction.Like);
                             comments.Add(comment);

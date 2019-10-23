@@ -475,10 +475,10 @@ namespace Roadie.Api.Services
                             FROM `release` r
                             WHERE (r.id NOT IN (select releaseId FROM `userrelease` where userId = {1} and isDisliked = 1))
                             OR (r.id IN (select releaseId FROM `userrelease` where userId = {1} and isFavorite = 1)
-                                AND {2} = 0)
+                                AND {2} = 1)
                             order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)
                             LIMIT 0, {0}";
-                randomReleaseIds = (from a in DbContext.Releases.FromSql(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0")
+                randomReleaseIds = (from a in DbContext.Releases.FromSqlRaw(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0")
                                     select a.Id).ToArray();
                 rowCount = DbContext.Releases.Count();
             }
@@ -517,7 +517,7 @@ namespace Roadie.Api.Services
                                   Text = r.Title,
                                   Value = r.RoadieId.ToString()
                               },
-                              ArtistThumbnail = MakeArtistThumbnailImage(a.RoadieId),
+                              ArtistThumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, a.RoadieId),
                               CreatedDate = r.CreatedDate,
                               Duration = r.Duration,
                               LastPlayed = r.LastPlayed,
@@ -529,7 +529,7 @@ namespace Roadie.Api.Services
                               ReleaseDateDateTime = r.ReleaseDate,
                               ReleasePlayUrl = $"{HttpContext.BaseUrl}/play/release/{r.RoadieId}",
                               Status = r.Status,
-                              Thumbnail = MakeReleaseThumbnailImage(r.RoadieId),
+                              Thumbnail = MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId),
                               TrackCount = r.TrackCount,
                               TrackPlayedCount = r.PlayedCount
                           });
@@ -551,7 +551,7 @@ namespace Roadie.Api.Services
                 }
                 else if (request.FilterToArtistId.HasValue)
                 {
-                    sortBy = request.OrderValue(new Dictionary<string, string> { { "ReleaseDate", "ASC" }, { "Release.Text", "ASC" } });
+                    sortBy = request.OrderValue(new Dictionary<string, string> { { "ReleaseDateDateTime", "ASC" }, { "Release.Text", "ASC" } });
                 }
                 else
                 {
@@ -574,6 +574,8 @@ namespace Roadie.Api.Services
                 }
                 else
                 {
+                    sortBy = sortBy.Replace("ReleaseDate ", "ReleaseDateDateTime ");
+
                     rows = result
                            .OrderBy(sortBy)
                            .Skip(request.SkipValue)
@@ -689,7 +691,18 @@ namespace Roadie.Api.Services
             }
 
             if (includes != null && includes.Any())
+            {
                 if (includes.Contains("tracks"))
+                {
+                    var rowIds = rows.Select(x => x.DatabaseId).ToArray();
+                    var userRatingsForResult = (from ut in DbContext.UserTracks.Include(x => x.Track)
+                                                join t in DbContext.Tracks on ut.TrackId equals t.Id
+                                                join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                                where rowIds.Contains(rm.ReleaseId)
+                                                where ut.UserId == roadieUser.Id
+                                                select ut)
+                                                 .ToArray() ?? new data.UserTrack[0];
+
                     foreach (var release in rows)
                     {
                         release.Media = DbContext.ReleaseMedias
@@ -701,25 +714,30 @@ namespace Roadie.Api.Services
                             .OrderBy(x => x.MediaNumber)
                             .ToArray();
 
-                        var userRatingsForRelease = (from ut in DbContext.UserTracks
-                                                     join t in DbContext.Tracks on ut.TrackId equals t.Id
-                                                     join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                                     where rm.ReleaseId == release.DatabaseId
-                                                     where ut.UserId == roadieUser.Id
-                                                     select new { trackId = t.RoadieId, ut }).ToArray();
-                        foreach (var userRatingForRelease in userRatingsForRelease)
+                        Parallel.ForEach(release.Media, (media) =>
                         {
-                            var mediaTrack = release.Media?.SelectMany(x => x.Tracks)
-                                .FirstOrDefault(x => x.Id == userRatingForRelease.trackId);
-                            if (mediaTrack != null)
-                                mediaTrack.UserRating = new UserTrack
+                            media.Tracks = media.Tracks.OrderBy(x => x.TrackNumber);
+                            var userTracksForMedia = userRatingsForResult.Where(x => x.Track.ReleaseMediaId == media.DatabaseId).ToArray();
+                            if (userTracksForMedia.Any())
+                            {
+                                Parallel.ForEach(userTracksForMedia, (userTrack) =>
                                 {
-                                    Rating = userRatingForRelease.ut.Rating,
-                                    IsFavorite = userRatingForRelease.ut.IsFavorite ?? false,
-                                    IsDisliked = userRatingForRelease.ut.IsDisliked ?? false
-                                };
-                        }
+                                    var mediaTrack = media.Tracks.FirstOrDefault(x => x.DatabaseId == userTrack.TrackId);
+                                    if(mediaTrack != null)
+                                    {
+                                        mediaTrack.UserRating = new UserTrack
+                                        {
+                                            Rating = userTrack.Rating,
+                                            IsFavorite = userTrack.IsFavorite ?? false,
+                                            IsDisliked = userTrack.IsDisliked ?? false
+                                        };
+                                    }
+                                });
+                            }
+                        });                     
                     }
+                }
+            }
 
             if (request.FilterFavoriteOnly) rows = rows.OrderBy(x => x.UserRating.Rating).ToArray();
             sw.Stop();
@@ -1724,9 +1742,9 @@ namespace Roadie.Api.Services
             }
             tsw.Restart();
             var result = release.Adapt<Release>();
-            result.Artist = ArtistList.FromDataArtist(release.Artist, MakeArtistThumbnailImage(release.Artist.RoadieId));
-            result.Thumbnail = MakeReleaseThumbnailImage(release.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(id, "release", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            result.Artist = ArtistList.FromDataArtist(release.Artist, MakeArtistThumbnailImage(Configuration, HttpContext, release.Artist.RoadieId));
+            result.Thumbnail = MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId);
+            result.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "release", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             result.ReleasePlayUrl = $"{HttpContext.BaseUrl}/play/release/{release.RoadieId}";
             result.Profile = release.Profile;
             result.ReleaseDate = release.ReleaseDate.Value;
@@ -1757,7 +1775,7 @@ namespace Roadie.Api.Services
                                 Text = submission.User.UserName,
                                 Value = submission.User.RoadieId.ToString()
                             },
-                            UserThumbnail = MakeUserThumbnailImage(submission.User.RoadieId),
+                            UserThumbnail = MakeUserThumbnailImage(Configuration, HttpContext, submission.User.RoadieId),
                             SubmittedDate = submission.CreatedDate
                         };
                     }
@@ -1821,7 +1839,7 @@ namespace Roadie.Api.Services
                 if (includes.Contains("images"))
                 {
                     tsw.Restart();
-                    var releaseImages = DbContext.Images.Where(x => x.ReleaseId == release.Id).Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
+                    var releaseImages = DbContext.Images.Where(x => x.ReleaseId == release.Id).Select(x => MakeFullsizeImage(Configuration, HttpContext, x.RoadieId, x.Caption)).ToArray();
                     if (releaseImages != null && releaseImages.Any())
                     {
                         result.Images = releaseImages;
@@ -1831,7 +1849,7 @@ namespace Roadie.Api.Services
                     var releaseImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder), ImageType.ReleaseSecondary, SearchOption.TopDirectoryOnly);
                     if (releaseImagesInFolder.Any())
                     {
-                        result.Images = result.Images.Concat(releaseImagesInFolder.Select((x, i) => MakeFullsizeSecondaryImage(id, ImageType.ReleaseSecondary, i)));
+                        result.Images = result.Images.Concat(releaseImagesInFolder.Select((x, i) => MakeFullsizeSecondaryImage(Configuration, HttpContext, id, ImageType.ReleaseSecondary, i)));
                     }
                     tsw.Stop();
                     timings.Add("images", tsw.ElapsedMilliseconds);
@@ -1888,7 +1906,7 @@ namespace Roadie.Api.Services
                                     ArtistCount = releaseLabel.l.ArtistCount,
                                     ReleaseCount = releaseLabel.l.ReleaseCount,
                                     TrackCount = releaseLabel.l.TrackCount,
-                                    Thumbnail = MakeLabelThumbnailImage(releaseLabel.l.RoadieId)
+                                    Thumbnail = MakeLabelThumbnailImage(Configuration, HttpContext, releaseLabel.l.RoadieId)
                                 }
                             };
                             labels.Add(rl);
@@ -1933,7 +1951,7 @@ namespace Roadie.Api.Services
                                     CreatedDate = releaseCollection.Collection.CreatedDate,
                                     IsLocked = releaseCollection.Collection.IsLocked,
                                     LastUpdated = releaseCollection.Collection.LastUpdated,
-                                    Thumbnail = MakeCollectionThumbnailImage(releaseCollection.Collection.RoadieId)
+                                    Thumbnail = MakeCollectionThumbnailImage(Configuration, HttpContext, releaseCollection.Collection.RoadieId)
                                 },
                                 ListNumber = releaseCollection.ListNumber
                             });
@@ -1962,7 +1980,7 @@ namespace Roadie.Api.Services
                         {
                             var comment = releaseComment.Adapt<Comment>();
                             comment.DatabaseId = releaseComment.Id;
-                            comment.User = UserList.FromDataUser(releaseComment.User, MakeUserThumbnailImage(releaseComment.User.RoadieId));
+                            comment.User = UserList.FromDataUser(releaseComment.User, MakeUserThumbnailImage(Configuration, HttpContext, releaseComment.User.RoadieId));
                             comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == releaseComment.Id && x.ReactionValue == CommentReaction.Dislike);
                             comment.LikedCount = userCommentReactions.Count(x => x.CommentId == releaseComment.Id && x.ReactionValue == CommentReaction.Like);
                             comments.Add(comment);
@@ -1993,7 +2011,7 @@ namespace Roadie.Api.Services
                             t.Status = track.Status;
                             t.TrackArtist = track.TrackArtist != null
                                 ? ArtistList.FromDataArtist(track.TrackArtist,
-                                    MakeArtistThumbnailImage(track.TrackArtist.RoadieId))
+                                    MakeArtistThumbnailImage(Configuration, HttpContext, track.TrackArtist.RoadieId))
                                 : null;
                             rmTracks.Add(t);
                         }
@@ -2054,8 +2072,7 @@ namespace Roadie.Api.Services
             return new OperationResult<Image>
             {
                 IsSuccess = !errors.Any(),
-                Data = MakeThumbnailImage(id, "release", Configuration.MediumImageSize.Width,
-                    Configuration.MediumImageSize.Height, true),
+                Data = MakeThumbnailImage(Configuration, HttpContext, id, "release", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };

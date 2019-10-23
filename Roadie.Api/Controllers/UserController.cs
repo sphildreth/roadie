@@ -30,12 +30,12 @@ namespace Roadie.Api.Controllers
 
         private IUserService UserService { get; }
 
-        public UserController(IUserService userService, ILoggerFactory logger, ICacheManager cacheManager,
+        public UserController(IUserService userService, ILogger<UserController> logger, ICacheManager cacheManager,
                             IConfiguration configuration, ITokenService tokenService, UserManager<ApplicationUser> userManager,
             IHttpContext httpContext, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.UserController");
+            Logger = logger;
             UserService = userService;
             TokenService = tokenService;
             RoadieHttpContext = httpContext;

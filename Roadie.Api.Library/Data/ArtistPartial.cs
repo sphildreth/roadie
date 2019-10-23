@@ -26,6 +26,8 @@ namespace Roadie.Library.Data
 
         public string SortNameValue => string.IsNullOrEmpty(SortName) ? Name : SortName;
 
+        public string GroupBy => SortNameValue.Substring(0, 1).ToUpper();
+
         public static string CacheRegionUrn(Guid Id)
         {
             return $"urn:artist:{Id}";

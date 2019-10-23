@@ -25,11 +25,11 @@ namespace Roadie.Api.Controllers
     {
         private ILabelService LabelService { get; }
 
-        public LabelController(ILabelService labelService, ILoggerFactory logger, ICacheManager cacheManager,
+        public LabelController(ILabelService labelService, ILogger<LabelController> logger, ICacheManager cacheManager,
                     UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.LabelController");
+            Logger = logger;
             LabelService = labelService;
         }
 

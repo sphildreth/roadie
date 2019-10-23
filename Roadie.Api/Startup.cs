@@ -1,4 +1,5 @@
 ﻿#region Usings
+
 using Mapster;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -11,7 +12,7 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
@@ -41,24 +42,21 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Text;
-#endregion
+using Serilog;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+
+#endregion Usings
 
 namespace Roadie.Api
 {
     public class Startup
     {
         private readonly IConfiguration _configuration;
-        private readonly ILoggerFactory _loggerFactory;
 
-        private ILogger Logger { get; }
-
-        public Startup(IConfiguration configuration, ILoggerFactory loggerFactory)
+        public Startup(IConfiguration configuration)
         {
             _configuration = configuration;
-            _loggerFactory = loggerFactory;
-
-            Logger = _loggerFactory.CreateLogger<Startup>();
-
             TypeAdapterConfig<Library.Data.Image, Library.Models.Image>
                 .NewConfig()
                 .Map(i => i.ArtistId,
@@ -71,13 +69,18 @@ namespace Roadie.Api
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, ILoggerFactory loggerFactory, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
 
             app.UseCors("CORSPolicy");
 
+            app.UseAuthorization();
             app.UseAuthentication();
+
             //app.UseSwagger();
             //app.UseSwaggerUI(c =>
             //{
@@ -85,14 +88,18 @@ namespace Roadie.Api
             //    c.RoutePrefix = string.Empty;
             //});
 
+            app.UseSerilogRequestLogging();
+
             app.UseStaticFiles();
 
-            app.UseSignalR(routes =>
+            app.UseRouting();
+
+            app.UseEndpoints(endpoints =>
             {
-                routes.MapHub<PlayActivityHub>("/playActivityHub");
-                routes.MapHub<ScanActivityHub>("/scanActivityHub");
+                endpoints.MapHub<PlayActivityHub>("/playActivityHub");
+                endpoints.MapHub<ScanActivityHub>("/scanActivityHub");
+                endpoints.MapControllers();
             });
-            app.UseMvc();
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -102,8 +109,11 @@ namespace Roadie.Api
             services.AddSingleton<IHttpEncoder, HttpEncoder>();
             services.AddSingleton<IEmailSender, EmailSenderService>();
 
-            var cacheManager = new MemoryCacheManager(_loggerFactory.CreateLogger<DictionaryCacheManager>(), new CachePolicy(TimeSpan.FromHours(4)));
-            services.AddSingleton<ICacheManager>(cacheManager);
+            services.AddSingleton<ICacheManager>(options =>
+            {
+                var logger = options.GetService<ILogger<MemoryCacheManager>>();
+                return new MemoryCacheManager(logger, new CachePolicy(TimeSpan.FromHours(4)));
+            });
 
             services.AddDbContextPool<ApplicationUserDbContext>(
                 options => options.UseMySql(_configuration.GetConnectionString("RoadieDatabaseConnection"),
@@ -142,7 +152,7 @@ namespace Roadie.Api
 
             services.Configure<IConfiguration>(_configuration);
             var corsOrigins = (_configuration["CORSOrigins"] ?? "http://localhost:8080").Split('|');
-            Logger.LogDebug("Setting Up CORS Policy [{0}]", string.Join(", ", corsOrigins));
+            Trace.WriteLine($"Setting Up CORS Policy [{string.Join(", ", corsOrigins)}]");
 
             services.AddCors(options => options.AddPolicy("CORSPolicy", builder =>
             {
@@ -158,7 +168,7 @@ namespace Roadie.Api
                 var settings = new RoadieSettings();
                 var configuration = ctx.GetService<IConfiguration>();
                 configuration.GetSection("RoadieSettings").Bind(settings);
-                var hostingEnvironment = ctx.GetService<IHostingEnvironment>();
+                var hostingEnvironment = ctx.GetService<IWebHostEnvironment>();
                 settings.ContentPath = hostingEnvironment.WebRootPath;
                 settings.ConnectionString = _configuration.GetConnectionString("RoadieDatabaseConnection");
 
@@ -231,7 +241,7 @@ namespace Roadie.Api
 
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, DlnaHostService>();
 
-            var securityKey = new SymmetricSecurityKey(Encoding.Default.GetBytes(_configuration["Tokens:PrivateKey"]));            
+            var securityKey = new SymmetricSecurityKey(Encoding.Default.GetBytes(_configuration["Tokens:PrivateKey"]));
 
             services.AddAuthentication(options =>
             {
@@ -270,13 +280,12 @@ namespace Roadie.Api
                     options.RespectBrowserAcceptHeader = true; // false by default
                     options.ModelBinderProviders.Insert(0, new SubsonicRequestBinderProvider());
                 })
-                .AddJsonOptions(options =>
+                .AddNewtonsoftJson(options =>
                 {
                     options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
                     options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                 })
-                .AddXmlSerializerFormatters()
-                .SetCompatibilityVersion(CompatibilityVersion.Latest);
+                .AddXmlSerializerFormatters();
 
             services.Configure<IdentityOptions>(options =>
             {
@@ -292,7 +301,7 @@ namespace Roadie.Api
             services.AddScoped<IHttpContext>(factory =>
             {
                 var actionContext = factory.GetService<IActionContextAccessor>().ActionContext;
-                if(actionContext == null)
+                if (actionContext == null)
                 {
                     return null;
                 }

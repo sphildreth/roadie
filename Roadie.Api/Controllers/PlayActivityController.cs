@@ -22,12 +22,12 @@ namespace Roadie.Api.Controllers
     {
         private IPlayActivityService PlayActivityService { get; }
 
-        public PlayActivityController(IPlayActivityService playActivityService, ILoggerFactory logger,
+        public PlayActivityController(IPlayActivityService playActivityService, ILogger<PlayActivityController> logger,
                     ICacheManager cacheManager,
             UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.PlayActivityController");
+            Logger = logger;
             PlayActivityService = playActivityService;
         }
 

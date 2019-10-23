@@ -122,41 +122,31 @@ namespace Roadie.Dlna.Services
             throw new NotImplementedException();
         }
 
-        private byte[] ArtistArt(Guid artistId)
-        {
-            var imageResult = AsyncHelper.RunSync(() => ImageService.ArtistImage(artistId, 320, 320));
-            return imageResult.Data?.Bytes;
-        }
-
-        private Dictionary<string, data.Artist[]> ArtistGroups()
+        private IEnumerable<string> ArtistGroupKeys()
         {
             lock (lockObject)
             {
                 return CacheManager.Get("urn:DlnaService:Artists", () =>
                 {
+                    IEnumerable<string> result = new string[0];
                     try
                     {
                         var sw = Stopwatch.StartNew();
-                        var result = (from a in DbContext.Artists
-                                join r in DbContext.Releases on a.Id equals r.ArtistId
-                                let sn = (a.SortName ?? a.Name ?? "?").ToUpper()
-                                orderby sn
-                                group a by sn[0] into ag
-                                select new
-                                {
-                                    FirstLetter = ag.Key.ToString(),
-                                    Artists = ag.ToArray()
-                                })
-                        .ToDictionary(x => x.FirstLetter, x => x.Artists);
+                        result = (from a in DbContext.Artists
+                                  where a.ReleaseCount > 0
+                                  select a)
+                                  .ToArray()
+                                  .Select(x => x.GroupBy)
+                                  .Distinct();                                  
+
                         sw.Stop();
-                        Logger.LogDebug($"DLNA ArtistGroups fetch Elapsed Time [{ sw.Elapsed }]");
-                        return result;
+                        Logger.LogDebug($"DLNA ArtistGroupKeys fetch Elapsed Time [{ sw.Elapsed }]");
                     }
                     catch (Exception ex)
                     {
                         Logger.LogError(ex);
                     }
-                    return null;
+                    return result;
                 }, "urn:DlnaServiceRegion");
             }
         }
@@ -174,10 +164,10 @@ namespace Roadie.Dlna.Services
                     Name = "Artists",
                     Id = "vf:artists"
                 };
-                foreach (var ag in ArtistGroups())
+                foreach (var groupKey in ArtistGroupKeys())
                 {
-                    var f = new VirtualFolder(result, ag.Key, $"vf:artistsforfolder:{ ag.Key }");
-                    foreach (var artistForGroup in ArtistsForGroup(ag.Key))
+                    var f = new VirtualFolder(result, groupKey, $"vf:artistsforfolder:{ groupKey }");
+                    foreach (var artistForGroup in ArtistsForGroup(groupKey))
                     {
                         var af = new VirtualFolder(f, artistForGroup.RoadieId.ToString(), $"vf:artist:{ artistForGroup.Id }");
                         f.AddFolder(af);
@@ -224,11 +214,7 @@ namespace Roadie.Dlna.Services
             {
                 return CacheManager.Get($"urn:DlnaService:ArtistsForGroup:{ groupKey }", () =>
                 {
-                    return (from a in DbContext.Artists
-                            join r in DbContext.Releases on a.Id equals r.ArtistId
-                            let sn = (a.SortName ?? a.Name).ToUpper()
-                            where sn[0].ToString().ToUpper() == groupKey
-                            select a).Distinct().ToArray();
+                    return DbContext.Artists.AsEnumerable().Where(x => x.GroupBy == groupKey).Distinct().ToArray();
                 }, "urn:DlnaServiceRegion");
             }
         }
@@ -267,22 +253,23 @@ namespace Roadie.Dlna.Services
             return result;
         }
 
-        private IEnumerable<data.Collection> CollectionsForGroup(string groupKey)
-        {
-            lock (lockObject)
-            {
-                return CacheManager.Get($"urn:DlnaService:CollectionsForGroup:{ groupKey }", () =>
-                {
-                    return (from c in DbContext.Collections
-                            let sn = (c.SortName ?? c.Name).ToUpper()
-                            where sn == groupKey
-                            select c).Distinct().ToArray();
-                }, "urn:DlnaServiceRegion");
-            }
-        }
+        //private IEnumerable<data.Collection> CollectionsForGroup(string groupKey)
+        //{
+        //    lock (lockObject)
+        //    {
+        //        return CacheManager.Get($"urn:DlnaService:CollectionsForGroup:{ groupKey }", () =>
+        //        {
+        //            return (from c in DbContext.Collections
+        //                    let sn = (c.SortName ?? c.Name).ToUpper()
+        //                    where sn == groupKey
+        //                    select c).Distinct().ToArray();
+        //        }, "urn:DlnaServiceRegion");
+        //    }
+        //}
 
         private IEnumerable<data.Playlist> PlaylistGroups()
-        {            lock (lockObject)
+        {
+            lock (lockObject)
             {
                 return CacheManager.Get("urn:DlnaService:Playlists", () =>
                 {
@@ -406,17 +393,18 @@ namespace Roadie.Dlna.Services
             return imageResult.Data?.Bytes;
         }
 
-        private Dictionary<string, data.Release[]> ReleaseGroups()
+        private IEnumerable<string> ReleaseGroupKeys()
         {
             lock (lockObject)
             {
                 return CacheManager.Get("urn:DlnaService:Releases", () =>
                 {
                     return (from r in DbContext.Releases
-                            orderby r.Title
-                            group r by r.Title[0] into rg
-                            select new { FirstLetter = rg.Key.ToString(), Releases = rg.ToArray() })
-                            .ToDictionary(x => x.FirstLetter, x => x.Releases);
+                            select r)
+                            .ToArray()
+                            .Select(x => x.GroupBy)
+                            .Distinct();
+
                 }, "urn:DlnaServiceRegion");
             }
         }
@@ -428,10 +416,10 @@ namespace Roadie.Dlna.Services
                 Name = "Releases",
                 Id = "vf:releases"
             };
-            foreach (var ag in ReleaseGroups())
+            foreach (var groupKey in ReleaseGroupKeys())
             {
-                var f = new VirtualFolder(result, ag.Key, $"vf:releasesforfolder:{ ag.Key }");
-                foreach (var releaseForGroup in ReleasesForGroup(ag.Key))
+                var f = new VirtualFolder(result, groupKey, $"vf:releasesforfolder:{ groupKey}");
+                foreach (var releaseForGroup in ReleasesForGroup(groupKey))
                 {
                     var af = new VirtualFolder(f, releaseForGroup.RoadieId.ToString(), $"vf:release:{ releaseForGroup.Id }");
                     f.AddFolder(af);
@@ -555,11 +543,9 @@ namespace Roadie.Dlna.Services
                 return CacheManager.Get($"urn:DlnaService:ReleasesForGroup:{ groupKey }", () =>
                 {
                     var sw = Stopwatch.StartNew();
-                    var result = (from r in DbContext.Releases
-                                  where r.Title[0].ToString() == groupKey
-                                  select r).Distinct().ToArray();
+                    var result = DbContext.Releases.AsEnumerable().Where(x => x.GroupBy == groupKey).Distinct().ToArray();
                     sw.Stop();
-                    Logger.LogDebug($"DLNA ReleasesForGroup Elapsed Time [{ sw.Elapsed }]");
+                    Logger.LogDebug($"DLNA ReleasesForGroup [{ groupKey }] Elapsed Time [{ sw.Elapsed }]");
                     return result;
                 }, "urn:DlnaServiceRegion");
             }

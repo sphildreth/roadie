@@ -21,11 +21,11 @@ namespace Roadie.Api.Controllers
     {
         private IAdminService AdminService { get; }
 
-        public AdminController(IAdminService adminService, ILoggerFactory logger, ICacheManager cacheManager,
+        public AdminController(IAdminService adminService, ILogger<AdminController> logger, ICacheManager cacheManager,
                     UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.AdminController");
+            Logger = logger;
             AdminService = adminService;
         }
 

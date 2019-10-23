@@ -16,8 +16,8 @@ namespace Roadie.Library.Configuration
 
         public string Description { get; set; }
 
-        public IEnumerable<string> AllowedIps { get; set; } = Enumerable.Empty<string>();
-        public IEnumerable<string> AllowedUserAgents { get; set; } = Enumerable.Empty<string>();
+        public IEnumerable<string> AllowedIps { get; set; } = new string[0];
+        public IEnumerable<string> AllowedUserAgents { get; set; } = new string[0];
 
         public Dlna()
         {

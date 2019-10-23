@@ -12,6 +12,7 @@ namespace Roadie.Library
         private List<Exception> _errors;
         private List<string> _messages;
 
+        [XmlIgnore]
         public Dictionary<string, object> AdditionalClientData { get; set; } = new Dictionary<string, object>();
 
         [JsonIgnore]

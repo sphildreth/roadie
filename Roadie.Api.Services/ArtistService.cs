@@ -253,10 +253,10 @@ namespace Roadie.Api.Services
                             FROM `artist` a
                             WHERE(a.id NOT IN(select artistId FROM `userartist` where userId = {1} and isDisliked = 1))
                             OR(a.id IN(select artistId FROM `userartist` where userId = {1} and isFavorite = 1)
-                            AND {2} = 0)
+                            AND {2} = 1)
                             order BY RIGHT(HEX((1 << 24) * (1 + RAND())), 6)
                             LIMIT 0, {0}";
-                randomArtistIds = (from a in DbContext.Artists.FromSql(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0")
+                randomArtistIds = (from a in DbContext.Artists.FromSqlRaw(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0")
                                    select a.Id).ToArray();
                 rowCount = DbContext.Artists.Count();
             }
@@ -289,7 +289,7 @@ namespace Roadie.Api.Services
                                   Text = a.Name,
                                   Value = a.RoadieId.ToString()
                               },
-                              Thumbnail = MakeArtistThumbnailImage(a.RoadieId),
+                              Thumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, a.RoadieId),
                               Rating = a.Rating,
                               Rank = a.Rank,
                               CreatedDate = a.CreatedDate,
@@ -916,8 +916,8 @@ namespace Roadie.Api.Services
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);
             tsw.Restart();
-            result.Thumbnail = MakeArtistThumbnailImage(id);
-            result.MediumThumbnail = MakeThumbnailImage(id, "artist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            result.Thumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, id);
+            result.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "artist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             result.Genres = artist.Genres.Select(x => new DataToken
             {
                 Text = x.Genre.Name,
@@ -940,7 +940,7 @@ namespace Roadie.Api.Services
                                             .ToArray())
                     {
                         var releaseList = release.Adapt<ReleaseList>();
-                        releaseList.Thumbnail = MakeReleaseThumbnailImage(release.RoadieId);
+                        releaseList.Thumbnail = MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId);
                         var dtoReleaseMedia = new List<ReleaseMediaList>();
                         if (includes.Contains("tracks"))
                             foreach (var releasemedia in release.Medias.OrderBy(x => x.MediaNumber).ToArray())
@@ -959,7 +959,7 @@ namespace Roadie.Api.Services
                                         var ta = DbContext.Artists.FirstOrDefault(x => x.Id == t.ArtistId.Value);
                                         if (ta != null)
                                             trackArtist = ArtistList.FromDataArtist(ta,
-                                                MakeArtistThumbnailImage(ta.RoadieId));
+                                                MakeArtistThumbnailImage(Configuration, HttpContext, ta.RoadieId));
                                     }
 
                                     track.TrackArtist = trackArtist;
@@ -1023,14 +1023,14 @@ namespace Roadie.Api.Services
                 {
                     tsw.Restart();
                     result.Images = DbContext.Images.Where(x => x.ArtistId == artist.Id)
-                        .Select(x => MakeFullsizeImage(x.RoadieId, x.Caption)).ToArray();
+                        .Select(x => MakeFullsizeImage(Configuration, HttpContext, x.RoadieId, x.Caption)).ToArray();
 
                     var artistFolder = artist.ArtistFileFolder(Configuration);
                     var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder),
                         ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly);
                     if (artistImagesInFolder.Any())
                         result.Images = result.Images.Concat(artistImagesInFolder.Select((x, i) =>
-                            MakeFullsizeSecondaryImage(id, ImageType.ArtistSecondary, i)));
+                            MakeFullsizeSecondaryImage(Configuration, HttpContext, id, ImageType.ArtistSecondary, i)));
 
                     tsw.Stop();
                     timings.Add("images", tsw.ElapsedMilliseconds);
@@ -1051,7 +1051,7 @@ namespace Roadie.Api.Services
                                                          Text = a.Name,
                                                          Value = a.RoadieId.ToString()
                                                      },
-                                                     Thumbnail = MakeArtistThumbnailImage(a.RoadieId),
+                                                     Thumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, a.RoadieId),
                                                      Rating = a.Rating,
                                                      Rank = a.Rank,
                                                      CreatedDate = a.CreatedDate,
@@ -1075,7 +1075,7 @@ namespace Roadie.Api.Services
                                                      Text = a.Name,
                                                      Value = a.RoadieId.ToString()
                                                  },
-                                                 Thumbnail = MakeArtistThumbnailImage(a.RoadieId),
+                                                 Thumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, a.RoadieId),
                                                  Rating = a.Rating,
                                                  Rank = a.Rank,
                                                  CreatedDate = a.CreatedDate,
@@ -1108,7 +1108,7 @@ namespace Roadie.Api.Services
                                                       Text = a.Name,
                                                       Value = a.RoadieId.ToString()
                                                   },
-                                                  Thumbnail = MakeArtistThumbnailImage(a.RoadieId),
+                                                  Thumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, a.RoadieId),
                                                   Rating = a.Rating,
                                                   Rank = a.Rank,
                                                   CreatedDate = a.CreatedDate,
@@ -1132,7 +1132,7 @@ namespace Roadie.Api.Services
                                                   Text = a.Name,
                                                   Value = a.RoadieId.ToString()
                                               },
-                                              Thumbnail = MakeArtistThumbnailImage(a.RoadieId),
+                                              Thumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, a.RoadieId),
                                               Rating = a.Rating,
                                               Rank = a.Rank,
                                               CreatedDate = a.CreatedDate,
@@ -1181,7 +1181,7 @@ namespace Roadie.Api.Services
                             var comment = artistComment.Adapt<Comment>();
                             comment.DatabaseId = artistComment.Id;
                             comment.User = UserList.FromDataUser(artistComment.User,
-                                MakeUserThumbnailImage(artistComment.User.RoadieId));
+                                MakeUserThumbnailImage(Configuration, HttpContext, artistComment.User.RoadieId));
                             comment.DislikedCount = userCommentReactions.Count(x =>
                                 x.CommentId == artistComment.Id && x.ReactionValue == CommentReaction.Dislike);
                             comment.LikedCount = userCommentReactions.Count(x =>
@@ -1230,7 +1230,7 @@ namespace Roadie.Api.Services
                                                              select r)
                                                              .OrderBy(x => x.Title)
                                                              .ToArray()
-                                                             .Select(r => ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, MakeArtistThumbnailImage(r.Artist.RoadieId), MakeReleaseThumbnailImage(r.RoadieId)));
+                                                             .Select(r => ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, MakeArtistThumbnailImage(Configuration, HttpContext, r.Artist.RoadieId), MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId)));
 
                         result.ArtistContributionReleases = result.ArtistContributionReleases.Any()
                             ? result.ArtistContributionReleases
@@ -1248,7 +1248,7 @@ namespace Roadie.Api.Services
                                            join r in DbContext.Releases on rl.ReleaseId equals r.Id
                                            where r.ArtistId == artist.Id
                                            orderby l.SortName
-                                           select LabelList.FromDataLabel(l, MakeLabelThumbnailImage(l.RoadieId)))
+                                           select LabelList.FromDataLabel(l, MakeLabelThumbnailImage(Configuration, HttpContext, l.RoadieId)))
                                           .ToArray()
                                           .GroupBy(x => x.Label.Value)
                                           .Select(x => x.First())
@@ -1510,8 +1510,7 @@ namespace Roadie.Api.Services
             return new OperationResult<Image>
             {
                 IsSuccess = !errors.Any(),
-                Data = MakeThumbnailImage(id, "artist", Configuration.MediumImageSize.Width,
-                    Configuration.MediumImageSize.Height, true),
+                Data = MakeThumbnailImage(Configuration, HttpContext, id, "artist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };

@@ -28,13 +28,12 @@ namespace Roadie.Api.Controllers
 
         private ITrackService TrackService { get; }
 
-        public PlayController(ITrackService trackService, IReleaseService releaseService,
-                                    IPlayActivityService playActivityService,
-            ILoggerFactory logger, ICacheManager cacheManager, UserManager<ApplicationUser> userManager,
+        public PlayController(ITrackService trackService, IReleaseService releaseService, IPlayActivityService playActivityService,
+            ILogger<PlayController> logger, ICacheManager cacheManager, UserManager<ApplicationUser> userManager,
             IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.PlayController");
+            Logger = logger;
             TrackService = trackService;
             PlayActivityService = playActivityService;
             ReleaseService = releaseService;

@@ -23,11 +23,11 @@ namespace Roadie.Api.Controllers
     {
         private ITrackService TrackService { get; }
 
-        public TrackController(ITrackService trackService, ILoggerFactory logger, ICacheManager cacheManager,
+        public TrackController(ITrackService trackService, ILogger<TrackController> logger, ICacheManager cacheManager,
                     UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.TrackController");
+            Logger = logger;
             TrackService = trackService;
         }
 

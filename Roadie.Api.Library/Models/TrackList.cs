@@ -20,11 +20,9 @@ namespace Roadie.Library.Models
         public ArtistList Artist { get; set; }
         public int? Duration { get; set; }
 
-        public string DurationTime =>
-            Duration.HasValue ? new TimeInfo(Duration.Value).ToFullFormattedString() : "--:--";
+        public string DurationTime => Duration.HasValue ? new TimeInfo(Duration.Value).ToFullFormattedString() : "--:--";
 
-        public string DurationTimeShort =>
-            Duration.HasValue ? new TimeInfo(Duration.Value).ToShortFormattedString() : "--:--";
+        public string DurationTimeShort => Duration.HasValue ? new TimeInfo(Duration.Value).ToShortFormattedString() : "--:--";
 
         public int? FavoriteCount { get; set; }
         public int? FileSize { get; set; }
@@ -81,7 +79,7 @@ namespace Roadie.Library.Models
         {
             if(tracks == null || !tracks.Any())
             {
-                return Enumerable.Empty<int>(); ;
+                return new int[0];
             }
             return tracks.Select((b, i) => b.Artist?.Artist?.Value == artistId ? i : -1).Where(i => i != -1).ToArray();            
         }
@@ -90,7 +88,7 @@ namespace Roadie.Library.Models
         {
             if (tracks == null || !tracks.Any())
             {
-                return Enumerable.Empty<int>(); ;
+                return new int[0];
             }
             return tracks.Select((b, i) => b.Release?.Release?.Value == releaseId ? i : -1).Where(i => i != -1).ToArray();
         }

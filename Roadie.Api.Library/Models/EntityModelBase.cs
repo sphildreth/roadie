@@ -28,9 +28,13 @@ namespace Roadie.Library.Models
             get
             {
                 if (_alternateNamesList == null)
+                {
                     if (!string.IsNullOrEmpty(AlternateNames))
+                    {
                         _alternateNamesList = AlternateNames.Split('|');
-                return _alternateNamesList ?? Enumerable.Empty<string>();
+                    }
+                }
+                return _alternateNamesList ?? new string[0];
             }
             set => _alternateNamesList = value;
         }

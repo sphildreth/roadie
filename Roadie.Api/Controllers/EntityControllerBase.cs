@@ -14,7 +14,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using System.Web.Http;
 using models = Roadie.Library.Models.Users;
 
 namespace Roadie.Api.Controllers

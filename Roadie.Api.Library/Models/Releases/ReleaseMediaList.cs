@@ -10,6 +10,6 @@ namespace Roadie.Library.Models.Releases
         public short? MediaNumber { get; set; }
         public string SubTitle { get; set; }
         public int? TrackCount { get; set; }
-        public IEnumerable<TrackList> Tracks { get; set; } = Enumerable.Empty<TrackList>();
+        public IEnumerable<TrackList> Tracks { get; set; } = new TrackList[0];
     }
 }

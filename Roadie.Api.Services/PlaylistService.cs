@@ -254,9 +254,9 @@ namespace Roadie.Api.Services
                              TrackCount = pl.TrackCount,
                              CreatedDate = pl.CreatedDate,
                              LastUpdated = pl.LastUpdated,
-                             UserThumbnail = MakeUserThumbnailImage(u.RoadieId),
+                             UserThumbnail = MakeUserThumbnailImage(Configuration, HttpContext, u.RoadieId),
                              Id = pl.RoadieId,
-                             Thumbnail = MakePlaylistThumbnailImage(pl.RoadieId)
+                             Thumbnail = MakePlaylistThumbnailImage(Configuration, HttpContext, pl.RoadieId)
                          };
             var sortBy = string.IsNullOrEmpty(request.Sort)
                 ? request.OrderValue(new Dictionary<string, string> { { "Playlist.Text", "ASC" } })
@@ -465,9 +465,9 @@ namespace Roadie.Api.Services
             result.Tags = playlist.Tags;
             result.URLs = playlist.URLs;
             var maintainer = DbContext.Users.Include(x => x.UserRoles).Include("UserRoles.Role").FirstOrDefault(x => x.Id == playlist.UserId);
-            result.Maintainer = UserList.FromDataUser(maintainer, MakeUserThumbnailImage(maintainer.RoadieId));
-            result.Thumbnail = MakePlaylistThumbnailImage(playlist.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(id, "playlist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            result.Maintainer = UserList.FromDataUser(maintainer, MakeUserThumbnailImage(Configuration, HttpContext, maintainer.RoadieId));
+            result.Thumbnail = MakePlaylistThumbnailImage(Configuration, HttpContext, playlist.RoadieId);
+            result.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "playlist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (includes != null && includes.Any())
@@ -510,10 +510,10 @@ namespace Roadie.Api.Services
                                              releaseArtist,
                                              trackArtist,
                                              HttpContext.BaseUrl,
-                                             MakeTrackThumbnailImage(plt.t.RoadieId),
-                                             MakeReleaseThumbnailImage(r.RoadieId),
-                                             MakeArtistThumbnailImage(releaseArtist.RoadieId),
-                                             MakeArtistThumbnailImage(trackArtist == null ? null : (Guid?)trackArtist.RoadieId))
+                                             MakeTrackThumbnailImage(Configuration, HttpContext, plt.t.RoadieId),
+                                             MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId),
+                                             MakeArtistThumbnailImage(Configuration, HttpContext, releaseArtist.RoadieId),
+                                             MakeArtistThumbnailImage(Configuration, HttpContext, trackArtist == null ? null : (Guid?)trackArtist.RoadieId))
                                      }).ToArray();
                     tsw.Stop();
                     timings.Add("tracks", tsw.ElapsedMilliseconds);
@@ -536,7 +536,7 @@ namespace Roadie.Api.Services
                         {
                             var comment = playlistComment.Adapt<Comment>();
                             comment.DatabaseId = playlistComment.Id;
-                            comment.User = UserList.FromDataUser(playlistComment.User, MakeUserThumbnailImage(playlistComment.User.RoadieId));
+                            comment.User = UserList.FromDataUser(playlistComment.User, MakeUserThumbnailImage(Configuration, HttpContext, playlistComment.User.RoadieId));
                             comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == playlistComment.Id && x.ReactionValue == CommentReaction.Dislike);
                             comment.LikedCount = userCommentReactions.Count(x => x.CommentId == playlistComment.Id && x.ReactionValue == CommentReaction.Like);
                             comments.Add(comment);

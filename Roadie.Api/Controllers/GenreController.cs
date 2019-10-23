@@ -25,11 +25,11 @@ namespace Roadie.Api.Controllers
     {
         private IGenreService GenreService { get; }
 
-        public GenreController(IGenreService genreService, ILoggerFactory logger, ICacheManager cacheManager,
+        public GenreController(IGenreService genreService, ILogger<GenreController> logger, ICacheManager cacheManager,
                     UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.GenreController");
+            Logger = logger;
             GenreService = genreService;
         }
 

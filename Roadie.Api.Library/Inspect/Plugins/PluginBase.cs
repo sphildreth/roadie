@@ -63,7 +63,7 @@ namespace Roadie.Library.Inspect.Plugins
                 Logger.LogError(ex);
             }
 
-            return Enumerable.Empty<AudioMetaData>();
+            return new AudioMetaData[0];
         }
     }
 }

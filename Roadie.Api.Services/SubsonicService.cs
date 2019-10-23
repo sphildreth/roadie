@@ -498,11 +498,11 @@ namespace Roadie.Api.Services
                             Item = new subsonic.AlbumInfo
                             {
                                 largeImageUrl =
-                                    MakeImage(release.RoadieId, "release", Configuration.LargeImageSize).Url,
-                                mediumImageUrl = MakeImage(release.RoadieId, "release", Configuration.MediumImageSize)
+                                    MakeImage(Configuration, HttpContext, release.RoadieId, "release", Configuration.LargeImageSize).Url,
+                                mediumImageUrl = MakeImage(Configuration, HttpContext, release.RoadieId, "release", Configuration.MediumImageSize)
                                     .Url,
                                 smallImageUrl =
-                                    MakeImage(release.RoadieId, "release", Configuration.SmallImageSize).Url,
+                                    MakeImage(Configuration, HttpContext, release.RoadieId, "release", Configuration.SmallImageSize).Url,
                                 lastFmUrl = MakeLastFmUrl(release.Artist.Name, release.Title),
                                 musicBrainzId = release.MusicBrainzId,
                                 notes = release.Profile
@@ -1940,7 +1940,7 @@ namespace Roadie.Api.Services
                                   {
                                       id = subsonic.Request.CollectionIdentifier + c.RoadieId,
                                       name = c.Name,
-                                      artistImageUrl = MakeCollectionThumbnailImage(c.RoadieId).Url,
+                                      artistImageUrl = MakeCollectionThumbnailImage(Configuration, HttpContext, c.RoadieId).Url,
                                       averageRating = 0,
                                       userRating = 0
                                   }).ToArray()
@@ -2071,7 +2071,7 @@ namespace Roadie.Api.Services
             {
                 id = subsonic.Request.ArtistIdIdentifier + artist.Artist.Value,
                 name = artist.Artist.Text,
-                artistImageUrl = MakeArtistThumbnailImage(artist.Id).Url,
+                artistImageUrl = MakeArtistThumbnailImage(Configuration, HttpContext, artist.Id).Url,
                 averageRating = artist.Rating ?? 0,
                 averageRatingSpecified = true,
                 starred = artist.UserRating?.RatedDate ?? DateTime.UtcNow,
@@ -2083,7 +2083,7 @@ namespace Roadie.Api.Services
 
         private subsonic.ArtistID3 SubsonicArtistID3ForArtist(ArtistList artist)
         {
-            var artistImageUrl = MakeArtistThumbnailImage(artist.Id).Url;
+            var artistImageUrl = MakeArtistThumbnailImage(Configuration, HttpContext, artist.Id).Url;
             return new subsonic.ArtistID3
             {
                 id = subsonic.Request.ArtistIdIdentifier + artist.Artist.Value,
@@ -2107,11 +2107,11 @@ namespace Roadie.Api.Services
             return new subsonic.ArtistInfo2
             {
                 biography = artist.BioContext,
-                largeImageUrl = MakeImage(artist.RoadieId, "artist", Configuration.LargeImageSize).Url,
-                mediumImageUrl = MakeImage(artist.RoadieId, "artist", Configuration.MediumImageSize).Url,
+                largeImageUrl = MakeImage(Configuration, HttpContext, artist.RoadieId, "artist", Configuration.LargeImageSize).Url,
+                mediumImageUrl = MakeImage(Configuration, HttpContext, artist.RoadieId, "artist", Configuration.MediumImageSize).Url,
                 musicBrainzId = artist.MusicBrainzId,
                 similarArtist = new subsonic.ArtistID3[0],
-                smallImageUrl = MakeImage(artist.RoadieId, "artist", Configuration.SmallImageSize).Url
+                smallImageUrl = MakeImage(Configuration, HttpContext, artist.RoadieId, "artist", Configuration.SmallImageSize).Url
             };
         }
 
@@ -2120,11 +2120,11 @@ namespace Roadie.Api.Services
             return new subsonic.ArtistInfo
             {
                 biography = artist.BioContext,
-                largeImageUrl = MakeImage(artist.RoadieId, "artist", Configuration.LargeImageSize).Url,
-                mediumImageUrl = MakeImage(artist.RoadieId, "artist", Configuration.MediumImageSize).Url,
+                largeImageUrl = MakeImage(Configuration, HttpContext, artist.RoadieId, "artist", Configuration.LargeImageSize).Url,
+                mediumImageUrl = MakeImage(Configuration, HttpContext, artist.RoadieId, "artist", Configuration.MediumImageSize).Url,
                 musicBrainzId = artist.MusicBrainzId,
                 similarArtist = new subsonic.Artist[0],
-                smallImageUrl = MakeImage(artist.RoadieId, "artist", Configuration.SmallImageSize).Url
+                smallImageUrl = MakeImage(Configuration, HttpContext, artist.RoadieId, "artist", Configuration.SmallImageSize).Url
             };
         }
 
@@ -2137,7 +2137,7 @@ namespace Roadie.Api.Services
         private subsonic.ArtistWithAlbumsID3 SubsonicArtistWithAlbumsID3ForArtist(ArtistList artist,
             subsonic.AlbumID3[] releases)
         {
-            var artistImageUrl = MakeArtistThumbnailImage(artist.Id).Url;
+            var artistImageUrl = MakeArtistThumbnailImage(Configuration, HttpContext, artist.Id).Url;
             return new subsonic.ArtistWithAlbumsID3
             {
                 id = subsonic.Request.ArtistIdIdentifier + artist.Artist.Value,
@@ -2290,7 +2290,7 @@ namespace Roadie.Api.Services
         {
             return new subsonic.PlaylistWithSongs
             {
-                coverArt = MakePlaylistThumbnailImage(playlist.Id).Url,
+                coverArt = MakePlaylistThumbnailImage(Configuration, HttpContext, playlist.Id).Url,
                 allowedUser = playlist.IsPublic ? AllowedUsers() : null,
                 changed = playlist.LastUpdated ?? playlist.CreatedDate ?? DateTime.UtcNow,
                 created = playlist.CreatedDate ?? DateTime.UtcNow,

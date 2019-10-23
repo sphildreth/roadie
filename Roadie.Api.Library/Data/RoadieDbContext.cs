@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Roadie.Library.Enums;
 using Roadie.Library.Identity;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Roadie.Library.Data
 {
@@ -212,5 +215,12 @@ namespace Roadie.Library.Data
             //    .WithMany(a => a.Tracks)
             //    .HasForeignKey(t => t.ArtistId);
         }
+
+        Task<EntityEntry> IRoadieDbContext.AddAsync(object entity, CancellationToken cancellationToken) => throw new NotImplementedException();
+        Task<EntityEntry<TEntity>> IRoadieDbContext.AddAsync<TEntity>(TEntity entity, CancellationToken cancellationToken) => throw new NotImplementedException();
+        Task<TEntity> IRoadieDbContext.FindAsync<TEntity>(params object[] keyValues) => throw new NotImplementedException();
+        Task<object> IRoadieDbContext.FindAsync(Type entityType, object[] keyValues, CancellationToken cancellationToken) => throw new NotImplementedException();
+        Task<TEntity> IRoadieDbContext.FindAsync<TEntity>(object[] keyValues, CancellationToken cancellationToken) => throw new NotImplementedException();
+        Task<object> IRoadieDbContext.FindAsync(Type entityType, params object[] keyValues) => throw new NotImplementedException();
     }
 }

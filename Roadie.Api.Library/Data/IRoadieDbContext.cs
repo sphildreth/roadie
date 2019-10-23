@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.Data
 {
-    public interface IRoadieDbContext : IDisposable, IInfrastructure<IServiceProvider>, IDbContextDependencies, IDbSetCache, IDbQueryCache, IDbContextPoolable
+    public interface IRoadieDbContext : IDisposable, IInfrastructure<IServiceProvider>, IDbContextDependencies, IDbSetCache, IDbContextPoolable
     {
         DbSet<ArtistAssociation> ArtistAssociations { get; set; }
         DbSet<ArtistGenre> ArtistGenres { get; set; }
@@ -92,8 +92,6 @@ namespace Roadie.Library.Data
         Task<object> FindAsync(Type entityType, params object[] keyValues);
 
         int GetHashCode();
-
-        DbQuery<TQuery> Query<TQuery>() where TQuery : class;
 
         EntityEntry Remove(object entity);
 

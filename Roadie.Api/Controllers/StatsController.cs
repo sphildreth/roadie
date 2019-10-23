@@ -20,11 +20,11 @@ namespace Roadie.Api.Controllers
     {
         private IStatisticsService StatisticsService { get; }
 
-        public StatsController(IStatisticsService statisticsService, ILoggerFactory logger, ICacheManager cacheManager,
+        public StatsController(IStatisticsService statisticsService, ILogger<StatsController> logger, ICacheManager cacheManager,
                     UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.StatsController");
+            Logger = logger;
             StatisticsService = statisticsService;
         }
 

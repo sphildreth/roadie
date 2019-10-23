@@ -40,11 +40,11 @@ namespace Roadie.Api.Controllers
 
         public SubsonicController(ISubsonicService subsonicService, ITrackService trackService,
                                                     IReleaseService releaseService,
-            IPlayActivityService playActivityService, ILoggerFactory logger, ICacheManager cacheManager,
+            IPlayActivityService playActivityService, ILogger<SubsonicController> logger, ICacheManager cacheManager,
             UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.SubsonicController");
+            Logger = logger;
             SubsonicService = subsonicService;
             TrackService = trackService;
             ReleaseService = releaseService;
@@ -686,8 +686,6 @@ namespace Roadie.Api.Controllers
                 postBody = JsonConvert.SerializeObject(formDictionary);
             }
 
-            Logger.LogTrace(
-                $"Subsonic Request: Method [{method}], Accept Header [{acceptHeader}], Path [{queryPath}], Query String [{queryString}], Posted Body [{postBody}], Response Error Code [{response?.ErrorCode}], Request [{JsonConvert.SerializeObject(request, Newtonsoft.Json.Formatting.Indented)}] ResponseType [{responseType}]");
             if (response?.ErrorCode.HasValue ?? false) return SendError(request, response);
             if (request.IsJSONRequest)
             {

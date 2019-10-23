@@ -20,11 +20,11 @@ namespace Roadie.Api.Controllers
     {
         private ILookupService LookupService { get; }
 
-        public LookupController(ILabelService labelService, ILoggerFactory logger, ICacheManager cacheManager,
+        public LookupController(ILabelService labelService, ILogger<LookupController> logger, ICacheManager cacheManager,
                     UserManager<ApplicationUser> userManager, ILookupService lookupService, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.LookupController");
+            Logger = logger;
             LookupService = lookupService;
         }
 

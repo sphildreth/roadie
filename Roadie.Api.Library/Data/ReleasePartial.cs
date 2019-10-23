@@ -21,6 +21,8 @@ namespace Roadie.Library.Data
             }
         }
 
+        public string GroupBy => Title.Substring(0, 1).ToUpper();
+
         public bool IsCastRecording
         {
             get

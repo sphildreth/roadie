@@ -104,7 +104,7 @@ namespace Roadie.Api.Services
                             FROM `genre` g
                             order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)
                             LIMIT 0, {0}";
-                randomGenreIds = (from l in DbContext.Genres.FromSql(sql, randomLimit)
+                randomGenreIds = (from l in DbContext.Genres.FromSqlRaw(sql, randomLimit)
                                   select l.Id).ToArray();
                 rowCount = DbContext.Genres.Count();
             }
@@ -131,7 +131,7 @@ namespace Roadie.Api.Services
                              ArtistCount = artistCount,
                              CreatedDate = g.CreatedDate,
                              LastUpdated = g.LastUpdated,
-                             Thumbnail = MakeGenreThumbnailImage(g.RoadieId)
+                             Thumbnail = MakeGenreThumbnailImage(Configuration, HttpContext, g.RoadieId)
                          };
 
             GenreList[] rows;
@@ -196,8 +196,8 @@ namespace Roadie.Api.Services
             var result = genre.Adapt<Genre>();
             result.AlternateNames = genre.AlternateNames;
             result.Tags = genre.Tags;
-            result.Thumbnail = MakeLabelThumbnailImage(genre.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            result.Thumbnail = MakeLabelThumbnailImage(Configuration, HttpContext, genre.RoadieId);
+            result.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (includes != null && includes.Any())
@@ -264,7 +264,7 @@ namespace Roadie.Api.Services
             return new OperationResult<Image>
             {
                 IsSuccess = !errors.Any(),
-                Data = MakeThumbnailImage(id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),
+                Data = MakeThumbnailImage(Configuration, HttpContext, id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };

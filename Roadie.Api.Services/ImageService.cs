@@ -367,8 +367,7 @@ namespace Roadie.Api.Services
             return Task.FromResult(new FileOperationResult<Image>(OperationMessages.ErrorOccured));
         }
 
-        private FileOperationResult<Image> GenerateFileOperationResult(Guid id, data.Image image,
-            EntityTagHeaderValue etag = null, string contentType = "image/jpeg")
+        private FileOperationResult<Image> GenerateFileOperationResult(Guid id, data.Image image, EntityTagHeaderValue etag = null, string contentType = "image/jpeg")
         {
             var imageEtag = EtagHelper.GenerateETag(HttpEncoder, image.Bytes);
             if (EtagHelper.CompareETag(HttpEncoder, etag, imageEtag))

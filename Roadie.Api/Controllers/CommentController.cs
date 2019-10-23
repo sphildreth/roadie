@@ -23,12 +23,12 @@ namespace Roadie.Api.Controllers
     {
         private ICommentService CommentService { get; }
 
-        public CommentController(ILoggerFactory logger, ICacheManager cacheManager,
+        public CommentController(ILogger<CommentController> logger, ICacheManager cacheManager,
                     UserManager<ApplicationUser> userManager,
             IRoadieSettings roadieSettings, ICommentService commentService)
             : base(cacheManager, roadieSettings, userManager)
         {
-            Logger = logger.CreateLogger("RoadieApi.Controllers.CommentController");
+            Logger = logger;
             CommentService = commentService;
         }
 
