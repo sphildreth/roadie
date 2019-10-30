@@ -293,8 +293,10 @@ namespace Roadie.Api.Services
                     // This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
                     var sql = @"SELECT t.id
                                 FROM `track` t 
+                                # Rated filter                                
+                                WHERE ((t.rating > 0 AND {3} = 1) OR {3} = 0)
                                 # Artist is not disliked
-                                WHERE ((t.id NOT IN (select tt.id 
+                                AND ((t.id NOT IN (select tt.id 
                                                     FROM `track` tt
                                                     JOIN `releasemedia` rm on (tt.releaseMediaId = rm.id)                    
                                                     JOIN `userartist` ua on (rm.id = ua.artistId)
@@ -311,13 +313,13 @@ namespace Roadie.Api.Services
                                                   JOIN `usertrack` ut on (tt.id = ut.trackId)
                                                   WHERE ut.userId = {1} AND ut.isDisliked = 1)))
                                 # If toggled then only favorites                  
-                                OR (t.id IN (select tt.id 
+                                AND ((t.id IN (select tt.id 
                                              FROM `track` tt
 			                                 JOIN `usertrack` ut on (tt.id = ut.trackId)
-	                                         WHERE ut.userId = {1} AND ut.isFavorite = 1) AND {2} = 1)                 
+	                                         WHERE ut.userId = {1} AND ut.isFavorite = 1) AND {2} = 1) OR {2} = 0)
                                 order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)                    
                                 LIMIT 0, {0};";
-                    randomTrackIds = (from a in DbContext.Releases.FromSqlRaw(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0")
+                    randomTrackIds = (from a in DbContext.Releases.FromSqlRaw(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0", request.FilterRatedOnly ? "1" : "0")
                                         select a.Id).ToArray();
                     rowCount = DbContext.Releases.Count();
 
