@@ -104,7 +104,7 @@ namespace Roadie.Library.Models
             var skippedTracks = new List<TrackList>();
             foreach(var track in tracks)
             {
-                var trackArtist = track.Artist?.Artist?.Value;
+                var trackArtist = track.Artist?.Artist?.Value ?? track.Release?.Artist?.Value;
                 var trackRelease = track.Release?.Release?.Value;
                 if (!shuffledTracks.Any(x => x.Artist?.Artist?.Value == trackArtist &&
                                              x.Release?.Release?.Value != trackRelease))
@@ -120,7 +120,7 @@ namespace Roadie.Library.Models
             while (skippedTracks.ToList().Any())
             {
                 var st = skippedTracks.First();
-                var trackArtist = st.Artist?.Artist?.Value;
+                var trackArtist = st.Artist?.Artist?.Value ?? st.Release?.Artist?.Value;
                 var insertAt = AllIndexesOfArtist(result, trackArtist).Last() + 2;
                 if(insertAt < result.Count() - 1)
                 {
