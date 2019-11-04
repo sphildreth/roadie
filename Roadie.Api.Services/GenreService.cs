@@ -159,12 +159,12 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<Image>> SetGenreImageByUrl(User user, Guid id, string imageUrl)
+        public async Task<OperationResult<Library.Models.Image>> SetGenreImageByUrl(User user, Guid id, string imageUrl)
         {
             return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
 
-        public async Task<OperationResult<Image>> UploadGenreImage(User user, Guid id, IFormFile file)
+        public async Task<OperationResult<Library.Models.Image>> UploadGenreImage(User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
             using (var ms = new MemoryStream())
@@ -230,24 +230,21 @@ namespace Roadie.Api.Services
             });
         }
 
-        private async Task<OperationResult<Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
+        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
         {
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
             var genre = DbContext.Genres.FirstOrDefault(x => x.RoadieId == id);
-            if (genre == null) return new OperationResult<Image>(true, string.Format("Genre Not Found [{0}]", id));
+            if (genre == null) return new OperationResult<Library.Models.Image>(true, string.Format("Genre Not Found [{0}]", id));
             try
             {
                 var now = DateTime.UtcNow;
-                genre.Thumbnail = imageBytes;
-                if (genre.Thumbnail != null)
+                if (imageBytes != null)
                 {
                     // Save unaltered label image
                     File.WriteAllBytes(genre.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(imageBytes));
-                    genre.Thumbnail = ImageHelper.ResizeToThumbnail(genre.Thumbnail, Configuration);
                 }
-
                 genre.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
                 CacheManager.ClearRegion(genre.CacheRegion);
@@ -261,7 +258,7 @@ namespace Roadie.Api.Services
 
             sw.Stop();
 
-            return new OperationResult<Image>
+            return new OperationResult<Library.Models.Image>
             {
                 IsSuccess = !errors.Any(),
                 Data = MakeThumbnailImage(Configuration, HttpContext, id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),

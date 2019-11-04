@@ -99,7 +99,7 @@ namespace Roadie.Library.Tests
         [InlineData("Angie (2004 Remastered)")]
         [InlineData("Angie (Japan Ltd Dig")]
         [InlineData("Angie (Japan Release)")]
-        public void CleanString_Release_Should_Be_Angie(string input)
+        public void CleanStringReleaseShouldBeAngie(string input)
         {
             var r = @"(\s*(-\s)*((CD[_\-#\s]*[0-9]*)))|((\(|\[)+([0-9]|,|self|bonus|re(leas|master|(e|d)*)*|th|anniversary|cd|disc|deluxe|dig(ipack)*|vinyl|japan(ese)*|asian|remastered|limited|ltd|expanded|edition|\s)+(]|\)*))";
             var cleaned = input.CleanString(this.Configuration, r);
@@ -117,7 +117,7 @@ namespace Roadie.Library.Tests
         [InlineData("Love.Mp3")]
         [InlineData("LOVE.Mp3")]
         [InlineData("love.mp3")]
-        public void CleanString_Track(string input)
+        public void CleanStringTrack(string input)
         {
             Assert.Equal("Love.Mp3", input.CleanString(Configuration, Configuration.Processing.TrackRemoveStringsRegex).ToTitleCase());
         }
@@ -226,7 +226,7 @@ namespace Roadie.Library.Tests
         [InlineData("49 Batman Loves Robin")]
         [InlineData("54  Batman Loves Robin")]
         [InlineData("348 Batman Loves Robin")]
-        public void Test_Regex_String(string input)
+        public void TestRegexString(string input)
         {
             var t1 = Regex.Replace(input, "^([0-9]+)(\\.|-|\\s)*", "");
             Assert.NotNull(t1);

@@ -91,7 +91,7 @@ namespace Roadie.Api.Services
                 var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Release);
                 if (userBookmarkResult.IsSuccess)
                 {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == release.RoadieId.ToString()) != null;
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark?.Value  == release.RoadieId.ToString()) != null;
                 }
                 if (result.Data.Medias != null)
                 {
@@ -297,9 +297,21 @@ namespace Roadie.Api.Services
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError(ex,
-                            string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath,
-                                track.Id, ex.Serialize()));
+                        Logger.LogError(ex, $"Error Deleting File [{trackPath}] For Track `{track}` Exception [{ex}]");
+                    }
+                }
+
+                // Delete all image files for Release                
+                foreach(var file in ImageHelper.ImageFilesInFolder(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)), SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                        Logger.LogWarning("For Release [{0}], Deleted File [{1}]", release.Id, file);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, $"Error Deleting File [{file}] Exception [{ex}]");
                     }
                 }
 
@@ -898,7 +910,6 @@ namespace Roadie.Api.Services
                                     if (mergeTrack.LastPlayed.HasValue && existingTrack.LastPlayed.HasValue &&
                                         mergeTrack.LastPlayed > existingTrack.LastPlayed)
                                         existingTrack.LastPlayed = mergeTrack.LastPlayed;
-                                    existingTrack.Thumbnail = existingTrack.Thumbnail ?? mergeTrack.Thumbnail;
                                     existingTrack.MusicBrainzId = existingTrack.MusicBrainzId ?? mergeTrack.MusicBrainzId;
                                     existingTrack.Tags = existingTrack.Tags.AddToDelimitedList(mergeTrack.Tags.ToListFromDelimited());
                                     if (!mergeTrack.Title.Equals(existingTrack.Title,
@@ -962,7 +973,6 @@ namespace Roadie.Api.Services
                 releaseToMergeInto.LastFMId = releaseToMergeInto.LastFMId ?? releaseToMerge.LastFMId;
                 releaseToMergeInto.LastFMSummary = releaseToMergeInto.LastFMSummary ?? releaseToMerge.LastFMSummary;
                 releaseToMergeInto.SpotifyId = releaseToMergeInto.SpotifyId ?? releaseToMerge.SpotifyId;
-                releaseToMergeInto.Thumbnail = releaseToMergeInto.Thumbnail ?? releaseToMerge.Thumbnail;
                 if (releaseToMergeInto.ReleaseType == ReleaseType.Unknown &&
                     releaseToMerge.ReleaseType != ReleaseType.Unknown)
                     releaseToMergeInto.ReleaseType = releaseToMerge.ReleaseType;
@@ -1466,28 +1476,14 @@ namespace Roadie.Api.Services
 
                 #endregion Scan Folder and Add or Update Existing Tracks from Files
 
-                if (release.Thumbnail == null)
-                {
-                    var imageFiles = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releasePath), ImageType.Release, SearchOption.TopDirectoryOnly);
-                    if (imageFiles != null && imageFiles.Any())
-                    {
-                        // Read image and convert to jpeg
-                        var i = imageFiles.First();
-                        release.Thumbnail = ImageHelper.ResizeToThumbnail(File.ReadAllBytes(i.FullName), Configuration);
-
-                        release.LastUpdated = now;
-                        await DbContext.SaveChangesAsync();
-                        CacheManager.ClearRegion(release.Artist.CacheRegion);
-                        CacheManager.ClearRegion(release.CacheRegion);
-                        Logger.LogInformation("Update Thumbnail using Release Cover File [{0}]", i.Name);
-                    }
-                }
-
                 sw.Stop();
 
                 await UpdateReleaseCounts(release.Id, now);
                 await UpdateArtistCountsForRelease(release.Id, now);
                 await UpdateReleaseRank(release.Id);
+
+                CacheManager.ClearRegion(release.Artist.CacheRegion);
+                CacheManager.ClearRegion(release.CacheRegion);
 
                 if (release.Labels != null && release.Labels.Any())
                 {
@@ -1522,7 +1518,6 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> UpdateRelease(ApplicationUser user, Release model, string originalReleaseFolder = null)
         {
             var didChangeArtist = false;
-            var didChangeThumbnail = false;
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
@@ -1595,10 +1590,6 @@ namespace Roadie.Api.Services
                     // Save unaltered image to cover file
                     var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)), "cover.jpg");
                     File.WriteAllBytes(coverFileName, ImageHelper.ConvertToJpegFormat(releaseImage));
-
-                    // Resize to store in database as thumbnail
-                    release.Thumbnail = ImageHelper.ResizeToThumbnail(releaseImage, Configuration);
-                    didChangeThumbnail = true;
                 }
                 var releaseFolder = release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration));
                 if (model.NewSecondaryImagesData != null && model.NewSecondaryImagesData.Any())
@@ -1667,11 +1658,6 @@ namespace Roadie.Api.Services
                     // TODO
                 }
 
-                if (model.Images != null && model.Images.Any())
-                {
-                    // TODO
-                }
-
                 release.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
                 await CheckAndChangeReleaseTitle(release, originalReleaseFolder);
@@ -1692,7 +1678,7 @@ namespace Roadie.Api.Services
                     }
                 }
                 CacheManager.ClearRegion(release.CacheRegion);
-                Logger.LogInformation($"UpdateRelease `{release}` By User `{user}`: Edited Artist [{didChangeArtist}], Uploaded new image [{didChangeThumbnail}]");
+                Logger.LogInformation($"UpdateRelease `{release}` By User `{user}`: Edited Artist [{didChangeArtist}]");
             }
             catch (Exception ex)
             {
@@ -1839,17 +1825,12 @@ namespace Roadie.Api.Services
                 if (includes.Contains("images"))
                 {
                     tsw.Restart();
-                    var releaseImages = DbContext.Images.Where(x => x.ReleaseId == release.Id).Select(x => MakeFullsizeImage(Configuration, HttpContext, x.RoadieId, x.Caption)).ToArray();
-                    if (releaseImages != null && releaseImages.Any())
-                    {
-                        result.Images = releaseImages;
-                    }
                     var artistFolder = release.Artist.ArtistFileFolder(Configuration);
                     var releaseFolder = release.ReleaseFileFolder(artistFolder);
                     var releaseImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseFolder), ImageType.ReleaseSecondary, SearchOption.TopDirectoryOnly);
                     if (releaseImagesInFolder.Any())
                     {
-                        result.Images = result.Images.Concat(releaseImagesInFolder.Select((x, i) => MakeFullsizeSecondaryImage(Configuration, HttpContext, id, ImageType.ReleaseSecondary, i)));
+                        result.Images = releaseImagesInFolder.Select((x, i) => MakeFullsizeSecondaryImage(Configuration, HttpContext, id, ImageType.ReleaseSecondary, i));
                     }
                     tsw.Stop();
                     timings.Add("images", tsw.ElapsedMilliseconds);
@@ -2045,17 +2026,12 @@ namespace Roadie.Api.Services
             try
             {
                 var now = DateTime.UtcNow;
-                release.Thumbnail = imageBytes;
-                if (release.Thumbnail != null)
+                if (imageBytes != null)
                 {
                     // Save unaltered image to cover file
                     var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)), "cover.jpg");
                     File.WriteAllBytes(coverFileName, ImageHelper.ConvertToJpegFormat(imageBytes));
-
-                    // Resize to store in database as thumbnail
-                    release.Thumbnail = ImageHelper.ResizeToThumbnail(imageBytes, Configuration);
                 }
-
                 release.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
                 CacheManager.ClearRegion(release.CacheRegion);

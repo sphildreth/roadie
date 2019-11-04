@@ -825,7 +825,6 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> UpdateTrack(User user, Track model)
         {
             var didChangeTrack = false;
-            var didChangeThumbnail = false;
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
@@ -883,10 +882,6 @@ namespace Roadie.Api.Services
                     // Save unaltered image to cover file
                     var trackThumbnailName = track.PathToTrackThumbnail(Configuration);
                     File.WriteAllBytes(trackThumbnailName, ImageHelper.ConvertToJpegFormat(trackImage));
-
-                    // Resize to store in database as thumbnail
-                    track.Thumbnail = ImageHelper.ResizeToThumbnail(trackImage, Configuration);
-                    didChangeThumbnail = true;
                 }
 
                 // See if Title was changed if so then  modify DB Filename and rename track
@@ -911,7 +906,7 @@ namespace Roadie.Api.Services
                     AudioMetaDataHelper.WriteTags(audioMetaData, trackFileInfo);
                 }
                 CacheManager.ClearRegion(track.CacheRegion);
-                Logger.LogInformation($"UpdateTrack `{track}` By User `{user}`: Edited Track [{didChangeTrack}], Uploaded new image [{didChangeThumbnail}]");
+                Logger.LogInformation($"UpdateTrack `{track}` By User `{user}`: Edited Track [{didChangeTrack}]");
             }
             catch (Exception ex)
             {

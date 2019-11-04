@@ -9,7 +9,7 @@ namespace Roadie.Library.Tests
     public class EncryptionHelperTests
     {
         [Fact]
-        public void Encrypt_And_Decrypt()
+        public void EncryptAndDecrypt()
         {
             var key = Guid.NewGuid().ToString();
             var value = Guid.NewGuid().ToString();

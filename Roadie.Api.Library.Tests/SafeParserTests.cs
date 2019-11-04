@@ -12,7 +12,7 @@ namespace Roadie.Library.Tests
         [InlineData("1")]
         [InlineData("01")]
         [InlineData("001")]
-        public void Parse_Int_ShouldBeOne(string input)
+        public void ParseIntShouldBeOne(string input)
         {
             var parsed = SafeParser.ToNumber<int>(input);
             Assert.Equal(1, parsed);
@@ -22,7 +22,7 @@ namespace Roadie.Library.Tests
         [InlineData("")]
         [InlineData("0")]
         [InlineData("00")]
-        public void Parse_Int_ShouldBeZero(string input)
+        public void ParseIntShouldBeZero(string input)
         {
             var parsed = SafeParser.ToNumber<int>(input);
             Assert.Equal(0, parsed);
@@ -31,7 +31,7 @@ namespace Roadie.Library.Tests
 
 
         [Fact]
-        public void Parse_Larger_Int()
+        public void ParseLargerInt()
         {
             var n = "12345";
             int n1 = 12345;
@@ -40,7 +40,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void Parse_NullablleInt()
+        public void ParseNullablleInt()
         {
             var one = "1";
             var parsed = SafeParser.ToNumber<int?>(one);
@@ -56,7 +56,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void Parse_Short()
+        public void ParseShort()
         {
             var n = "23";
             short n1 = 23;
@@ -84,7 +84,7 @@ namespace Roadie.Library.Tests
         [InlineData("88")]
         [InlineData("1988-06-15T07:00:00Z")] 
         [InlineData("1988-07-14T07:00:00Z")] 
-        public void Parse_Datetime_ShouldBe1988(string input)
+        public void ParseDatetimeShouldBe1988(string input)
         {
             var parsed = SafeParser.ToDateTime(input);
             Assert.NotNull(parsed);
@@ -99,7 +99,7 @@ namespace Roadie.Library.Tests
         [InlineData("2004////2004")]
         [InlineData("2004\\2004")]
         [InlineData("2004\\\\2004")]
-        public void Parse_Datetime_ShouldBe2004(string input)
+        public void ParseDatetimeShouldBe2004(string input)
         {
             var parsed = SafeParser.ToDateTime(input);
             Assert.NotNull(parsed);
@@ -111,7 +111,7 @@ namespace Roadie.Library.Tests
         [InlineData("12d65c61-1b7d-4c43-9aab-7d398a1a880e")]
         [InlineData("A:8a951bc1-5ee5-4961-b72a-99d91d84c147")]
         [InlineData("R:0327eea7-b1cb-4ae9-9eb1-b74b4416aefb")]
-        public void Parse_Guid(string input)
+        public void ParseGuid(string input)
         {
             var parsed = SafeParser.ToGuid(input);
             Assert.NotNull(parsed);
@@ -125,7 +125,7 @@ namespace Roadie.Library.Tests
         [InlineData("Yes")]
         [InlineData("YES")]
         [InlineData("1")]
-        public void Parse_Boolean_ShouldBeTrue(string input)
+        public void ParseBooleanShouldBeTrue(string input)
         {
             var parsed = SafeParser.ToBoolean(input);
             Assert.True(parsed);
@@ -142,7 +142,7 @@ namespace Roadie.Library.Tests
         [InlineData("No")]
         [InlineData("NO")]
         [InlineData("0")]
-        public void Parse_Boolean_ShouldBeFalse(string input)
+        public void ParseBooleanShouldBeFalse(string input)
         {
             var parsed = SafeParser.ToBoolean(input);
             Assert.False(parsed);

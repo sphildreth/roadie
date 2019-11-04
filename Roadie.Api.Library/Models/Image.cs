@@ -3,17 +3,20 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Roadie.Library.Models
 {
+    /// <summary>
+    /// Image class served to API consumers.
+    /// </summary>
     [Serializable]
     public class Image : EntityModelBase
     {
-        public Guid? ArtistId { get; set; }
-
         public byte[] Bytes { get; set; }
 
         [MaxLength(100)] public string Caption { get; set; }
 
+        [Obsolete("Only here for transition. Will be removed in future release.")]
+        public Guid? ArtistId { get; set; }
+        [Obsolete("Only here for transition. Will be removed in future release.")]
         public Guid? ReleaseId { get; set; }
-
         [MaxLength(50)] public string Signature { get; set; }
 
         [MaxLength(500)] public string ThumbnailUrl { get; set; }

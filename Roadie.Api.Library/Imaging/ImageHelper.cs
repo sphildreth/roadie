@@ -39,7 +39,7 @@ namespace Roadie.Library.Imaging
                 using (var outStream = new MemoryStream())
                 {
                     IImageFormat imageFormat = null;
-                    using (var image = Image.Load(imageBytes, out imageFormat))
+                    using (var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
                     {
                         image.Save(outStream, ImageFormats.Jpeg);
                     }
@@ -63,7 +63,7 @@ namespace Roadie.Library.Imaging
                 using (var outStream = new MemoryStream())
                 {
                     IImageFormat imageFormat = null;
-                    using (var image = Image.Load(imageBytes, out imageFormat))
+                    using (var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
                     {
                         image.Save(outStream, ImageFormats.Gif);
                     }
@@ -184,7 +184,7 @@ namespace Roadie.Library.Imaging
             var result = new ImageSearchResult();
             var imageBytes = WebHelper.BytesForImageUrl(imageUrl);
             IImageFormat imageFormat = null;
-            using (var image = Image.Load(imageBytes, out imageFormat))
+            using (var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
             {
                 result.Height = image.Height.ToString();
                 result.Width = image.Width.ToString();
@@ -254,7 +254,7 @@ namespace Roadie.Library.Imaging
                 {
                     var resized = false;
                     IImageFormat imageFormat = null;
-                    using (var image = Image.Load(imageBytes, out imageFormat))
+                    using (var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
                     {
                         var doForce = forceResize ?? false;
                         if (doForce || image.Width > width || image.Height > height)

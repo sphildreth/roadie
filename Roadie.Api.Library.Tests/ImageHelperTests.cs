@@ -1,5 +1,11 @@
-﻿using Roadie.Library.FilePlugins;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Roadie.Library.Configuration;
+using Roadie.Library.Data;
+using Roadie.Library.FilePlugins;
 using Roadie.Library.Imaging;
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -20,7 +26,7 @@ namespace Roadie.Library.Tests
         [InlineData("GrOup.jpg")]
         [InlineData("photo.jpg")]
         [InlineData("aRtist.jpg")]
-        public void Test_Should_Be_Artist_Images(string input)
+        public void TestShouldBeArtistImages(string input)
         {
             Assert.True(ImageHelper.IsArtistImage(new FileInfo(input)));
         }
@@ -42,7 +48,7 @@ namespace Roadie.Library.Tests
         [InlineData("band 1.jpg")]
         [InlineData("photo 1.jpg")]
         [InlineData("photo1.jpg")]
-        public void Test_Should_Be_Artist_Secondary_Images(string input)
+        public void TestShouldBeArtistSecondaryImages(string input)
         {
             Assert.True(ImageHelper.IsArtistSecondaryImage(new FileInfo(input)));
         }
@@ -74,7 +80,7 @@ namespace Roadie.Library.Tests
         [InlineData("BIG.JPg")]
         [InlineData("bigart.JPg")]
         [InlineData("BIG.PNG")]
-        public void Test_Should_Be_Release_Images(string input)
+        public void TestShouldBeReleaseImages(string input)
         {
             Assert.True(ImageHelper.IsReleaseImage(new FileInfo(input)));
         }
@@ -102,7 +108,7 @@ namespace Roadie.Library.Tests
         [InlineData("artist 1.jpg")]
         [InlineData("artist_01.jpg")]
         [InlineData("artist 03.jpg")]
-        public void Test_Should_Not_Be_Artist_Images(string input)
+        public void TestShouldNotBeArtistImages(string input)
         {
             var t = ImageHelper.IsArtistImage(new FileInfo(input));
             Assert.False(t);
@@ -127,7 +133,7 @@ namespace Roadie.Library.Tests
         [InlineData("cover_01.jpg")]
         [InlineData("cover 03.jpg")]
         [InlineData("Dixieland-Front1.jpg")]
-        public void Test_Should_Not_Be_Release_Images(string input)
+        public void TestShouldNotBeReleaseImages(string input)
         {
             Assert.False(ImageHelper.IsReleaseImage(new FileInfo(input)));
         }
@@ -142,7 +148,7 @@ namespace Roadie.Library.Tests
         [InlineData("record_label.jpg")]
         [InlineData("RecordLabel.jpg")]
         [InlineData("RECORDLABEL.JPG")]
-        public void Test_Should_Be_Label_Images(string input)
+        public void TestShouldBeLabelImages(string input)
         {
             Assert.True(ImageHelper.IsLabelImage(new FileInfo(input)));
         }
@@ -165,7 +171,7 @@ namespace Roadie.Library.Tests
         [InlineData("Release.JPG")]
         [InlineData("front.jpg")]
         [InlineData("FrOnt.jpg")]
-        public void Test_Should_NotBe_Label_Images(string input)
+        public void TestShouldNotBeLabelImages(string input)
         {
             Assert.False(ImageHelper.IsLabelImage(new FileInfo(input)));
         }
@@ -234,7 +240,7 @@ namespace Roadie.Library.Tests
         [InlineData("Matrix-1.jpg")]
         [InlineData("Matrix 1.jpg")]
         [InlineData("IMG_20160921_0004.jpg")] 
-        public void Test_Should_Be_Release_Secondary_Images(string input)
+        public void TestShouldBeReleaseSecondaryImages(string input)
         {
             Assert.True(ImageHelper.IsReleaseSecondaryImage(new FileInfo(input)));
         }
@@ -265,13 +271,13 @@ namespace Roadie.Library.Tests
         [InlineData("record_label.jpg")]
         [InlineData("RecordLabel.jpg")]
         [InlineData("RECORDLABEL.JPG")]
-        public void Test_Should_Not_Be_Release_Secondary_Images(string input)
+        public void TestShouldNotBeReleaseSecondaryImages(string input)
         {
             Assert.False(ImageHelper.IsReleaseSecondaryImage(new FileInfo(input)));
         }
 
         [Fact]
-        public void Get_Release_Image_In_Folder()
+        public void GetReleaseImageInFolder()
         {
             var folder = new DirectoryInfo(@"C:\roadie_dev_root\image_tests");
             if(!folder.Exists)
@@ -287,7 +293,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void Get_Artist_Image_In_Folder()
+        public void GetArtistImageInFolder()
         {
             var folder = new DirectoryInfo(@"C:\roadie_dev_root\image_tests)");
             if (!folder.Exists)
@@ -299,6 +305,197 @@ namespace Roadie.Library.Tests
             Assert.NotNull(artist);
             Assert.Single(artist);
             Assert.Equal("artist.jpg", artist.First().Name);
+        }
+
+        [Fact]
+        public void ExtractImagesFromDatabase()
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            var now = DateTime.UtcNow;
+            var optionsBuilder = new DbContextOptionsBuilder<RoadieDbContext>();
+            optionsBuilder.UseMySql("server=viking;userid=roadie;password=MenAtW0rk668;persistsecurityinfo=True;database=roadie_dev;ConvertZeroDateTime=true");
+
+            var settings = new RoadieSettings();
+            IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddJsonFile("appsettings.test.json");
+            IConfiguration configuration = configurationBuilder.Build();
+            configuration.GetSection("RoadieSettings").Bind(settings);
+            settings.ConnectionString = configuration.GetConnectionString("RoadieDatabaseConnection");            
+
+            using (var context = new RoadieDbContext(optionsBuilder.Options))
+            {
+                foreach (var artist in context.Artists.Where(x => x.Thumbnail != null).OrderBy(x => x.SortName ?? x.Name))
+                {
+                    var artistFolder = artist.ArtistFileFolder(settings);
+                    if (!Directory.Exists(artistFolder))
+                    {
+                        Directory.CreateDirectory(artistFolder);
+                    }
+                    var artistImage = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
+                    if (!File.Exists(artistImage))
+                    {
+                        File.WriteAllBytes(artistImage, ImageHelper.ConvertToJpegFormat(artist.Thumbnail));
+                    }
+                    artist.Thumbnail = null;
+                    artist.LastUpdated = now;
+                    Trace.WriteLine($"Saved Artist Image `{artist}` path [{ artistImage }]");
+                }
+                context.SaveChanges();
+
+                var artistImages = (from i in context.Images
+                                    join a in context.Artists on i.ArtistId equals a.Id
+                                    select new { i, a});
+                foreach(var artistImage in artistImages)
+                {
+                    var looper = 0;
+                    var artistFolder = artistImage.a.ArtistFileFolder(settings);
+                    var artistImageFilename = Path.Combine(artistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                    while (File.Exists(artistImageFilename))
+                    {
+                        looper++;
+                        artistImageFilename = Path.Combine(artistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                    }
+                    File.WriteAllBytes(artistImageFilename, ImageHelper.ConvertToJpegFormat(artistImage.i.Bytes));
+                    context.Images.Remove(artistImage.i);
+                    Trace.WriteLine($"Saved Artist Secondary Image `{artistImage.a}` path [{ artistImageFilename }]");
+                }
+                context.SaveChanges();
+
+                foreach (var collection in context.Collections.Where(x => x.Thumbnail != null).OrderBy(x => x.SortName ?? x.Name))
+                {
+                    var image = collection.PathToImage(settings);
+                    if (!File.Exists(image))
+                    {
+                        File.WriteAllBytes(image, ImageHelper.ConvertToJpegFormat(collection.Thumbnail));
+                    }
+                    collection.Thumbnail = null;
+                    collection.LastUpdated = now;
+                    Trace.WriteLine($"Saved Collection Image `{collection}` path [{ image }]");
+                }
+                context.SaveChanges();
+
+                foreach (var genre in context.Genres.Where(x => x.Thumbnail != null).OrderBy(x => x.Name))
+                {
+                    var image = genre.PathToImage(settings);
+                    if (!File.Exists(image))
+                    {
+                        File.WriteAllBytes(image, ImageHelper.ConvertToJpegFormat(genre.Thumbnail));
+                    }
+                    genre.Thumbnail = null;
+                    genre.LastUpdated = now;
+                    Trace.WriteLine($"Saved Genre Image `{genre}` path [{ image }]");
+                }
+                context.SaveChanges();
+
+                foreach (var label in context.Labels.Where(x => x.Thumbnail != null).OrderBy(x => x.SortName ?? x.Name))
+                {
+                    var image = label.PathToImage(settings);
+                    if (!File.Exists(image))
+                    {
+                        File.WriteAllBytes(image, ImageHelper.ConvertToJpegFormat(label.Thumbnail));
+                    }
+                    label.Thumbnail = null;
+                    label.LastUpdated = now;
+                    Trace.WriteLine($"Saved Label Image `{label}` path [{ image }]");
+                }
+                context.SaveChanges();
+
+                foreach (var playlist in context.Playlists.Where(x => x.Thumbnail != null).OrderBy(x => x.Name))
+                {
+                    var image = playlist.PathToImage(settings);
+                    if (!File.Exists(image))
+                    {
+                        File.WriteAllBytes(image, ImageHelper.ConvertToJpegFormat(playlist.Thumbnail));
+                    }
+                    playlist.Thumbnail = null;
+                    playlist.LastUpdated = now;
+                    Trace.WriteLine($"Saved Playlist Image `{playlist}` path [{ image }]");
+                }
+                context.SaveChanges();
+
+                foreach (var release in context.Releases.Include(x => x.Artist).Where(x => x.Thumbnail != null).OrderBy(x => x.Title))
+                {
+                    var artistFolder = release.Artist.ArtistFileFolder(settings);
+                    var releaseFolder = release.ReleaseFileFolder(artistFolder);
+                    if (!Directory.Exists(releaseFolder))
+                    {
+                        Directory.CreateDirectory(artistFolder);
+                    }
+                    var releaseImage = Path.Combine(releaseFolder, "cover.jpg");
+                    if (!File.Exists(releaseImage))
+                    {
+                        File.WriteAllBytes(releaseImage, ImageHelper.ConvertToJpegFormat(release.Thumbnail));
+                    }
+                    release.Thumbnail = null;
+                    release.LastUpdated = now;
+                    Trace.WriteLine($"Saved Release Image `{release}` path [{ releaseImage }]");
+                }
+                context.SaveChanges();
+
+                var releaseImages = (from i in context.Images
+                                     join r in context.Releases.Include(x => x.Artist) on i.ReleaseId equals r.Id
+                                     select new { i, r });
+                foreach (var releaseImage in releaseImages)
+                {
+                    var looper = 0;
+                    var artistFolder = releaseImage.r.Artist.ArtistFileFolder(settings);
+                    var releaseFolder = releaseImage.r.ReleaseFileFolder(artistFolder);
+                    var releaseImageFilename = Path.Combine(artistFolder, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                    while (File.Exists(releaseImageFilename))
+                    {
+                        looper++;
+                        releaseImageFilename = Path.Combine(artistFolder, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                    }
+                    File.WriteAllBytes(releaseImageFilename, ImageHelper.ConvertToJpegFormat(releaseImage.i.Bytes));
+                    context.Images.Remove(releaseImage.i);
+                    Trace.WriteLine($"Saved Release Secondary Image `{releaseImage.r}` path [{ releaseImageFilename }]");
+                }
+                context.SaveChanges();
+
+
+                foreach (var track in context.Tracks.Include(x => x.ReleaseMedia)
+                                                    .Include(x => x.ReleaseMedia.Release)
+                                                    .Include(x => x.ReleaseMedia.Release.Artist)
+                                                    .Where(x => x.Thumbnail != null).OrderBy(x => x.Title))
+                {
+                    var artistFolder = track.ReleaseMedia.Release.Artist.ArtistFileFolder(settings);
+                    if (!Directory.Exists(artistFolder))
+                    {
+                        Directory.CreateDirectory(artistFolder);
+                    }
+                    var releaseFolder = track.ReleaseMedia.Release.ReleaseFileFolder(artistFolder);
+                    if (!Directory.Exists(releaseFolder))
+                    {
+                        Directory.CreateDirectory(releaseFolder);
+                    }
+                    var trackImage = track.PathToTrackThumbnail(settings);
+                    if (!File.Exists(trackImage))
+                    {
+                        File.WriteAllBytes(trackImage, ImageHelper.ConvertToJpegFormat(track.Thumbnail));
+                    }
+                    track.Thumbnail = null;
+                    track.LastUpdated = now;
+                    Trace.WriteLine($"Saved Track Image `{track}` path [{ trackImage }]");
+                }
+                context.SaveChanges();
+
+                foreach (var user in context.Users.Where(x => x.Avatar != null).OrderBy(x => x.UserName))
+                {
+                    var image = user.PathToImage(settings);
+                    if (!File.Exists(image))
+                    {
+                        File.WriteAllBytes(image, ImageHelper.ConvertToJpegFormat(user.Avatar));
+                    }
+                    user.Avatar = null;
+                    user.LastUpdated = now;
+                    Trace.WriteLine($"Saved User Image `{user}` path [{ image }]");
+                }
+                context.SaveChanges();
+
+
+            }
+#pragma warning restore CS0618 // Type or member is obsolete
+
         }
     }
 }

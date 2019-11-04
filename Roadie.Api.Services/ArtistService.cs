@@ -552,23 +552,6 @@ namespace Roadie.Api.Services
                 {
                     Services.FileDirectoryProcessorService.DeleteEmptyFolders(new DirectoryInfo(artistFolder), Logger);
                 }
-                // Always update artist image if artist image is found on an artist rescan
-                var imageFiles = ImageHelper.ImageFilesInFolder(artistFolder, SearchOption.AllDirectories);
-                if (imageFiles != null && imageFiles.Any())
-                {
-                    var i = new FileInfo(imageFiles.First());
-                    var iName = i.Name.ToLower().Trim();
-                    if (ImageHelper.IsArtistImage(i))
-                    {
-                        // Read image and convert to jpeg
-                        artist.Thumbnail = ImageHelper.ResizeToThumbnail(File.ReadAllBytes(i.FullName), Configuration);
-                        artist.LastUpdated = DateTime.UtcNow;
-                        await DbContext.SaveChangesAsync();
-                        CacheManager.ClearRegion(artist.CacheRegion);
-                        Logger.LogTrace("Update Thumbnail using Artist File [{0}]", iName);
-                    }
-                }
-
                 sw.Stop();
                 CacheManager.ClearRegion(artist.CacheRegion);
                 Logger.LogInformation("Scanned Artist [{0}], Releases Scanned [{1}], OperationTime [{2}]", artist.ToString(), releaseScannedCount, sw.ElapsedMilliseconds);
@@ -588,7 +571,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Image>> SetReleaseImageByUrl(ApplicationUser user, Guid id, string imageUrl)
+        public async Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(ApplicationUser user, Guid id, string imageUrl)
         {
             return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
@@ -596,7 +579,6 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> UpdateArtist(ApplicationUser user, Artist model)
         {
             var didRenameArtist = false;
-            var didChangeThumbnail = false;
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
@@ -689,10 +671,6 @@ namespace Roadie.Api.Services
                     // Save unaltered image to cover file
                     var artistImageName = Path.Combine(newArtistFolder, ImageHelper.ArtistImageFilename);
                     File.WriteAllBytes(artistImageName, ImageHelper.ConvertToJpegFormat(artistImage));
-
-                    // Resize to store in database as thumbnail
-                    artist.Thumbnail = ImageHelper.ResizeToThumbnail(artistImage, Configuration);
-                    didChangeThumbnail = true;
                 }
 
                 if (model.NewSecondaryImagesData != null && model.NewSecondaryImagesData.Any())
@@ -855,7 +833,7 @@ namespace Roadie.Api.Services
                 }
 
                 CacheManager.ClearRegion(artist.CacheRegion);
-                Logger.LogInformation($"UpdateArtist `{artist}` By User `{user}`: Renamed Artist [{didRenameArtist}], Uploaded new image [{didChangeThumbnail}]");
+                Logger.LogInformation($"UpdateArtist `{artist}` By User `{user}`: Renamed Artist [{didRenameArtist}]");
             }
             catch (Exception ex)
             {
@@ -874,7 +852,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Image>> UploadArtistImage(ApplicationUser user, Guid id, IFormFile file)
+        public async Task<OperationResult<Library.Models.Image>> UploadArtistImage(ApplicationUser user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
             using (var ms = new MemoryStream())
@@ -1022,15 +1000,12 @@ namespace Roadie.Api.Services
                 if (includes.Contains("images"))
                 {
                     tsw.Restart();
-                    result.Images = DbContext.Images.Where(x => x.ArtistId == artist.Id)
-                        .Select(x => MakeFullsizeImage(Configuration, HttpContext, x.RoadieId, x.Caption)).ToArray();
-
                     var artistFolder = artist.ArtistFileFolder(Configuration);
-                    var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder),
-                        ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly);
+                    var artistImagesInFolder = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.ArtistSecondary, SearchOption.TopDirectoryOnly);
                     if (artistImagesInFolder.Any())
-                        result.Images = result.Images.Concat(artistImagesInFolder.Select((x, i) =>
-                            MakeFullsizeSecondaryImage(Configuration, HttpContext, id, ImageType.ArtistSecondary, i)));
+                    {
+                        result.Images = artistImagesInFolder.Select((x, i) => MakeFullsizeSecondaryImage(Configuration, HttpContext, id, ImageType.ArtistSecondary, i));
+                    }
 
                     tsw.Stop();
                     timings.Add("images", tsw.ElapsedMilliseconds);
@@ -1313,7 +1288,6 @@ namespace Roadie.Api.Services
             artistToMergeInto.ITunesId = artistToMergeInto.ITunesId ?? artistToMerge.ITunesId;
             artistToMergeInto.AmgId = artistToMergeInto.AmgId ?? artistToMerge.AmgId;
             artistToMergeInto.SpotifyId = artistToMergeInto.SpotifyId ?? artistToMerge.SpotifyId;
-            artistToMergeInto.Thumbnail = artistToMergeInto.Thumbnail ?? artistToMerge.Thumbnail;
             artistToMergeInto.Profile = artistToMergeInto.Profile ?? artistToMerge.Profile;
             artistToMergeInto.BirthDate = artistToMergeInto.BirthDate ?? artistToMerge.BirthDate;
             artistToMergeInto.BeginDate = artistToMergeInto.BeginDate ?? artistToMerge.BeginDate;
@@ -1353,15 +1327,6 @@ namespace Roadie.Api.Services
                         }
                     }
                 }
-                var artistImages = DbContext.Images.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
-                if (artistImages != null)
-                {
-                    foreach (var artistImage in artistImages)
-                    {
-                        artistImage.ArtistId = artistToMergeInto.Id;
-                    }
-                }
-
                 try
                 {
                     // Move any Artist and Artist Secondary images from ArtistToMerge into ArtistToMergeInto folder
@@ -1407,13 +1372,6 @@ namespace Roadie.Api.Services
                 }
 
                 var userArtists = DbContext.UserArtists.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
-                if (artistImages != null)
-                {
-                    foreach (var userArtist in userArtists)
-                    {
-                        userArtist.ArtistId = artistToMergeInto.Id;
-                    }
-                }
                 var artistTracks = DbContext.Tracks.Where(x => x.ArtistId == artistToMerge.Id).ToArray();
                 if (artistTracks != null)
                 {
@@ -1465,18 +1423,17 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<Image>> SaveImageBytes(ApplicationUser user, Guid id, byte[] imageBytes)
+        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(ApplicationUser user, Guid id, byte[] imageBytes)
         {
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
             var artist = DbContext.Artists.FirstOrDefault(x => x.RoadieId == id);
-            if (artist == null) return new OperationResult<Image>(true, $"Artist Not Found [{id}]");
+            if (artist == null) return new OperationResult<Library.Models.Image>(true, $"Artist Not Found [{id}]");
             try
             {
                 var now = DateTime.UtcNow;
-                artist.Thumbnail = imageBytes;
-                if (artist.Thumbnail != null)
+                if (imageBytes != null)
                 {
                     // Ensure artist folder exists
                     var artistFolder = artist.ArtistFileFolder(Configuration);
@@ -1489,11 +1446,7 @@ namespace Roadie.Api.Services
                     // Save unaltered image to artist file
                     var artistImage = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
                     File.WriteAllBytes(artistImage, ImageHelper.ConvertToJpegFormat(imageBytes));
-
-                    // Resize to store in database as thumbnail
-                    artist.Thumbnail = ImageHelper.ResizeToThumbnail(artist.Thumbnail, Configuration);
                 }
-
                 artist.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
                 CacheManager.ClearRegion(artist.CacheRegion);
@@ -1507,7 +1460,7 @@ namespace Roadie.Api.Services
 
             sw.Stop();
 
-            return new OperationResult<Image>
+            return new OperationResult<Library.Models.Image>
             {
                 IsSuccess = !errors.Any(),
                 Data = MakeThumbnailImage(Configuration, HttpContext, id, "artist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),

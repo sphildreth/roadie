@@ -32,7 +32,7 @@ namespace Roadie.Library.Tests
         public ID3TagsHelperTests()
         {
             this.MessageLogger = new EventMessageLogger<ID3TagsHelperTests>();
-            this.MessageLogger.Messages += MessageLogger_Messages;
+            this.MessageLogger.Messages += MessageLoggerMessages;
 
             var settings = new RoadieSettings();
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
@@ -43,11 +43,11 @@ namespace Roadie.Library.Tests
             this.Configuration = settings;
             this.CacheManager = new DictionaryCacheManager(this.Logger, new CachePolicy(TimeSpan.FromHours(4)));
             var tagHelperLooper = new EventMessageLogger<ID3TagsHelper>();
-            tagHelperLooper.Messages += MessageLogger_Messages;
+            tagHelperLooper.Messages += MessageLoggerMessages;
             this.TagsHelper = new ID3TagsHelper(this.Configuration, this.CacheManager, tagHelperLooper);
         }
 
-        private void MessageLogger_Messages(object sender, EventMessage e)
+        private void MessageLoggerMessages(object sender, EventMessage e)
         {
             Console.WriteLine($"Log Level [{ e.Level }] Log Message [{ e.Message }] ");
         }
@@ -205,7 +205,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void ReadTotalTrackNumbersFromCue_Should_Be_Five()
+        public void ReadTotalTrackNumbersFromCueShouldBeFive()
         {
             var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\cues1";
             var directory = new DirectoryInfo(cuesDir);
@@ -224,7 +224,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void ReadTotalTrackNumbersFromCue_Should_Be_Eight()
+        public void ReadTotalTrackNumbersFromCueShouldBeEight()
         {
             var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\cues2";
             var directory = new DirectoryInfo(cuesDir);
@@ -243,7 +243,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void ReadTotalTrackNumbersFromCue_Should_Be_Six()
+        public void ReadTotalTrackNumbersFromCueShouldBeSix()
         {
             var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\cues3";
             var directory = new DirectoryInfo(cuesDir);
@@ -262,7 +262,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void ReadTotalTrackNumbersFromCue_Should_Be_Nine()
+        public void ReadTotalTrackNumbersFromCueShouldBeNine()
         {
             var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\cues4";
             var directory = new DirectoryInfo(cuesDir);
@@ -281,7 +281,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void ReadTotalTrackNumbersFromM3u_Should_Be_Eleven()
+        public void ReadTotalTrackNumbersFromM3uShouldBeEleven()
         {
             var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\m3u1";
             var directory = new DirectoryInfo(cuesDir);
@@ -300,7 +300,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void ReadTotalTrackNumbersFromM3u_Should_Be_Four()
+        public void ReadTotalTrackNumbersFromM3uShouldBeFour()
         {
             var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\m3u2";
             var directory = new DirectoryInfo(cuesDir);
@@ -319,7 +319,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void ReadTotalTrackNumbersFromM3u_Should_Be_Eight()
+        public void ReadTotalTrackNumbersFromM3uShouldBeEight()
         {
             var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\m3u3";
             var directory = new DirectoryInfo(cuesDir);
@@ -338,7 +338,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void ReadTotalTrackNumbersFromM3u_Should_Be_Fourteen()
+        public void ReadTotalTrackNumbersFromM3uShouldBeFourteen()
         {
             var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\m3u4";
             var directory = new DirectoryInfo(cuesDir);
@@ -545,7 +545,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void Read_File_Test_Is_valid()
+        public void ReadFileTestIsvalid()
         {
             var file = new FileInfo(@"M:\unknown\2eec19bd-3575-4b7f-84dd-db2a0ec3e2f3~[2009] Dolly - Disc 1 Of 4~06 Nobody But You (Previously Unissued).mp3");
             if (file.Exists)
@@ -572,7 +572,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void Read_File_Test_Is_valid2()
+        public void ReadFileTestIsvalid2()
         {
             var file = new FileInfo(@"M:\library_old\Perverse\[2014] Champion Dub\01 Champion Dub (Original Mix).mp3");
             if (file.Exists)
@@ -599,7 +599,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void Read_File_Test_Is_valid3()
+        public void ReadFileTestIsvalid3()
         {
             var file = new FileInfo(@"C:\roadie_dev_root\inbound\Dreadful Fate - Vengeance (2018)\01-dreadful_fate-vengeance.mp3");
             if (file.Exists)
@@ -685,7 +685,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void Write_Tags()
+        public void WriteTags()
         {
             var file = new FileInfo(@"C:\roadie_dev_root\inbound\temp\01. Re1nstall 0verture.mp3");
             if (file.Exists)

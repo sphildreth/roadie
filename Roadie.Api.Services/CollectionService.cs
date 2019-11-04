@@ -302,14 +302,10 @@ namespace Roadie.Api.Services
             {
                 // Save unaltered collection image
                 File.WriteAllBytes(collection.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(collectionImage));
-                // Update Thumbnail
-                collection.Thumbnail = ImageHelper.ResizeToThumbnail(collectionImage, Configuration);
             }
-
             if (model.Maintainer?.Value != null)
             {
-                var maintainer =
-                    DbContext.Users.FirstOrDefault(x => x.RoadieId == SafeParser.ToGuid(model.Maintainer.Value));
+                var maintainer = DbContext.Users.FirstOrDefault(x => x.RoadieId == SafeParser.ToGuid(model.Maintainer.Value));
                 if (maintainer != null) collection.MaintainerId = maintainer.Id;
             }
 

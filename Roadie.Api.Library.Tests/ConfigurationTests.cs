@@ -45,7 +45,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void Load_Root_Level_Configuration()
+        public void LoadRootLevelConfiguration()
         {
             var inboundFolder = @"C:\roadie_dev_root\inbound";
             var configInboundFolder = this.Settings.InboundFolder;

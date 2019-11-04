@@ -1,6 +1,8 @@
 ﻿using Roadie.Library.Configuration;
 using Roadie.Library.Utility;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Security.Cryptography;
 
@@ -19,6 +21,9 @@ namespace Roadie.Library.Data
                 return HashHelper.CreateMD5($"{ RoadieId }{ LastUpdated }");
             }
         }
+
+        [NotMapped]
+        public ICollection<Roadie.Library.Imaging.IImage> Images { get; set; }
 
         public bool IsNew => Id < 1;
 

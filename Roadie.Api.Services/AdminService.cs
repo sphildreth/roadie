@@ -1012,6 +1012,225 @@ namespace Roadie.Api.Services
             };
         }
 
+        /// <summary>
+        /// Migrate images from Images table and Thumbnails to file storage.
+        /// </summary>
+        public async Task<OperationResult<bool>> MigrateImages(ApplicationUser user)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var now = DateTime.UtcNow;
+            foreach (var artist in DbContext.Artists.Where(x => x.Thumbnail != null).OrderBy(x => x.SortName ?? x.Name))
+            {
+                var artistFolder = artist.ArtistFileFolder(Configuration);
+                if (!Directory.Exists(artistFolder))
+                {
+                    Directory.CreateDirectory(artistFolder);
+                }
+                var artistImage = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
+                if (!File.Exists(artistImage))
+                {
+                    File.WriteAllBytes(artistImage, ImageHelper.ConvertToJpegFormat(artist.Thumbnail));
+                }
+                artist.Thumbnail = null;
+                artist.LastUpdated = now;
+
+                Logger.LogInformation($"Saved Artist Image `{artist}` path [{ artistImage }]");
+            }
+            await DbContext.SaveChangesAsync();
+
+            var artistImages = (from i in DbContext.Images
+                                join a in DbContext.Artists on i.ArtistId equals a.Id
+                                select new { i, a });
+            foreach (var artistImage in artistImages)
+            {
+                var looper = 0;
+                var artistFolder = artistImage.a.ArtistFileFolder(Configuration);
+                var artistImageFilename = Path.Combine(artistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                while (File.Exists(artistImageFilename))
+                {
+                    looper++;
+                    artistImageFilename = Path.Combine(artistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                }
+                File.WriteAllBytes(artistImageFilename, ImageHelper.ConvertToJpegFormat(artistImage.i.Bytes));
+                DbContext.Images.Remove(artistImage.i);
+                Logger.LogInformation($"Saved Artist Secondary Image `{artistImage.a}` path [{ artistImageFilename }]");
+            }
+            await DbContext.SaveChangesAsync();
+
+            foreach (var collection in DbContext.Collections.Where(x => x.Thumbnail != null).OrderBy(x => x.SortName ?? x.Name))
+            {
+                var image = collection.PathToImage(Configuration);
+                if (!File.Exists(image))
+                {
+                    File.WriteAllBytes(image, ImageHelper.ConvertToJpegFormat(collection.Thumbnail));
+                }
+                collection.Thumbnail = null;
+                collection.LastUpdated = now;
+                Logger.LogInformation($"Saved Collection Image `{collection}` path [{ image }]");
+            }
+            await DbContext.SaveChangesAsync();
+
+            foreach (var genre in DbContext.Genres.Where(x => x.Thumbnail != null).OrderBy(x => x.Name))
+            {
+                var image = genre.PathToImage(Configuration);
+                if (!File.Exists(image))
+                {
+                    File.WriteAllBytes(image, ImageHelper.ConvertToJpegFormat(genre.Thumbnail));
+                }
+                genre.Thumbnail = null;
+                genre.LastUpdated = now;
+                Logger.LogInformation($"Saved Genre Image `{genre}` path [{ image }]");
+            }
+            await DbContext.SaveChangesAsync();
+
+            foreach (var label in DbContext.Labels.Where(x => x.Thumbnail != null).OrderBy(x => x.SortName ?? x.Name))
+            {
+                var image = label.PathToImage(Configuration);
+                if (!File.Exists(image))
+                {
+                    File.WriteAllBytes(image, ImageHelper.ConvertToJpegFormat(label.Thumbnail));
+                }
+                label.Thumbnail = null;
+                label.LastUpdated = now;
+                Logger.LogInformation($"Saved Label Image `{label}` path [{ image }]");
+            }
+            await DbContext.SaveChangesAsync();
+
+            foreach (var playlist in DbContext.Playlists.Where(x => x.Thumbnail != null).OrderBy(x => x.Name))
+            {
+                var image = playlist.PathToImage(Configuration);
+                if (!File.Exists(image))
+                {
+                    File.WriteAllBytes(image, ImageHelper.ConvertToJpegFormat(playlist.Thumbnail));
+                }
+                playlist.Thumbnail = null;
+                playlist.LastUpdated = now;
+                Logger.LogInformation($"Saved Playlist Image `{playlist}` path [{ image }]");
+            }
+            await DbContext.SaveChangesAsync();
+
+            foreach (var release in DbContext.Releases.Include(x => x.Artist).Where(x => x.Thumbnail != null).OrderBy(x => x.Title))
+            {
+                var artistFolder = release.Artist.ArtistFileFolder(Configuration);
+                if (!Directory.Exists(artistFolder))
+                {
+                    Directory.CreateDirectory(artistFolder);
+                }
+                var releaseFolder = release.ReleaseFileFolder(artistFolder);
+                try
+                {
+                    if (!Directory.Exists(releaseFolder))
+                    {
+                        Directory.CreateDirectory(releaseFolder);
+                    }
+                    var releaseImage = Path.Combine(releaseFolder, "cover.jpg");
+                    if (!File.Exists(releaseImage))
+                    {
+                        File.WriteAllBytes(releaseImage, ImageHelper.ConvertToJpegFormat(release.Thumbnail));
+                    }
+                    release.Thumbnail = null;
+                    release.LastUpdated = now;
+                    Logger.LogInformation($"Saved Release Image `{release}` path [{ releaseImage }]");
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, $"Error saving Release Image `{release}` folder [{ releaseFolder }]");
+                }
+            }
+            await DbContext.SaveChangesAsync();
+
+            var releaseImages = (from i in DbContext.Images
+                                 join r in DbContext.Releases.Include(x => x.Artist) on i.ReleaseId equals r.Id
+                                 select new { i, r });
+            foreach (var releaseImage in releaseImages)
+            {
+                var looper = 0;
+                var artistFolder = releaseImage.r.Artist.ArtistFileFolder(Configuration);
+                if (!Directory.Exists(artistFolder))
+                {
+                    Directory.CreateDirectory(artistFolder);
+                }
+                var releaseFolder = releaseImage.r.ReleaseFileFolder(artistFolder);
+                if (!Directory.Exists(releaseFolder))
+                {
+                    Directory.CreateDirectory(releaseFolder);
+                }
+                var releaseImageFilename = Path.Combine(releaseFolder, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                try
+                {
+                    while (File.Exists(releaseImageFilename))
+                    {
+                        looper++;
+                        releaseImageFilename = Path.Combine(releaseFolder, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                    }
+                    File.WriteAllBytes(releaseImageFilename, ImageHelper.ConvertToJpegFormat(releaseImage.i.Bytes));
+                    DbContext.Images.Remove(releaseImage.i);
+                    Logger.LogInformation($"Saved Release Secondary Image `{releaseImage.r}` path [{ releaseImageFilename }]");
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, $"Error saving Release Secondary Image [{releaseImageFilename}] folder [{ releaseFolder }]");
+                }
+            }
+            await DbContext.SaveChangesAsync();
+
+            foreach (var track in DbContext.Tracks.Include(x => x.ReleaseMedia)
+                                                    .Include(x => x.ReleaseMedia.Release)
+                                                    .Include(x => x.ReleaseMedia.Release.Artist)
+                                                    .Where(x => x.Thumbnail != null).OrderBy(x => x.Title))
+            {
+                var artistFolder = track.ReleaseMedia.Release.Artist.ArtistFileFolder(Configuration);
+                if (!Directory.Exists(artistFolder))
+                {
+                    Directory.CreateDirectory(artistFolder);
+                }
+                var releaseFolder = track.ReleaseMedia.Release.ReleaseFileFolder(artistFolder);
+                if (!Directory.Exists(releaseFolder))
+                {
+                    Directory.CreateDirectory(releaseFolder);
+                }
+                var trackImage = track.PathToTrackThumbnail(Configuration);
+                try
+                {
+                    if (!File.Exists(trackImage))
+                    {
+                        File.WriteAllBytes(trackImage, ImageHelper.ConvertToJpegFormat(track.Thumbnail));
+                    }
+                    track.Thumbnail = null;
+                    track.LastUpdated = now;
+                    Logger.LogInformation($"Saved Track Image `{track}` path [{ trackImage }]");
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, $"Error saving Track Image [{trackImage}] folder [{ releaseFolder }]");
+                }
+            }
+            await DbContext.SaveChangesAsync();
+
+            foreach (var usr in DbContext.Users.Where(x => x.Avatar != null).OrderBy(x => x.UserName))
+            {
+                var image = usr.PathToImage(Configuration);
+                if (!File.Exists(image))
+                {
+                    File.WriteAllBytes(image, ImageHelper.ConvertToJpegFormat(usr.Avatar));
+                }
+                usr.Avatar = null;
+                usr.LastUpdated = now;
+                Logger.LogInformation($"Saved User Image `{user}` path [{ image }]");
+            }
+            await DbContext.SaveChangesAsync();
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
         public async Task<OperationResult<bool>> ValidateInviteToken(Guid? tokenId)
         {
             var sw = new Stopwatch();

@@ -24,7 +24,9 @@ namespace Roadie.Library.Identity
 
         public ICollection<UserArtist> ArtistRatings { get; set; }
 
-        [Column("avatar", TypeName = "blob")] public byte[] Avatar { get; set; }
+        [Obsolete("Images moved to file system")]
+        [Column("avatar", TypeName = "blob")] 
+        public byte[] Avatar { get; set; }
 
         public ICollection<Bookmark> Bookmarks { get; set; }
 

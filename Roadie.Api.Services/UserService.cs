@@ -504,12 +504,6 @@ namespace Roadie.Api.Services
 
                     // Save unaltered user image
                     File.WriteAllBytes(user.PathToImage(Configuration), imageData);
-                    // Update thumbnail
-                    user.Avatar = ImageHelper.ResizeImage(imageData, Configuration.ThumbnailImageSize.Width, Configuration.ThumbnailImageSize.Height);
-                    if (user.Avatar.Length >= ImageHelper.MaximumThumbnailByteSize)
-                    {
-                        user.Avatar = null;
-                    }
                 }
             }
 

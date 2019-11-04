@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -25,6 +26,7 @@ namespace Roadie.Library.Data
         [MaxLength(65535)]
         public string Tags { get; set; }
 
+        [Obsolete("Images moved to file system")]
         [Column("thumbnail", TypeName = "blob")]
         [MaxLength(65535)]
         public byte[] Thumbnail { get; set; }

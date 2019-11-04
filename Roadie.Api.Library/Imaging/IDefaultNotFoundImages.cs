@@ -4,13 +4,13 @@ namespace Roadie.Library.Imaging
 {
     public interface IDefaultNotFoundImages
     {
-        Image Artist { get; }
-        Image Collection { get; }
-        Image Label { get; }
-        Image Genre { get; }
-        Image Playlist { get; }
-        Image Release { get; }
-        Image Track { get; }
-        Image User { get; }
+        IImage Artist { get; }
+        IImage Collection { get; }
+        IImage Label { get; }
+        IImage Genre { get; }
+        IImage Playlist { get; }
+        IImage Release { get; }
+        IImage Track { get; }
+        IImage User { get; }
     }
 }

@@ -7,7 +7,7 @@ namespace Roadie.Library.Tests
     public class ImageHasherTests
     {
         [Fact]
-        public void Generate_Image_Hash()
+        public void GenerateImageHash()
         {
             var imageFilename = @"C:\temp\image_tests\1.jpg";
             var secondImagFilename = @"C:\temp\image_tests\2.jpg";

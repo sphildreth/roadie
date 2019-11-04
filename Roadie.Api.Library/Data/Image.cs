@@ -1,8 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Roadie.Library.Data
 {
+    [Obsolete("Only here for transition. Will be removed in future release. Use Library.Imaging.Image")]
     [Table("image")]
     public partial class Image : EntityBase
     {

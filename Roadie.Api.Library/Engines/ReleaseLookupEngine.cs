@@ -78,27 +78,22 @@ namespace Roadie.Library.Engines
             try
             {
                 var releaseGenreTables = release.Genres;
-                var releaseImages = release.Images;
                 var releaseMedias = release.Medias;
                 var releaseLabels = release.Labels;
                 var now = DateTime.UtcNow;
                 release.AlternateNames = release.AlternateNames.AddToDelimitedList(new[] { release.Title.ToAlphanumericName() });
-                release.Images = null;
                 release.Labels = null;
                 release.Medias = null;
                 release.Genres = null;
                 release.LibraryStatus = LibraryStatus.Incomplete;
                 release.Status = Statuses.New;
+                var releaseImages = new List<Library.Imaging.Image>();
                 if (!release.IsValid)
                 {
                     return new OperationResult<Release>
                     {
                         Errors = new Exception[1] { new Exception("Release is Invalid") }
                     };
-                }
-                if (release.Thumbnail != null)
-                {
-                    release.Thumbnail = ImageHelper.ResizeToThumbnail(release.Thumbnail, Configuration);
                 }
                 DbContext.Releases.Add(release);
                 var inserted = 0;
@@ -153,27 +148,29 @@ namespace Roadie.Library.Engines
                         }
                     }
 
-                    if (releaseImages != null && releaseImages.Any(x => x.Status == Statuses.New))
-                    {
-                        foreach (var releaseImage in releaseImages)
-                        {
-                            DbContext.Images.Add(new Image
-                            {
-                                ReleaseId = release.Id,
-                                Url = releaseImage.Url,
-                                Signature = releaseImage.Signature,
-                                Bytes = releaseImage.Bytes
-                            });
-                        }
-                        try
-                        {
-                            await DbContext.SaveChangesAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.LogError(ex);
-                        }
-                    }
+                    // TODO #29 save release images to release folder 
+
+                    //if (releaseImages != null && releaseImages.Any(x => x.Status == Statuses.New))
+                    //{
+                    //    foreach (var releaseImage in releaseImages)
+                    //    {
+                    //        DbContext.Images.Add(new Image
+                    //        {
+                    //            ReleaseId = release.Id,
+                    //            Url = releaseImage.Url,
+                    //            Signature = releaseImage.Signature,
+                    //            Bytes = releaseImage.Bytes
+                    //        });
+                    //    }
+                    //    try
+                    //    {
+                    //        await DbContext.SaveChangesAsync();
+                    //    }
+                    //    catch (Exception ex)
+                    //    {
+                    //        Logger.LogError(ex);
+                    //    }
+                    //}
 
                     if (releaseLabels != null && releaseLabels.Any(x => x.Status == Statuses.New))
                     {
@@ -418,6 +415,7 @@ namespace Roadie.Library.Engines
             if (metaData.Genres != null) releaseGenres.AddRange(metaData.Genres);
             var releaseLabels = new List<ReleaseLabelSearchResult>();
             var releaseMedias = new List<ReleaseMediaSearchResult>();
+            var releaseImages = new List<Imaging.IImage>();
             var releaseImageUrls = new List<string>();
 
             var dontDoMetaDataProvidersSearchArtists = Configuration.DontDoMetaDataProvidersSearchArtists;
@@ -442,6 +440,13 @@ namespace Roadie.Library.Engines
                             if (i.Urls != null) result.URLs = result.URLs.AddToDelimitedList(i.Urls);
                             if (i.ImageUrls != null) releaseImageUrls.AddRange(i.ImageUrls);
                             if (i.ReleaseGenres != null) releaseGenres.AddRange(i.ReleaseGenres);
+                            if(!string.IsNullOrEmpty(i.ReleaseThumbnailUrl))
+                            {
+                                releaseImages.Add(new Imaging.Image()
+                                {
+                                    Bytes = WebHelper.BytesForImageUrl(i.ReleaseThumbnailUrl)
+                                });
+                            }
                             result.CopyTo(new Release
                             {
                                 ReleaseDate = result.ReleaseDate ?? i.ReleaseDate,
@@ -449,9 +454,6 @@ namespace Roadie.Library.Engines
                                 Profile = i.Profile,
                                 ITunesId = i.iTunesId,
                                 Title = result.Title ?? i.ReleaseTitle,
-                                Thumbnail = i.ReleaseThumbnailUrl != null
-                                    ? WebHelper.BytesForImageUrl(i.ReleaseThumbnailUrl)
-                                    : null,
                                 ReleaseType = result.ReleaseType == ReleaseType.Unknown
                                     ? SafeParser.ToEnum<ReleaseType>(i.ReleaseType)
                                     : result.ReleaseType
@@ -486,6 +488,13 @@ namespace Roadie.Library.Engines
                             if (!string.IsNullOrEmpty(mb.ReleaseTitle) &&
                                 !mb.ReleaseTitle.Equals(result.Title, StringComparison.OrdinalIgnoreCase))
                                 result.AlternateNames.AddToDelimitedList(new[] { mb.ReleaseTitle });
+                            if (!string.IsNullOrEmpty(mb.ReleaseThumbnailUrl))
+                            {
+                                releaseImages.Add(new Imaging.Image()
+                                {
+                                    Bytes = WebHelper.BytesForImageUrl(mb.ReleaseThumbnailUrl)
+                                });
+                            }
                             result.CopyTo(new Release
                             {
                                 ReleaseDate = result.ReleaseDate ?? mb.ReleaseDate,
@@ -497,9 +506,6 @@ namespace Roadie.Library.Engines
                                 MusicBrainzId = mb.MusicBrainzId,
                                 ITunesId = mb.iTunesId,
                                 Title = result.Title ?? mb.ReleaseTitle,
-                                Thumbnail = mb.ReleaseThumbnailUrl != null
-                                    ? WebHelper.BytesForImageUrl(mb.ReleaseThumbnailUrl)
-                                    : null,
                                 ReleaseType = result.ReleaseType == ReleaseType.Unknown
                                     ? SafeParser.ToEnum<ReleaseType>(mb.ReleaseType)
                                     : result.ReleaseType
@@ -535,6 +541,13 @@ namespace Roadie.Library.Engines
                             if (!string.IsNullOrEmpty(l.ReleaseTitle) &&
                                 !l.ReleaseTitle.Equals(result.Title, StringComparison.OrdinalIgnoreCase))
                                 result.AlternateNames.AddToDelimitedList(new[] { l.ReleaseTitle });
+                            if (!string.IsNullOrEmpty(l.ReleaseThumbnailUrl))
+                            {
+                                releaseImages.Add(new Imaging.Image()
+                                {
+                                    Bytes = WebHelper.BytesForImageUrl(l.ReleaseThumbnailUrl)
+                                });
+                            }
                             result.CopyTo(new Release
                             {
                                 ReleaseDate = result.ReleaseDate ?? l.ReleaseDate,
@@ -545,9 +558,6 @@ namespace Roadie.Library.Engines
                                 MusicBrainzId = l.MusicBrainzId,
                                 ITunesId = l.iTunesId,
                                 Title = result.Title ?? l.ReleaseTitle,
-                                Thumbnail = l.ReleaseThumbnailUrl != null
-                                    ? WebHelper.BytesForImageUrl(l.ReleaseThumbnailUrl)
-                                    : null,
                                 ReleaseType = result.ReleaseType == ReleaseType.Unknown
                                     ? SafeParser.ToEnum<ReleaseType>(l.ReleaseType)
                                     : result.ReleaseType
@@ -580,6 +590,13 @@ namespace Roadie.Library.Engines
                             if (!string.IsNullOrEmpty(s.ReleaseTitle) &&
                                 !s.ReleaseTitle.Equals(result.Title, StringComparison.OrdinalIgnoreCase))
                                 result.AlternateNames.AddToDelimitedList(new[] { s.ReleaseTitle });
+                            if (!string.IsNullOrEmpty(s.ReleaseThumbnailUrl))
+                            {
+                                releaseImages.Add(new Imaging.Image()
+                                {
+                                    Bytes = WebHelper.BytesForImageUrl(s.ReleaseThumbnailUrl)
+                                });
+                            }
                             result.CopyTo(new Release
                             {
                                 ReleaseDate = result.ReleaseDate ?? s.ReleaseDate,
@@ -589,9 +606,6 @@ namespace Roadie.Library.Engines
                                 MusicBrainzId = s.MusicBrainzId,
                                 ITunesId = s.iTunesId,
                                 Title = result.Title ?? s.ReleaseTitle,
-                                Thumbnail = s.ReleaseThumbnailUrl != null
-                                    ? WebHelper.BytesForImageUrl(s.ReleaseThumbnailUrl)
-                                    : null,
                                 ReleaseType = result.ReleaseType == ReleaseType.Unknown
                                     ? SafeParser.ToEnum<ReleaseType>(s.ReleaseType)
                                     : result.ReleaseType
@@ -624,14 +638,18 @@ namespace Roadie.Library.Engines
                             if (!string.IsNullOrEmpty(d.ReleaseTitle) &&
                                 !d.ReleaseTitle.Equals(result.Title, StringComparison.OrdinalIgnoreCase))
                                 result.AlternateNames.AddToDelimitedList(new[] { d.ReleaseTitle });
+                            if (!string.IsNullOrEmpty(d.ReleaseThumbnailUrl))
+                            {
+                                releaseImages.Add(new Imaging.Image()
+                                {
+                                    Bytes = WebHelper.BytesForImageUrl(d.ReleaseThumbnailUrl)
+                                });
+                            }
                             result.CopyTo(new Release
                             {
                                 Profile = HttpEncoder.HtmlEncode(d.Profile),
                                 DiscogsId = d.DiscogsId,
                                 Title = result.Title ?? d.ReleaseTitle,
-                                Thumbnail = d.ReleaseThumbnailUrl != null
-                                    ? WebHelper.BytesForImageUrl(d.ReleaseThumbnailUrl)
-                                    : null,
                                 ReleaseType = result.ReleaseType == ReleaseType.Unknown
                                     ? SafeParser.ToEnum<ReleaseType>(d.ReleaseType)
                                     : result.ReleaseType
@@ -700,28 +718,21 @@ namespace Roadie.Library.Engines
             if (releaseImageUrls.Any())
             {
                 var sw2 = Stopwatch.StartNew();
-                var imageBag = new ConcurrentBag<Image>();
+                var imageBag = new ConcurrentBag<IImage>();
                 var i = releaseImageUrls.Select(async url =>
                 {
                     imageBag.Add(await WebHelper.GetImageFromUrlAsync(url));
                 });
                 await Task.WhenAll(i);
-                // If the release has images merge any fetched images
-                var existingImages = result.Images != null ? result.Images.ToList() : new List<Image>();
-                existingImages.AddRange(imageBag.ToList());
-                // Now set release images to be unique image based on image hash
-                result.Images = existingImages
-                                .Where(x => x != null && x.Bytes != null)
-                                .GroupBy(x => x.Signature)
-                                .Select(x => x.First()).Take(Configuration.Processing.MaximumReleaseImagesToAdd)
-                                .ToList();
-                if (result.Thumbnail == null && result.Images != null)
-                {
-                    result.Thumbnail = result.Images.First().Bytes;
-                }
+                releaseImages.AddRange(imageBag.ToList());
                 sw2.Stop();
                 Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: Image Url Processing Complete [{ sw2.ElapsedMilliseconds }]");
             }
+
+            result.Images = releaseImages.Where(x => x.Bytes != null)
+                                         .GroupBy(x => x.Signature)
+                                         .Select(x => x.First()).Take(Configuration.Processing.MaximumReleaseImagesToAdd)
+                                         .ToList();
 
             if (releaseLabels.Any())
             {

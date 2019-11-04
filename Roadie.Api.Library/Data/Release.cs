@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 
 namespace Roadie.Library.Data
 {
@@ -29,7 +30,10 @@ namespace Roadie.Library.Data
 
         public ICollection<ReleaseGenre> Genres { get; set; }
 
-        public ICollection<Image> Images { get; set; }
+        [NotMapped]
+        public IEnumerable<Imaging.IImage> Images { get; set; } = Enumerable.Empty<Imaging.IImage>();
+
+        public Imaging.IImage ThumbnailImage => Images.OrderBy(x => x.SortOrder).FirstOrDefault();
 
         [Column("isVirtual")] public bool? IsVirtual { get; set; }
 
@@ -77,6 +81,7 @@ namespace Roadie.Library.Data
         [MaxLength(65535)]
         public string Tags { get; set; }
 
+        [Obsolete("Images moved to file system")]
         [Column("thumbnail", TypeName = "blob")]
         [MaxLength(65535)]
         public byte[] Thumbnail { get; set; }
@@ -96,7 +101,6 @@ namespace Roadie.Library.Data
         {
             Rating = 0;
             ReleaseType = Enums.ReleaseType.Release;
-            Images = new HashSet<Image>();
             Medias = new HashSet<ReleaseMedia>();
             Labels = new HashSet<ReleaseLabel>();
             Collections = new HashSet<CollectionRelease>();

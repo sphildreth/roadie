@@ -1,4 +1,4 @@
-﻿using SixLabors.ImageSharp;
+﻿using sl = SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Processing;
 using System.IO;
@@ -63,7 +63,7 @@ namespace Roadie.Library.Imaging
         /// <returns>Hash of Image</returns>
         public static ulong AverageHash(byte[] bytes)
         {
-            using (var image = Image.Load(bytes))
+            using (var image = sl.Image.Load(bytes))
             {
                 image.Mutate(ctx => ctx.Resize(8, 8).Grayscale());
                 using (var ms = new MemoryStream())
@@ -100,20 +100,11 @@ namespace Roadie.Library.Imaging
         /// </summary>
         /// <param name="path">Path to the input file.</param>
         /// <returns>The hash of the input file's image content.</returns>
-        public static ulong AverageHash(string path)
-        {
-            return AverageHash(File.ReadAllBytes(path));
-        }
+        public static ulong AverageHash(string path) => AverageHash(File.ReadAllBytes(path));
 
-        public static bool ImagesAreSame(string path1, string path2)
-        {
-            return Similarity(path1, path2) == 100;
-        }
+        public static bool ImagesAreSame(string path1, string path2) => Similarity(path1, path2) == 100;
 
-        public static bool ImagesAreSame(byte[] image1, byte[] image2)
-        {
-            return Similarity(image1, image2) == 100;
-        }
+        public static bool ImagesAreSame(byte[] image1, byte[] image2) => Similarity(image1, image2) == 100;
 
         /// <summary>
         ///     Returns a percentage-based similarity value between the two given hashes. The higher
@@ -122,10 +113,7 @@ namespace Roadie.Library.Imaging
         /// <param name="hash1">The first hash.</param>
         /// <param name="hash2">The second hash.</param>
         /// <returns>The similarity percentage.</returns>
-        public static double Similarity(ulong hash1, ulong hash2)
-        {
-            return (64 - BitCount(hash1 ^ hash2)) * 100 / 64.0;
-        }
+        public static double Similarity(ulong hash1, ulong hash2) => (64 - BitCount(hash1 ^ hash2)) * 100 / 64.0;
 
         /// <summary>
         ///     Returns a percentage-based similarity value between the image content of the two given

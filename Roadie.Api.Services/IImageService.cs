@@ -1,6 +1,7 @@
 ﻿using Microsoft.Net.Http.Headers;
 using Roadie.Library;
 using Roadie.Library.Identity;
+using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.SearchEngines.Imaging;
 using System;
@@ -15,30 +16,28 @@ namespace Roadie.Api.Services
 
         string RequestIp { get; set; }
 
-        Task<FileOperationResult<Image>> ArtistImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+        Task<FileOperationResult<IImage>> ArtistImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
-        Task<FileOperationResult<Image>> ArtistSecondaryImage(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null);
+        Task<FileOperationResult<IImage>> ArtistSecondaryImage(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null);
 
-        Task<FileOperationResult<Image>> ById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+        Task<FileOperationResult<IImage>> ById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
-        Task<FileOperationResult<Image>> CollectionImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+        Task<FileOperationResult<IImage>> CollectionImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
-        Task<OperationResult<bool>> Delete(ApplicationUser user, Guid id);
+        Task<FileOperationResult<IImage>> GenreImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
-        Task<FileOperationResult<Image>> GenreImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+        Task<FileOperationResult<IImage>> LabelImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
-        Task<FileOperationResult<Image>> LabelImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+        Task<FileOperationResult<IImage>> PlaylistImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
-        Task<FileOperationResult<Image>> PlaylistImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+        Task<FileOperationResult<IImage>> ReleaseImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
-        Task<FileOperationResult<Image>> ReleaseImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
-
-        Task<FileOperationResult<Image>> ReleaseSecondaryImage(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null);
+        Task<FileOperationResult<IImage>> ReleaseSecondaryImage(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null);
 
         Task<OperationResult<IEnumerable<ImageSearchResult>>> Search(string query, int resultsCount = 10);
 
-        Task<FileOperationResult<Image>> TrackImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+        Task<FileOperationResult<IImage>> TrackImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
-        Task<FileOperationResult<Image>> UserImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
+        Task<FileOperationResult<IImage>> UserImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
     }
 }

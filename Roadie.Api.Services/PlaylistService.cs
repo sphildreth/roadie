@@ -353,8 +353,6 @@ namespace Roadie.Api.Services
                 {
                     // Save unaltered playlist image
                     File.WriteAllBytes(playlist.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(playlistImage));
-                    // Update thumbnail
-                    playlist.Thumbnail = ImageHelper.ResizeToThumbnail(playlistImage, Configuration);
                 }
                 playlist.LastUpdated = now;
                 await DbContext.SaveChangesAsync();

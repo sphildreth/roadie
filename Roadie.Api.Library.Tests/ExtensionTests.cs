@@ -18,7 +18,7 @@ namespace Roadie.Library.Tests
     {
 
         [Fact]
-        public void Shuffle_Unique_Order()
+        public void ShuffleUniqueOrder()
         {
             var tracks = new List<Roadie.Library.Models.TrackList>
             {
@@ -225,12 +225,12 @@ namespace Roadie.Library.Tests
                 lastTrack = track;
             }
 
-            Assert.Equal(tracks.Count(), shuffledTracks.Count());
+            Assert.Equal(tracks.Count, shuffledTracks.Count());
         }
 
 
         [Fact]
-        public void From_Unix_Time()
+        public void FromUnixTime()
         {
             var dateTime = new DateTime(2015, 05, 24, 10, 2, 0, DateTimeKind.Utc);
             var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -240,7 +240,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void To_Unix_Time()
+        public void ToUnixTime()
         {
             var dateTime = new DateTime(2015, 05, 24, 10, 2, 0, DateTimeKind.Utc);
             var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -254,14 +254,14 @@ namespace Roadie.Library.Tests
         [InlineData(150, 0)]
         [InlineData(65000, 65)]
         [InlineData(143000, 143)]
-        public void To_Seconds_From_Milliseconds_Decimal(int input, int shouldBe)
+        public void ToSecondsFromMillisecondsDecimal(int input, int shouldBe)
         {
             var d = ((decimal?)input).ToSecondsFromMilliseconds();
             Assert.Equal(shouldBe, d);
         }
 
         [Fact]
-        public void To_Time_Span()
+        public void ToTimeSpan()
         {
             var dateTime = new DateTime(2015, 05, 24, 10, 2, 0, DateTimeKind.Utc);
             var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -273,7 +273,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void Or_Integers()
+        public void OrIntegers()
         {
             int? test = null;
             int? shouldBe = 5;
@@ -285,7 +285,7 @@ namespace Roadie.Library.Tests
         [InlineData(150, 0)]
         [InlineData(65000, 65)]
         [InlineData(143000, 143)]
-        public void To_Seconds_From_Milliseconds_Int(int? input, int? shouldBe)
+        public void ToSecondsFromMillisecondsInt(int? input, int? shouldBe)
         {
             var d = input.ToSecondsFromMilliseconds();
             Assert.Equal(shouldBe, d);

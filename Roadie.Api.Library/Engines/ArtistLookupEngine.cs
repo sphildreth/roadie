@@ -139,18 +139,19 @@ namespace Roadie.Library.Engines
                         }
                     }
 
-                    if (ArtistImages != null && ArtistImages.Any(x => x.Status == Statuses.New))
-                    {
-                        foreach (var ArtistImage in ArtistImages)
-                            DbContext.Images.Add(new Image
-                            {
-                                ArtistId = artist.Id,
-                                Url = ArtistImage.Url,
-                                Signature = ArtistImage.Signature,
-                                Bytes = ArtistImage.Bytes
-                            });
-                        inserted = await DbContext.SaveChangesAsync();
-                    }
+                    // TODO #29 save images to folder
+
+                    //if (ArtistImages != null && ArtistImages.Any(x => x.Status == Statuses.New))
+                    //{
+                    //    foreach (var ArtistImage in ArtistImages)
+                    //        DbContext.Images.Add(new Library.Imaging.Image(artist.RoadieId)
+                    //        {
+                    //            Url = ArtistImage.Url,
+                    //            Signature = ArtistImage.Signature,
+                    //            Bytes = ArtistImage.Bytes
+                    //        });
+                    //    inserted = await DbContext.SaveChangesAsync();
+                    //}
                     sw.Stop();
                     Logger.LogTrace($"Added New Artist: Elapsed Time [{ sw.ElapsedMilliseconds }], Artist `{ artist }`");
                 }
@@ -674,7 +675,7 @@ namespace Roadie.Library.Engines
                 if (artistImageUrls.Any())
                 {
                     var sw2 = Stopwatch.StartNew();
-                    var imageBag = new ConcurrentBag<Image>();
+                    var imageBag = new ConcurrentBag<IImage>();
                     var i = artistImageUrls.Select(async url =>
                     {
                         imageBag.Add(await WebHelper.GetImageFromUrlAsync(url));

@@ -52,5 +52,7 @@ namespace Roadie.Api.Services
         Task<OperationResult<bool>> UpdateInviteTokenUsed(Guid? tokenId);
 
         Task<OperationResult<bool>> ValidateInviteToken(Guid? tokenId);
+
+        Task<OperationResult<bool>> MigrateImages(ApplicationUser user);
     }
 }

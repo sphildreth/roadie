@@ -218,7 +218,6 @@ namespace Roadie.Api.Services
             {
                 label.MusicBrainzId = label.MusicBrainzId ?? labelToMerge.MusicBrainzId;
                 label.SortName = label.SortName ?? labelToMerge.SortName;
-                label.Thumbnail = label.Thumbnail ?? labelToMerge.Thumbnail;
                 label.Profile = label.Profile ?? labelToMerge.Profile;
                 label.BeginDate = label.BeginDate ?? labelToMerge.BeginDate;
                 label.EndDate = label.EndDate ?? labelToMerge.EndDate;
@@ -259,7 +258,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Image>> SetLabelImageByUrl(User user, Guid id, string imageUrl)
+        public async Task<OperationResult<Library.Models.Image>> SetLabelImageByUrl(User user, Guid id, string imageUrl)
         {
             return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
@@ -312,15 +311,12 @@ namespace Roadie.Api.Services
                         File.Move(oldPathToImage, label.PathToImage(Configuration));
                     }
                 }
-
                 var labelImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
                 if (labelImage != null)
                 {
                     // Save unaltered label image
                     File.WriteAllBytes(label.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(labelImage));
-                    label.Thumbnail = ImageHelper.ResizeToThumbnail(labelImage, Configuration);
                 }
-
                 label.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
 
@@ -344,7 +340,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Image>> UploadLabelImage(User user, Guid id, IFormFile file)
+        public async Task<OperationResult<Library.Models.Image>> UploadLabelImage(User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
             using (var ms = new MemoryStream())
@@ -452,24 +448,21 @@ namespace Roadie.Api.Services
             });
         }
 
-        private async Task<OperationResult<Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
+        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
         {
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
             var label = DbContext.Labels.FirstOrDefault(x => x.RoadieId == id);
-            if (label == null) return new OperationResult<Image>(true, string.Format("Label Not Found [{0}]", id));
+            if (label == null) return new OperationResult<Library.Models.Image>(true, string.Format("Label Not Found [{0}]", id));
             try
             {
                 var now = DateTime.UtcNow;
-                label.Thumbnail = imageBytes;
-                if (label.Thumbnail != null)
+                if (imageBytes != null)
                 {
                     // Save unaltered label image
                     File.WriteAllBytes(label.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(imageBytes));
-                    label.Thumbnail = ImageHelper.ResizeToThumbnail(label.Thumbnail, Configuration);
                 }
-
                 label.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
                 CacheManager.ClearRegion(label.CacheRegion);
@@ -483,7 +476,7 @@ namespace Roadie.Api.Services
 
             sw.Stop();
 
-            return new OperationResult<Image>
+            return new OperationResult<Library.Models.Image>
             {
                 IsSuccess = !errors.Any(),
                 Data = MakeThumbnailImage(Configuration, HttpContext, id, "label", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),

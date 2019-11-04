@@ -1,5 +1,4 @@
 ﻿using HtmlAgilityPack;
-using Roadie.Library.Data;
 using Roadie.Library.Enums;
 using Roadie.Library.Imaging;
 using System;
@@ -59,7 +58,7 @@ namespace Roadie.Library.Utility
             return null;
         }
 
-        public static async Task<Image> GetImageFromUrlAsync(string url)
+        public static async Task<IImage> GetImageFromUrlAsync(string url)
         {
             byte[] imageBytes = null;
             try
@@ -80,7 +79,7 @@ namespace Roadie.Library.Utility
                 {
                     var signature = ImageHasher.AverageHash(imageBytes).ToString();
                     var ib = ImageHelper.ConvertToJpegFormat(imageBytes);
-                    return new Image
+                    return new Image(Guid.NewGuid())
                     {
                         Url = url,
                         Status = Statuses.New,

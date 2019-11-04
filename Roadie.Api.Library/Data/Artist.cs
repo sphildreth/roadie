@@ -1,4 +1,5 @@
 using Roadie.Library.Enums;
+using Roadie.Library.Imaging;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -31,8 +32,6 @@ namespace Roadie.Library.Data
         [Column("discogsId")] [MaxLength(50)] public string DiscogsId { get; set; }
 
         public ICollection<ArtistGenre> Genres { get; set; }
-
-        public ICollection<Image> Images { get; set; }
 
         [Column("isniList", TypeName = "text")]
         [MaxLength(65535)]

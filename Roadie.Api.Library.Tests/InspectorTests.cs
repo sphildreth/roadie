@@ -36,7 +36,7 @@ namespace Roadie.Library.Tests
         public InspectorTests()
         {
             this.MessageLogger = new EventMessageLogger<ID3TagsHelperTests>();
-            this.MessageLogger.Messages += MessageLogger_Messages;
+            this.MessageLogger.Messages += MessageLoggerMessages;
 
             var settings = new configuration.RoadieSettings();
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
@@ -47,11 +47,11 @@ namespace Roadie.Library.Tests
             this.Configuration = settings;
             this.CacheManager = new DictionaryCacheManager(this.Logger, new CachePolicy(TimeSpan.FromHours(4)));
             var tagHelperLooper = new EventMessageLogger<ID3TagsHelper>();
-            tagHelperLooper.Messages += MessageLogger_Messages;
+            tagHelperLooper.Messages += MessageLoggerMessages;
             this.TagsHelper = new ID3TagsHelper(this.Configuration, this.CacheManager, tagHelperLooper);
         }
 
-        private void MessageLogger_Messages(object sender, EventMessage e)
+        private void MessageLoggerMessages(object sender, EventMessage e)
         {
             Console.WriteLine($"Log Level [{ e.Level }] Log Message [{ e.Message }] ");
         }
@@ -67,7 +67,7 @@ namespace Roadie.Library.Tests
         [InlineData("Bob Jones ", "Bob Jones")]
         [InlineData(" BoB   Jones   ", "Bob Jones")]
         [InlineData("Ain't NO THING", "Ain't No Thing")]        
-        public void Clean_Artist_Plugin(string artist, string shouldBe)
+        public void CleanArtistPlugin(string artist, string shouldBe)
         {
             var plugin = new CleanUpArtists(Configuration, CacheManager, Logger, TagsHelper);
             Assert.Equal(shouldBe, plugin.CleanArtist(artist));
@@ -75,7 +75,7 @@ namespace Roadie.Library.Tests
 
         [Theory]
         [InlineData("Ain't NO THING", "Ain't No Thing")]
-        public void Clean_TrackTitle_Plugin(string title, string shouldBe)
+        public void CleanTrackTitlePlugin(string title, string shouldBe)
         {
             var plugin = new CleanUpTrackTitle(Configuration, CacheManager, Logger, TagsHelper);
             var result = plugin.Process(new MetaData.Audio.AudioMetaData { Title = title});
@@ -84,7 +84,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void Clean_Artist_Plugin_Remove_Artist_From_Track_Artist()
+        public void CleanArtistPluginRemoveArtistFromTrackArtist()
         {
             var artist  = "Bob Jones";
             var trackArtist = "Bob Jones;Mary Jones";
@@ -98,14 +98,14 @@ namespace Roadie.Library.Tests
         [Theory]
         [InlineData("Bob Jones")]
         [InlineData("Nancy Jones")]
-        public void Generate_Inspector_Artist_Token(string artist)
+        public void GenerateInspectorArtistToken(string artist)
         {
             var token = Inspector.ArtistInspectorToken(new MetaData.Audio.AudioMetaData { Artist = artist });
             Assert.NotNull(token);
         }
 
         [Fact]
-        public void Should_Generate_Same_Token_Value()
+        public void ShouldGenerateSameTokenValue()
         {
             var md = new MetaData.Audio.AudioMetaData { Artist = "Omniversum Fractum", Release = "Paradigm Of The Elementals Essence" };
             var artistToken = Inspector.ArtistInspectorToken(md);
@@ -122,7 +122,7 @@ namespace Roadie.Library.Tests
         }
 
         [Fact]
-        public void Generate_Inspector_Tokens_Artist_And_Release_Unique()
+        public void GenerateInspectorTokensArtistAndReleaseUnique()
         {
             var md = new MetaData.Audio.AudioMetaData { Artist = "Bob Jones", Release = "Bob's First Release" };
             var artistToken = Inspector.ArtistInspectorToken(md);
