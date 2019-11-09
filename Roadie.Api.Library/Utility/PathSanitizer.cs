@@ -27,17 +27,25 @@ namespace Roadie.Library.Utility
             c.AddRange(Path.GetInvalidFileNameChars());
 
             // Some Roadie instances run in Linux to Windows SMB clients via Samba this helps with Windows clients and invalid characters in Windows
-            var badWindowsFileAndFoldercharacters = new List<char> { '\\', '/', ':', '*', '?', '\'', '<', '>', '|', '*' };
+            var badWindowsFileAndFoldercharacters = new List<char> { '\\', '"', '/', ':', '*', '$', '?', '\'', '<', '>', '|', '*' };
             foreach (var badWindowsFilecharacter in badWindowsFileAndFoldercharacters)
+            {
                 if (!c.Contains(badWindowsFilecharacter))
+                {
                     c.Add(badWindowsFilecharacter);
+                }
+            }
             invalidFilenameChars = c.ToArray();
 
             var f = new List<char>();
             f.AddRange(Path.GetInvalidPathChars());
             foreach (var badWindowsFilecharacter in badWindowsFileAndFoldercharacters)
+            {
                 if (!f.Contains(badWindowsFilecharacter))
+                {
                     f.Add(badWindowsFilecharacter);
+                }
+            }
             invalidFilenameChars = c.ToArray();
             invalidPathChars = f.ToArray();
 
@@ -77,17 +85,25 @@ namespace Roadie.Library.Utility
         private static string Sanitize(string input, char[] invalidChars, char errorChar)
         {
             // null always sanitizes to null
-            if (input == null) return null;
+            if (input == null)
+            {
+                return null;
+            }
             var result = new StringBuilder();
             foreach (var characterToTest in input)
+            {
                 // we binary search for the character in the invalid set. This should be lightning fast.
                 if (Array.BinarySearch(invalidChars, characterToTest) >= 0)
+                {
                     // we found the character in the array of
                     result.Append(errorChar);
+                }
                 else
+                {
                     // the character was not found in invalid, so it is valid.
                     result.Append(characterToTest);
-
+                }
+            }
             // we're done.
             return result.ToString();
         }

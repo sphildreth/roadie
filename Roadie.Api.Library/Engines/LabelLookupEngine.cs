@@ -4,7 +4,6 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Data;
 using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
-using Roadie.Library.Imaging;
 using Roadie.Library.SearchEngines.MetaData;
 using Roadie.Library.Utility;
 using System;
@@ -35,10 +34,6 @@ namespace Roadie.Library.Engines
             {
                 var now = DateTime.UtcNow;
                 label.AlternateNames = label.AlternateNames.AddToDelimitedList(new[] { label.Name.ToAlphanumericName() });
-                if (label.Thumbnail != null)
-                {
-                    label.Thumbnail = ImageHelper.ResizeToThumbnail(label.Thumbnail, Configuration);
-                }
                 if (!label.IsValid)
                 {
                     return new OperationResult<Label>
@@ -182,8 +177,7 @@ namespace Roadie.Library.Engines
                     {
                         Profile = HttpEncoder.HtmlEncode(d.Profile),
                         DiscogsId = d.DiscogsId,
-                        Name = result.Name ?? d.LabelName.ToTitleCase(),
-                        Thumbnail = d.LabelImageUrl != null ? WebHelper.BytesForImageUrl(d.LabelImageUrl) : null
+                        Name = result.Name ?? d.LabelName.ToTitleCase()
                     });
                 }
 

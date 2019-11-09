@@ -60,7 +60,7 @@ namespace Roadie.Api.Services
             FileDirectoryProcessorService = fileDirectoryProcessorService;
         }
 
-        public async Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId)
+        public async Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId, bool deleteFolder)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -74,7 +74,7 @@ namespace Roadie.Api.Services
 
             try
             {
-                var result = await ArtistService.Delete(user, artist);
+                var result = await ArtistService.Delete(user, artist, deleteFolder);
                 if (!result.IsSuccess)
                 {
                     return new OperationResult<bool>
@@ -1013,6 +1013,208 @@ namespace Roadie.Api.Services
         }
 
         /// <summary>
+        /// Migrate Storage from old folder structure to new folder structure.
+        /// </summary>
+        public async Task<OperationResult<bool>> MigrateStorage(ApplicationUser user, bool deleteEmptyFolders = true)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var now = DateTime.UtcNow;
+
+            var artistsMigrated = 0;
+            foreach (var artist in DbContext.Artists.Where(x => x.Status == Statuses.ReadyToMigrate).ToArray())
+            {
+                var oldArtistPath = FolderPathHelper.ArtistPathOld(Configuration, artist.SortNameValue);
+                var artistpath = FolderPathHelper.ArtistPath(Configuration, artist.Id, artist.SortNameValue);
+
+                if (Directory.Exists(oldArtistPath))
+                {
+                    var artistInfoFile = new FileInfo(Path.Combine(oldArtistPath, "roadie.artist.json"));
+                    if (artistInfoFile.Exists)
+                    {
+                        artistInfoFile.MoveTo(Path.Combine(artistpath, "roadie.artist.json"));
+                    }
+                }
+
+                var createdDirectory = false;
+                var filesMoved = 0;
+                var artistImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(oldArtistPath), ImageType.Artist);
+                var artistSecondaryImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(oldArtistPath), ImageType.ArtistSecondary).ToList();
+                if (artistImages.Any())
+                {
+                    if (!Directory.Exists(artistpath))
+                    {
+                        Directory.CreateDirectory(artistpath);
+                        createdDirectory = true;
+                    }
+                    var artistToMergeIntoPrimaryImage = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistpath), ImageType.Artist).FirstOrDefault();
+                    if (artistToMergeIntoPrimaryImage != null)
+                    {
+                        artistSecondaryImages.Add(artistImages.First());
+                    }
+                    else
+                    {
+                        var artistImageFilename = Path.Combine(artistpath, ImageHelper.ArtistImageFilename);
+                        artistImages.First().MoveTo(artistImageFilename, true);
+                        filesMoved++;
+                    }
+                }
+                if (artistSecondaryImages.Any())
+                {
+                    if (!Directory.Exists(artistpath))
+                    {
+                        Directory.CreateDirectory(artistpath);
+                        createdDirectory = true;
+                    }
+                    var looper = 0;
+                    foreach (var artistSecondaryImage in artistSecondaryImages)
+                    {
+                        var artistImageFilename = Path.Combine(artistpath, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                        while (File.Exists(artistImageFilename))
+                        {
+                            looper++;
+                            artistImageFilename = Path.Combine(artistpath, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                        }
+                        artistSecondaryImage.MoveTo(artistImageFilename, true);
+                        filesMoved++;
+                    }
+                }
+                artist.Status = Statuses.Migrated;
+                artist.LastUpdated = now;
+                await DbContext.SaveChangesAsync();
+                Logger.LogInformation($"Migrated Artist Storage `{ artist}` From [{ oldArtistPath }] => [{ artistpath }]");
+                artistsMigrated++;
+            }
+            Logger.LogInformation($"Artist Migration Complete. Migrated [{ artistsMigrated }] Artists.");
+
+            var labelsMigrated = 0;
+            foreach (var label in DbContext.Labels.Where(x => x.Status == Statuses.ReadyToMigrate).ToArray())
+            {
+                var oldLabelImageFileName = label.OldPathToImage(Configuration);
+                var labelImageFileName = label.PathToImage(Configuration);
+                if(File.Exists(oldLabelImageFileName))
+                {
+                    var labelFileInfo = new FileInfo(labelImageFileName);
+                    if(!labelFileInfo.Directory.Exists)
+                    {
+                        Directory.CreateDirectory(labelFileInfo.Directory.FullName);
+                    }
+                    File.Move(oldLabelImageFileName, labelImageFileName, true);
+                    label.Status = Statuses.Migrated;
+                    label.LastUpdated = now;
+                    await DbContext.SaveChangesAsync();
+                    Logger.LogInformation($"Migrated Label Storage `{ label}` From [{ oldLabelImageFileName }] => [{ labelImageFileName }]");
+                    labelsMigrated++;
+                }
+            }
+            Logger.LogInformation($"Label Migration Complete. Migrated [{ labelsMigrated }] Labels.");
+
+            var releases = DbContext.Releases
+                                    .Include(x => x.Artist)
+                                    .Include(x => x.Medias)
+                                    .Where(x => x.Status == Statuses.ReadyToMigrate)
+                                    .ToArray();
+            var releasesMigrated = 0;
+            foreach (var release in releases)
+            {
+                var oldArtistPath = FolderPathHelper.ArtistPathOld(Configuration, release.Artist.SortNameValue);
+                var oldReleasePath = FolderPathHelper.ReleasePathOld(oldArtistPath, release.SortTitleValue, release.ReleaseDate.Value);
+
+                var artistpath = FolderPathHelper.ArtistPath(Configuration, release.Artist.Id, release.Artist.SortNameValue);
+                var releasePath = FolderPathHelper.ReleasePath(artistpath, release.SortTitleValue, release.ReleaseDate.Value);
+                
+                if (!Directory.Exists(artistpath))
+                {
+                    Directory.CreateDirectory(artistpath);
+                }
+                if (!Directory.Exists(releasePath))
+                {
+                    Directory.CreateDirectory(releasePath);
+                }
+                var releaseTracks = (from r in DbContext.Releases
+                                     join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                     join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                     where r.Id == release.Id
+                                     where t.FileName != null
+                                     select t).ToArray();
+                
+                foreach(var releaseTrack in releaseTracks)
+                {
+                    var oldTrackFileName = Path.Combine(oldReleasePath, releaseTrack.FileName);
+                    var newTrackFileName = Path.Combine(releasePath, releaseTrack.FileName.ToFileNameFriendly());
+                    if(File.Exists(oldTrackFileName))
+                    {
+                        File.Move(oldTrackFileName, newTrackFileName, true);
+                        releaseTrack.FilePath = FolderPathHelper.TrackPath(Configuration, release.Artist, release, releaseTrack);
+                        releaseTrack.FileName = releaseTrack.FileName.ToFileNameFriendly();
+                        releaseTrack.LastUpdated = now;
+                    }             
+                    else
+                    {
+                        Logger.LogWarning($"Migration: Track `{ releaseTrack }` Track File [{ oldTrackFileName }] Not Found");
+                    }
+                }
+                var releaseInfoFile = new FileInfo(Path.Combine(oldReleasePath, "roadie.albuminfo.json"));
+                if(releaseInfoFile.Exists)
+                {
+                    releaseInfoFile.MoveTo(Path.Combine(releasePath, "roadie.releaseinfo.json"));
+                }                
+                var releaseToMergeImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(oldReleasePath), ImageType.Release);
+                var releaseToMergeSecondaryImages = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(oldReleasePath), ImageType.ReleaseSecondary).ToList();
+                if (releaseToMergeImages.Any())
+                {
+                    var releaseToMergeIntoPrimaryImage = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releasePath), ImageType.Release).FirstOrDefault();
+                    if (releaseToMergeIntoPrimaryImage != null)
+                    {
+                        releaseToMergeSecondaryImages.Add(releaseToMergeImages.First());
+                    }
+                    else
+                    {
+                        var releaseImageFilename = Path.Combine(releasePath, ImageHelper.ReleaseCoverFilename);
+                        releaseToMergeImages.First().MoveTo(releaseImageFilename, true);
+                    }
+                }
+                if (releaseToMergeSecondaryImages.Any())
+                {
+                    var looper = 0;
+                    foreach (var releaseSecondaryImage in releaseToMergeSecondaryImages)
+                    {
+                        var releaseImageFilename = Path.Combine(releasePath, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                        while (File.Exists(releaseImageFilename))
+                        {
+                            looper++;
+                            releaseImageFilename = Path.Combine(releasePath, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                        }
+                        releaseSecondaryImage.MoveTo(releaseImageFilename, true);
+                    }
+                }
+
+                release.Status = Statuses.Migrated;
+                release.LastUpdated = now;
+                await DbContext.SaveChangesAsync();
+                Logger.LogInformation($"Migrated Release `{ release}` From [{ oldReleasePath }] => [{ releasePath }]");
+                releasesMigrated++;
+            }
+            Logger.LogInformation($"Release Migration Complete. Migrated [{ releasesMigrated }] Releases.");
+
+            if (deleteEmptyFolders)
+            {
+                Logger.LogInformation($"Deleting Empty Folders in Library [{ Configuration.LibraryFolder }] Folder.");
+                Services.FileDirectoryProcessorService.DeleteEmptyFolders(new DirectoryInfo(Configuration.LibraryFolder), Logger);
+            }
+            CacheManager.Clear();
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        /// <summary>
         /// Migrate images from Images table and Thumbnails to file storage.
         /// </summary>
         public async Task<OperationResult<bool>> MigrateImages(ApplicationUser user)
@@ -1111,7 +1313,7 @@ namespace Roadie.Api.Services
             }
             await DbContext.SaveChangesAsync();
 
-            foreach (var release in DbContext.Releases.Include(x => x.Artist).Where(x => x.Thumbnail != null).OrderBy(x => x.Title))
+            foreach (var release in DbContext.Releases.Include(x => x.Artist).Where(x => x.Thumbnail != null).OrderBy(x => x.SortTitle ?? x.Title))
             {
                 var artistFolder = release.Artist.ArtistFileFolder(Configuration);
                 if (!Directory.Exists(artistFolder))

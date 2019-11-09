@@ -102,14 +102,11 @@ namespace Roadie.Library.Data
         /// </summary>
         /// <param name="artistFolder"></param>
         /// <returns></returns>
-        public string ReleaseFileFolder(string artistFolder)
-        {
-            return FolderPathHelper.ReleasePath(artistFolder, Title, ReleaseDate.Value);
-        }
+        public string ReleaseFileFolder(string artistFolder) => FolderPathHelper.ReleasePath(artistFolder, SortTitleValue, ReleaseDate.Value);
 
         public override string ToString()
         {
-            return $"Id [{Id}], Status [{ Status }], LibraryStatus [{ LibraryStatus }], Title [{Title}], Release Date [{ReleaseYear}]";
+            return $"Id [{Id}], Status [{ Status }], LibraryStatus [{ LibraryStatus }], Title [{Title}], SortTitle [{ SortTitleValue }], Release Date [{ReleaseYear}]";
         }
     }
 }

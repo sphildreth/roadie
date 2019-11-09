@@ -3,9 +3,11 @@ using Roadie.Library.Data;
 using Roadie.Library.Extensions;
 using Roadie.Library.MetaData.Audio;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace Roadie.Library.Utility
 {
@@ -14,11 +16,114 @@ namespace Roadie.Library.Utility
     /// </summary>
     public static class FolderPathHelper
     {
+        public static int MaximumLibraryFolderNameLength = 44;
+        public static int MaximumArtistFolderNameLength = 100;
+        public static int MaximumReleaseFolderNameLength = 100;
+        public static int MaximumLabelFolderNameLength = 100;
+        public static int MaximumTrackFileNameLength = 500;
+
+        public static IEnumerable<string> FolderSpaceReplacements = new List<string> { ".", "~", "_", "=", "-" };
+
         /// <summary>
         ///     Full path to Artist folder
         /// </summary>
         /// <param name="artistSortName">Sort name of Artist to use for folder name</param>
-        public static string ArtistPath(IRoadieSettings configuration, string artistSortName)
+        public static string ArtistPath(IRoadieSettings configuration, int artistId, string artistSortName)
+        {
+            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artistSortName), "Invalid Artist Sort Name");
+            SimpleContract.Requires<ArgumentException>(configuration.LibraryFolder.Length < MaximumLibraryFolderNameLength, $"Library Folder maximum length is [{ MaximumLibraryFolderNameLength }]");
+
+            var asn = new StringBuilder(artistSortName);
+            foreach (var stringReplacement in FolderSpaceReplacements)
+            {
+                if (!asn.Equals(stringReplacement))
+                {
+                    asn.Replace(stringReplacement, " ");
+                }
+            }
+            var artistFolder = asn.ToString().ToAlphanumericName(false, false).ToFolderNameFriendly().ToTitleCase(false);
+            if (string.IsNullOrEmpty(artistFolder))
+            {
+                throw new Exception($"ArtistFolder [{ artistFolder }] is invalid. ArtistId [{ artistId }], ArtistSortName [{ artistSortName }].");
+            }
+            var afUpper = artistFolder.ToUpper();
+            var fnSubPart1 = afUpper.ToUpper().ToCharArray().Take(1).First();
+            if (!char.IsLetterOrDigit(fnSubPart1))
+            {
+                fnSubPart1 = '#';
+            }
+            else if (char.IsNumber(fnSubPart1))
+            {
+                fnSubPart1 = '0';
+            }
+            var fnSubPart2 = afUpper.Length > 2 ? afUpper.Substring(0, 2) : afUpper;
+            if (fnSubPart2.EndsWith(" "))
+            {
+                var pos = 1;
+                while (fnSubPart2.EndsWith(" "))
+                {
+                    pos++;
+                    fnSubPart2 = fnSubPart2.Substring(0, 1) + afUpper.Substring(pos, 1);
+                }
+            }
+            var fnSubPart = Path.Combine(fnSubPart1.ToString(), fnSubPart2);
+            var fnIdPart = $" [{ artistId }]";
+            var maxFnLength = (MaximumArtistFolderNameLength - (fnSubPart.Length + fnIdPart.Length)) - 2;
+            if (artistFolder.Length > maxFnLength)
+            {
+                artistFolder = artistFolder.Substring(0, maxFnLength);
+            }
+            artistFolder = Path.Combine(fnSubPart, $"{ artistFolder }{ fnIdPart }");
+            var directoryInfo = new DirectoryInfo(Path.Combine(configuration.LibraryFolder, artistFolder));
+            return directoryInfo.FullName;
+        }
+
+
+        public static string LabelPath(IRoadieSettings configuration, string labelSortName)
+        {
+            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(labelSortName), "Invalid Label Sort Name");
+            SimpleContract.Requires<ArgumentException>(configuration.LibraryFolder.Length < MaximumLibraryFolderNameLength, $"Library Folder maximum length is [{ MaximumLibraryFolderNameLength }]");
+
+            var lsn = new StringBuilder(labelSortName);
+            foreach (var stringReplacement in FolderSpaceReplacements)
+            {
+                if (!lsn.Equals(stringReplacement))
+                {
+                    lsn.Replace(stringReplacement, " ");
+                }
+            }
+            var labelFolder = lsn.ToString().ToAlphanumericName(false, false).ToFolderNameFriendly().ToTitleCase(false);
+            if (string.IsNullOrEmpty(labelFolder))
+            {
+                throw new Exception($"LabelFolder [{ labelFolder }] is invalid. LabelSortName [{ labelSortName }].");
+            }
+            var lfUpper = labelFolder.ToUpper();
+            var fnSubPart1 = lfUpper.ToUpper().ToCharArray().Take(1).First();
+            if (!char.IsLetterOrDigit(fnSubPart1))
+            {
+                fnSubPart1 = '#';
+            }
+            else if (char.IsNumber(fnSubPart1))
+            {
+                fnSubPart1 = '0';
+            }
+            var fnSubPart2 = lfUpper.Length > 2 ? lfUpper.Substring(0, 2) : lfUpper;
+            if (fnSubPart2.EndsWith(" "))
+            {
+                var pos = 1;
+                while (fnSubPart2.EndsWith(" "))
+                {
+                    pos++;
+                    fnSubPart2 = fnSubPart2.Substring(0, 1) + lfUpper.Substring(pos, 1);
+                }
+            }
+            var fnSubPart = Path.Combine(fnSubPart1.ToString(), fnSubPart2);
+            var directoryInfo = new DirectoryInfo(Path.Combine(configuration.LabelImageFolder, fnSubPart));
+            return directoryInfo.FullName;
+        }
+
+        [Obsolete("This is only here for migration will be removed in future release.")]
+        public static string ArtistPathOld(IRoadieSettings configuration, string artistSortName)
         {
             SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artistSortName),"Invalid Artist Sort Name");
 
@@ -27,33 +132,53 @@ namespace Roadie.Library.Utility
             return directoryInfo.FullName;
         }
 
-        public static void DeleteEmptyDirs(string dir, bool deleteDirIfEmpty = true)
+
+        /// <summary>
+        ///     Full path to Release folder using given full Artist folder
+        /// </summary>
+        /// <param name="artistFolder">Full path to Artist folder</param>
+        /// <param name="releaseTitle">Title of Release</param>
+        /// <param name="releaseDate">Date of Release</param>
+        public static string ReleasePath(string artistFolder, string releaseTitle, DateTime releaseDate)
         {
-            if (string.IsNullOrEmpty(dir))
+            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artistFolder), "Invalid Artist Folder");
+            SimpleContract.Requires<ArgumentException>(artistFolder.Length < MaximumArtistFolderNameLength, $"Artist Folder is longer than maximum allowed [{ MaximumArtistFolderNameLength }]");
+
+            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(releaseTitle), "Invalid Release Title");
+            SimpleContract.Requires<ArgumentException>(releaseDate != DateTime.MinValue, "Invalid Release Date");
+
+            var rt = new StringBuilder(releaseTitle);
+            foreach (var stringReplacement in FolderSpaceReplacements)
             {
-                throw new ArgumentException("Starting directory is a null reference or an empty string", "dir");
-            }
-            try
-            {
-                foreach (var d in Directory.EnumerateDirectories(dir)) DeleteEmptyDirs(d);
-                var entries = Directory.EnumerateFileSystemEntries(dir);
-                if (!entries.Any() && deleteDirIfEmpty)
+                if(!rt.Equals(stringReplacement))
                 {
-                    try
-                    {
-                        Directory.Delete(dir);
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                    }
-                    catch (DirectoryNotFoundException)
-                    {
-                    }
+                    rt.Replace(stringReplacement, " ");
                 }
             }
-            catch (UnauthorizedAccessException)
+            var releasePathTitle = rt.ToString().ToAlphanumericName(false, false).ToFolderNameFriendly().ToTitleCase(false);
+            if(string.IsNullOrEmpty(releasePathTitle))
             {
+                throw new Exception($"ReleaseTitle [{ releaseTitle }] is invalid. ArtistFolder [{ artistFolder }].");
             }
+            var maxFnLength = MaximumReleaseFolderNameLength - 7;
+            if (releasePathTitle.Length > maxFnLength)
+            {
+                releasePathTitle = releasePathTitle.Substring(0, maxFnLength);
+            }
+            var releasePath = $"[{ releaseDate.ToString("yyyy")}] {releasePathTitle}";
+            var directoryInfo = new DirectoryInfo(Path.Combine(artistFolder, releasePath));
+            return directoryInfo.FullName;
+        }
+
+        [Obsolete("This is only here for migration will be removed in future release.")]
+        public static string ReleasePathOld(string artistFolder, string releaseTitle, DateTime releaseDate)
+        {
+            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artistFolder), "Invalid Artist Folder");
+            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(releaseTitle), "Invalid Release Title");
+            SimpleContract.Requires<ArgumentException>(releaseDate != DateTime.MinValue, "Invalid Release Date");
+
+            var directoryInfo = new DirectoryInfo(Path.Combine(artistFolder, string.Format("{1}{0}", releaseTitle.ToTitleCase(false).ToFolderNameFriendly(), string.Format("[{0}] ", releaseDate.ToString("yyyy")))));
+            return directoryInfo.FullName;
         }
 
         /// <summary>
@@ -67,6 +192,7 @@ namespace Roadie.Library.Utility
             {
                 return true;
             }
+            var result = false;
             try
             {
                 foreach (var folder in processingFolder.GetDirectories("*.*", SearchOption.AllDirectories))
@@ -78,27 +204,34 @@ namespace Roadie.Library.Utility
                             if (!folder.GetFiles("*.*", SearchOption.AllDirectories).Any())
                             {
                                 folder.Delete(true);
-                                Trace.WriteLine(string.Format("Deleting Empty Folder [{0}]", folder.FullName), "Debug");
+                                Trace.WriteLine($"Deleting Empty Folder [{folder.FullName}]", "Debug");
+                                result = true;
                             }
                         }
                     }
+                    catch (UnauthorizedAccessException)
+                    {
+                        result = false;
+                        Trace.WriteLine($"UnauthorizedAccessException Deleting Empty Folder [{folder.FullName}]", "Debug");
+                    }
                     catch (DirectoryNotFoundException)
                     {
-                    }
-                    catch (Exception)
-                    {
-                        throw;
+                        result = false;
+                        Trace.WriteLine($"DirectoryNotFoundException Deleting Empty Folder [{folder.FullName}]", "Debug");
                     }
                 }
             }
-            catch(DirectoryNotFoundException)
+            catch (UnauthorizedAccessException)
             {
+                result = false;
+                Trace.WriteLine($"UnauthorizedAccessException Deleting Empty Folder [{processingFolder.FullName}]", "Debug");
             }
-            catch (Exception)
+            catch (DirectoryNotFoundException)
             {
-                throw;
+                result = false;
+                Trace.WriteLine($"DirectoryNotFoundException Deleting Empty Folder [{processingFolder.FullName}]", "Debug");
             }
-            return true;
+            return result;
         }
 
         /// <summary>
@@ -140,22 +273,6 @@ namespace Roadie.Library.Utility
             }
             var fileName = Path.ChangeExtension(track.FileName, ".jpg");
             var directoryInfo = new DirectoryInfo(Path.Combine(destinationFolder, track.FilePath, fileName));
-            return directoryInfo.FullName;
-        }
-
-        /// <summary>
-        ///     Full path to Release folder using given full Artist folder
-        /// </summary>
-        /// <param name="artistFolder">Full path to Artist folder</param>
-        /// <param name="releaseTitle">Title of Release</param>
-        /// <param name="releaseDate">Date of Release</param>
-        public static string ReleasePath(string artistFolder, string releaseTitle, DateTime releaseDate)
-        {
-            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artistFolder), "Invalid Artist Folder");
-            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(releaseTitle), "Invalid Release Title");
-            SimpleContract.Requires<ArgumentException>(releaseDate != DateTime.MinValue, "Invalid Release Date");
-
-            var directoryInfo = new DirectoryInfo(Path.Combine(artistFolder, string.Format("{1}{0}", releaseTitle.ToTitleCase(false).ToFolderNameFriendly(), string.Format("[{0}] ", releaseDate.ToString("yyyy")))));
             return directoryInfo.FullName;
         }
 
@@ -202,9 +319,12 @@ namespace Roadie.Library.Utility
                     .ToTitleCase(false);
             var trackPathReplace = configuration.TrackPathReplace;
             if (trackPathReplace != null)
+            {
                 foreach (var kp in trackPathReplace)
+                {
                     fileNameFromTitle = fileNameFromTitle.Replace(kp.Key, kp.Value);
-
+                }
+            }
             return string.Format("{0}{1} {2}.{3}", disc, track, fileNameFromTitle, fileExtension.ToLower());
         }
 
@@ -215,7 +335,7 @@ namespace Roadie.Library.Utility
         /// <param name="artistFolder">Optional ArtistFolder default is to get from MetaData artist</param>
         public static string TrackFullPath(IRoadieSettings configuration, AudioMetaData metaData, string artistFolder = null, string releaseFolder = null)
         {
-            return TrackFullPath(configuration, metaData.Artist, metaData.Release,
+            return TrackFullPath(configuration, 0, metaData.Artist, metaData.Release,
                 SafeParser.ToDateTime(metaData.Year).Value,
                 metaData.Title, metaData.TrackNumber ?? 0, metaData.Disc ?? 0,
                 metaData.TotalTrackNumbers ?? 0,
@@ -231,7 +351,7 @@ namespace Roadie.Library.Utility
         /// <param name="track">Track</param>
         /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
         /// <returns></returns>
-        public static string TrackFullPath(IRoadieSettings configuration, Artist artist, Release release, Track track) => TrackFullPath(configuration, artist.SortNameValue, release.Title, release.ReleaseDate.Value, track.Title, track.TrackNumber);
+        public static string TrackFullPath(IRoadieSettings configuration, Artist artist, Release release, Track track) => TrackFullPath(configuration, artist.Id, artist.SortNameValue, release.SortTitleValue, release.ReleaseDate.Value, track.Title, track.TrackNumber);
 
         /// <summary>
         ///     Return the full path (FQDN) for given Track details
@@ -244,20 +364,16 @@ namespace Roadie.Library.Utility
         /// <param name="discNumber">Optional disc number defaults to 0</param>
         /// <param name="totalTrackNumber">Optional Total Tracks defaults to TrackNumber</param>
         /// <param name="fileExtension">Optional File Extension defaults to mp3</param>
-        public static string TrackFullPath(IRoadieSettings configuration, string artistSortName, string releaseTitle,
+        public static string TrackFullPath(IRoadieSettings configuration, int artistId, string artistSortName, string releaseTitle,
             DateTime releaseDate, string trackTitle, short trackNumber, int? discNumber = null, int? totalTrackNumber = null, string fileExtension = "mp3",
             string artistFolder = null, string releaseFolder = null)
         {
-            artistFolder = artistFolder ?? ArtistPath(configuration, artistSortName);
-            releaseFolder = releaseFolder ?? ReleasePath(artistFolder, releaseTitle, releaseDate);
+            artistFolder ??= ArtistPath(configuration, artistId, artistSortName);
+            releaseFolder ??= ReleasePath(artistFolder, releaseTitle, releaseDate);
             var trackFileName = TrackFileName(configuration, trackTitle, trackNumber, discNumber, totalTrackNumber, fileExtension);
 
             var result = Path.Combine(artistFolder, releaseFolder, trackFileName);
             var resultInfo = new DirectoryInfo(result);
-            Trace.WriteLine(string.Format(
-                "TrackPath [{0}] For ArtistName [{1}], ReleaseTitle [{2}], ReleaseDate [{3}], ReleaseYear [{4}], TrackNumber [{5}]",
-                resultInfo.FullName, artistSortName, releaseTitle, releaseDate.ToString("s"),
-                releaseDate.ToString("yyyy"), trackNumber));
             return resultInfo.FullName;
         }
 
@@ -268,11 +384,15 @@ namespace Roadie.Library.Utility
         /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
         /// <param name="artistFolder">Optional ArtistFolder default is to get from MetaData artist</param>
         /// ///
-        public static string TrackPath(IRoadieSettings configuration, AudioMetaData metaData,
-            string destinationFolder = null, string artistFolder = null)
+        public static string TrackPath(IRoadieSettings configuration, AudioMetaData metaData, string destinationFolder = null, string artistFolder = null)
         {
             var fileInfo = new FileInfo(TrackFullPath(configuration, metaData, destinationFolder, artistFolder));
-            return fileInfo.Directory.Name;
+            var tf = fileInfo.Directory.Parent.FullName.Replace(new DirectoryInfo(configuration.LibraryFolder).FullName, "");
+            if (tf.StartsWith(Path.DirectorySeparatorChar))
+            {
+                tf = tf.RemoveFirst(Path.DirectorySeparatorChar.ToString());
+            }
+            return Path.Combine(tf, fileInfo.Directory.Name);
         }
 
         /// <summary>
@@ -283,8 +403,14 @@ namespace Roadie.Library.Utility
         /// <param name="track">Track</param>
         public static string TrackPath(IRoadieSettings configuration, Artist artist, Release release, Track track)
         {
-            var fileInfo = new FileInfo(TrackFullPath(configuration, artist.SortNameValue, release.Title, release.ReleaseDate.Value, track.Title, track.TrackNumber));
-            return fileInfo.Directory.Name;
+            var fileInfo = new FileInfo(TrackFullPath(configuration, artist.Id, artist.SortNameValue, release.SortTitleValue, release.ReleaseDate.Value, track.Title, track.TrackNumber));
+            var tf = fileInfo.Directory.Parent.FullName.Replace(new DirectoryInfo(configuration.LibraryFolder).FullName, "");
+            if (tf.StartsWith(Path.DirectorySeparatorChar))
+            {
+                tf = tf.RemoveFirst(Path.DirectorySeparatorChar.ToString());
+            }
+            var result = Path.Combine(tf, fileInfo.Directory.Name);
+            return result;
         }
 
         /// <summary>
@@ -297,11 +423,17 @@ namespace Roadie.Library.Utility
         /// <param name="destinationFolder">Optional Root folder defaults to Library Folder from Settings</param>
         /// <param name="discNumber">Optional disc number defaults to 0</param>
         /// <param name="totalTrackNumber">Optional Total Tracks defaults to TrackNumber</param>
-        public static string TrackPath(IRoadieSettings configuration, string artistSortName, string releaseTitle,
+        public static string TrackPath(IRoadieSettings configuration, int artistId, string artistSortName, string releaseTitle,
             DateTime releaseDate, string trackTitle, short trackNumber, int? discNumber = null, int? totalTrackNumber = null)
         {
-            var fileInfo = new FileInfo(TrackFullPath(configuration, artistSortName, releaseTitle, releaseDate, trackTitle, trackNumber, discNumber, totalTrackNumber));
-            return fileInfo.Directory.Name;
+            var fileInfo = new FileInfo(TrackFullPath(configuration, artistId, artistSortName, releaseTitle, releaseDate, trackTitle, trackNumber, discNumber, totalTrackNumber));
+            var tf = fileInfo.Directory.Parent.FullName.Replace(new DirectoryInfo(configuration.LibraryFolder).FullName, "");
+            if (tf.StartsWith(Path.DirectorySeparatorChar))
+            {
+                tf = tf.RemoveFirst(Path.DirectorySeparatorChar.ToString());
+            }
+            var result = Path.Combine(tf, fileInfo.Directory.Name);
+            return result;
         }
     }
 }

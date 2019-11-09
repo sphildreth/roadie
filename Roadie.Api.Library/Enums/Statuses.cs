@@ -10,6 +10,8 @@
         Wishlist = 5,
         AdminRemoved = 6,
         Expired = 7,
+        ReadyToMigrate = 8,
+        Migrated = 9,
         Deleted = 99
     }
 }

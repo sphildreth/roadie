@@ -226,15 +226,22 @@ namespace Roadie.Library.Extensions
             return input;
         }
 
-        public static string ToAlphanumericName(this string input)
+        public static string ToAlphanumericName(this string input, bool stripSpaces = true, bool stripCommas = true)
         {
-            if (string.IsNullOrEmpty(input)) return input;
+            if (string.IsNullOrEmpty(input))
+            {
+                return input;
+            }
+            input = input.ToLower()
+                         .Replace("$", "s")
+                         .Replace("%", "per");
             input = WebUtility.HtmlDecode(input);
-            input = input.ScrubHtml().ToLower().Trim().Replace("&", "and");
+            input = input.ScrubHtml().ToLower()
+                                     .Replace("&", "and");                                 
             var arr = input.ToCharArray();
-            arr = Array.FindAll(arr, c => char.IsLetterOrDigit(c));
+            arr = Array.FindAll(arr, c => (c == ',' && !stripCommas) || (char.IsWhiteSpace(c) && !stripSpaces) || char.IsLetterOrDigit(c));
             input = new string(arr).RemoveDiacritics().RemoveUnicodeAccents().Translit();
-            input = Regex.Replace(input, @"[^A-Za-z0-9]+", "");
+            input = Regex.Replace(input, $"[^A-Za-z0-9{ ( !stripSpaces ? @"\s" : "") }{ (!stripCommas ? "," : "")}]+", "");
             return input;
         }
 
@@ -252,7 +259,11 @@ namespace Roadie.Library.Extensions
 
         public static string ToFolderNameFriendly(this string input)
         {
-            if (string.IsNullOrEmpty(input)) return null;
+            if (string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+            input = input.Replace("$", "s");
             return Regex.Replace(PathSanitizer.SanitizeFilename(input, ' '), @"\s+", " ").Trim().TrimEnd('.');
         }
 

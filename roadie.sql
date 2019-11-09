@@ -534,6 +534,7 @@ CREATE TABLE `release` (
   `playedCount` int(11) DEFAULT NULL,
   `duration` int(11) DEFAULT NULL,
   `rank` decimal(9,2) DEFAULT NULL,
+  `sortTitle` varchar(250) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_releaseArtistAndTitle` (`artistId`,`title`),
   KEY `ix_release_roadieId` (`roadieId`),

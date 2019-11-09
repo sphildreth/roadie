@@ -1,5 +1,6 @@
 using Roadie.Library.Imaging;
 using System;
+using System.IO;
 using Xunit;
 
 namespace Roadie.Library.Tests
@@ -9,6 +10,10 @@ namespace Roadie.Library.Tests
         [Fact]
         public void GenerateImageHash()
         {
+            if(!Directory.Exists(@"C:\temp\image_tests"))
+            {
+                return;
+            }
             var imageFilename = @"C:\temp\image_tests\1.jpg";
             var secondImagFilename = @"C:\temp\image_tests\2.jpg";
             var resizedFirstImageFilename = @"C:\temp\image_tests\1-resized.jpg";

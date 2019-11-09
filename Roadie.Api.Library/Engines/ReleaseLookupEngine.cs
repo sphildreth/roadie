@@ -845,8 +845,6 @@ namespace Roadie.Library.Engines
             {
                 var image = metaData.Images.FirstOrDefault(x => x.Type == AudioMetaDataImageType.FrontCover);
                 if (image == null) image = metaData.Images.FirstOrDefault();
-                // If there is an image on the metadata file itself then that over-rides metadata providers.
-                if (image != null) result.Thumbnail = image.Data;
             }
 
             if (!string.IsNullOrEmpty(artistFolder))
@@ -872,13 +870,6 @@ namespace Roadie.Library.Engines
                     else if (cover.Any())
                     {
                         coverFileName = cover.First().FullName;
-                    }
-
-                    if (!string.IsNullOrEmpty(coverFileName))
-                    {
-                        // Read image and convert to jpeg
-                        result.Thumbnail = File.ReadAllBytes(coverFileName);
-                        Logger.LogDebug("PerformMetaDataProvidersReleaseSearch: Using Release Cover File [{0}]", coverFileName);
                     }
                 }
             }

@@ -9,7 +9,7 @@ namespace Roadie.Api.Services
 {
     public interface IAdminService
     {
-        Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId);
+        Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId, bool deleteFolder);
 
         Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId, bool doDeleteFiles = false);
 
@@ -54,5 +54,7 @@ namespace Roadie.Api.Services
         Task<OperationResult<bool>> ValidateInviteToken(Guid? tokenId);
 
         Task<OperationResult<bool>> MigrateImages(ApplicationUser user);
+
+        Task<OperationResult<bool>> MigrateStorage(ApplicationUser user, bool deleteEmptyFolders);
     }
 }

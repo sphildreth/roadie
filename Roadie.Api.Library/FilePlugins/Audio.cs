@@ -322,16 +322,22 @@ namespace Roadie.Library.FilePlugins
             int? submissionId)
         {
             var artist = await ArtistLookupEngine.GetByName(metaData, !doJustInfo);
-            if (!artist.IsSuccess) return null;
+            if (!artist.IsSuccess)
+            {
+                return null;
+            }
             _artistId = artist.Data.RoadieId;
-            var release =
-                await ReleaseLookupEngine.GetByName(artist.Data, metaData, !doJustInfo, submissionId: submissionId);
-            if (!release.IsSuccess) return null;
+            var release = await ReleaseLookupEngine.GetByName(artist.Data, metaData, !doJustInfo, submissionId: submissionId);
+            if (!release.IsSuccess)
+            {
+                return null;
+            }
             _releaseId = release.Data.RoadieId;
             release.Data.ReleaseDate = SafeParser.ToDateTime(release.Data.ReleaseYear ?? metaData.Year);
             if (release.Data.ReleaseYear.HasValue && release.Data.ReleaseYear != metaData.Year)
-                Logger.LogWarning(
-                    $"Found Release `{release.Data}` has different Release Year than MetaData Year `{metaData}`");
+            {
+                Logger.LogWarning($"Found Release `{release.Data}` has different Release Year than MetaData Year `{metaData}`");
+            }
             return release.Data.ReleaseFileFolder(artistFolder);
         }
     }

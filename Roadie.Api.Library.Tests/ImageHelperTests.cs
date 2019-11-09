@@ -413,7 +413,7 @@ namespace Roadie.Library.Tests
                 }
                 context.SaveChanges();
 
-                foreach (var release in context.Releases.Include(x => x.Artist).Where(x => x.Thumbnail != null).OrderBy(x => x.Title))
+                foreach (var release in context.Releases.Include(x => x.Artist).Where(x => x.Thumbnail != null).OrderBy(x => x.SortTitle ?? x.Title))
                 {
                     var artistFolder = release.Artist.ArtistFileFolder(settings);
                     var releaseFolder = release.ReleaseFileFolder(artistFolder);

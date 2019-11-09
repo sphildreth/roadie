@@ -225,7 +225,7 @@ namespace Roadie.Api.Services
                     // Update the track path to have the new album title. This is needed because future scans might not work properly without updating track title.
                     foreach (var track in DbContext.Tracks.Where(x => x.ReleaseMediaId == releaseMedia.Id).ToArray())
                     {
-                        track.FilePath = Path.Combine(releaseDirectoryInfo.Parent.Name, releaseDirectoryInfo.Name);
+                        track.FilePath = FolderPathHelper.TrackPath(Configuration, release.Artist, release, track);
                         var trackPath = track.PathToTrack(Configuration);
                         var trackFileInfo = new FileInfo(trackPath);
                         if (trackFileInfo.Exists)
@@ -344,8 +344,12 @@ namespace Roadie.Api.Services
             var now = DateTime.UtcNow;
             if (doUpdateArtistCounts) await UpdateArtistCounts(release.Artist.Id, now);
             if (releaseLabelIds != null && releaseLabelIds.Any())
+            {
                 foreach (var releaseLabelId in releaseLabelIds)
+                {
                     await UpdateLabelCounts(releaseLabelId, now);
+                }
+            }
             sw.Stop();
             Logger.LogWarning("User `{0}` deleted Release `{1}]`", user, release);
             return new OperationResult<bool>
@@ -1109,7 +1113,7 @@ namespace Roadie.Api.Services
                     zipBytes = zipStream.ToArray();
                 }
 
-                zipFileName = $"{release.Artist.Name}_{release.Title}.zip".ToFileNameFriendly();
+                zipFileName = $"{release.Artist.Name}_{release.SortTitleValue}.zip".ToFileNameFriendly();
                 Logger.LogTrace(
                     $"User `{roadieUser}` downloaded Release `{release}` ZipFileName [{zipFileName}], Zip Size [{zipBytes?.Length}]");
             }
@@ -1255,7 +1259,7 @@ namespace Roadie.Api.Services
                         string partTitles = null;
                         var audioMetaData = await AudioMetaDataHelper.GetInfo(file, doJustInfo);
                         // This is the path for the new track not in the database but the found MP3 file to be added to library
-                        var trackPath = Path.Combine(releaseDirectory.Parent.Name, releaseDirectory.Name);
+                        var trackPath = FolderPathHelper.TrackPath(Configuration, release.Artist.Id, release.Artist.SortNameValue, release.SortTitleValue, release.ReleaseDate.Value, audioMetaData.Title, audioMetaData.TrackNumber.Value);
 
                         if (audioMetaData.IsValid)
                         {
@@ -1550,6 +1554,7 @@ namespace Roadie.Api.Services
                 release.IsVirtual = model.IsVirtual;
                 release.Status = SafeParser.ToEnum<Statuses>(model.Status);
                 release.Title = model.Title;
+                release.SortTitle = model.SortTitle;
                 var specialReleaseTitle = model.Title.ToAlphanumericName();
                 var alt = new List<string>(model.AlternateNamesList);
                 if (!model.AlternateNamesList.Contains(specialReleaseTitle, StringComparer.OrdinalIgnoreCase))

@@ -41,7 +41,7 @@ namespace Roadie.Library.Imaging
                     IImageFormat imageFormat = null;
                     using (var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
                     {
-                        image.Save(outStream, ImageFormats.Jpeg);
+                        image.SaveAsJpeg(outStream);
                     }
                     return outStream.ToArray();
                 }
@@ -65,7 +65,7 @@ namespace Roadie.Library.Imaging
                     IImageFormat imageFormat = null;
                     using (var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
                     {
-                        image.Save(outStream, ImageFormats.Gif);
+                        image.SaveAsGif(outStream);
                     }
                     return outStream.ToArray();
                 }
@@ -138,6 +138,10 @@ namespace Roadie.Library.Imaging
 
         public static string[] GetFiles(string path, string[] patterns = null, SearchOption options = SearchOption.TopDirectoryOnly)
         {
+            if(!Directory.Exists(path))
+            {
+                return new string[0];
+            }
             if (patterns == null || patterns.Length == 0)
             {
                 return Directory.GetFiles(path, "*", options);

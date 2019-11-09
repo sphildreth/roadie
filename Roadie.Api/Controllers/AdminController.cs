@@ -40,9 +40,9 @@ namespace Roadie.Api.Controllers
 
         [HttpPost("delete/artist/{id}")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> DeleteArtist(Guid id)
+        public async Task<IActionResult> DeleteArtist(Guid id, bool? doDeleteFile)
         {
-            var result = await AdminService.DeleteArtist(await UserManager.GetUserAsync(User), id);
+            var result = await AdminService.DeleteArtist(await UserManager.GetUserAsync(User), id, doDeleteFile ?? true);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -354,5 +354,21 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+
+        [HttpPost("migratestorage")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> MigrateStorage(bool? deleteEmptyFolders)
+        {
+            var result = await AdminService.MigrateStorage(await UserManager.GetUserAsync(User), deleteEmptyFolders ?? true);
+            if (!result.IsSuccess)
+            {
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
     }
 }

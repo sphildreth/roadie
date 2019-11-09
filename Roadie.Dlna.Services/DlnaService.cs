@@ -438,7 +438,7 @@ namespace Roadie.Dlna.Services
                 {
                     return (from r in DbContext.Releases
                             where r.ArtistId == artistId
-                            orderby r.ReleaseYear, r.Title
+                            orderby r.ReleaseYear, r.SortTitleValue
                             select r).ToArray();
                 }, "urn:DlnaServiceRegion");
             }
@@ -481,7 +481,7 @@ namespace Roadie.Dlna.Services
                             join cr in DbContext.CollectionReleases on c.Id equals cr.CollectionId
                             join r in DbContext.Releases on cr.ReleaseId equals r.Id
                             where c.Id == collectionId
-                            orderby cr.ListNumber, r.Title
+                            orderby cr.ListNumber, r.SortTitleValue
                             select r).ToArray();
                 }, "urn:DlnaServiceRegion");
             }

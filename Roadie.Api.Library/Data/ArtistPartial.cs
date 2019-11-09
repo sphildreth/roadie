@@ -50,7 +50,7 @@ namespace Roadie.Library.Data
 
         public string ArtistFileFolder(IRoadieSettings configuration)
         {
-            return FolderPathHelper.ArtistPath(configuration, SortNameValue);
+            return FolderPathHelper.ArtistPath(configuration, Id, SortNameValue);
         }
 
         public override string ToString()

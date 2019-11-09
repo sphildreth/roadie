@@ -14,7 +14,7 @@ namespace Roadie.Api.Services
     {
         Task<OperationResult<Artist>> ById(User user, Guid id, IEnumerable<string> includes);
 
-        Task<OperationResult<bool>> Delete(ApplicationUser user, Library.Data.Artist Artist);
+        Task<OperationResult<bool>> Delete(ApplicationUser user, Library.Data.Artist Artist, bool deleteFolder);
 
         Task<PagedResult<ArtistList>> List(User user, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true);
 

@@ -97,7 +97,7 @@ namespace Roadie.Api.Services
                             MakeArtistThumbnailImage(Configuration, HttpContext, release.Artist.RoadieId),
                             MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId));
                         row.Thumbnail = MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId);
-                        row.SortName = release.Title;
+                        row.SortName = release.SortTitleValue;
                         break;
 
                     case BookmarkType.Track:

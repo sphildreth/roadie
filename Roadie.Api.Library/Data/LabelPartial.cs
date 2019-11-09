@@ -23,12 +23,23 @@ namespace Roadie.Library.Data
             }
         }
 
+        public string SortNameValue => string.IsNullOrEmpty(SortName) ? Name : SortName;
+
         /// <summary>
         ///     Returns a full file path to the Label Image
         /// </summary>
         public string PathToImage(IRoadieSettings configuration)
         {
-            return Path.Combine(configuration.LabelImageFolder, $"{ (SortName ?? Name).ToFileNameFriendly() } [{ Id }].jpg");
+            return Path.Combine(FolderPathHelper.LabelPath(configuration, SortNameValue), $"{ SortNameValue.ToFileNameFriendly() } [{ Id }].jpg");
+        }
+
+        /// <summary>
+        ///     Returns a full file path to the Label Image
+        /// </summary>
+        [Obsolete("This is only here for migration will be removed in future release.")]
+        public string OldPathToImage(IRoadieSettings configuration)
+        {
+            return Path.Combine(configuration.LabelImageFolder, $"{ SortNameValue.ToFileNameFriendly() } [{ Id }].jpg");
         }
 
         public bool IsValid => !string.IsNullOrEmpty(Name);

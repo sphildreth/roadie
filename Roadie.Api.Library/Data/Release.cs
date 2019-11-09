@@ -91,6 +91,12 @@ namespace Roadie.Library.Data
         [Required]
         public string Title { get; set; }
 
+        [MaxLength(250)]
+        [Column("sortTitle")]
+        public string SortTitle { get; set; }
+
+        public string SortTitleValue => string.IsNullOrEmpty(SortTitle) ? Title : SortTitle;
+
         [Column("trackCount")] public short TrackCount { get; set; }
 
         [Column("urls", TypeName = "text")]

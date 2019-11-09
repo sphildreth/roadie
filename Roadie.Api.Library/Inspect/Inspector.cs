@@ -477,7 +477,7 @@ namespace Roadie.Library.Inspect
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine($"❌ Deleting Empty folders in [{delEmptyFolderIn.FullName}]");
                 Console.ResetColor();
-                FolderPathHelper.DeleteEmptyDirs(directoryToInspect, false);
+                FolderPathHelper.DeleteEmptyFolders(delEmptyFolderIn);
             }
             else
             {

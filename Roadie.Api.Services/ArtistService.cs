@@ -147,7 +147,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> Delete(ApplicationUser user, data.Artist artist)
+        public async Task<OperationResult<bool>> Delete(ApplicationUser user, data.Artist artist, bool deleteFolder)
         {
             var isSuccess = false;
             try
@@ -156,7 +156,11 @@ namespace Roadie.Api.Services
                 {
                     DbContext.Artists.Remove(artist);
                     await DbContext.SaveChangesAsync();
-                    // TODO delete artist folder if empty?
+                    if(deleteFolder)
+                    {
+                        var artistDir = new DirectoryInfo(artist.ArtistFileFolder(Configuration));
+                        FolderPathHelper.DeleteEmptyFolders(artistDir.Parent);
+                    }
                     CacheManager.ClearRegion(artist.CacheRegion);
                     Logger.LogWarning("User `{0}` deleted Artist `{1}]`", user, artist);
                     isSuccess = true;
@@ -1410,7 +1414,7 @@ namespace Roadie.Api.Services
             }
             await DbContext.SaveChangesAsync();
 
-            await Delete(user, artistToMerge);
+            await Delete(user, artistToMerge, true);
 
             result = true;
 

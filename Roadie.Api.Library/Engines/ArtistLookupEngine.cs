@@ -72,30 +72,12 @@ namespace Roadie.Library.Engines
                 artist.AlternateNames = artist.AlternateNames.AddToDelimitedList(new[] { artist.Name.ToAlphanumericName() });
                 artist.Genres = null;
                 artist.Images = null;
-                if (artist.Thumbnail == null && ArtistImages != null)
-                {
-                    // Set the thumbnail to the first image
-                    var firstImageWithNotNullBytes = ArtistImages.Where(x => x.Bytes != null).FirstOrDefault();
-                    if (firstImageWithNotNullBytes != null)
-                    {
-                        artist.Thumbnail = firstImageWithNotNullBytes.Bytes;
-                        if (artist.Thumbnail != null)
-                        {
-                            artist.Thumbnail = ImageHelper.ResizeToThumbnail(artist.Thumbnail, Configuration);
-                        }
-                    }
-                }
-
                 if (!artist.IsValid)
                 {
                     return new OperationResult<Artist>
                     {
                         Errors = new Exception[1] { new Exception("Artist is Invalid") }
                     };
-                }
-                if (artist.Thumbnail != null)
-                {
-                    artist.Thumbnail = ImageHelper.ResizeToThumbnail(artist.Thumbnail, Configuration);
                 }
                 var addArtistResult = DbContext.Artists.Add(artist);
                 var inserted = 0;
@@ -378,9 +360,6 @@ namespace Roadie.Library.Engines
                             BeginDate = i.BeginDate,
                             Name = result.Name ?? i.ArtistName,
                             SortName = result.SortName ?? i.ArtistSortName,
-                            Thumbnail = i.ArtistThumbnailUrl != null
-                                ? WebHelper.BytesForImageUrl(i.ArtistThumbnailUrl)
-                                : null,
                             ArtistType = result.ArtistType ?? i.ArtistType
                         });
                     }
@@ -443,9 +422,6 @@ namespace Roadie.Library.Engines
                             BeginDate = mb.BeginDate,
                             Name = result.Name ?? mb.ArtistName,
                             SortName = result.SortName ?? mb.ArtistSortName,
-                            Thumbnail = mb.ArtistThumbnailUrl != null
-                                ? WebHelper.BytesForImageUrl(mb.ArtistThumbnailUrl)
-                                : null,
                             ArtistType = mb.ArtistType
                         });
                     }
@@ -488,9 +464,6 @@ namespace Roadie.Library.Engines
                             BeginDate = l.BeginDate,
                             Name = result.Name ?? l.ArtistName,
                             SortName = result.SortName ?? l.ArtistSortName,
-                            Thumbnail = l.ArtistThumbnailUrl != null
-                                ? WebHelper.BytesForImageUrl(l.ArtistThumbnailUrl)
-                                : null,
                             ArtistType = result.ArtistType ?? l.ArtistType
                         });
                     }
@@ -530,9 +503,6 @@ namespace Roadie.Library.Engines
                             BeginDate = s.BeginDate,
                             Name = result.Name ?? s.ArtistName,
                             SortName = result.SortName ?? s.ArtistSortName,
-                            Thumbnail = s.ArtistThumbnailUrl != null
-                                ? WebHelper.BytesForImageUrl(s.ArtistThumbnailUrl)
-                                : null,
                             ArtistType = result.ArtistType ?? s.ArtistType
                         });
                     }
@@ -573,9 +543,6 @@ namespace Roadie.Library.Engines
                             DiscogsId = d.DiscogsId,
                             Name = result.Name ?? d.ArtistName,
                             RealName = result.RealName ?? d.ArtistRealName,
-                            Thumbnail = d.ArtistThumbnailUrl != null
-                                ? WebHelper.BytesForImageUrl(d.ArtistThumbnailUrl)
-                                : null,
                             ArtistType = result.ArtistType ?? d.ArtistType
                         });
                     }

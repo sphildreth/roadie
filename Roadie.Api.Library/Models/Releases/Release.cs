@@ -77,6 +77,8 @@ namespace Roadie.Library.Models.Releases
         public Image Thumbnail { get; set; }
         [MaxLength(250)] [Required] public string Title { get; set; }
 
+        [MaxLength(250)] public string SortTitle { get; set; }
+
         public short TrackCount { get; set; }
         public UserRelease UserRating { get; set; }
 
