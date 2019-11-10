@@ -694,10 +694,10 @@ namespace Roadie.Api.Services
                 {
                     CreatedDate = track.CreatedDate
                 };
-                var trackThumbnailImages = ImageHelper.FindImageTypeInDirectory( new DirectoryInfo(track.PathToTrackThumbnail(Configuration)), ImageType.Track, SearchOption.TopDirectoryOnly);
-                if (trackThumbnailImages.Any())
+                var trackImageFileName = track.PathToTrackThumbnail(Configuration);
+                if (File.Exists(trackImageFileName))
                 {
-                    image.Bytes = File.ReadAllBytes(trackThumbnailImages.First().FullName);
+                    image.Bytes = File.ReadAllBytes(trackImageFileName);
                 }
                 if (image.Bytes == null || !image.Bytes.Any())
                 {

@@ -20,10 +20,10 @@ namespace Roadie.Library.Engines
 
         Task<OperationResult<Release>> Add(Release release, bool doAddTracksInDatabase = false);
 
-        Task<OperationResult<Release>> GetByName(Artist artist, AudioMetaData metaData,
-                    bool doFindIfNotInDatabase = false, bool doAddTracksInDatabase = false, int? submissionId = null);
+        Release DatabaseQueryForReleaseTitle(Artist artist, string title, string sortTitle = null);
 
-        Task<OperationResult<Release>> PerformMetaDataProvidersReleaseSearch(AudioMetaData metaData,
-            string artistFolder = null, int? submissionId = null);
+        Task<OperationResult<Release>> GetByName(Artist artist, AudioMetaData metaData, bool doFindIfNotInDatabase = false, bool doAddTracksInDatabase = false, int? submissionId = null);
+
+        Task<OperationResult<Release>> PerformMetaDataProvidersReleaseSearch(AudioMetaData metaData, string artistFolder = null, int? submissionId = null);
     }
 }

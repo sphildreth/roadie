@@ -260,9 +260,9 @@ namespace Roadie.Api.Controllers
 
         [HttpPost("scan/collection/{id}")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> ScanCollection(Guid id)
+        public async Task<IActionResult> ScanCollection(Guid id, bool doPurgeFirst = false)
         {
-            var result = await AdminService.ScanCollection(await UserManager.GetUserAsync(User), id);
+            var result = await AdminService.ScanCollection(await UserManager.GetUserAsync(User), id, doPurgeFirst: doPurgeFirst);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)

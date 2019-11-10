@@ -287,8 +287,51 @@ namespace Roadie.Library.Engines
             };
         }
 
-        public async Task<OperationResult<Release>> GetByName(Artist artist, AudioMetaData metaData,
-                    bool doFindIfNotInDatabase = false, bool doAddTracksInDatabase = false, int? submissionId = null)
+        public Release DatabaseQueryForReleaseTitle(Artist artist, string title, string sortTitle = null)
+        {
+            if (string.IsNullOrEmpty(title))
+            {
+                return null;
+            }
+            try
+            {
+                var searchName = title.NormalizeName();
+                var searchSortName = !string.IsNullOrEmpty(sortTitle) ? sortTitle.NormalizeName().ToLower() : searchName;
+                var specialSearchName = title.ToAlphanumericName();
+
+                var searchNameStart = $"{searchName}|";
+                var searchNameIn = $"|{searchName}|";
+                var searchNameEnd = $"|{searchName}";
+
+                var specialSearchNameStart = $"{specialSearchName}|";
+                var specialSearchNameIn = $"|{specialSearchName}|";
+                var specialSearchNameEnd = $"|{specialSearchName}";
+
+                return (from a in DbContext.Releases
+                        where a.ArtistId == artist.Id
+                        where a.Title == searchName ||
+                              a.Title == specialSearchName ||
+                              a.SortTitle == searchName ||
+                              a.SortTitle == searchSortName ||
+                              a.SortTitle == specialSearchName ||
+                              a.AlternateNames.StartsWith(searchNameStart) ||
+                              a.AlternateNames.Contains(searchNameIn) ||
+                              a.AlternateNames.EndsWith(searchNameEnd) ||
+                              a.AlternateNames.StartsWith(specialSearchNameStart) ||
+                              a.AlternateNames.Contains(specialSearchNameIn) ||
+                              a.AlternateNames.EndsWith(specialSearchNameEnd)
+                        select a
+                    ).FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, ex.Serialize());
+            }
+
+            return null;
+        }
+
+        public async Task<OperationResult<Release>> GetByName(Artist artist, AudioMetaData metaData, bool doFindIfNotInDatabase = false, bool doAddTracksInDatabase = false, int? submissionId = null)
         {
             SimpleContract.Requires<ArgumentNullException>(artist != null, "Invalid Artist");
             SimpleContract.Requires<ArgumentOutOfRangeException>(artist.Id > 0, "Invalid Artist Id");
@@ -310,44 +353,44 @@ namespace Roadie.Library.Engines
                     };
                 }
 
-                var searchName = metaData.Release.NormalizeName().ToLower();
-                var specialSearchName = metaData.Release.ToAlphanumericName();
+                var release = DatabaseQueryForReleaseTitle(artist, metaData.Release);
 
-                var altStart = $"{searchName}|";
-                var altIn = $"|{searchName}|";
-                var altEnds = $"|{searchName}";
+                //var searchName = metaData.Release.NormalizeName().ToLower();
+                //var specialSearchName = metaData.Release.ToAlphanumericName();
 
-                var altStartSpecial = $"{specialSearchName}|";
-                var altInSpecial = $"|{specialSearchName}|";
-                var altEndsSpecial = $"|{specialSearchName}";
+                //var altStart = $"{searchName}|";
+                //var altIn = $"|{searchName}|";
+                //var altEnds = $"|{searchName}";
 
-                var release = (from r in DbContext.Releases
-                               where r.ArtistId == artist.Id
-                               where r.Title == searchName ||
-                                     r.Title == specialSearchName ||
-                                     r.AlternateNames == searchName ||
-                                     r.AlternateNames == specialSearchName ||
-                                     r.AlternateNames.Contains(altStart) ||
-                                     r.AlternateNames.Contains(altIn) ||
-                                     r.AlternateNames.Contains(altEnds) ||
-                                     r.AlternateNames.Contains(altStartSpecial) ||
-                                     r.AlternateNames.Contains(altInSpecial) ||
-                                     r.AlternateNames.Contains(altEndsSpecial)
-                               select r
-                    ).FirstOrDefault();
+                //var altStartSpecial = $"{specialSearchName}|";
+                //var altInSpecial = $"|{specialSearchName}|";
+                //var altEndsSpecial = $"|{specialSearchName}";
+
+                //var release = (from r in DbContext.Releases
+                //               where r.ArtistId == artist.Id
+                //               where r.Title == searchName ||
+                //                     r.Title == specialSearchName ||
+                //                     r.AlternateNames == searchName ||
+                //                     r.AlternateNames == specialSearchName ||
+                //                     r.AlternateNames.Contains(altStart) ||
+                //                     r.AlternateNames.Contains(altIn) ||
+                //                     r.AlternateNames.Contains(altEnds) ||
+                //                     r.AlternateNames.Contains(altStartSpecial) ||
+                //                     r.AlternateNames.Contains(altInSpecial) ||
+                //                     r.AlternateNames.Contains(altEndsSpecial)
+                //               select r
+                //    ).FirstOrDefault();
 
                 sw.Stop();
                 if (release == null || !release.IsValid)
                 {
-                    Logger.LogTrace("ReleaseFactory: Release Not Found For Artist `{0}` MetaData [{1}]",
-                        artist.ToString(), metaData.ToString());
+                    Logger.LogTrace("ReleaseFactory: Release Not Found For Artist `{0}` MetaData [{1}]", artist.ToString(), metaData.ToString());
                     if (doFindIfNotInDatabase)
                     {
                         var releaseSearch = new OperationResult<Release>();
                         try
                         {
-                            releaseSearch = await PerformMetaDataProvidersReleaseSearch(metaData,
-                                artist.ArtistFileFolder(Configuration), submissionId);
+                            releaseSearch = await PerformMetaDataProvidersReleaseSearch(metaData, artist.ArtistFileFolder(Configuration), submissionId);
                         }
                         catch (Exception ex)
                         {

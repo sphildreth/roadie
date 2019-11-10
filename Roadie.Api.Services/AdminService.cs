@@ -37,6 +37,7 @@ namespace Roadie.Api.Services
 
         private IGenreService GenreService { get; }
         private ILabelService LabelService { get; }
+        private IArtistLookupEngine ArtistLookupEngine { get; }
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
 
         private IReleaseService ReleaseService { get; }
@@ -44,7 +45,8 @@ namespace Roadie.Api.Services
         public AdminService(IRoadieSettings configuration, IHttpEncoder httpEncoder, IHttpContext httpContext,
                             data.IRoadieDbContext context, ICacheManager cacheManager, ILogger<ArtistService> logger,
                             IHubContext<ScanActivityHub> scanActivityHub, IFileDirectoryProcessorService fileDirectoryProcessorService, IArtistService artistService,
-                            IReleaseService releaseService, IReleaseLookupEngine releaseLookupEngine, ILabelService labelService, IGenreService genreService
+                            IReleaseService releaseService, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine, 
+                            ILabelService labelService, IGenreService genreService
         )
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
@@ -56,6 +58,7 @@ namespace Roadie.Api.Services
             ReleaseService = releaseService;
             LabelService = labelService;
             GenreService = genreService;
+            ArtistLookupEngine = artistLookupEngine;
             ReleaseLookupEngine = releaseLookupEngine;
             FileDirectoryProcessorService = fileDirectoryProcessorService;
         }
@@ -719,8 +722,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> ScanCollection(ApplicationUser user, Guid collectionId,
-            bool isReadOnly = false, bool doPurgeFirst = false, bool doUpdateRanks = true)
+        public async Task<OperationResult<bool>> ScanCollection(ApplicationUser user, Guid collectionId, bool isReadOnly = false, bool doPurgeFirst = false, bool doUpdateRanks = true)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -740,7 +742,7 @@ namespace Roadie.Api.Services
             {
                 if (doPurgeFirst)
                 {
-                    await LogAndPublish($"ScanCollection Purgeing Collection [{collectionId}]", LogLevel.Warning);
+                    await LogAndPublish($"ScanCollection Purging Collection [{collectionId}]", LogLevel.Warning);
                     var crs = DbContext.CollectionReleases.Where(x => x.CollectionId == collection.Id).ToArray();
                     DbContext.CollectionReleases.RemoveRange(crs);
                     await DbContext.SaveChangesAsync();
@@ -759,55 +761,51 @@ namespace Roadie.Api.Services
                         data.Artist artist = null;
                         data.Release release = null;
 
-                        var artistSearchName = csvRelease.Artist.NormalizeName();
-                        var artistSpecialSearchName = csvRelease.Artist.ToAlphanumericName();
-                        var releaseSearchName = csvRelease.Release.NormalizeName().ToLower();
-                        var releaseSpecialSearchName = csvRelease.Release.ToAlphanumericName();
-
-                        var artistResults = (from a in DbContext.Artists
-                                             where a.Name.Contains(artistSearchName) ||
-                                                   a.SortName.Contains(artistSearchName) ||
-                                                   a.AlternateNames.Contains(artistSearchName) ||
-                                                   a.AlternateNames.Contains(artistSpecialSearchName)
-                                             select a).ToArray();
-                        if (!artistResults.Any())
+                        var isArtistNameDbKey = csvRelease.Artist.StartsWith(Roadie.Library.Data.Collection.DatabaseIdKey);
+                        int? artistId = isArtistNameDbKey ? SafeParser.ToNumber<int?>(csvRelease.Artist.Replace(Roadie.Library.Data.Collection.DatabaseIdKey, "")) : null;
+                        if(artistId.HasValue)
                         {
-                            await LogAndPublish($"Unable To Find Artist [{csvRelease.Artist}], SearchName [{artistSpecialSearchName}]", LogLevel.Warning);
+                            artist = DbContext.Artists.FirstOrDefault(x => x.Id == artistId.Value);
+                        }
+                        else
+                        {
+                            artist = ArtistLookupEngine.DatabaseQueryForArtistName(csvRelease.Artist);
+                        }
+                        if (artist == null)
+                        {
+                            await LogAndPublish($"CSV Position [{ csvRelease.Position }] Unable To Find Artist [{csvRelease.Artist}]", LogLevel.Warning);
                             csvRelease.Status = Statuses.Missing;
                             DbContext.CollectionMissings.Add(new data.CollectionMissing
                             {
                                 CollectionId = collection.Id,
                                 Position = csvRelease.Position,
-                                Artist = artistSpecialSearchName,
-                                Release = releaseSpecialSearchName
+                                Artist = csvRelease.Artist,
+                                Release = csvRelease.Release
                             });
                             continue;
                         }
 
-                        foreach (var artistResult in artistResults)
+                        var isReleaseNameDbKey = csvRelease.Release.StartsWith(Roadie.Library.Data.Collection.DatabaseIdKey);
+                        int? releaseId = isReleaseNameDbKey ? SafeParser.ToNumber<int?>(csvRelease.Release.Replace(Roadie.Library.Data.Collection.DatabaseIdKey, "")) : null;
+                        if (releaseId.HasValue)
                         {
-                            artist = artistResult;
-                            release = (from r in DbContext.Releases
-                                       where r.ArtistId == artist.Id
-                                       where r.Title.Contains(releaseSearchName) ||
-                                             r.AlternateNames.Contains(releaseSearchName) ||
-                                             r.AlternateNames.Contains(releaseSpecialSearchName)
-                                       select r
-                                ).FirstOrDefault();
-                            if (release != null) break;
+                            release = DbContext.Releases.FirstOrDefault(x => x.Id == releaseId.Value);
                         }
-
+                        else
+                        {
+                            release = ReleaseLookupEngine.DatabaseQueryForReleaseTitle(artist, csvRelease.Release);
+                        }
                         if (release == null)
                         {
-                            await LogAndPublish($"Unable To Find Release [{csvRelease.Release}] for Artist [{csvRelease.Artist}], SearchName [{artistSearchName}]", LogLevel.Warning);
+                            await LogAndPublish($"CSV Position [{ csvRelease.Position }] Unable To Find Release [{csvRelease.Release}], for Artist [{csvRelease.Artist}]", LogLevel.Warning);
                             csvRelease.Status = Statuses.Missing;
                             DbContext.CollectionMissings.Add(new data.CollectionMissing
                             {
                                 CollectionId = collection.Id,
                                 IsArtistFound = true,
                                 Position = csvRelease.Position,
-                                Artist = artistSpecialSearchName,
-                                Release = releaseSpecialSearchName
+                                Artist = csvRelease.Artist,
+                                Release = csvRelease.Release
                             });
                             continue;
                         }

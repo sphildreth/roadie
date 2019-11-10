@@ -152,7 +152,10 @@ namespace Roadie.Library.Engines
 
         public Artist DatabaseQueryForArtistName(string name, string sortName = null)
         {
-            if (string.IsNullOrEmpty(name)) return null;
+            if (string.IsNullOrEmpty(name))
+            {
+                return null;
+            }
             try
             {
                 var searchName = name.NormalizeName();
@@ -242,6 +245,9 @@ namespace Roadie.Library.Engines
                                     OperationTime = sw.ElapsedMilliseconds,
                                     Errors = addResult.Errors
                                 };
+                            } else
+                            {
+                                File.Delete(releaseRoadieDataFilename);
                             }
                             artist = addResult.Data;
                         }

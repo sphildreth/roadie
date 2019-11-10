@@ -13,6 +13,11 @@ namespace Roadie.Library.Data
 {
     public partial class Collection
     {
+        /// <summary>
+        /// If the given value in either Artist or Release starts with this then the next value is the database Id, example "1,~4,~19"
+        /// </summary>
+        public static string DatabaseIdKey = "~";
+
         public int? _artistColumn;
 
         public int? _positionColumn;
