@@ -352,7 +352,7 @@ namespace Roadie.Api.Services
                 if (playlistImage != null)
                 {
                     // Save unaltered playlist image
-                    File.WriteAllBytes(playlist.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(playlistImage));
+                    File.WriteAllBytes(playlist.PathToImage(Configuration, true), ImageHelper.ConvertToJpegFormat(playlistImage));
                 }
                 playlist.LastUpdated = now;
                 await DbContext.SaveChangesAsync();

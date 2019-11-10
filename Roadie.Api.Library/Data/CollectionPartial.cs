@@ -44,9 +44,14 @@ namespace Roadie.Library.Data
         /// <summary>
         ///     Returns a full file path to the Collection Image
         /// </summary>
-        public string PathToImage(IRoadieSettings configuration)
+        public string PathToImage(IRoadieSettings configuration, bool makeFolderIfNotExist = false)
         {
-            return Path.Combine(configuration.CollectionImageFolder, $"{ (SortName ?? Name).ToFileNameFriendly() } [{ Id }].jpg");
+            var folder = configuration.CollectionImageFolder;
+            if (!Directory.Exists(folder) && makeFolderIfNotExist)
+            {
+                Directory.CreateDirectory(folder);
+            }
+            return Path.Combine(folder, $"{ (SortName ?? Name).ToFileNameFriendly() } [{ Id }].jpg");
         }
 
         public int PositionColumn

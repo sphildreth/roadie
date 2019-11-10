@@ -20,9 +20,14 @@ namespace Roadie.Library.Identity
         /// <summary>
         ///     Returns a full file path to the User Image
         /// </summary>
-        public string PathToImage(IRoadieSettings configuration)
+        public string PathToImage(IRoadieSettings configuration, bool makeFolderIfNotExist = false)
         {
-            return Path.Combine(configuration.UserImageFolder, $"{ UserName.ToFileNameFriendly() } [{ Id }].gif");
+            var folder = configuration.UserImageFolder;
+            if (!Directory.Exists(folder) && makeFolderIfNotExist)
+            {
+                Directory.CreateDirectory(folder);
+            }
+            return Path.Combine(folder, $"{ UserName.ToFileNameFriendly() } [{ Id }].gif");
         }
 
         public ApplicationUser()

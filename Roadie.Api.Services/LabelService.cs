@@ -461,7 +461,7 @@ namespace Roadie.Api.Services
                 if (imageBytes != null)
                 {
                     // Save unaltered label image
-                    File.WriteAllBytes(label.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(imageBytes));
+                    File.WriteAllBytes(label.PathToImage(Configuration, true), ImageHelper.ConvertToJpegFormat(imageBytes));
                 }
                 label.LastUpdated = now;
                 await DbContext.SaveChangesAsync();

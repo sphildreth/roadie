@@ -301,7 +301,7 @@ namespace Roadie.Api.Services
             if (collectionImage != null)
             {
                 // Save unaltered collection image
-                File.WriteAllBytes(collection.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(collectionImage));
+                File.WriteAllBytes(collection.PathToImage(Configuration, true), ImageHelper.ConvertToJpegFormat(collectionImage));
             }
             if (model.Maintainer?.Value != null)
             {

@@ -1,5 +1,6 @@
 ﻿using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
+using Roadie.Library.Utility;
 using System;
 using System.IO;
 
@@ -11,13 +12,36 @@ namespace Roadie.Library.Data
 
         public string CacheRegion => CacheRegionUrn(RoadieId);
 
+        ///// <summary>
+        /////     Returns a full file path to the Genre Image
+        ///// </summary>
+        //public string PathToImage(IRoadieSettings configuration)
+        //{
+        //    return Path.Combine(configuration.GenreImageFolder, $"{ Name.ToFileNameFriendly() } [{ Id }].jpg");
+        //}
+
         /// <summary>
         ///     Returns a full file path to the Genre Image
         /// </summary>
-        public string PathToImage(IRoadieSettings configuration)
+        public string PathToImage(IRoadieSettings configuration, bool makeFolderIfNotExist = false)
         {
-            return Path.Combine(configuration.GenreImageFolder, $"{ Name.ToFileNameFriendly() } [{ Id }].jpg");
+            var folder = FolderPathHelper.GenrePath(configuration, SortNameValue);
+            if(!Directory.Exists(folder) && makeFolderIfNotExist)
+            {
+                Directory.CreateDirectory(folder);
+            }
+            return Path.Combine(folder, $"{ SortNameValue.ToFileNameFriendly() } [{ Id }].jpg");
         }
+
+        /// <summary>
+        ///     Returns a full file path to the Label Image
+        /// </summary>
+        [Obsolete("This is only here for migration will be removed in future release.")]
+        public string OldPathToImage(IRoadieSettings configuration)
+        {
+            return Path.Combine(configuration.GenreImageFolder, $"{ SortNameValue.ToFileNameFriendly() } [{ Id }].jpg");
+        }
+
 
         public static string CacheRegionUrn(Guid Id)
         {

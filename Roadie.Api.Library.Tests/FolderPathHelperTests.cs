@@ -106,6 +106,22 @@ namespace Roadie.Library.Tests
         }
 
         [Theory]
+        [InlineData("!SÖmëthing el$e", @"S\SO")]
+        [InlineData("Alternative Singer/Songwriter", @"A\AL")]
+        [InlineData("Adult Alternative", @"A\AD")]
+        [InlineData("Progressive Bluegrass", @"P\PR")]
+        [InlineData("Western European Traditions", @"W\WE")]
+        [InlineData("2-Step/British Garage", @"0\2S")]
+        [InlineData("80's/synthwave/outrun/new retro wave", @"0\80")]
+        [InlineData("Western Swing Revival", @"W\WE")]
+        public void GenerateGenreFolderNames(string input, string shouldBe)
+        {
+            var artistFolder = FolderPathHelper.GenrePath(Configuration, input);
+            var t = new DirectoryInfo(Path.Combine(Configuration.GenreImageFolder, shouldBe));
+            Assert.Equal(t.FullName, artistFolder);
+        }
+
+        [Theory]
         [InlineData("What Dreams May Come", "01/15/2004", @"D\DR\Dream Theater [99]", @"D\DR\Dream Theater [99]\[2004] What Dreams May Come")]
         [InlineData("Killers", "01/01/1980", @"I\IR\Iron Maiden [9909]", @"I\IR\Iron Maiden [9909]\[1980] Killers")]
         [InlineData("Original Hits (80S 12'') (72 Original Hits) Cd 5", "01/01/1980", @"I\IR\Iron Maiden [9909]", @"I\IR\Iron Maiden [9909]\[1980] Original Hits 80s 12 72 Original Hits Cd 5")]

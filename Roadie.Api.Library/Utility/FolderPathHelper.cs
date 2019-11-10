@@ -19,7 +19,8 @@ namespace Roadie.Library.Utility
         public static int MaximumLibraryFolderNameLength = 44;
         public static int MaximumArtistFolderNameLength = 100;
         public static int MaximumReleaseFolderNameLength = 100;
-        public static int MaximumLabelFolderNameLength = 100;
+        public static int MaximumLabelFolderNameLength = 80;
+        public static int MaximumGenreFolderNameLength = 80;
         public static int MaximumTrackFileNameLength = 500;
 
         public static IEnumerable<string> FolderSpaceReplacements = new List<string> { ".", "~", "_", "=", "-" };
@@ -78,11 +79,10 @@ namespace Roadie.Library.Utility
             return directoryInfo.FullName;
         }
 
-
         public static string LabelPath(IRoadieSettings configuration, string labelSortName)
         {
             SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(labelSortName), "Invalid Label Sort Name");
-            SimpleContract.Requires<ArgumentException>(configuration.LibraryFolder.Length < MaximumLibraryFolderNameLength, $"Library Folder maximum length is [{ MaximumLibraryFolderNameLength }]");
+            SimpleContract.Requires<ArgumentException>(configuration.LabelImageFolder.Length < MaximumLabelFolderNameLength, $"Label Image Folder maximum length is [{ MaximumLibraryFolderNameLength }]");
 
             var lsn = new StringBuilder(labelSortName);
             foreach (var stringReplacement in FolderSpaceReplacements)
@@ -121,6 +121,50 @@ namespace Roadie.Library.Utility
             var directoryInfo = new DirectoryInfo(Path.Combine(configuration.LabelImageFolder, fnSubPart));
             return directoryInfo.FullName;
         }
+
+        public static string GenrePath(IRoadieSettings configuration, string genreSortName)
+        {
+            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(genreSortName), "Invalid Genre Sort Name");
+            SimpleContract.Requires<ArgumentException>(configuration.GenreImageFolder.Length < MaximumGenreFolderNameLength, $"Genre Image Folder maximum length is [{ MaximumLibraryFolderNameLength }]");
+
+            var lsn = new StringBuilder(genreSortName);
+            foreach (var stringReplacement in FolderSpaceReplacements)
+            {
+                if (!lsn.Equals(stringReplacement))
+                {
+                    lsn.Replace(stringReplacement, " ");
+                }
+            }
+            var genreFolder = lsn.ToString().ToAlphanumericName(false, false).ToFolderNameFriendly().ToTitleCase(false);
+            if (string.IsNullOrEmpty(genreFolder))
+            {
+                throw new Exception($"GenreFolder [{ genreFolder }] is invalid. GenreSortName [{ genreSortName }].");
+            }
+            var lfUpper = genreFolder.ToUpper();
+            var fnSubPart1 = lfUpper.ToUpper().ToCharArray().Take(1).First();
+            if (!char.IsLetterOrDigit(fnSubPart1))
+            {
+                fnSubPart1 = '#';
+            }
+            else if (char.IsNumber(fnSubPart1))
+            {
+                fnSubPart1 = '0';
+            }
+            var fnSubPart2 = lfUpper.Length > 2 ? lfUpper.Substring(0, 2) : lfUpper;
+            if (fnSubPart2.EndsWith(" "))
+            {
+                var pos = 1;
+                while (fnSubPart2.EndsWith(" "))
+                {
+                    pos++;
+                    fnSubPart2 = fnSubPart2.Substring(0, 1) + lfUpper.Substring(pos, 1);
+                }
+            }
+            var fnSubPart = Path.Combine(fnSubPart1.ToString(), fnSubPart2);
+            var directoryInfo = new DirectoryInfo(Path.Combine(configuration.GenreImageFolder, fnSubPart));
+            return directoryInfo.FullName;
+        }
+
 
         [Obsolete("This is only here for migration will be removed in future release.")]
         public static string ArtistPathOld(IRoadieSettings configuration, string artistSortName)

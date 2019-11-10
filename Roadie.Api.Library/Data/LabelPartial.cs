@@ -28,9 +28,14 @@ namespace Roadie.Library.Data
         /// <summary>
         ///     Returns a full file path to the Label Image
         /// </summary>
-        public string PathToImage(IRoadieSettings configuration)
+        public string PathToImage(IRoadieSettings configuration, bool makeFolderIfNotExist = false)
         {
-            return Path.Combine(FolderPathHelper.LabelPath(configuration, SortNameValue), $"{ SortNameValue.ToFileNameFriendly() } [{ Id }].jpg");
+            var folder = FolderPathHelper.LabelPath(configuration, SortNameValue);
+            if (!Directory.Exists(folder) && makeFolderIfNotExist)
+            {
+                Directory.CreateDirectory(folder);
+            }
+            return Path.Combine(folder, $"{ SortNameValue.ToFileNameFriendly() } [{ Id }].jpg");
         }
 
         /// <summary>

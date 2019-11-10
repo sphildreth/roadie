@@ -25,9 +25,14 @@ namespace Roadie.Library.Data
         /// <summary>
         ///     Returns a full file path to the Playlist Image
         /// </summary>
-        public string PathToImage(IRoadieSettings configuration)
+        public string PathToImage(IRoadieSettings configuration, bool makeFolderIfNotExist = false)
         {
-            return Path.Combine(configuration.PlaylistImageFolder, $"{ (SortName ?? Name).ToFileNameFriendly() } [{ Id }].jpg");
+            var folder = configuration.PlaylistImageFolder;
+            if (!Directory.Exists(folder) && makeFolderIfNotExist)
+            {
+                Directory.CreateDirectory(folder);
+            }
+            return Path.Combine(folder, $"{ (SortName ?? Name).ToFileNameFriendly() } [{ Id }].jpg");
         }
 
         public override string ToString()

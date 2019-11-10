@@ -503,7 +503,7 @@ namespace Roadie.Api.Services
                     imageData = ImageHelper.ConvertToGifFormat(imageData);
 
                     // Save unaltered user image
-                    File.WriteAllBytes(user.PathToImage(Configuration), imageData);
+                    File.WriteAllBytes(user.PathToImage(Configuration, true), imageData);
                 }
             }
 

@@ -236,14 +236,17 @@ namespace Roadie.Api.Services
             sw.Start();
             var errors = new List<Exception>();
             var genre = DbContext.Genres.FirstOrDefault(x => x.RoadieId == id);
-            if (genre == null) return new OperationResult<Library.Models.Image>(true, string.Format("Genre Not Found [{0}]", id));
+            if (genre == null)
+            {
+                return new OperationResult<Library.Models.Image>(true, string.Format("Genre Not Found [{0}]", id));
+            }
             try
             {
                 var now = DateTime.UtcNow;
                 if (imageBytes != null)
                 {
-                    // Save unaltered label image
-                    File.WriteAllBytes(genre.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(imageBytes));
+                    // Save unaltered genre image
+                    File.WriteAllBytes(genre.PathToImage(Configuration, true), ImageHelper.ConvertToJpegFormat(imageBytes));
                 }
                 genre.LastUpdated = now;
                 await DbContext.SaveChangesAsync();

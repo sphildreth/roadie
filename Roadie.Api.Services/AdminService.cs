@@ -1110,6 +1110,28 @@ namespace Roadie.Api.Services
             }
             Logger.LogInformation($"Label Migration Complete. Migrated [{ labelsMigrated }] Labels.");
 
+            var genresMigrated = 0;
+            foreach (var genre in DbContext.Genres.Where(x => x.Status == Statuses.ReadyToMigrate).ToArray())
+            {
+                var oldGenreImageFileName = genre.OldPathToImage(Configuration);
+                var genreImageFileName = genre.PathToImage(Configuration);
+                if (File.Exists(oldGenreImageFileName))
+                {
+                    var genreFileInfo = new FileInfo(genreImageFileName);
+                    if (!genreFileInfo.Directory.Exists)
+                    {
+                        Directory.CreateDirectory(genreFileInfo.Directory.FullName);
+                    }
+                    File.Move(oldGenreImageFileName, genreImageFileName, true);
+                    genre.Status = Statuses.Migrated;
+                    genre.LastUpdated = now;
+                    await DbContext.SaveChangesAsync();
+                    Logger.LogInformation($"Migrated Genre Storage `{ genre}` From [{ oldGenreImageFileName }] => [{ genreImageFileName }]");
+                    genresMigrated++;
+                }
+            }
+            Logger.LogInformation($"Genre Migration Complete. Migrated [{ genresMigrated }] Genres.");
+
             var releases = DbContext.Releases
                                     .Include(x => x.Artist)
                                     .Include(x => x.Medias)

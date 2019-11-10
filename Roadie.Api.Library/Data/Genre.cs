@@ -12,7 +12,16 @@ namespace Roadie.Library.Data
 
         public ICollection<Comment> Comments { get; set; }
 
-        [Column("name")] [MaxLength(100)] public string Name { get; set; }
+        [Column("name")]
+        [MaxLength(100)] 
+        [Required]
+        public string Name { get; set; }
+
+        [Column("sortName")]
+        [MaxLength(100)]
+        public string SortName { get; set; }
+
+        public string SortNameValue => string.IsNullOrEmpty(SortName) ? Name : SortName;
 
         [Column("description")]
         [MaxLength(4000)]
