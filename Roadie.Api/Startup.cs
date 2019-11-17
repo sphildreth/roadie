@@ -127,7 +127,7 @@ namespace Roadie.Api
                     }
                 ));
 
-            services.AddDbContextPool<IRoadieDbContext, RoadieDbContext>(
+            services.AddDbContextPool<IRoadieDbContext, MySQLRoadieDbContext>(
                 options => options.UseMySql(_configuration.GetConnectionString("RoadieDatabaseConnection"),
                     mySqlOptions =>
                     {
@@ -173,8 +173,7 @@ namespace Roadie.Api
                 settings.ConnectionString = _configuration.GetConnectionString("RoadieDatabaseConnection");
 
                 // This is so 'User Secrets' can be used in Debugging
-                var integrationKeys = _configuration.GetSection("IntegrationKeys")
-                    .Get<IntegrationKey>();
+                var integrationKeys = _configuration.GetSection("IntegrationKeys").Get<IntegrationKey>();
                 if (integrationKeys != null)
                     settings.Integrations.ApiKeys = new List<ApiKey>
                     {

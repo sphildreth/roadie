@@ -247,21 +247,12 @@ namespace Roadie.Api.Services
                 : null;
 
             int[] randomArtistIds = null;
+            SortedDictionary<int, int> randomArtistData = null;
             if (doRandomize ?? false)
             {
                 var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
-                var userId = roadieUser?.Id ?? -1;
-
-                //// This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
-                var sql = @"select a.id
-                            FROM `artist` a
-                            WHERE(a.id NOT IN(select artistId FROM `userartist` where userId = {1} and isDisliked = 1))
-                            OR(a.id IN(select artistId FROM `userartist` where userId = {1} and isFavorite = 1)
-                            AND {2} = 1)
-                            order BY RIGHT(HEX((1 << 24) * (1 + RAND())), 6)
-                            LIMIT 0, {0}";
-                randomArtistIds = (from a in DbContext.Artists.FromSqlRaw(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0")
-                                   select a.Id).ToArray();
+                randomArtistData = DbContext.RandomArtistIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
+                randomArtistIds = randomArtistData.Select(x => x.Value).ToArray();
                 rowCount = DbContext.Artists.Count();
             }
             var result = (from a in DbContext.Artists
@@ -311,7 +302,12 @@ namespace Roadie.Api.Services
 
             if (doRandomize ?? false)
             {
-                rows = result.ToArray();
+                var resultData = result.ToArray();
+                rows = (from r in resultData
+                        join ra in randomArtistData on r.DatabaseId equals ra.Value
+                        orderby ra.Key
+                        select r
+                       ).ToArray();
             }
             else
             {

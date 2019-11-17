@@ -1,8 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Roadie.Api.Services;
 using Roadie.Dlna.Server;
 using Roadie.Library.Caching;
@@ -58,18 +56,7 @@ namespace Roadie.Dlna.Services
             {
                 _authorizer.AddMethod(new UserAgentAuthorizer(Configuration.Dlna.AllowedUserAgents));
             }
-            var types = new DlnaMediaTypes[] { DlnaMediaTypes.Image, DlnaMediaTypes.Audio };
-            var optionsBuilder = new DbContextOptionsBuilder<data.RoadieDbContext>();
-            optionsBuilder.UseMySql(Configuration.ConnectionString, mySqlOptions =>
-            {
-                mySqlOptions.ServerVersion(new Version(5, 5), ServerType.MariaDb);
-                mySqlOptions.EnableRetryOnFailure(
-                    10,
-                    TimeSpan.FromSeconds(30),
-                    null);
-            });
-
-            DbContext = new data.RoadieDbContext(optionsBuilder.Options);
+            DbContext = data.DbContextFactory.Create(Configuration);
 
             var defaultNotFoundImages = new DefaultNotFoundImages(LoggerFactory.CreateLogger("DefaultNotFoundImages"), Configuration);
             var imageService = new ImageService(Configuration, DbContext, CacheManager, LoggerFactory.CreateLogger("ImageService"), defaultNotFoundImages);

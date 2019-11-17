@@ -3,12 +3,13 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Roadie.Library.Enums;
 using Roadie.Library.Identity;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Roadie.Library.Data
 {
-    public class RoadieDbContext : DbContext, IRoadieDbContext
+    public abstract partial class RoadieDbContext : DbContext, IRoadieDbContext
     {
         public DbSet<ArtistAssociation> ArtistAssociations { get; set; }
 
@@ -71,8 +72,8 @@ namespace Roadie.Library.Data
         public DbSet<UserTrack> UserTracks { get; set; }
         public DbSet<InviteToken> InviteTokens { get; set; }
 
-        public RoadieDbContext(DbContextOptions<RoadieDbContext> options)
-                                                                                                                                                                                                                                                            : base(options)
+        public RoadieDbContext(DbContextOptions options) 
+            : base(options)
         {
         }
 

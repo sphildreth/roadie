@@ -96,16 +96,12 @@ namespace Roadie.Api.Services
             }
 
             int[] randomGenreIds = null;
+            SortedDictionary<int, int> randomGenreData = null;
             if (doRandomize ?? false)
             {
                 var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
-                // This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
-                var sql = @"select g.id
-                            FROM `genre` g
-                            order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)
-                            LIMIT 0, {0}";
-                randomGenreIds = (from l in DbContext.Genres.FromSqlRaw(sql, randomLimit)
-                                  select l.Id).ToArray();
+                randomGenreData = DbContext.RandomGenreIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
+                randomGenreIds = randomGenreData.Select(x => x.Value).ToArray();
                 rowCount = DbContext.Genres.Count();
             }
 
@@ -138,7 +134,12 @@ namespace Roadie.Api.Services
             rowCount = rowCount ?? result.Count();
             if (doRandomize ?? false)
             {
-                rows = result.ToArray();
+                var resultData = result.ToArray();
+                rows = (from r in resultData
+                        join ra in randomGenreData on r.DatabaseId equals ra.Value
+                        orderby ra.Key
+                        select r
+                       ).ToArray();
             }
             else
             {

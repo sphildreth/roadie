@@ -9,19 +9,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Roadie.Library", "Roadie.Ap
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Roadie.Library.Tests", "Roadie.Api.Library.Tests\Roadie.Library.Tests.csproj", "{52E58F4B-88F0-4336-AD06-1184E857FA2C}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{1BA7115B-6E37-4546-BBD6-C8B0787A3FE0}"
-	ProjectSection(SolutionItems) = preProject
-		roadie.sql = roadie.sql
-		Upgrade0001.sql = Upgrade0001.sql
-		Upgrade0002.sql = Upgrade0002.sql
-		Upgrade0003.sql = Upgrade0003.sql
-		Upgrade0004.sql = Upgrade0004.sql
-		Upgrade0005.sql = Upgrade0005.sql
-		Upgrade0006.sql = Upgrade0006.sql
-		Upgrade0007.sql = Upgrade0007.sql
-		Upgrade0008.sql = Upgrade0008.sql
-	EndProjectSection
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Roadie.Api.Services", "Roadie.Api.Services\Roadie.Api.Services.csproj", "{7B37031E-F2AE-4BE2-9F6F-005CA7A6FDF1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Roadie.Api.Hubs", "Roadie.Api.Hubs\Roadie.Api.Hubs.csproj", "{E740C89E-3363-4577-873B-0871823E252C}"

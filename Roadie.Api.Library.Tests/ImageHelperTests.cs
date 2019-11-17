@@ -312,8 +312,6 @@ namespace Roadie.Library.Tests
         {
 #pragma warning disable CS0618 // Type or member is obsolete
             var now = DateTime.UtcNow;
-            var optionsBuilder = new DbContextOptionsBuilder<RoadieDbContext>();
-            optionsBuilder.UseMySql("server=viking;userid=roadie;password=MenAtW0rk668;persistsecurityinfo=True;database=roadie_dev;ConvertZeroDateTime=true");
 
             var settings = new RoadieSettings();
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
@@ -322,7 +320,7 @@ namespace Roadie.Library.Tests
             configuration.GetSection("RoadieSettings").Bind(settings);
             settings.ConnectionString = configuration.GetConnectionString("RoadieDatabaseConnection");            
 
-            using (var context = new RoadieDbContext(optionsBuilder.Options))
+            using (var context = DbContextFactory.Create(settings))
             {
                 foreach (var artist in context.Artists.Where(x => x.Thumbnail != null).OrderBy(x => x.SortName ?? x.Name))
                 {

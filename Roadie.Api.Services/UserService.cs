@@ -640,52 +640,10 @@ namespace Roadie.Api.Services
                     var userReleases = DbContext.UserReleases.Include(x => x.Release).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserRelease[0];
                     var userTracks = DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserTrack[0];
 
-                    // This is MySQL specific
-                    var sql = @"select a.*
-                                FROM `usertrack` ut
-                                join `track` t on (ut.trackId = t.id)
-                                join `releasemedia` rm on (t.releaseMediaId = rm.id)
-                                join `release` r on (rm.releaseId = r.id)
-                                join `artist` a on (r.artistId = a.id)
-                                where ut.userId = {0}
-                                group by r.id
-                                order by SUM(ut.playedCount) desc
-                                LIMIT 1";
-                    var mostPlayedArtist = await DbContext.Artists.FromSqlRaw(sql, user.Id).FirstOrDefaultAsync();
-
-                    // This is MySQL specific
-                    sql = @"SELECT r.*
-                            FROM `usertrack` ut
-                            join `track` t on (ut.trackId = t.id)
-                            join `releasemedia` rm on (t.releaseMediaId = rm.id)
-                            join `release` r on (rm.releaseId = r.id)
-                            WHERE ut.userId = {0}
-                            GROUP by r.id
-                            ORDER by SUM(ut.playedCount) desc
-                            LIMIT 1";
-                    var mostPlayedRelease = await DbContext.Releases.FromSqlRaw(sql, user.Id).FirstOrDefaultAsync();
-                    var mostPlayedTrackUserTrack = userTracks.OrderByDescending(x => x.PlayedCount)
-                                                             .FirstOrDefault();
-                    var lastPlayedTrackUserTrack = userTracks.OrderByDescending(x => x.LastPlayed)
-                                                             .FirstOrDefault();
-
-                    var lastPlayedTrack = lastPlayedTrackUserTrack == null
-                        ? null
-                        : DbContext.Tracks
-                            .Include(x => x.TrackArtist)
-                            .Include(x => x.ReleaseMedia)
-                            .Include("ReleaseMedia.Release")
-                            .Include("ReleaseMedia.Release.Artist")
-                            .FirstOrDefault(x => x.Id == lastPlayedTrackUserTrack.TrackId);
-                    var mostPlayedTrack = mostPlayedTrackUserTrack == null
-                        ? null
-                        : DbContext.Tracks
-                            .Include(x => x.TrackArtist)
-                            .Include(x => x.ReleaseMedia)
-                            .Include("ReleaseMedia.Release")
-                            .Include("ReleaseMedia.Release.Artist")
-                            .FirstOrDefault(x => x.Id == mostPlayedTrackUserTrack.TrackId);
-
+                    var mostPlayedArtist = await DbContext.MostPlayedArtist(user.Id);
+                    var mostPlayedRelease = await DbContext.MostPlayedRelease(user.Id);
+                    var lastPlayedTrack = await DbContext.MostPlayedTrack(user.Id);
+                    var mostPlayedTrack = await DbContext.LastPlayedTrack(user.Id);
                     model.Statistics = new UserStatistics
                     {
                         LastPlayedTrack = lastPlayedTrack == null

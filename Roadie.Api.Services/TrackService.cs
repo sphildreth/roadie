@@ -284,45 +284,13 @@ namespace Roadie.Api.Services
                 }
 
                 int[] randomTrackIds = null;
-
+                SortedDictionary<int, int> randomTrackData = null;
                 if (doRandomize ?? false)
                 {
-                    var randomLimit = roadieUser?.RandomReleaseLimit ?? request.LimitValue;
-                    var userId = roadieUser?.Id ?? -1;
-
-                    // This is MySQL specific but I can't figure out how else to get random without throwing EF local evaluate warnings.
-                    var sql = @"SELECT t.id
-                                FROM `track` t 
-                                # Rated filter                                
-                                WHERE ((t.rating > 0 AND {3} = 1) OR {3} = 0)
-                                # Artist is not disliked
-                                AND ((t.id NOT IN (select tt.id 
-                                                    FROM `track` tt
-                                                    JOIN `releasemedia` rm on (tt.releaseMediaId = rm.id)                    
-                                                    JOIN `userartist` ua on (rm.id = ua.artistId)
-                                                    WHERE ua.userId = {1} AND ua.isDisliked = 1))
-                                 # Release is not disliked                    
-                                 AND (t.id NOT IN (select tt.id 
-                                                  FROM `track` tt 
-                                                  JOIN `releasemedia` rm on (tt.releaseMediaId = rm.id)
-                                                  JOIN `userrelease` ur on (rm.releaseId = ur.releaseId)
-                                                  WHERE ur.userId = {1} AND ur.isDisliked = 1))                    
-                                 # Track is not disliked                  
-                                 AND (t.id NOT IN (select tt.id 
-                                                  FROM `track` tt 
-                                                  JOIN `usertrack` ut on (tt.id = ut.trackId)
-                                                  WHERE ut.userId = {1} AND ut.isDisliked = 1)))
-                                # If toggled then only favorites                  
-                                AND ((t.id IN (select tt.id 
-                                             FROM `track` tt
-			                                 JOIN `usertrack` ut on (tt.id = ut.trackId)
-	                                         WHERE ut.userId = {1} AND ut.isFavorite = 1) AND {2} = 1) OR {2} = 0)
-                                order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)                    
-                                LIMIT 0, {0};";
-                    randomTrackIds = (from a in DbContext.Releases.FromSqlRaw(sql, randomLimit, userId, request.FilterFavoriteOnly ? "1" : "0", request.FilterRatedOnly ? "1" : "0")
-                                        select a.Id).ToArray();
+                    var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
+                    randomTrackData = DbContext.RandomTrackIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
+                    randomTrackIds = randomTrackData.Select(x => x.Value).ToArray();
                     rowCount = DbContext.Releases.Count();
-
                 }
 
                 Guid?[] filterToTrackIds = null;
@@ -518,30 +486,38 @@ namespace Roadie.Api.Services
                 rowCount = rowCount ?? result.Count();
                 TrackList[] rows = null;
 
-                if (request.Action == User.ActionKeyUserRated)
+                if (!doRandomize ?? false)
                 {
-                    sortBy = string.IsNullOrEmpty(request.Sort)
-                        ? request.OrderValue(new Dictionary<string, string> { { "UserTrack.Rating", "DESC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } })
-                        : request.OrderValue();
-                }
-                else
-                {
-                    if (request.Sort == "Rating")
+                    if (request.Action == User.ActionKeyUserRated)
                     {
-                        // The request is to sort tracks by Rating if the artist only has a few tracks rated then order by those then order by played (put most popular after top rated)
-                        sortBy = request.OrderValue(new Dictionary<string, string> { { "Rating", request.Order }, { "PlayedCount", request.Order } });
+                        sortBy = string.IsNullOrEmpty(request.Sort)
+                            ? request.OrderValue(new Dictionary<string, string> { { "UserTrack.Rating", "DESC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } })
+                            : request.OrderValue();
                     }
                     else
                     {
-                        sortBy = string.IsNullOrEmpty(request.Sort)
-                            ? request.OrderValue(new Dictionary<string, string> { { "Release.Release.Text", "ASC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } })
-                            : request.OrderValue();
+                        if (request.Sort == "Rating")
+                        {
+                            // The request is to sort tracks by Rating if the artist only has a few tracks rated then order by those then order by played (put most popular after top rated)
+                            sortBy = request.OrderValue(new Dictionary<string, string> { { "Rating", request.Order }, { "PlayedCount", request.Order } });
+                        }
+                        else
+                        {
+                            sortBy = string.IsNullOrEmpty(request.Sort)
+                                ? request.OrderValue(new Dictionary<string, string> { { "Release.Release.Text", "ASC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } })
+                                : request.OrderValue();
+                        }
                     }
                 }
 
                 if (doRandomize ?? false)
                 {
-                    rows = TrackList.Shuffle(result).ToArray();
+                    var resultData = result.ToArray();
+                    rows = (from r in resultData
+                            join ra in randomTrackData on r.DatabaseId equals ra.Value
+                            orderby ra.Key
+                            select r
+                           ).ToArray();
                 }
                 else
                 {

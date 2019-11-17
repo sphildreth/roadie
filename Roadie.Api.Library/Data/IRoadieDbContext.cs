@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Roadie.Library.Data
 {
-    public interface IRoadieDbContext : IDisposable, IInfrastructure<IServiceProvider>, IDbContextDependencies, IDbSetCache, IDbContextPoolable
+    public interface IRoadieDbContext : IRoadieDbRandomizer, IRoadieDbUserStats, IDisposable, IInfrastructure<IServiceProvider>, IDbContextDependencies, IDbSetCache, IDbContextPoolable
     {
         DbSet<ArtistAssociation> ArtistAssociations { get; set; }
         DbSet<ArtistGenre> ArtistGenres { get; set; }
@@ -105,8 +105,7 @@ namespace Roadie.Library.Data
 
         int SaveChanges();
 
-        Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
-            CancellationToken cancellationToken = default(CancellationToken));
+        Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default(CancellationToken));
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
