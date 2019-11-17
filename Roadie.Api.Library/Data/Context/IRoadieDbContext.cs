@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Roadie.Library.Data
+namespace Roadie.Library.Data.Context
 {
     public interface IRoadieDbContext : IRoadieDbRandomizer, IRoadieDbUserStats, IDisposable, IInfrastructure<IServiceProvider>, IDbContextDependencies, IDbSetCache, IDbContextPoolable
     {

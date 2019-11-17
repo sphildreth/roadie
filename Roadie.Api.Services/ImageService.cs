@@ -4,6 +4,7 @@ using Microsoft.Net.Http.Headers;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Identity;
@@ -32,7 +33,7 @@ namespace Roadie.Api.Services
         public ImageService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
-            data.IRoadieDbContext context,
+            IRoadieDbContext context,
             ICacheManager cacheManager,
             ILogger<ImageService> logger,
             IDefaultNotFoundImages defaultNotFoundImages,
@@ -43,7 +44,7 @@ namespace Roadie.Api.Services
             ImageSearchManager = imageSearchManager;
         }
 
-        public ImageService(IRoadieSettings configuration, data.IRoadieDbContext dbContext, ICacheManager cacheManager, 
+        public ImageService(IRoadieSettings configuration, IRoadieDbContext dbContext, ICacheManager cacheManager, 
                             ILogger logger, DefaultNotFoundImages defaultNotFoundImages)
             : base(configuration, null, dbContext, cacheManager, logger, null)
         {

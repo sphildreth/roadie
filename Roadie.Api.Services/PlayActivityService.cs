@@ -5,6 +5,7 @@ using Roadie.Api.Hubs;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
@@ -28,7 +29,7 @@ namespace Roadie.Api.Services
         protected IScrobbleHandler ScrobblerHandler { get; }
 
         public PlayActivityService(IRoadieSettings configuration, IHttpEncoder httpEncoder,IHttpContext httpContext,
-                                   data.IRoadieDbContext dbContext, ICacheManager cacheManager,ILogger<PlayActivityService> logger,
+                                   IRoadieDbContext dbContext, ICacheManager cacheManager,ILogger<PlayActivityService> logger,
                                    IScrobbleHandler scrobbleHandler, IHubContext<PlayActivityHub> playActivityHub)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
@@ -36,7 +37,7 @@ namespace Roadie.Api.Services
             ScrobblerHandler = scrobbleHandler;
         }
 
-        public PlayActivityService(IRoadieSettings configuration, data.IRoadieDbContext dbContext, ICacheManager cacheManager, 
+        public PlayActivityService(IRoadieSettings configuration, IRoadieDbContext dbContext, ICacheManager cacheManager, 
                                    ILogger logger, ScrobbleHandler scrobbleHandler)
             : base(configuration, null, dbContext, cacheManager, logger, null)
         {

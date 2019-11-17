@@ -5,7 +5,9 @@ using Microsoft.Extensions.Logging;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
+using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
@@ -29,7 +31,7 @@ namespace Roadie.Api.Services
         public GenreService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
-            data.IRoadieDbContext dbContext,
+            IRoadieDbContext dbContext,
             ICacheManager cacheManager,
             ILogger<GenreService> logger)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
@@ -165,6 +167,79 @@ namespace Roadie.Api.Services
             return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
 
+        public async Task<OperationResult<bool>> UpdateGenre(User user, Genre model)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var genre = DbContext.Genres.FirstOrDefault(x => x.RoadieId == model.Id);
+            if (genre == null)
+            {
+                return new OperationResult<bool>(true, string.Format("Genre Not Found [{0}]", model.Id));
+            }
+            // If genre is being renamed, see if genre already exists with new model supplied name
+            if (genre.Name.ToAlphanumericName() != model.Name.ToAlphanumericName())
+            {
+                var existingGenre = DbContext.Genres.FirstOrDefault(x => x.Name == model.Name);
+                if (existingGenre != null)
+                {
+                    return new OperationResult<bool>($"Genre already exists with name [{ model.Name }].");
+                }
+            }
+            try
+            {
+                var now = DateTime.UtcNow;
+                var specialGenreName = model.Name.ToAlphanumericName();
+                var alt = new List<string>(model.AlternateNamesList);
+                if (!model.AlternateNamesList.Contains(specialGenreName, StringComparer.OrdinalIgnoreCase))
+                {
+                    alt.Add(specialGenreName);
+                }
+                genre.AlternateNames = alt.ToDelimitedList();
+                genre.IsLocked = model.IsLocked;
+                var oldPathToImage = genre.PathToImage(Configuration);
+                var didChangeName = genre.Name != model.Name;
+                genre.Name = model.Name;
+                genre.SortName = model.SortName;
+                genre.Status = SafeParser.ToEnum<Statuses>(model.Status);
+                genre.Tags = model.TagsList.ToDelimitedList();
+
+                if (didChangeName)
+                {
+                    if (File.Exists(oldPathToImage))
+                    {
+                        File.Move(oldPathToImage, genre.PathToImage(Configuration));
+                    }
+                }
+                var genreImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
+                if (genreImage != null)
+                {
+                    // Save unaltered genre image
+                    File.WriteAllBytes(genre.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(genreImage));
+                }
+                genre.LastUpdated = now;
+                await DbContext.SaveChangesAsync();
+
+                CacheManager.ClearRegion(genre.CacheRegion);
+                Logger.LogInformation($"UpdateGenre `{genre}` By User `{user}`");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+                errors.Add(ex);
+            }
+
+            sw.Stop();
+
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
         public async Task<OperationResult<Library.Models.Image>> UploadGenreImage(User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
@@ -197,7 +272,7 @@ namespace Roadie.Api.Services
             var result = genre.Adapt<Genre>();
             result.AlternateNames = genre.AlternateNames;
             result.Tags = genre.Tags;
-            result.Thumbnail = MakeLabelThumbnailImage(Configuration, HttpContext, genre.RoadieId);
+            result.Thumbnail = MakeGenreThumbnailImage(Configuration, HttpContext, genre.RoadieId);
             result.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);

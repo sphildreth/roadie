@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
@@ -33,11 +34,9 @@ namespace Roadie.Api.Services
         public LabelService(IRoadieSettings configuration,
                     IHttpEncoder httpEncoder,
             IHttpContext httpContext,
-            data.IRoadieDbContext context,
+            IRoadieDbContext context,
             ICacheManager cacheManager,
             ILogger<LabelService> logger,
-            ICollectionService collectionService,
-            IPlaylistService playlistService,
             IBookmarkService bookmarkService)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
@@ -286,10 +285,12 @@ namespace Roadie.Api.Services
             try
             {
                 var now = DateTime.UtcNow;
-                var specialArtistName = model.Name.ToAlphanumericName();
+                var specialLabelName = model.Name.ToAlphanumericName();
                 var alt = new List<string>(model.AlternateNamesList);
-                if (!model.AlternateNamesList.Contains(specialArtistName, StringComparer.OrdinalIgnoreCase))
-                    alt.Add(specialArtistName);
+                if (!model.AlternateNamesList.Contains(specialLabelName, StringComparer.OrdinalIgnoreCase))
+                {
+                    alt.Add(specialLabelName);
+                }
                 label.AlternateNames = alt.ToDelimitedList();
                 label.BeginDate = model.BeginDate;
                 label.DiscogsId = model.DiscogsId;

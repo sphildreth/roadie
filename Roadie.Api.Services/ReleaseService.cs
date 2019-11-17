@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Enums;
@@ -49,7 +50,7 @@ namespace Roadie.Api.Services
         public ReleaseService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
-            data.IRoadieDbContext dbContext,
+            IRoadieDbContext dbContext,
             ICacheManager cacheManager,
             IPlaylistService playlistService,
             ILogger<ReleaseService> logger,

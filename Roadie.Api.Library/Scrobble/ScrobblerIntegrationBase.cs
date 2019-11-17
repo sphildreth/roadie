@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System.Threading.Tasks;
@@ -14,13 +15,13 @@ namespace Roadie.Library.Scrobble
 
         protected IRoadieSettings Configuration { get; }
 
-        protected data.IRoadieDbContext DbContext { get; }
+        protected IRoadieDbContext DbContext { get; }
 
         protected IHttpContext HttpContext { get; }
 
         protected ILogger Logger { get; }
 
-        public ScrobblerIntegrationBase(IRoadieSettings configuration, ILogger logger, data.IRoadieDbContext dbContext,
+        public ScrobblerIntegrationBase(IRoadieSettings configuration, ILogger logger, IRoadieDbContext dbContext,
                                                     ICacheManager cacheManager, IHttpContext httpContext)
         {
             Logger = logger;

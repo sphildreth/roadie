@@ -2,6 +2,7 @@
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Models.Statistics;
 using Roadie.Library.Utility;
@@ -19,7 +20,7 @@ namespace Roadie.Api.Services
         public StatisticsService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
-            data.IRoadieDbContext context,
+            IRoadieDbContext context,
             ICacheManager cacheManager,
             ILogger<StatisticsService> logger)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)

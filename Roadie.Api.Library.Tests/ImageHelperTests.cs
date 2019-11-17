@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
+using Roadie.Library.Data.Context;
 using Roadie.Library.FilePlugins;
 using Roadie.Library.Imaging;
 using System;

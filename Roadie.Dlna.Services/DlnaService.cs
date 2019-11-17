@@ -4,6 +4,7 @@ using Roadie.Api.Services;
 using Roadie.Dlna.Server;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Extensions;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Releases;
@@ -26,14 +27,14 @@ namespace Roadie.Dlna.Services
         public Guid UUID { get; } = Guid.NewGuid();
         private ICacheManager CacheManager { get; }
         private IRoadieSettings Configuration { get; }
-        private data.IRoadieDbContext DbContext { get; }
+        private IRoadieDbContext DbContext { get; }
         private IImageService ImageService { get; }
         private ILogger Logger { get; }
         private IPlayActivityService PlayActivityService { get; }
         private int RandomTrackLimit { get; }
         private ITrackService TrackService { get; }
 
-        public DlnaService(IRoadieSettings configuration, data.IRoadieDbContext dbContext, ICacheManager cacheManager,
+        public DlnaService(IRoadieSettings configuration, IRoadieDbContext dbContext, ICacheManager cacheManager,
                            ILogger logger, IImageService imageService, ITrackService trackService, IPlayActivityService playActivityService)
         {
             Configuration = configuration;

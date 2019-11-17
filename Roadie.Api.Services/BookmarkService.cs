@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Models.Collections;
@@ -26,7 +27,7 @@ namespace Roadie.Api.Services
         public BookmarkService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
-            data.IRoadieDbContext context,
+            IRoadieDbContext context,
             ICacheManager cacheManager,
             ILogger<BookmarkService> logger)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Roadie.Library.Data
+namespace Roadie.Library.Data.Context
 {
     public abstract partial class RoadieDbContext : DbContext, IRoadieDbContext
     {

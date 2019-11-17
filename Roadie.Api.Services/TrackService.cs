@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
@@ -38,7 +39,7 @@ namespace Roadie.Api.Services
         private IBookmarkService BookmarkService { get; }
 
         public TrackService(IRoadieSettings configuration, IHttpEncoder httpEncoder, IHttpContext httpContext,
-                            data.IRoadieDbContext dbContext, ICacheManager cacheManager, ILogger<TrackService> logger,
+                            IRoadieDbContext dbContext, ICacheManager cacheManager, ILogger<TrackService> logger,
                             IBookmarkService bookmarkService, IAdminService adminService, IAudioMetaDataHelper audioMetaDataHelper)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
@@ -47,7 +48,7 @@ namespace Roadie.Api.Services
             AdminService = adminService;
         }
 
-        public TrackService(IRoadieSettings configuration, data.IRoadieDbContext dbContext, ICacheManager cacheManager, ILogger logger)
+        public TrackService(IRoadieSettings configuration, IRoadieDbContext dbContext, ICacheManager cacheManager, ILogger logger)
             : base(configuration, null, dbContext, cacheManager, logger, null)
         {
         }
@@ -287,7 +288,7 @@ namespace Roadie.Api.Services
                 SortedDictionary<int, int> randomTrackData = null;
                 if (doRandomize ?? false)
                 {
-                    var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
+                    var randomLimit = roadieUser?.RandomReleaseLimit ?? request.LimitValue;
                     randomTrackData = DbContext.RandomTrackIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
                     randomTrackIds = randomTrackData.Select(x => x.Value).ToArray();
                     rowCount = DbContext.Releases.Count();

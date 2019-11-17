@@ -2,6 +2,7 @@
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Models;
@@ -23,7 +24,7 @@ namespace Roadie.Api.Services
         public LookupService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
-            data.IRoadieDbContext dbContext,
+            IRoadieDbContext dbContext,
             ICacheManager cacheManager,
             ILogger<PlaylistService> logger)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)

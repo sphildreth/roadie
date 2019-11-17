@@ -20,6 +20,8 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<Image>> SetGenreImageByUrl(User user, Guid id, string imageUrl);
 
+        Task<OperationResult<bool>> UpdateGenre(User user, Genre model);
+
         Task<OperationResult<Image>> UploadGenreImage(User user, Guid id, IFormFile file);
     }
 }

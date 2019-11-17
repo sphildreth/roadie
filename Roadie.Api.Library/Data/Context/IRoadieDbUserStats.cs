@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Roadie.Library.Data
+namespace Roadie.Library.Data.Context
 {
     public interface IRoadieDbUserStats
     {

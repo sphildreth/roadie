@@ -7,6 +7,8 @@ namespace Roadie.Library.Configuration
     [Serializable]
     public sealed class RoadieSettings : IRoadieSettings
     {
+        public DbContexts DbContextToUse { get; set; }
+         
         /// <summary>
         ///     If the artist name is found in the values then use the key.
         ///     <remark>This was desgined to handle 'AC/DC' type names as they contain the ID3 v2.3 spec artist seperator</remark>
@@ -145,6 +147,7 @@ namespace Roadie.Library.Configuration
 
         public RoadieSettings()
         {
+            DbContextToUse = DbContexts.MySQL;
             ArtistNameReplace = new Dictionary<string, IEnumerable<string>>
             {
                 { "AC/DC", new List<string>{ "AC; DC", "AC;DC", "AC/ DC", "AC DC" }},

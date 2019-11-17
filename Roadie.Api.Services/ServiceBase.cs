@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Identity;
@@ -26,7 +27,7 @@ namespace Roadie.Api.Services
 
         protected readonly IRoadieSettings _configuration;
 
-        protected readonly data.IRoadieDbContext _dbContext;
+        protected readonly IRoadieDbContext _dbContext;
 
         protected readonly IHttpContext _httpContext;
 
@@ -43,7 +44,7 @@ namespace Roadie.Api.Services
 
         protected IRoadieSettings Configuration => _configuration;
 
-        protected data.IRoadieDbContext DbContext => _dbContext;
+        protected IRoadieDbContext DbContext => _dbContext;
 
         protected IHttpContext HttpContext => _httpContext;
 
@@ -51,8 +52,8 @@ namespace Roadie.Api.Services
 
         protected ILogger Logger => _logger;
 
-        public ServiceBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, data.IRoadieDbContext context,
-                                                            ICacheManager cacheManager, ILogger logger, IHttpContext httpContext)
+        public ServiceBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
+                           ICacheManager cacheManager, ILogger logger, IHttpContext httpContext)
         {
             _configuration = configuration;
             _httpEncoder = httpEncoder;

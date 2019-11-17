@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
@@ -15,12 +16,12 @@ namespace Roadie.Library.Scrobble
     public class RoadieScrobbler : ScrobblerIntegrationBase, IRoadieScrobbler
     {
 
-        public RoadieScrobbler(IRoadieSettings configuration, ILogger logger, data.IRoadieDbContext dbContext, ICacheManager cacheManager)
+        public RoadieScrobbler(IRoadieSettings configuration, ILogger logger, IRoadieDbContext dbContext, ICacheManager cacheManager)
             : base(configuration, logger, dbContext, cacheManager, null)
         {
         }
 
-        public RoadieScrobbler(IRoadieSettings configuration, ILogger<RoadieScrobbler> logger, data.IRoadieDbContext dbContext,
+        public RoadieScrobbler(IRoadieSettings configuration, ILogger<RoadieScrobbler> logger, IRoadieDbContext dbContext,
                                ICacheManager cacheManager, IHttpContext httpContext)
             : base(configuration, logger, dbContext, cacheManager, httpContext)
         {

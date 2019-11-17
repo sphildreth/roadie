@@ -6,6 +6,7 @@ using Roadie.Api.Hubs;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Enums;
@@ -43,7 +44,7 @@ namespace Roadie.Api.Services
         private IReleaseService ReleaseService { get; }
 
         public AdminService(IRoadieSettings configuration, IHttpEncoder httpEncoder, IHttpContext httpContext,
-                            data.IRoadieDbContext context, ICacheManager cacheManager, ILogger<ArtistService> logger,
+                            IRoadieDbContext context, ICacheManager cacheManager, ILogger<ArtistService> logger,
                             IHubContext<ScanActivityHub> scanActivityHub, IFileDirectoryProcessorService fileDirectoryProcessorService, IArtistService artistService,
                             IReleaseService releaseService, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine, 
                             ILabelService labelService, IGenreService genreService

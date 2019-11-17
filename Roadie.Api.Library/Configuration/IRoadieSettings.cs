@@ -4,6 +4,7 @@ namespace Roadie.Library.Configuration
 {
     public interface IRoadieSettings
     {
+        DbContexts DbContextToUse { get; set; }
         Dictionary<string, IEnumerable<string>> ArtistNameReplace { get; set; }
         string BehindProxyHost { get; set; }
         string CollectionImageFolder { get; }

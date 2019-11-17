@@ -29,5 +29,8 @@ namespace Roadie.Library.Models
             return $"urn:genre_by_id:{Id}";
         }
         public Image MediumThumbnail { get; set; }
+
+        // When populated a "data:image" base64 byte array of an image to use as new Thumbnail
+        public string NewThumbnailData { get; set; }
     }
 }

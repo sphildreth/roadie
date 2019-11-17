@@ -5,6 +5,7 @@ using Roadie.Api.Services;
 using Roadie.Dlna.Server;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Imaging;
 using Roadie.Library.Scrobble;
 using System;
@@ -24,7 +25,7 @@ namespace Roadie.Dlna.Services
 
         private ICacheManager CacheManager { get; }
         private IRoadieSettings Configuration { get; }
-        private data.IRoadieDbContext DbContext { get; set; }
+        private IRoadieDbContext DbContext { get; set; }
         private ILogger Logger { get; }
         private ILoggerFactory LoggerFactory { get; }
         private IServiceScopeFactory ServiceScopeFactory { get; }
@@ -56,7 +57,7 @@ namespace Roadie.Dlna.Services
             {
                 _authorizer.AddMethod(new UserAgentAuthorizer(Configuration.Dlna.AllowedUserAgents));
             }
-            DbContext = data.DbContextFactory.Create(Configuration);
+            DbContext = DbContextFactory.Create(Configuration);
 
             var defaultNotFoundImages = new DefaultNotFoundImages(LoggerFactory.CreateLogger("DefaultNotFoundImages"), Configuration);
             var imageService = new ImageService(Configuration, DbContext, CacheManager, LoggerFactory.CreateLogger("ImageService"), defaultNotFoundImages);

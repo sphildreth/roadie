@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
@@ -17,7 +18,7 @@ namespace Roadie.Library.Scrobble
     {
         private ILastFmHelper LastFmHelper { get; }
 
-        public LastFMScrobbler(IRoadieSettings configuration, ILogger<LastFMScrobbler> logger, data.IRoadieDbContext dbContext,
+        public LastFMScrobbler(IRoadieSettings configuration, ILogger<LastFMScrobbler> logger, IRoadieDbContext dbContext,
                     ICacheManager cacheManager, ILastFmHelper lastFmHelper, IHttpContext httpContext)
             : base(configuration, logger, dbContext, cacheManager, httpContext)
         {

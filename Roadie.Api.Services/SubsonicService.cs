@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
@@ -55,9 +56,9 @@ namespace Roadie.Api.Services
         private UserManager<ApplicationUser> UserManger { get; }
 
         public SubsonicService(IRoadieSettings configuration,
-                                                                                    IHttpEncoder httpEncoder,
+            IHttpEncoder httpEncoder,
             IHttpContext httpContext,
-            data.IRoadieDbContext context,
+            IRoadieDbContext context,
             ICacheManager cacheManager,
             ILogger<SubsonicService> logger,
             IArtistService artistService,

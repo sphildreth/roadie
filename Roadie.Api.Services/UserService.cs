@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
@@ -38,7 +39,7 @@ namespace Roadie.Api.Services
         public UserService(IRoadieSettings configuration,
                             IHttpEncoder httpEncoder,
                             IHttpContext httpContext,
-                            data.IRoadieDbContext context,
+                            IRoadieDbContext context,
                             ICacheManager cacheManager,
                             ILogger<ArtistService> logger,
                             UserManager<ApplicationUser> userManager,

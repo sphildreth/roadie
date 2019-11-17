@@ -116,5 +116,32 @@ namespace Roadie.Api.Controllers
             }
             return Ok(result);
         }
+
+        [HttpPost("edit")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> Update(models.Genre genre)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var result = await GenreService.UpdateGenre(await CurrentUserModel(), genre);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+            if (!result.IsSuccess)
+            {
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
     }
 }

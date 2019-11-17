@@ -2,6 +2,7 @@
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Models.Users;
@@ -20,7 +21,7 @@ namespace Roadie.Api.Services
         public CommentService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
-            data.IRoadieDbContext context,
+            IRoadieDbContext context,
             ICacheManager cacheManager,
             ILogger<CommentService> logger)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)

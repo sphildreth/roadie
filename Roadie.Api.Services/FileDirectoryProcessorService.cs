@@ -2,6 +2,7 @@
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Extensions;
@@ -44,7 +45,7 @@ namespace Roadie.Api.Services
         public FileDirectoryProcessorService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
-            data.IRoadieDbContext context,
+            IRoadieDbContext context,
             ICacheManager cacheManager,
             ILogger<FileDirectoryProcessorService> logger,
             IArtistLookupEngine artistLookupEngine,

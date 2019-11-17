@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.Models.Users;
@@ -20,7 +21,7 @@ namespace Roadie.Library.Scrobble
     {
         private IRoadieSettings Configuration { get; }
 
-        private data.IRoadieDbContext DbContext { get; }
+        private IRoadieDbContext DbContext { get; }
 
         private IHttpContext HttpContext { get; }
 
@@ -30,7 +31,7 @@ namespace Roadie.Library.Scrobble
 
         private IEnumerable<IScrobblerIntegration> Scrobblers { get; }
 
-        public ScrobbleHandler(IRoadieSettings configuration, ILogger<ScrobbleHandler> logger, data.IRoadieDbContext dbContext,
+        public ScrobbleHandler(IRoadieSettings configuration, ILogger<ScrobbleHandler> logger, IRoadieDbContext dbContext,
                                ICacheManager cacheManager, IHttpEncoder httpEncoder, IHttpContext httpContext,
                                ILastFmHelper lastFmHelper, IRoadieScrobbler roadieScrobbler, ILastFMScrobbler lastFMScrobbler)
         {
@@ -50,7 +51,7 @@ namespace Roadie.Library.Scrobble
             Scrobblers = scrobblers;
         }
 
-        public ScrobbleHandler(IRoadieSettings configuration, ILogger logger, data.IRoadieDbContext dbContext, ICacheManager cacheManager, RoadieScrobbler roadieScrobbler)
+        public ScrobbleHandler(IRoadieSettings configuration, ILogger logger, IRoadieDbContext dbContext, ICacheManager cacheManager, RoadieScrobbler roadieScrobbler)
         {
             Logger = logger;
             Configuration = configuration;

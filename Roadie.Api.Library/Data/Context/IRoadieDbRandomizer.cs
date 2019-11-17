@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Roadie.Library.Data
+namespace Roadie.Library.Data.Context
 {
     public interface IRoadieDbRandomizer
     {

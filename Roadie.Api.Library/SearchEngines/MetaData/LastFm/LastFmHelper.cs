@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using RestSharp;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
+using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Extensions;
 using Roadie.Library.MetaData.Audio;
@@ -37,12 +38,12 @@ namespace Roadie.Library.MetaData.LastFm
             !string.IsNullOrEmpty(Configuration.Integrations.LastFMApiKey) &&
             !string.IsNullOrEmpty(Configuration.Integrations.LastFmApiSecret);
 
-        private data.IRoadieDbContext DbContext { get; }
+        private IRoadieDbContext DbContext { get; }
 
         private IHttpEncoder HttpEncoder { get; }
 
         public LastFmHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<LastFmHelper> logger,
-                                    data.IRoadieDbContext dbContext, IHttpEncoder httpEncoder)
+                            IRoadieDbContext dbContext, IHttpEncoder httpEncoder)
             : base(configuration, cacheManager, logger)
         {
             _apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey") ??
