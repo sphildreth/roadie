@@ -29,7 +29,7 @@ namespace Roadie.Library.Utility
         ///     Full path to Artist folder
         /// </summary>
         /// <param name="artistSortName">Sort name of Artist to use for folder name</param>
-        public static string ArtistPath(IRoadieSettings configuration, int artistId, string artistSortName)
+        public static string ArtistPath(IRoadieSettings configuration, int artistId, string artistSortName, bool createIfNotFound = false)
         {
             SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artistSortName), "Invalid Artist Sort Name");
             SimpleContract.Requires<ArgumentException>(configuration.LibraryFolder.Length < MaximumLibraryFolderNameLength, $"Library Folder maximum length is [{ MaximumLibraryFolderNameLength }]");
@@ -76,6 +76,10 @@ namespace Roadie.Library.Utility
             }
             artistFolder = Path.Combine(fnSubPart, $"{ artistFolder }{ fnIdPart }");
             var directoryInfo = new DirectoryInfo(Path.Combine(configuration.LibraryFolder, artistFolder));
+            if(createIfNotFound && !directoryInfo.Exists)
+            {
+                directoryInfo.Create();
+            }
             return directoryInfo.FullName;
         }
 
@@ -183,7 +187,7 @@ namespace Roadie.Library.Utility
         /// <param name="artistFolder">Full path to Artist folder</param>
         /// <param name="releaseTitle">Title of Release</param>
         /// <param name="releaseDate">Date of Release</param>
-        public static string ReleasePath(string artistFolder, string releaseTitle, DateTime releaseDate)
+        public static string ReleasePath(string artistFolder, string releaseTitle, DateTime releaseDate, bool createIfNotFound = false)
         {
             SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artistFolder), "Invalid Artist Folder");
             SimpleContract.Requires<ArgumentException>(artistFolder.Length < MaximumArtistFolderNameLength, $"Artist Folder is longer than maximum allowed [{ MaximumArtistFolderNameLength }]");
@@ -211,6 +215,10 @@ namespace Roadie.Library.Utility
             }
             var releasePath = $"[{ releaseDate.ToString("yyyy")}] {releasePathTitle}";
             var directoryInfo = new DirectoryInfo(Path.Combine(artistFolder, releasePath));
+            if(createIfNotFound && !directoryInfo.Exists)
+            {
+                directoryInfo.Create();
+            }
             return directoryInfo.FullName;
         }
 

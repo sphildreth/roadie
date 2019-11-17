@@ -59,8 +59,24 @@ namespace Roadie.Api.Controllers
         [AllowAnonymous]
         public IActionResult Ping() => Ok("pong");
 
+        [HttpGet("artistsByDate")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ArtistsByDate() => Ok(await StatisticsService.ArtistsByDate());
+
         [HttpGet("releasesByDate")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> ReleasesByDate() => Ok(await StatisticsService.ReleasesByDate());
+
+        [HttpGet("releasesByDecade")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ReleasesByDecade() => Ok(await StatisticsService.ReleasesByDecade());
+
+        [HttpGet("songsPlayedByDate")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SongsPlayedByDate() => Ok(await StatisticsService.SongsPlayedByDate());
+
+        [HttpGet("songsPlayedByUser")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> SongsPlayedByUser() => Ok(await StatisticsService.SongsPlayedByUser());
     }
 }

@@ -14,6 +14,8 @@ namespace Roadie.Library.Data
 
         [Column("sortName")] [MaxLength(250)] public string SortName { get; set; }
 
+        public string SortNameValue => string.IsNullOrEmpty(SortName) ? Name : SortName;
+
         [Column("tags", TypeName = "text")]
         [MaxLength(65535)]
         public string Tags { get; set; }

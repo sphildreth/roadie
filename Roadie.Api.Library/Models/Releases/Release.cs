@@ -81,6 +81,7 @@ namespace Roadie.Library.Models.Releases
 
         public short TrackCount { get; set; }
         public UserRelease UserRating { get; set; }
+        public string SortTitleValue => string.IsNullOrEmpty(SortTitle) ? Title : SortTitle;
 
         public override string ToString()
         {

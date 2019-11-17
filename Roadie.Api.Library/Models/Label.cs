@@ -41,5 +41,6 @@ namespace Roadie.Library.Models
 
         public ReleaseGroupingStatistics Statistics { get; set; }
         public Image Thumbnail { get; set; }
+        public string SortNameValue => string.IsNullOrEmpty(SortName) ? Name : SortName;
     }
 }

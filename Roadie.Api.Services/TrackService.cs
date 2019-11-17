@@ -199,7 +199,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<Library.Models.Pagination.PagedResult<TrackList>> List(PagedRequest request, User roadieUser, bool? doRandomize = false, Guid? releaseId = null)
+        public async Task<Library.Models.Pagination.PagedResult<TrackList>> List(PagedRequest request, User roadieUser, bool? doRandomize = false, Guid? releaseId = null)
         {
             try
             {
@@ -289,7 +289,7 @@ namespace Roadie.Api.Services
                 if (doRandomize ?? false)
                 {
                     var randomLimit = roadieUser?.RandomReleaseLimit ?? request.LimitValue;
-                    randomTrackData = DbContext.RandomTrackIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
+                    randomTrackData = await DbContext.RandomTrackIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
                     randomTrackIds = randomTrackData.Select(x => x.Value).ToArray();
                     rowCount = DbContext.Releases.Count();
                 }
@@ -623,22 +623,22 @@ namespace Roadie.Api.Services
                 }
 
                 sw.Stop();
-                return Task.FromResult(new Library.Models.Pagination.PagedResult<TrackList>
+                return new Library.Models.Pagination.PagedResult<TrackList>
                 {
                     TotalCount = rowCount ?? 0,
                     CurrentPage = request.PageValue,
                     TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                     OperationTime = sw.ElapsedMilliseconds,
                     Rows = rows
-                });
+                };
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Error In List, Request [{0}], User [{1}]", JsonConvert.SerializeObject(request), roadieUser);
-                return Task.FromResult(new Library.Models.Pagination.PagedResult<TrackList>
+                return new Library.Models.Pagination.PagedResult<TrackList>
                 {
                     Message = "An Error has occured"
-                });
+                };
             }
         }
 

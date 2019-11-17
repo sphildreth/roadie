@@ -252,7 +252,7 @@ namespace Roadie.Api.Services
             if (doRandomize ?? false)
             {
                 var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
-                randomArtistData = DbContext.RandomArtistIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
+                randomArtistData = await DbContext.RandomArtistIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
                 randomArtistIds = randomArtistData.Select(x => x.Value).ToArray();
                 rowCount = DbContext.Artists.Count();
             }
@@ -592,21 +592,14 @@ namespace Roadie.Api.Services
                 return new OperationResult<bool>(true, $"Artist Not Found [{model.Id}]");
             }
             // If artist is being renamed, see if artist already exists with new model supplied name
-            if (artist.Name.ToAlphanumericName() != model.Name.ToAlphanumericName())
+            var artistName = artist.SortNameValue;
+            var artistModelName = model.SortNameValue;
+            if (artistName.ToAlphanumericName() != artistModelName.ToAlphanumericName())
             {
-                var existingArtist = DbContext.Artists.FirstOrDefault(x => x.Name == model.Name);
+                var existingArtist = DbContext.Artists.FirstOrDefault(x => x.Name == model.Name || x.SortName == model.SortName);
                 if (existingArtist != null)
                 {
-                    return new OperationResult<bool>($"Artist already exists with name [{ model.Name }].");
-                }
-            }
-            // If artist sortname is being modified, see if artist already exists with new model supplied sort name
-            if ((artist.SortName?.ToAlphanumericName() ?? string.Empty) != (model.SortName?.ToAlphanumericName() ?? string.Empty))
-            {
-                var existingArtist = DbContext.Artists.FirstOrDefault(x => x.SortName == model.SortName);
-                if (existingArtist != null)
-                {
-                    return new OperationResult<bool>($"Artist already exists with sort name [{ model.SortName }].");
+                    return new OperationResult<bool>($"Artist already exists `{ existingArtist }` with name [{artistModelName }].");
                 }
             }
             try

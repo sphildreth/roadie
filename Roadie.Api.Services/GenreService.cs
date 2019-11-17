@@ -84,7 +84,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<Library.Models.Pagination.PagedResult<GenreList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
+        public async Task<Library.Models.Pagination.PagedResult<GenreList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -102,7 +102,7 @@ namespace Roadie.Api.Services
             if (doRandomize ?? false)
             {
                 var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
-                randomGenreData = DbContext.RandomGenreIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
+                randomGenreData = await DbContext.RandomGenreIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
                 randomGenreIds = randomGenreData.Select(x => x.Value).ToArray();
                 rowCount = DbContext.Genres.Count();
             }
@@ -152,7 +152,7 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            return Task.FromResult(new Library.Models.Pagination.PagedResult<GenreList>
+            return (new Library.Models.Pagination.PagedResult<GenreList>
             {
                 TotalCount = rowCount.Value,
                 CurrentPage = request.PageValue,
@@ -178,12 +178,15 @@ namespace Roadie.Api.Services
                 return new OperationResult<bool>(true, string.Format("Genre Not Found [{0}]", model.Id));
             }
             // If genre is being renamed, see if genre already exists with new model supplied name
-            if (genre.Name.ToAlphanumericName() != model.Name.ToAlphanumericName())
+            var genreName = genre.SortNameValue;
+            var genreModelName = genre.SortNameValue;
+            var didChangeName = !genreName.ToAlphanumericName().Equals(genreModelName.ToAlphanumericName(), StringComparison.OrdinalIgnoreCase);
+            if (didChangeName)
             {
-                var existingGenre = DbContext.Genres.FirstOrDefault(x => x.Name == model.Name);
+                var existingGenre = DbContext.Genres.FirstOrDefault(x => x.Name == model.Name || x.SortName == model.SortName);
                 if (existingGenre != null)
                 {
-                    return new OperationResult<bool>($"Genre already exists with name [{ model.Name }].");
+                    return new OperationResult<bool>($"Genre already exists `{ existingGenre }` with name [{ genreModelName }].");
                 }
             }
             try
@@ -196,10 +199,11 @@ namespace Roadie.Api.Services
                     alt.Add(specialGenreName);
                 }
                 genre.AlternateNames = alt.ToDelimitedList();
+                genre.Description = model.Description;
                 genre.IsLocked = model.IsLocked;
                 var oldPathToImage = genre.PathToImage(Configuration);
-                var didChangeName = genre.Name != model.Name;
                 genre.Name = model.Name;
+                genre.NormalizedName = model.NormalizedName;
                 genre.SortName = model.SortName;
                 genre.Status = SafeParser.ToEnum<Statuses>(model.Status);
                 genre.Tags = model.TagsList.ToDelimitedList();

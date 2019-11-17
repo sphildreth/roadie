@@ -111,7 +111,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<Library.Models.Pagination.PagedResult<LabelList>> List(User roadieUser, PagedRequest request,
+        public async Task<Library.Models.Pagination.PagedResult<LabelList>> List(User roadieUser, PagedRequest request,
             bool? doRandomize = false)
         {
             var sw = new Stopwatch();
@@ -134,7 +134,7 @@ namespace Roadie.Api.Services
             if (doRandomize ?? false)
             {
                 var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
-                randomLabelData = DbContext.RandomLabelIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
+                randomLabelData = await DbContext.RandomLabelIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
                 randomLabelIds = randomLabelData.Select(x => x.Value).ToArray();
                 rowCount = DbContext.Labels.Count();
             }
@@ -188,14 +188,14 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            return Task.FromResult(new Library.Models.Pagination.PagedResult<LabelList>
+            return new Library.Models.Pagination.PagedResult<LabelList>
             {
                 TotalCount = rowCount.Value,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
-            });
+            };
         }
 
         public async Task<OperationResult<bool>> MergeLabelsIntoLabel(ApplicationUser user, Guid intoLabelId, IEnumerable<Guid> labelIdsToMerge)
@@ -274,12 +274,16 @@ namespace Roadie.Api.Services
                 return new OperationResult<bool>(true, string.Format("Label Not Found [{0}]", model.Id));
             }
             // If label is being renamed, see if label already exists with new model supplied name
-            if (label.Name.ToAlphanumericName() != model.Name.ToAlphanumericName())
+            var labelName = label.SortNameValue;
+            var labelModelName = model.SortNameValue;
+            var oldPathToImage = label.PathToImage(Configuration);
+            var didChangeName = !labelName.ToAlphanumericName().Equals(labelModelName.ToAlphanumericName(), StringComparison.OrdinalIgnoreCase);
+            if (didChangeName)
             {
-                var existingLabel = DbContext.Labels.FirstOrDefault(x => x.Name == model.Name);
+                var existingLabel = DbContext.Labels.FirstOrDefault(x => x.Name == model.Name || x.SortName == model.SortName );
                 if (existingLabel != null)
                 {
-                    return new OperationResult<bool>($"Label already exists with name [{ model.Name }].");
+                    return new OperationResult<bool>($"Label already exists `{ existingLabel }` with name [{ labelModelName }].");
                 }
             }
             try
@@ -297,8 +301,6 @@ namespace Roadie.Api.Services
                 label.EndDate = model.EndDate;
                 label.IsLocked = model.IsLocked;
                 label.MusicBrainzId = model.MusicBrainzId;
-                var oldPathToImage = label.PathToImage(Configuration);
-                var didChangeName = label.Name != model.Name;
                 label.Name = model.Name;
                 label.Profile = model.Profile;
                 label.SortName = model.SortName;

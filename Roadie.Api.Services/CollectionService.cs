@@ -264,12 +264,14 @@ namespace Roadie.Api.Services
                     return new OperationResult<bool>(true, string.Format("Collection Not Found [{0}]", model.Id));
                 }
                 // If collection is being renamed, see if collection already exists with new model supplied name
-                if (collection.Name.ToAlphanumericName() != model.Name.ToAlphanumericName())
+                var collectionName = collection.SortNameValue;
+                var collectionModelName = model.SortNameValue;
+                if (collectionName.ToAlphanumericName() != collectionModelName.ToAlphanumericName())
                 {
-                    var existingCollection = DbContext.Collections.FirstOrDefault(x => x.Name == model.Name);
+                    var existingCollection = DbContext.Collections.FirstOrDefault(x => x.Name == model.Name || x.SortName == model.SortName);
                     if (existingCollection != null)
                     {
-                        return new OperationResult<bool>($"Collection already exists with name [{ model.Name }].");
+                        return new OperationResult<bool>($"Collection already exists `{ collection }` with name [{ collectionModelName }].");
                     }
                 }
             }

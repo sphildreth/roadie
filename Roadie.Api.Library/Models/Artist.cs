@@ -113,6 +113,7 @@ namespace Roadie.Library.Models
         public string Tooltip => Name;
 
         public UserArtist UserRating { get; set; }
+        public string SortNameValue => string.IsNullOrEmpty(SortName) ? Name : SortName;
 
         public Artist()
         {

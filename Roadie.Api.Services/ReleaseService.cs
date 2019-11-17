@@ -397,7 +397,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
+        public async Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -486,7 +486,7 @@ namespace Roadie.Api.Services
             if (doRandomize ?? false)
             {
                 var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
-                randomReleaseData = DbContext.RandomReleaseIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
+                randomReleaseData = await DbContext.RandomReleaseIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
                 randomReleaseIds = randomReleaseData.Select(x => x.Value).ToArray();
                 rowCount = DbContext.Releases.Count();
             }
@@ -754,14 +754,14 @@ namespace Roadie.Api.Services
 
             if (request.FilterFavoriteOnly) rows = rows.OrderBy(x => x.UserRating.Rating).ToArray();
             sw.Stop();
-            return Task.FromResult(new Library.Models.Pagination.PagedResult<ReleaseList>
+            return new Library.Models.Pagination.PagedResult<ReleaseList>
             {
                 TotalCount = rowCount.Value,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
-            });
+            };
         }
 
         public async Task<OperationResult<bool>> MergeReleases(ApplicationUser user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
@@ -1534,12 +1534,16 @@ namespace Roadie.Api.Services
                 return new OperationResult<bool>(true, string.Format("Release Not Found [{0}]", model.Id));
             }
             // If release is being renamed, see if release already exists for artist with new model supplied name
-            if (release.Title.ToAlphanumericName() != model.Title.ToAlphanumericName())
+            var releaseTitle = release.SortTitleValue;
+            var releaseModelTitle = model.SortTitleValue;
+            if (releaseTitle.ToAlphanumericName() != releaseModelTitle.ToAlphanumericName())
             {
-                var existingRelease = DbContext.Releases.FirstOrDefault(x => x.Title == model.Title && x.ArtistId == release.ArtistId);
+                var existingRelease = DbContext.Releases.FirstOrDefault(x => x.Id != release.Id &&
+                                                                             (x.Title == releaseModelTitle || x.SortTitle == releaseModelTitle) &&
+                                                                             x.ArtistId == release.ArtistId);
                 if (existingRelease != null)
                 {
-                    return new OperationResult<bool>($"Release already exists for Artist with title [{ model.Title }].");
+                    return new OperationResult<bool>($"Release already exists `{ existingRelease }` for Artist with title [{ releaseModelTitle }].");
                 }
             }
             try
