@@ -68,7 +68,7 @@ namespace Roadie.Library.Engines
             try
             {
                 var artistGenreTables = artist.Genres;
-                var ArtistImages = artist.Images;
+                var artistImages = artist.Images ?? new List<Library.Imaging.Image>();
                 var now = DateTime.UtcNow;
                 artist.AlternateNames = artist.AlternateNames.AddToDelimitedList(new[] { artist.Name.ToAlphanumericName() });
                 artist.Genres = null;
@@ -122,19 +122,35 @@ namespace Roadie.Library.Engines
                         }
                     }
 
-                    // TODO #29 save images to folder
-
-                    //if (ArtistImages != null && ArtistImages.Any(x => x.Status == Statuses.New))
-                    //{
-                    //    foreach (var ArtistImage in ArtistImages)
-                    //        DbContext.Images.Add(new Library.Imaging.Image(artist.RoadieId)
-                    //        {
-                    //            Url = ArtistImage.Url,
-                    //            Signature = ArtistImage.Signature,
-                    //            Bytes = ArtistImage.Bytes
-                    //        });
-                    //    inserted = await DbContext.SaveChangesAsync();
-                    //}
+                    if (artistImages.Any(x => x.Status == Statuses.New))
+                    {
+                        var artistFolder = artist.ArtistFileFolder(Configuration, true);
+                        var looper = -1;
+                        string releaseImageFilename;
+                        foreach (var artistImage in artistImages)
+                        {
+                            if (artistImage?.Bytes == null || artistImage?.Bytes.Any() == false)
+                            {
+                                continue;
+                            }
+                            artistImage.Bytes = ImageHelper.ConvertToJpegFormat(artistImage.Bytes);
+                            if (looper == -1)
+                            {
+                                releaseImageFilename = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
+                            }
+                            else
+                            {
+                                releaseImageFilename = Path.Combine(artistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                            }
+                            while (File.Exists(releaseImageFilename))
+                            {
+                                looper++;
+                                releaseImageFilename = Path.Combine(artistFolder, string.Format(ImageHelper.ArtistSecondaryImageFilename, looper.ToString("00")));
+                            }
+                            File.WriteAllBytes(releaseImageFilename, artistImage.Bytes);
+                            looper++;
+                        }
+                    }
                     sw.Stop();
                     Logger.LogTrace($"Added New Artist: Elapsed Time [{ sw.ElapsedMilliseconds }], Artist `{ artist }`");
                 }

@@ -91,10 +91,7 @@ namespace Roadie.Library.FilePlugins
                 }
 
                 destinationName = FolderPathHelper.TrackFullPath(Configuration, metaData, artistFolder, releaseFolder);
-                Logger.LogTrace(
-                    "Info: FileInfo [{0}], Artist Folder [{1}], Release Folder [{1}], Destination Name [{3}]",
-                    fileInfo.FullName, artistFolder, releaseFolder, destinationName);
-
+                Logger.LogTrace("Info: FileInfo [{0}], Artist Folder [{1}], Release Folder [{1}], Destination Name [{3}]", fileInfo.FullName, artistFolder, releaseFolder, destinationName);
                 if (doJustInfo)
                 {
                     result.IsSuccess = metaData.IsValid;
@@ -109,8 +106,7 @@ namespace Roadie.Library.FilePlugins
                     // See if file folder parent folder (likely file is in release folder) has primary artist image if so then move to artist folder
                     var artistImages = new List<FileInfo>();
                     artistImages.AddRange(ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, ImageType.Artist));
-                    artistImages.AddRange(
-                        ImageHelper.FindImageTypeInDirectory(fileInfo.Directory.Parent, ImageType.Artist));
+                    artistImages.AddRange(ImageHelper.FindImageTypeInDirectory(fileInfo.Directory.Parent, ImageType.Artist));
                     if (artistImages.Any())
                     {
                         var artistImage = artistImages.First();
@@ -134,10 +130,8 @@ namespace Roadie.Library.FilePlugins
 
                     // See if any secondary artist images if so then move to artist folder
                     artistImages.Clear();
-                    artistImages.AddRange(
-                        ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, ImageType.ArtistSecondary));
-                    artistImages.AddRange(
-                        ImageHelper.FindImageTypeInDirectory(fileInfo.Directory.Parent, ImageType.Artist));
+                    artistImages.AddRange(ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, ImageType.ArtistSecondary));
+                    artistImages.AddRange(ImageHelper.FindImageTypeInDirectory(fileInfo.Directory.Parent, ImageType.Artist));
                     if (artistImages.Any())
                     {
                         var looper = 0;
@@ -198,8 +192,7 @@ namespace Roadie.Library.FilePlugins
                     }
 
                     // See if folder has secondary release image if so then move to release folder
-                    releaseImages =
-                        ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, ImageType.ReleaseSecondary);
+                    releaseImages = ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, ImageType.ReleaseSecondary);
                     if (releaseImages.Any())
                     {
                         var looper = 0;

@@ -23,7 +23,7 @@ namespace Roadie.Library.Data
         }
 
         [NotMapped]
-        public ICollection<Roadie.Library.Imaging.IImage> Images { get; set; }
+        public IEnumerable<Imaging.IImage> Images { get; set; }
 
         public bool IsNew => Id < 1;
 

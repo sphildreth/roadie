@@ -88,7 +88,7 @@ namespace Roadie.Library.Engines
                 release.Genres = null;
                 release.LibraryStatus = LibraryStatus.Incomplete;
                 release.Status = Statuses.New;
-                var releaseImages = new List<Library.Imaging.Image>();
+                var releaseImages = release.Images ?? new List<Library.Imaging.Image>();
                 if (!release.IsValid)
                 {
                     return new OperationResult<Release>
@@ -149,29 +149,37 @@ namespace Roadie.Library.Engines
                         }
                     }
 
-                    // TODO #29 save release images to release folder 
+                    if (releaseImages.Any(x => x.Status == Statuses.New))
+                    {
+                        var artistFolder = release.Artist.ArtistFileFolder(Configuration, true);
+                        var releaseFolder = release.ReleaseFileFolder(artistFolder, true);
 
-                    //if (releaseImages != null && releaseImages.Any(x => x.Status == Statuses.New))
-                    //{
-                    //    foreach (var releaseImage in releaseImages)
-                    //    {
-                    //        DbContext.Images.Add(new Image
-                    //        {
-                    //            ReleaseId = release.Id,
-                    //            Url = releaseImage.Url,
-                    //            Signature = releaseImage.Signature,
-                    //            Bytes = releaseImage.Bytes
-                    //        });
-                    //    }
-                    //    try
-                    //    {
-                    //        await DbContext.SaveChangesAsync();
-                    //    }
-                    //    catch (Exception ex)
-                    //    {
-                    //        Logger.LogError(ex);
-                    //    }
-                    //}
+                        var looper = -1;
+                        string releaseImageFilename;
+                        foreach (var releaseImage in releaseImages)
+                        {
+                            if(releaseImage?.Bytes == null || releaseImage?.Bytes.Any() == false)
+                            {
+                                continue;
+                            }
+                            releaseImage.Bytes = ImageHelper.ConvertToJpegFormat(releaseImage.Bytes);
+                            if (looper == -1)
+                            {
+                                releaseImageFilename = Path.Combine(releaseFolder, ImageHelper.ReleaseCoverFilename);
+                            }
+                            else
+                            {
+                                releaseImageFilename = Path.Combine(releaseFolder, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                            }
+                            while (File.Exists(releaseImageFilename))
+                            {
+                                looper++;
+                                releaseImageFilename = Path.Combine(releaseFolder,string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                            }
+                            File.WriteAllBytes(releaseImageFilename, releaseImage.Bytes);
+                            looper++;
+                        }
+                    }
 
                     if (releaseLabels != null && releaseLabels.Any(x => x.Status == Statuses.New))
                     {
@@ -773,11 +781,20 @@ namespace Roadie.Library.Engines
                 Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: Image Url Processing Complete [{ sw2.ElapsedMilliseconds }]");
             }
 
+            if (metaData.Images != null && metaData.Images.Any())
+            {
+                foreach(var metadataImage in metaData.Images)
+                {
+                    releaseImages.Add(new Imaging.Image()
+                    {
+                        Bytes = metadataImage.Data
+                    });
+                }
+            }
             result.Images = releaseImages.Where(x => x.Bytes != null)
                                          .GroupBy(x => x.Signature)
                                          .Select(x => x.First()).Take(Configuration.Processing.MaximumReleaseImagesToAdd)
                                          .ToList();
-
             if (releaseLabels.Any())
             {
                 var sw2 = Stopwatch.StartNew();
@@ -883,12 +900,6 @@ namespace Roadie.Library.Engines
                 result.TrackCount = (short)releaseMedias.SelectMany(x => x.Tracks).Count();
                 sw2.Stop();
                 Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: Release Media Processing Complete [{ sw2.ElapsedMilliseconds }]");
-            }
-
-            if (metaData.Images != null && metaData.Images.Any())
-            {
-                var image = metaData.Images.FirstOrDefault(x => x.Type == AudioMetaDataImageType.FrontCover);
-                if (image == null) image = metaData.Images.FirstOrDefault();
             }
 
             if (!string.IsNullOrEmpty(artistFolder))
