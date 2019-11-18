@@ -1160,11 +1160,12 @@ namespace Roadie.Api.Services
                 short totalMissingCount = 0;
                 releasePath = release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration));
                 var releaseDirectory = new DirectoryInfo(releasePath);
+                data.Track firstTrack = null;
                 if (!Directory.Exists(releasePath))
                 {
                     // Get the First Track for the Release from DB (if any) and see if the path on it is set, if so rename to "correct" path
                     //  this happens with the logic change from folder naming and almost always case change which causes issues with Linux systems.
-                    var firstTrack = (from t in DbContext.Tracks
+                    firstTrack = (from t in DbContext.Tracks
                                       join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                       where rm.ReleaseId == release.Id
                                       select t).FirstOrDefault();
@@ -1476,6 +1477,26 @@ namespace Roadie.Api.Services
                 }
 
                 #endregion Scan Folder and Add or Update Existing Tracks from Files
+
+                var doesReleaseHaveCoverImage = ImageHelper.FindImageTypeInDirectory(releaseDirectory, ImageType.Release).FirstOrDefault() != null;
+                if (!doesReleaseHaveCoverImage)
+                {
+                    // Since no release image found see if first track has image in metadata if so then extract to cover file
+                    firstTrack = (from t in DbContext.Tracks
+                                  join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                  where rm.ReleaseId == release.Id
+                                  orderby rm.MediaNumber, t.TrackNumber
+                                  select t).FirstOrDefault();
+                    if (firstTrack?.FilePath != null)
+                    {
+                        var metaData = await AudioMetaDataHelper.GetInfo(new FileInfo(firstTrack.PathToTrack(Configuration)), doJustInfo);
+                        if (metaData.Images != null && metaData.Images.Any())
+                        {
+                            var releaseImageFilename = Path.Combine(releasePath, ImageHelper.ReleaseCoverFilename);
+                            File.WriteAllBytes(releaseImageFilename, metaData.Images.First(x => x.Data != null).Data);
+                        }
+                    }
+                }
 
                 sw.Stop();
 
