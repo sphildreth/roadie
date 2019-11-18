@@ -199,6 +199,18 @@ namespace Roadie.Api.Controllers
                     }
                 }
 
+                var existinUserByUsername = await UserManager.FindByNameAsync(registerModel.Username);
+                if (existinUserByUsername != null)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, new { Title = "User With Username Already Exists!" });
+                }
+
+                var existingUserByEmail = await UserManager.FindByEmailAsync(registerModel.Email);
+                if(existingUserByEmail != null)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, new { Title = "User With Email Already Exists!" });
+                }
+
                 var identityResult = await UserManager.CreateAsync(user, registerModel.Password);
                 if (identityResult.Succeeded)
                 {
