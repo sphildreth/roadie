@@ -341,7 +341,10 @@ namespace Roadie.Library.Imaging
         {
             AudioMetaDataImage imageMetaData = null;
 
-            if (string.IsNullOrEmpty(filename)) return imageMetaData;
+            if (string.IsNullOrEmpty(filename))
+            {
+                return imageMetaData;
+            }
             try
             {
                 var fileInfo = new FileInfo(filename);

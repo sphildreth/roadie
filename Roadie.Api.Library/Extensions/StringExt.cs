@@ -201,8 +201,11 @@ namespace Roadie.Library.Extensions
 
         public static string ReplaceLastOccurrence(this string input, string find, string replace = "")
         {
-            if (string.IsNullOrEmpty(input)) return input;
-            var Place = input.LastIndexOf(find);
+            if (string.IsNullOrEmpty(input))
+            {
+                return input;
+            }
+            var Place = input.LastIndexOf(find, StringComparison.OrdinalIgnoreCase);
             return input.Remove(Place, find.Length).Insert(Place, replace);
         }
 

@@ -100,10 +100,15 @@ namespace Roadie.Library.Processors
             var r = MimeUtility.GetMimeMapping(fileinfo.FullName);
             if (r.Equals("application/octet-stream"))
             {
-                if (fileinfo.Extension.Equals(".cue")) r = "audio/r-cue";
-                if (fileinfo.Extension.Equals(".mp4") || fileinfo.Extension.Equals(".m4a")) r = "audio/mp4";
+                if (fileinfo.Extension.Equals(".cue"))
+                {
+                    r = "audio/r-cue";
+                }
+                if (fileinfo.Extension.Equals(".mp4") || fileinfo.Extension.Equals(".m4a"))
+                {
+                    r = "audio/mp4";
+                }
             }
-
             Trace.WriteLine(string.Format("FileType [{0}] For File [{1}]", r, fileinfo.FullName));
             return r;
         }

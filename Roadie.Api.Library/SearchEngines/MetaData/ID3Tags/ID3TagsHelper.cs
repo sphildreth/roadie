@@ -1,7 +1,4 @@
 ﻿using ATL;
-using ATL.CatalogDataReaders;
-using ATL.Playlist;
-using ATL.PlaylistReaders;
 using IdSharp.AudioInfo;
 using IdSharp.Tagging.ID3v1;
 using IdSharp.Tagging.ID3v2;
@@ -92,8 +89,9 @@ namespace Roadie.Library.MetaData.ID3Tags
                 if (cueFiles != null && cueFiles.Any())
                     try
                     {
-                        var theReader = CatalogDataReaderFactory.GetInstance().GetCatalogDataReader(cueFiles.First());
-                        result = (short)theReader.Tracks.Max(x => x.TrackNumber);
+                        var cueFile = cueFiles.First();
+                        result = FileMetaDataHelper.ReadNumberOfTrackFromCue(cueFile);
+                        Trace.WriteLine($"Set [{ result }] Total Tracks From CUE [{ cueFile }]");
                     }
                     catch (Exception ex)
                     {
@@ -107,18 +105,38 @@ namespace Roadie.Library.MetaData.ID3Tags
                     if (m3uFiles != null && m3uFiles.Any())
                         try
                         {
-                            var theReader = PlaylistIOFactory.GetInstance().GetPlaylistIO(m3uFiles.First());
-                            result = (short)theReader.FilePaths.Count();
+                            var m3uFile = m3uFiles.First();
+                            result = FileMetaDataHelper.ReadNumberOfTrackFromM3u(m3uFile);
+                            Trace.WriteLine($"Set [{ result }] Total Tracks From M3U [{ m3uFile }]");
                         }
                         catch (Exception ex)
                         {
                             Trace.Write("Error Reading m3u: " + ex);
                         }
                 }
+                if (!result.HasValue)
+                {
+                    // See if SFV exists if so read tracks from that and return latest track number
+                    var sfvFiles = Directory.GetFiles(directoryName, "*.sfv");
+                    if (sfvFiles != null && sfvFiles.Any())
+                        try
+                        {
+                            var sfvFile = sfvFiles.First();
+                            result = FileMetaDataHelper.ReadNumberOfTracksFromSfv(sfvFile);
+                            Trace.WriteLine($"Set [{ result }] Total Tracks From SFV [{ sfvFile }]");
+                        }
+                        catch (Exception ex)
+                        {
+                            Trace.Write("Error Reading sfv: " + ex);
+                        }
+                }
             }
 
             // Try to parse from TrackNumber
-            if (!result.HasValue) result = ParseTotalTrackNumber(trackNumber);
+            if (!result.HasValue)
+            {
+                result = ParseTotalTrackNumber(trackNumber);
+            }
             return result;
         }
 

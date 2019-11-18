@@ -4,6 +4,7 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.Processors;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -298,6 +299,26 @@ namespace Roadie.Library.Tests
                 Assert.True(true);
             }
         }
+
+        [Fact]
+        public void ReadTotalTrackNumbersFromSfvShouldBeEleven()
+        {
+            var sfvDir = @"C:\roadie_dev_root\test_cue_and_playlists\sfv1";
+            var directory = new DirectoryInfo(sfvDir);
+            if (directory.Exists)
+            {
+                foreach (var file in Directory.GetFiles(sfvDir))
+                {
+                    var t = ID3TagsHelper.DetermineTotalTrackNumbers(file);
+                    Assert.Equal(11, t.Value);
+                }
+            }
+            else
+            {
+                Assert.True(true);
+            }
+        }
+
 
         [Fact]
         public void ReadTotalTrackNumbersFromM3uShouldBeFour()

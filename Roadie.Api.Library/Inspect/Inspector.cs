@@ -162,6 +162,8 @@ namespace Roadie.Library.Inspect
             var releasesFound = new List<string>();
             var mp3FilesFoundCount = 0;
 
+            Trace.Listeners.Add(new LoggingTraceListener());
+
             Console.BackgroundColor = ConsoleColor.White;
             Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine($"✨ Inspector Start, UTC [{DateTime.UtcNow.ToString("s")}]");
@@ -599,4 +601,20 @@ namespace Roadie.Library.Inspect
             return null;
         }
     }
+
+    public class LoggingTraceListener : TraceListener
+    {
+
+        public override void Write(string message)
+        {
+            Console.WriteLine($"╠╬═ { message }");
+        }
+
+        public override void WriteLine(string message)
+        {
+            Console.WriteLine($"╠╬═ { message }");
+        }
+
+    }
+
 }

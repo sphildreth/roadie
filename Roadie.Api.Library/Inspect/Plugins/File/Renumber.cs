@@ -9,8 +9,7 @@ namespace Roadie.Library.Inspect.Plugins.File
 {
     public class Renumber : FilePluginBase
     {
-        public override string Description =>
-            "Renumber: Renumber all given tracks sequentially and set maximum number of tracks";
+        public override string Description => "Renumber: Renumber all given tracks sequentially and set maximum number of tracks";
 
         public override int Order { get; } = 2;
 

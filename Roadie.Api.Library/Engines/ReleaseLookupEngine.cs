@@ -791,6 +791,7 @@ namespace Roadie.Library.Engines
                     });
                 }
             }
+            releaseImages.Where(x => x.Bytes != null && string.IsNullOrEmpty(x.Signature)).Select(x => x.GenerateSignature());
             result.Images = releaseImages.Where(x => x.Bytes != null)
                                          .GroupBy(x => x.Signature)
                                          .Select(x => x.First()).Take(Configuration.Processing.MaximumReleaseImagesToAdd)
