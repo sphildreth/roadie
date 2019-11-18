@@ -776,7 +776,11 @@ namespace Roadie.Library.Engines
                     imageBag.Add(await WebHelper.GetImageFromUrlAsync(url));
                 });
                 await Task.WhenAll(i);
-                releaseImages.AddRange(imageBag.ToList());
+                releaseImages = imageBag.Where(x => x != null && x.Bytes != null)
+                                        .GroupBy(x => x.Signature)
+                                        .Select(x => x.First())
+                                        .Take(Configuration.Processing.MaximumArtistImagesToAdd)
+                                        .ToList();
                 sw2.Stop();
                 Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: Image Url Processing Complete [{ sw2.ElapsedMilliseconds }]");
             }
@@ -791,7 +795,14 @@ namespace Roadie.Library.Engines
                     });
                 }
             }
-            releaseImages.Where(x => x.Bytes != null && string.IsNullOrEmpty(x.Signature)).Select(x => x.GenerateSignature());
+            foreach(var releaseImage in releaseImages.Where(x => x.Bytes != null && string.IsNullOrEmpty(x.Signature)))
+            {
+                releaseImage.Signature = releaseImage.GenerateSignature();
+                if(string.IsNullOrEmpty(releaseImage.Signature))
+                {
+                    releaseImage.Bytes = null;
+                }
+            }
             result.Images = releaseImages.Where(x => x.Bytes != null)
                                          .GroupBy(x => x.Signature)
                                          .Select(x => x.First()).Take(Configuration.Processing.MaximumReleaseImagesToAdd)
