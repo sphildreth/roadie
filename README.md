@@ -34,6 +34,11 @@ Core Features:
 * Full Subsonic API emulation allowing for any Subsonic client to be used with Roadie.
 * [UPnP and DLNA](https://github.com/sphildreth/roadie/wiki/DLNA)
 
+Database Providers:
+---------
+* Files (no database server required)
+* MySQL/MariaDB
+
 Metadata Providers:
 ---------
 * ID3 Tags (via [idsharp.tagging](https://github.com/RandallFlagg/IdSharpCore))
