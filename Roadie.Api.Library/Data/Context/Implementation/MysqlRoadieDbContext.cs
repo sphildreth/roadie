@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,7 +6,7 @@ using System.Threading.Tasks;
 namespace Roadie.Library.Data.Context.Implementation
 {
     /// <summary>
-    /// MySQL/MariaDB implementation of DbContext
+    /// MySQL/MariaDB implementation of DbContext using SQL statements for better performance.
     /// </summary>
     public sealed class MySQLRoadieDbContext : RoadieDbContext
     {
@@ -37,7 +36,7 @@ namespace Roadie.Library.Data.Context.Implementation
                         join `track` t on (ut.trackId = t.id)
                         join `releasemedia` rm on (t.releaseMediaId = rm.id)
                         join `release` r on (rm.releaseId = r.id)
-                        WHERE ut.userId = {0}                            
+                        WHERE ut.userId = {0}
                         ORDER by ut.lastPlayed desc
                         LIMIT 1";
             return await Releases.FromSqlRaw(sql, userId)

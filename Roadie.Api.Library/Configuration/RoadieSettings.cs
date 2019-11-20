@@ -37,6 +37,8 @@ namespace Roadie.Library.Configuration
 
         public Converting Converting { get; set; }
 
+        public FileDatabaseOptions FileDatabaseOptions { get; set; }
+
         public short DefaultRowsPerPage { get; set; }
         public string DefaultTimeZone { get; set; }
 
@@ -175,6 +177,7 @@ namespace Roadie.Library.Configuration
 
             Inspector = new Inspector();
             Converting = new Converting();
+            FileDatabaseOptions = new FileDatabaseOptions();
             Integrations = new Integrations();
             Processing = new Processing();
             Dlna = new Dlna();

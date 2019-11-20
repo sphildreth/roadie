@@ -11,6 +11,7 @@ namespace Roadie.Library.Configuration
         string ConnectionString { get; set; }
         string ContentPath { get; set; }
         Converting Converting { get; set; }
+        FileDatabaseOptions FileDatabaseOptions { get; set; }
         short DefaultRowsPerPage { get; set; }
         string DefaultTimeZone { get; set; }
         Dlna Dlna { get; set; }

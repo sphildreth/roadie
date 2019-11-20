@@ -4,9 +4,11 @@ using System.Text;
 
 namespace Roadie.Library.Configuration
 {
-    public enum DbContexts : short
+    public enum FileDatabaseFormat
     {
-        MySQL = 1,
-        File = 2
+        JSON,
+        BSON,
+        XML,
+        CSV
     }
 }

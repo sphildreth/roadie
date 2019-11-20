@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Roadie.Library.Enums;
 using Roadie.Library.Identity;
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,8 +33,6 @@ namespace Roadie.Library.Data.Context
         public DbSet<Comment> Comments { get; set; }
 
         public DbSet<Genre> Genres { get; set; }
-
-        public DbSet<Image> Images { get; set; }
 
         public DbSet<Label> Labels { get; set; }
 
@@ -72,7 +69,7 @@ namespace Roadie.Library.Data.Context
         public DbSet<UserTrack> UserTracks { get; set; }
         public DbSet<InviteToken> InviteTokens { get; set; }
 
-        public RoadieDbContext(DbContextOptions options) 
+        public RoadieDbContext(DbContextOptions options)
             : base(options)
         {
         }
@@ -218,10 +215,15 @@ namespace Roadie.Library.Data.Context
         }
 
         Task<EntityEntry> IRoadieDbContext.AddAsync(object entity, CancellationToken cancellationToken) => throw new NotImplementedException();
+
         Task<EntityEntry<TEntity>> IRoadieDbContext.AddAsync<TEntity>(TEntity entity, CancellationToken cancellationToken) => throw new NotImplementedException();
+
         Task<TEntity> IRoadieDbContext.FindAsync<TEntity>(params object[] keyValues) => throw new NotImplementedException();
+
         Task<object> IRoadieDbContext.FindAsync(Type entityType, object[] keyValues, CancellationToken cancellationToken) => throw new NotImplementedException();
+
         Task<TEntity> IRoadieDbContext.FindAsync<TEntity>(object[] keyValues, CancellationToken cancellationToken) => throw new NotImplementedException();
+
         Task<object> IRoadieDbContext.FindAsync(Type entityType, params object[] keyValues) => throw new NotImplementedException();
     }
 }

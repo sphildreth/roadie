@@ -209,21 +209,23 @@ namespace Roadie.Api.Services
                                  year = SafeParser.ToNumber<int>(x.Key),
                                  count = x.Count()
                              });
-
-            var decadeInterval = 10;
-            var startingDecade = (decadeInfos.Min(x => x.year) / 10) * 10;
-            var endingDecade = (decadeInfos.Max(x => x.year) / 10) * 10;
-            for (int decade = startingDecade; decade <= endingDecade; decade += decadeInterval)
+            if (decadeInfos != null && decadeInfos.Any())
             {
-                var endOfDecade = decade + 9;
-                var count = decadeInfos.Where(x => x.year >= decade && x.year <= endOfDecade).Sum(x => x.count);
-                if (count > 0)
+                var decadeInterval = 10;
+                var startingDecade = (decadeInfos.Min(x => x.year) / 10) * 10;
+                var endingDecade = (decadeInfos.Max(x => x.year) / 10) * 10;
+                for (int decade = startingDecade; decade <= endingDecade; decade += decadeInterval)
                 {
-                    result.Add(new DateAndCount
+                    var endOfDecade = decade + 9;
+                    var count = decadeInfos.Where(x => x.year >= decade && x.year <= endOfDecade).Sum(x => x.count);
+                    if (count > 0)
                     {
-                        Date = decade.ToString(),
-                        Count = count
-                    });
+                        result.Add(new DateAndCount
+                        {
+                            Date = decade.ToString(),
+                            Count = count
+                        });
+                    }
                 }
             }
             sw.Stop();

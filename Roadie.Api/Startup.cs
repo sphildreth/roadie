@@ -1,5 +1,6 @@
 ﻿#region Usings
 
+using FileContextCore;
 using Mapster;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -57,14 +58,6 @@ namespace Roadie.Api
         public Startup(IConfiguration configuration)
         {
             _configuration = configuration;
-            TypeAdapterConfig<Library.Data.Image, Library.Models.Image>
-                .NewConfig()
-                .Map(i => i.ArtistId,
-                    src => src.Artist == null ? null : (Guid?)src.Artist.RoadieId)
-                .Map(i => i.ReleaseId,
-                    src => src.Release == null ? null : (Guid?)src.Release.RoadieId)
-                .Compile();
-
             TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
         }
 
@@ -105,6 +98,10 @@ namespace Roadie.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
+            var settings = new RoadieSettings();
+            _configuration.GetSection("RoadieSettings").Bind(settings);
+
             services.AddSingleton<ITokenService, TokenService>();
             services.AddSingleton<IHttpEncoder, HttpEncoder>();
             services.AddSingleton<IEmailSender, EmailSenderService>();
@@ -115,29 +112,47 @@ namespace Roadie.Api
                 return new MemoryCacheManager(logger, new CachePolicy(TimeSpan.FromHours(4)));
             });
 
-            services.AddDbContextPool<ApplicationUserDbContext>(
-                options => options.UseMySql(_configuration.GetConnectionString("RoadieDatabaseConnection"),
-                    mySqlOptions =>
-                    {
-                        mySqlOptions.ServerVersion(new Version(5, 5), ServerType.MariaDb);
-                        mySqlOptions.EnableRetryOnFailure(
-                            10,
-                            TimeSpan.FromSeconds(30),
-                            null);
-                    }
-                ));
-
-            services.AddDbContextPool<IRoadieDbContext, MySQLRoadieDbContext>(
-                options => options.UseMySql(_configuration.GetConnectionString("RoadieDatabaseConnection"),
-                    mySqlOptions =>
-                    {
-                        mySqlOptions.ServerVersion(new Version(5, 5), ServerType.MariaDb);
-                        mySqlOptions.EnableRetryOnFailure(
-                            10,
-                            TimeSpan.FromSeconds(30),
-                            null);
-                    }
-                ));
+            switch (settings.DbContextToUse)
+            {
+                case DbContexts.MySQL:
+                    services.AddDbContextPool<ApplicationUserDbContext>(
+                        options => options.UseMySql(_configuration.GetConnectionString("RoadieDatabaseConnection"),
+                            mySqlOptions =>
+                            {
+                                mySqlOptions.ServerVersion(new Version(5, 5), ServerType.MariaDb);
+                                mySqlOptions.EnableRetryOnFailure(
+                                    10,
+                                    TimeSpan.FromSeconds(30),
+                                    null);
+                            }
+                        ));
+                    services.AddDbContextPool<IRoadieDbContext, MySQLRoadieDbContext>(
+                        options => options.UseMySql(_configuration.GetConnectionString("RoadieDatabaseConnection"),
+                            mySqlOptions =>
+                            {
+                                mySqlOptions.ServerVersion(new Version(5, 5), ServerType.MariaDb);
+                                mySqlOptions.EnableRetryOnFailure(
+                                    10,
+                                    TimeSpan.FromSeconds(30),
+                                    null);
+                            }
+                        ));
+                    break;
+                case DbContexts.File:
+                    services.AddDbContext<ApplicationUserDbContext>(
+                        options => options.UseFileContextDatabase(settings.FileDatabaseOptions.DatabaseFormat.ToString().ToLower(),
+                                                                  databaseName: settings.FileDatabaseOptions.DatabaseName,
+                                                                  location: settings.FileDatabaseOptions.DatabaseFolder)
+                    );
+                    services.AddDbContext<IRoadieDbContext, FileRoadieDbContext>(
+                        options => options.UseFileContextDatabase(settings.FileDatabaseOptions.DatabaseFormat.ToString().ToLower(),
+                                                                  databaseName: settings.FileDatabaseOptions.DatabaseName,
+                                                                  location: settings.FileDatabaseOptions.DatabaseFolder)
+                    );
+                    break;
+                default:
+                    throw new NotImplementedException("Unknown DbContext Type");
+            }
 
             services.AddIdentity<ApplicationUser, ApplicationRole>()
                 .AddRoles<ApplicationRole>()

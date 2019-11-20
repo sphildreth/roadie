@@ -30,7 +30,8 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.3.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.3.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.3.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="3.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.0.1" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Serilog.AspNetCore" Version="3.2.0" />
@@ -54,6 +55,12 @@
     <ProjectReference Include="..\Roadie.Api.Library\Roadie.Library.csproj" />
     <ProjectReference Include="..\Roadie.Api.Services\Roadie.Api.Services.csproj" />
     <ProjectReference Include="..\Roadie.Dlna.Services\Roadie.Dlna.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="FileContextCore">
+      <HintPath>..\libraries\FileContextCore.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

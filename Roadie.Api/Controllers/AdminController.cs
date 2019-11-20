@@ -338,37 +338,5 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-        [HttpPost("migrateimages")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> MigrateImages()
-        {
-            var result = await AdminService.MigrateImages(await UserManager.GetUserAsync(User));
-            if (!result.IsSuccess)
-            {
-                if (result.Messages?.Any() ?? false)
-                {
-                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
-                }
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
-
-        [HttpPost("migratestorage")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> MigrateStorage(bool? deleteEmptyFolders)
-        {
-            var result = await AdminService.MigrateStorage(await UserManager.GetUserAsync(User), deleteEmptyFolders ?? true);
-            if (!result.IsSuccess)
-            {
-                if (result.Messages?.Any() ?? false)
-                {
-                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
-                }
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
     }
 }
