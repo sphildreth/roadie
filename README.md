@@ -16,7 +16,7 @@ API server that works well with [roadie-vuejs](https://github.com/sphildreth/roa
 Demo Site:
 ---------
 * [DEMO SITE](https://www.roadie.rocks/)
-* The demo site is running  [Roadie-VueJs](https://github.com/sphildreth/roadie-vuejs) frontend with this Roadie API backend.
+* The demo site is running  [Roadie-VueJs](https://github.com/sphildreth/roadie-vuejs) frontend, with Roadie API running against a MariaDB server.
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://travis-ci.org/sphildreth/roadie.svg?branch=master)](https://travis-ci.org/sphildreth/roadie)
@@ -36,7 +36,7 @@ Core Features:
 
 Database Providers:
 ---------
-* Files (no database server required)
+* File (no database server required, one table per file in a folder of your choice)
 * MySQL/MariaDB
 
 Metadata Providers:
