@@ -540,6 +540,15 @@ namespace Roadie.Api.Services
                             Logger.LogError(ex, ex.Serialize());
                         }
                 }
+                var artistImage = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.Artist).FirstOrDefault();
+                if (artistImage != null)
+                {
+                    // See if image file is valid image if not delete it 
+                    if (ImageHelper.ConvertToJpegFormat(File.ReadAllBytes(artistImage.FullName)) == null)
+                    {
+                        artistImage.Delete();
+                    }
+                }
                 // Any folder found in Artist folder not already scanned scan
                 var nonReleaseFolders = from d in Directory.EnumerateDirectories(artistFolder)
                                         where !(from r in scannedArtistFolders select r).Contains(d)

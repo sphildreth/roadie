@@ -1478,7 +1478,18 @@ namespace Roadie.Api.Services
 
                 #endregion Scan Folder and Add or Update Existing Tracks from Files
 
-                var doesReleaseHaveCoverImage = ImageHelper.FindImageTypeInDirectory(releaseDirectory, ImageType.Release).FirstOrDefault() != null;
+                var releaseCoverImage = ImageHelper.FindImageTypeInDirectory(releaseDirectory, ImageType.Release).FirstOrDefault();
+                var doesReleaseHaveCoverImage = releaseCoverImage != null;
+                if(doesReleaseHaveCoverImage)
+                {
+                    // See if image file is valid image if not delete it 
+                    if(ImageHelper.ConvertToJpegFormat(File.ReadAllBytes(releaseCoverImage.FullName)) == null)
+                    {
+                        releaseCoverImage.Delete();
+                        doesReleaseHaveCoverImage = false;
+                        Logger.LogWarning($"Deleted invalid cover image for Release `{ release }`");
+                    }                    
+                }
                 if (!doesReleaseHaveCoverImage)
                 {
                     // Since no release image found see if first track has image in metadata if so then extract to cover file
@@ -1492,8 +1503,13 @@ namespace Roadie.Api.Services
                         var metaData = await AudioMetaDataHelper.GetInfo(new FileInfo(firstTrack.PathToTrack(Configuration)), doJustInfo);
                         if (metaData.Images != null && metaData.Images.Any())
                         {
-                            var releaseImageFilename = Path.Combine(releasePath, ImageHelper.ReleaseCoverFilename);
-                            File.WriteAllBytes(releaseImageFilename, metaData.Images.First(x => x.Data != null).Data);
+                            var imageBytes = ImageHelper.ConvertToJpegFormat(metaData.Images.FirstOrDefault(x => x.Data != null)?.Data);
+                            if (imageBytes != null)
+                            {
+                                var releaseImageFilename = Path.Combine(releasePath, ImageHelper.ReleaseCoverFilename);
+                                File.WriteAllBytes(releaseImageFilename, imageBytes);
+                                Logger.LogInformation($"Extracted cover image from track for Release `{ release}`");
+                            }
                         }
                     }
                 }

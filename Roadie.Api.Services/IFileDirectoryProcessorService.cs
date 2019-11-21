@@ -14,6 +14,6 @@ namespace Roadie.Api.Services
 
         int? ProcessLimit { get; set; }
 
-        Task<OperationResult<bool>> Process(ApplicationUser user, DirectoryInfo folder, bool doJustInfo, int? submissionId = null);
+        Task<OperationResult<bool>> Process(ApplicationUser user, DirectoryInfo folder, bool doJustInfo, int? submissionId = null, bool doDeleteFiles = true);
     }
 }

@@ -76,7 +76,7 @@ namespace Roadie.Api.Services
             return result;
         }
 
-        public async Task<OperationResult<bool>> Process(ApplicationUser user, DirectoryInfo folder, bool doJustInfo, int? submissionId = null)
+        public async Task<OperationResult<bool>> Process(ApplicationUser user, DirectoryInfo folder, bool doJustInfo, int? submissionId = null, bool doDeleteFiles = true)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -104,7 +104,7 @@ namespace Roadie.Api.Services
                 if (ProcessLimit.HasValue && processedFiles > ProcessLimit.Value) break;
             }
 
-            await PostProcessFolder(user, folder, pluginResultInfos, doJustInfo);
+            await PostProcessFolder(user, folder, pluginResultInfos, doJustInfo, doDeleteFiles);
             sw.Stop();
             _addedArtistIds.AddRange(ArtistLookupEngine.AddedArtistIds);
             _addedReleaseIds.AddRange(ReleaseLookupEngine.AddedReleaseIds);
@@ -121,7 +121,7 @@ namespace Roadie.Api.Services
         /// <summary>
         ///     Perform any operations to the given folder and the plugin results after processing
         /// </summary>
-        private async Task<bool> PostProcessFolder(ApplicationUser user, DirectoryInfo inboundFolder, IEnumerable<PluginResultInfo> pluginResults, bool doJustInfo)
+        private async Task<bool> PostProcessFolder(ApplicationUser user, DirectoryInfo inboundFolder, IEnumerable<PluginResultInfo> pluginResults, bool doJustInfo, bool doDeleteFiles = true)
         {
             SimpleContract.Requires<ArgumentNullException>(inboundFolder != null, "Invalid InboundFolder");
             if (pluginResults != null)
@@ -132,7 +132,7 @@ namespace Roadie.Api.Services
                     _addedTrackIds.AddRange(ReleaseService.AddedTrackIds);
                 }
             }
-            if (!doJustInfo)
+            if (!doJustInfo && doDeleteFiles)
             {
                 var fileExtensionsToDelete = Configuration.FileExtensionsToDelete ?? new string[0];
                 if (fileExtensionsToDelete.Any())

@@ -251,6 +251,10 @@ namespace Roadie.Library.Utility
                 {
                     try
                     {
+                        if(folder.FullName.Contains(RoadieSettings.RoadieImageFolder, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
                         if (folder.Exists)
                         {
                             if (!folder.GetFiles("*.*", SearchOption.AllDirectories).Any())

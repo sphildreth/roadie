@@ -576,6 +576,11 @@ namespace Roadie.Api.Services
                     Directory.CreateDirectory(Configuration.LibraryFolder);
                     Logger.LogInformation($"Created Library Folder [{Configuration.LibraryFolder }]");
                 }
+                if (!Directory.Exists(Configuration.InboundFolder))
+                {
+                    Directory.CreateDirectory(Configuration.InboundFolder);
+                    Logger.LogInformation($"Created Inbound Folder [{Configuration.InboundFolder }]");
+                }
                 if (!Directory.Exists(Configuration.UserImageFolder))
                 {
                     Directory.CreateDirectory(Configuration.UserImageFolder);
@@ -911,7 +916,7 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> ScanLibraryFolder(ApplicationUser user, bool isReadOnly = false)
         {
             var d = new DirectoryInfo(Configuration.LibraryFolder);
-            return await ScanFolder(user, d, isReadOnly);
+            return await ScanFolder(user, d, isReadOnly, false);
         }
 
         public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
@@ -1075,7 +1080,7 @@ namespace Roadie.Api.Services
             await ScanActivityHub.Clients.All.SendAsync("SendSystemActivity", message);
         }
 
-        private async Task<OperationResult<bool>> ScanFolder(ApplicationUser user, DirectoryInfo d, bool isReadOnly)
+        private async Task<OperationResult<bool>> ScanFolder(ApplicationUser user, DirectoryInfo d, bool isReadOnly, bool doDeleteFiles = true)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -1086,7 +1091,10 @@ namespace Roadie.Api.Services
             long processedFolders = 0;
             foreach (var folder in Directory.EnumerateDirectories(d.FullName).ToArray())
             {
-                var directoryProcessResult = await FileDirectoryProcessorService.Process(user, new DirectoryInfo(folder), isReadOnly);
+                var directoryProcessResult = await FileDirectoryProcessorService.Process(user:user, 
+                                                                                         folder: new DirectoryInfo(folder), 
+                                                                                         doJustInfo: isReadOnly, 
+                                                                                         doDeleteFiles: doDeleteFiles);
                 processedFolders++;
                 processedFiles += SafeParser.ToNumber<int>(directoryProcessResult.AdditionalData["ProcessedFiles"]);
             }

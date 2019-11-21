@@ -7,6 +7,8 @@ namespace Roadie.Library.Configuration
     [Serializable]
     public sealed class RoadieSettings : IRoadieSettings
     {
+        public static string RoadieImageFolder = "__roadie_images";
+
         public DbContexts DbContextToUse { get; set; }
          
         /// <summary>
@@ -21,7 +23,7 @@ namespace Roadie.Library.Configuration
         {
             get
             {
-                return Path.Combine(ImageFolder ?? LibraryFolder, "__roadie_images", "collections");
+                return Path.Combine(ImageFolder ?? LibraryFolder, RoadieImageFolder, "collections");
             }
         }
 
@@ -54,7 +56,7 @@ namespace Roadie.Library.Configuration
         {
             get
             {
-                return Path.Combine(ImageFolder ?? LibraryFolder, "__roadie_images", "genres");
+                return Path.Combine(ImageFolder ?? LibraryFolder, RoadieImageFolder, "genres");
             }
         }
 
@@ -74,7 +76,7 @@ namespace Roadie.Library.Configuration
         {
             get
             {
-                return Path.Combine(ImageFolder ?? LibraryFolder, "__roadie_images", "labels");
+                return Path.Combine(ImageFolder ?? LibraryFolder, RoadieImageFolder, "labels");
             }
         }
 
@@ -91,7 +93,7 @@ namespace Roadie.Library.Configuration
         {
             get
             {
-                return Path.Combine(ImageFolder ?? LibraryFolder, "__roadie_images", "playlists");
+                return Path.Combine(ImageFolder ?? LibraryFolder, RoadieImageFolder, "playlists");
             }
         }
 
@@ -139,7 +141,7 @@ namespace Roadie.Library.Configuration
         {
             get
             {
-                return Path.Combine(LibraryFolder, "__roadie_images", "users");
+                return Path.Combine(LibraryFolder, RoadieImageFolder, "users");
             }
         }
 

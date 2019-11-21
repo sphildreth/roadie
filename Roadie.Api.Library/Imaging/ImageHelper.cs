@@ -45,16 +45,17 @@ namespace Roadie.Library.Imaging
                     }
                     return outStream.ToArray();
                 }
-
             }
             catch (Exception ex)
             {
                 Trace.WriteLine($"Error Converting Image to Jpg [{ ex.Message }]");
-
             }
             return null;
         }
 
+        /// <summary>
+        /// Only user avatars are GIF to allow for animation.
+        /// </summary>
         public static byte[] ConvertToGifFormat(byte[] imageBytes)
         {
             if (imageBytes == null) return null;
@@ -73,11 +74,9 @@ namespace Roadie.Library.Imaging
             catch (Exception ex)
             {
                 Trace.WriteLine($"Error Converting Image to Gif [{ ex.Message }]");
-
             }
             return null;
         }
-
 
         public static IEnumerable<FileInfo> FindImagesByName(DirectoryInfo directory, string name, SearchOption folderSearchOptions = SearchOption.AllDirectories)
         {
@@ -138,7 +137,7 @@ namespace Roadie.Library.Imaging
 
         public static string[] GetFiles(string path, string[] patterns = null, SearchOption options = SearchOption.TopDirectoryOnly)
         {
-            if(!Directory.Exists(path))
+            if (!Directory.Exists(path))
             {
                 return new string[0];
             }
@@ -264,10 +263,10 @@ namespace Roadie.Library.Imaging
                         if (doForce || image.Width > width || image.Height > height)
                         {
                             int newWidth, newHeight;
-                            if(doForce)
+                            if (doForce)
                             {
                                 newWidth = width;
-                                newHeight = height;                               
+                                newHeight = height;
                             }
                             else
                             {
@@ -303,14 +302,14 @@ namespace Roadie.Library.Imaging
         /// </summary>
         public static byte[] ResizeToThumbnail(byte[] imageBytes, IRoadieSettings configuration)
         {
-            if(!imageBytes?.Any() ?? false)
+            if (!imageBytes?.Any() ?? false)
             {
                 return imageBytes;
             }
             var width = configuration?.ThumbnailImageSize?.Width ?? 80;
             var height = configuration?.ThumbnailImageSize?.Height ?? 80;
             var result = ImageHelper.ResizeImage(ImageHelper.ConvertToJpegFormat(imageBytes), width, height, true)?.Item2;
-            if(result?.Length >= ImageHelper.MaximumThumbnailByteSize)
+            if (result?.Length >= ImageHelper.MaximumThumbnailByteSize)
             {
                 Trace.WriteLine($"Thumbnail larger than maximum size after resizing to [{configuration.ThumbnailImageSize.Width}x{configuration.ThumbnailImageSize.Height}] Thumbnail Size [{result.Length}]");
                 result = new byte[0];
@@ -399,7 +398,5 @@ namespace Roadie.Library.Imaging
 
             return imageMetaData;
         }
-
-
     }
 }

@@ -3,7 +3,7 @@
     "Roadie.Api": {
       "commandName": "Project",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "DevelopmentFIle"
       },
       "applicationUrl": "http://localhost:5123/"
     }

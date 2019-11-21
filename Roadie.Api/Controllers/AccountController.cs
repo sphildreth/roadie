@@ -133,6 +133,7 @@ namespace Roadie.Api.Controllers
                     return Ok(new
                     {
                         Username = user.UserName,
+                        InstanceName = RoadieSettings.SiteName,
                         RecentLimit = user.RecentlyPlayedLimit,
                         user.RemoveTrackFromQueAfterPlayed,
                         user.Email,
@@ -239,6 +240,7 @@ namespace Roadie.Api.Controllers
                     return Ok(new
                     {
                         Username = user.UserName,
+                        InstanceName = RoadieSettings.SiteName,
                         RecentLimit = user.RecentlyPlayedLimit,
                         user.RemoveTrackFromQueAfterPlayed,
                         user.Email,
@@ -285,6 +287,7 @@ namespace Roadie.Api.Controllers
                     return Ok(new
                     {
                         Username = user.UserName,
+                        InstanceName = RoadieSettings.SiteName,
                         RecentLimit = user.RecentlyPlayedLimit,
                         user.RemoveTrackFromQueAfterPlayed,
                         user.Email,

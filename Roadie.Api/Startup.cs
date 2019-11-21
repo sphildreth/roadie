@@ -61,7 +61,6 @@ namespace Roadie.Api
             TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
@@ -69,10 +68,9 @@ namespace Roadie.Api
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseCors("CORSPolicy");
+            app.UseStaticFiles();
 
-            app.UseAuthorization();
-            app.UseAuthentication();
+            app.UseRouting();
 
             //app.UseSwagger();
             //app.UseSwaggerUI(c =>
@@ -83,15 +81,17 @@ namespace Roadie.Api
 
             app.UseSerilogRequestLogging();
 
-            app.UseStaticFiles();
+            app.UseCors("CORSPolicy");
 
-            app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapHub<PlayActivityHub>("/playActivityHub");
                 endpoints.MapHub<ScanActivityHub>("/scanActivityHub");
                 endpoints.MapControllers();
+                endpoints.MapDefaultControllerRoute();
             });
         }
 
@@ -119,7 +119,6 @@ namespace Roadie.Api
                         options => options.UseMySql(_configuration.GetConnectionString("RoadieDatabaseConnection"),
                             mySqlOptions =>
                             {
-                                mySqlOptions.ServerVersion(new Version(5, 5), ServerType.MariaDb);
                                 mySqlOptions.EnableRetryOnFailure(
                                     10,
                                     TimeSpan.FromSeconds(30),
@@ -130,7 +129,6 @@ namespace Roadie.Api
                         options => options.UseMySql(_configuration.GetConnectionString("RoadieDatabaseConnection"),
                             mySqlOptions =>
                             {
-                                mySqlOptions.ServerVersion(new Version(5, 5), ServerType.MariaDb);
                                 mySqlOptions.EnableRetryOnFailure(
                                     10,
                                     TimeSpan.FromSeconds(30),
@@ -153,6 +151,10 @@ namespace Roadie.Api
                 default:
                     throw new NotImplementedException("Unknown DbContext Type");
             }
+
+            //services.AddDefaultIdentity<ApplicationUser>(
+            //            options => options.SignIn.RequireConfirmedAccount = false)
+            //            .AddEntityFrameworkStores<ApplicationUserDbContext>();
 
             services.AddIdentity<ApplicationUser, ApplicationRole>()
                 .AddRoles<ApplicationRole>()
