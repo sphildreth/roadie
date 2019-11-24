@@ -15,7 +15,7 @@ namespace Roadie.Library.Models
 {
     [Serializable]
     [DebuggerDisplay("Trackid [{ TrackId }], Track Name [{ TrackName }}, Release Name [{ ReleaseName }]")]
-    public class TrackList : EntityInfoModelBase
+    public sealed class TrackList : EntityInfoModelBase
     {
         public ArtistList Artist { get; set; }
         public int? Duration { get; set; }

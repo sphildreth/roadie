@@ -10,7 +10,7 @@ namespace Roadie.Library.Models.Releases
     [Serializable]
     public class Release : EntityModelBase
     {
-        public const string DefaultIncludes = "tracks,stats,images,comments,collections,labels,playlists,genres";
+        public const string DefaultIncludes = "tracks,stats,images,comments,collections,labels,playlists,genres,credits";
         public const string DefaultListIncludes = "";
 
         [MaxLength(50)] public string AmgId { get; set; }
@@ -19,10 +19,12 @@ namespace Roadie.Library.Models.Releases
 
         public List<ReleaseInCollection> Collections { get; set; }
 
+        public IEnumerable<CreditList> Credits { get; set; }
+
         public IEnumerable<Comment> Comments { get; set; }
         [MaxLength(50)] public string DiscogsId { get; set; }
 
-        public IEnumerable<DataToken> Genres { get; set; }
+        public IEnumerable<GenreList> Genres { get; set; }
         public IEnumerable<Image> Images { get; set; }
         public bool? IsVirtual { get; set; }
 

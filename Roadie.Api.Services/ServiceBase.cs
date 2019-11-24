@@ -8,7 +8,6 @@ using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Identity;
-using Roadie.Library.Models;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -72,10 +71,7 @@ namespace Roadie.Api.Services
             return TrackPlayToken(user, trackRoadieId).Equals(token);
         }
 
-        public static string MakeTrackPlayUrl(ApplicationUser user, string baseUrl, int trackId, Guid trackRoadieId)
-        {
-            return $"{baseUrl}/play/track/{user.Id}/{TrackPlayToken(user, trackRoadieId)}/{trackRoadieId}.mp3";
-        }
+        public static string MakeTrackPlayUrl(ApplicationUser user, string baseUrl, Guid trackRoadieId) => $"{baseUrl}/play/track/{user.Id}/{TrackPlayToken(user, trackRoadieId)}/{trackRoadieId}.mp3";
 
         public static string TrackPlayToken(ApplicationUser user, Guid trackId)
         {
@@ -86,11 +82,6 @@ namespace Roadie.Api.Services
             }
             var token = hashIds.Value.Encode(user.Id, SafeParser.ToNumber<int>(user.CreatedDate.Value.ToString("DDHHmmss")), trackIdPart);
             return token;
-        }
-
-        public static Image MakeThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string type, int? width = null, int? height = null, bool includeCachebuster = false)
-        {
-            return MakeImage(configuration, httpContext, id, type, width ?? configuration.ThumbnailImageSize.Width, height ?? configuration.ThumbnailImageSize.Height, null, includeCachebuster);
         }
 
         protected IEnumerable<int> ArtistIdsForRelease(int releaseId)
@@ -105,219 +96,137 @@ namespace Roadie.Api.Services
             return trackArtistIds.Distinct().ToArray();
         }
 
-        protected data.Artist GetArtist(string artistName)
+        protected async Task<data.Artist> GetArtist(string artistName)
         {
             if (string.IsNullOrEmpty(artistName)) return null;
-            var artistByName = CacheManager.Get(data.Artist.CacheUrnByName(artistName), () =>
-            {
-                return DbContext.Artists
-                    .FirstOrDefault(x => x.Name == artistName);
-            }, null);
+            var artistByName = await CacheManager.GetAsync(data.Artist.CacheUrnByName(artistName), async () =>
+           {
+               return await DbContext.Artists
+                   .FirstOrDefaultAsync(x => x.Name == artistName);
+           }, null);
             if (artistByName == null) return null;
-            return GetArtist(artistByName.RoadieId);
+            return await GetArtist(artistByName.RoadieId);
         }
 
-        protected data.Artist GetArtist(Guid id)
+        protected async Task<data.Artist> GetArtist(Guid id)
         {
-            return CacheManager.Get(data.Artist.CacheUrn(id), () =>
+            return await CacheManager.GetAsync(data.Artist.CacheUrn(id), async () =>
             {
-                return DbContext.Artists
+                return await DbContext.Artists
                     .Include(x => x.Genres)
                     .Include("Genres.Genre")
-                    .FirstOrDefault(x => x.RoadieId == id);
+                    .FirstOrDefaultAsync(x => x.RoadieId == id);
             }, data.Artist.CacheRegionUrn(id));
         }
 
-        protected data.Collection GetCollection(Guid id)
+        protected async Task<data.Collection> GetCollection(Guid id)
         {
-            return CacheManager.Get(data.Collection.CacheUrn(id), () =>
+            return await CacheManager.GetAsync(data.Collection.CacheUrn(id), async () =>
             {
-                return DbContext.Collections
-                    .FirstOrDefault(x => x.RoadieId == id);
+                return await DbContext.Collections
+                    .FirstOrDefaultAsync(x => x.RoadieId == id);
             }, data.Collection.CacheRegionUrn(id));
         }
 
-        protected data.Genre GetGenre(Guid id)
+        protected async Task<data.Genre> GetGenre(Guid id)
         {
-            return CacheManager.Get(data.Genre.CacheUrn(id), () =>
+            return await CacheManager.GetAsync(data.Genre.CacheUrn(id), async () =>
             {
-                return DbContext.Genres
-                    .FirstOrDefault(x => x.RoadieId == id);
+                return await DbContext.Genres
+                    .FirstOrDefaultAsync(x => x.RoadieId == id);
             }, data.Genre.CacheRegionUrn(id));
         }
 
-        protected data.Label GetLabel(Guid id)
+        protected async Task<data.Label> GetLabel(Guid id)
         {
-            return CacheManager.Get(data.Label.CacheUrn(id), () =>
+            return await CacheManager.GetAsync(data.Label.CacheUrn(id), async () =>
             {
-                return DbContext.Labels
-                    .FirstOrDefault(x => x.RoadieId == id);
+                return await DbContext.Labels
+                    .FirstOrDefaultAsync(x => x.RoadieId == id);
             }, data.Label.CacheRegionUrn(id));
         }
 
-        protected data.Playlist GetPlaylist(Guid id)
+        protected async Task<data.Playlist> GetPlaylist(Guid id)
         {
-            return CacheManager.Get(data.Playlist.CacheUrn(id), () =>
+            return await CacheManager.Get(data.Playlist.CacheUrn(id), async () =>
             {
-                return DbContext.Playlists
+                return await DbContext.Playlists
                     .Include(x => x.User)
-                    .FirstOrDefault(x => x.RoadieId == id);
+                    .FirstOrDefaultAsync(x => x.RoadieId == id);
             }, data.Playlist.CacheRegionUrn(id));
         }
 
-        protected data.Release GetRelease(Guid id)
+        protected async Task<data.Release> GetRelease(Guid id)
         {
-            return CacheManager.Get(data.Release.CacheUrn(id), () =>
+            return await CacheManager.Get(data.Release.CacheUrn(id), async () =>
             {
-                return DbContext.Releases
+                return await DbContext.Releases
                     .Include(x => x.Artist)
                     .Include(x => x.Genres)
                     .Include("Genres.Genre")
                     .Include(x => x.Medias)
                     .Include("Medias.Tracks")
                     .Include("Medias.Tracks.TrackArtist")
-                    .FirstOrDefault(x => x.RoadieId == id);
+                    .FirstOrDefaultAsync(x => x.RoadieId == id);
             }, data.Release.CacheRegionUrn(id));
         }
 
         /// <summary>
         ///     Get Track by Subsonic Id ("T:guid")
         /// </summary>
-        protected data.Track GetTrack(string id)
+        protected async Task<data.Track> GetTrack(string id)
         {
-            var trackId = Guid.Empty;
-            if (Guid.TryParse(id, out trackId)) return GetTrack(trackId);
+            if (Guid.TryParse(id, out Guid trackId))
+            {
+                return await GetTrack(trackId);
+            }
             return null;
         }
 
         // Only read operations
-        protected data.Track GetTrack(Guid id)
+        protected async Task<data.Track> GetTrack(Guid id)
         {
-            return CacheManager.Get(data.Track.CacheUrn(id), () =>
+            return await CacheManager.GetAsync(data.Track.CacheUrn(id), async () =>
             {
-                return DbContext.Tracks
+                return await DbContext.Tracks
                     .Include(x => x.ReleaseMedia)
                     .Include(x => x.ReleaseMedia.Release)
                     .Include(x => x.ReleaseMedia.Release.Artist)
                     .Include(x => x.TrackArtist)
-                    .FirstOrDefault(x => x.RoadieId == id);
+                    .FirstOrDefaultAsync(x => x.RoadieId == id);
             }, data.Track.CacheRegionUrn(id));
         }
 
-        protected ApplicationUser GetUser(string username)
+        protected async Task<ApplicationUser> GetUser(string username)
         {
-            if (string.IsNullOrEmpty(username)) return null;
-            var userByUsername = CacheManager.Get(ApplicationUser.CacheUrnByUsername(username),
-                () => { return DbContext.Users.FirstOrDefault(x => x.UserName == username); }, null);
-            return GetUser(userByUsername?.RoadieId);
-        }
-
-        protected ApplicationUser GetUser(Guid? id)
-        {
-            if (!id.HasValue) return null;
-            return CacheManager.Get(ApplicationUser.CacheUrn(id.Value), () =>
+            if (string.IsNullOrEmpty(username))
             {
-                return DbContext.Users
-                    .Include(x => x.UserRoles)
-                    .Include("UserRoles.Role")
-                    .Include("UserRoles.Role.RoleClaims")
-                    .Include(x => x.Claims)
-                    .Include(x => x.UserQues)
-                    .Include("UserQues.Track")
-                    .FirstOrDefault(x => x.RoadieId == id);
-            }, ApplicationUser.CacheRegionUrn(id.Value));
-        }
-
-        protected static Image MakeArtistThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid? id)
-        {
-            if (!id.HasValue) return null;
-            return MakeThumbnailImage(configuration, httpContext, id.Value, "artist");
-        }
-
-        protected static Image MakeCollectionThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
-        {
-            return MakeThumbnailImage(configuration, httpContext, id, "collection");
-        }
-
-        protected static Image MakeFullsizeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string caption = null)
-        {
-            return new Image($"{httpContext.ImageBaseUrl}/{id}", caption,
-                $"{httpContext.ImageBaseUrl}/{id}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
-        }
-
-        protected static Image MakeFullsizeSecondaryImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, ImageType type, int imageId, string caption = null)
-        {
-            if (type == ImageType.ArtistSecondary)
-            {
-                return new Image($"{httpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}", caption,
-                    $"{httpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
+                return null;
             }
-            return new Image($"{httpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}", caption,
-                $"{httpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
+            var userByUsername = await CacheManager.GetAsync(ApplicationUser.CacheUrnByUsername(username), async () =>
+            {
+                return await DbContext.Users.FirstOrDefaultAsync(x => x.UserName == username);
+            }, null);
+            return await GetUser(userByUsername?.RoadieId);
         }
 
-        protected static Image MakeGenreThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
+        protected async Task<ApplicationUser> GetUser(Guid? id)
         {
-            return MakeThumbnailImage(configuration, httpContext, id, "genre");
+            if (!id.HasValue) return null;
+            return await CacheManager.GetAsync(ApplicationUser.CacheUrn(id.Value), async () =>
+           {
+               return await DbContext.Users
+                   .Include(x => x.UserRoles)
+                   .Include("UserRoles.Role")
+                   .Include("UserRoles.Role.RoleClaims")
+                   .Include(x => x.Claims)
+                   .Include(x => x.UserQues)
+                   .Include("UserQues.Track")
+                   .FirstOrDefaultAsync(x => x.RoadieId == id);
+           }, ApplicationUser.CacheRegionUrn(id.Value));
         }
 
-        protected static Image MakeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, int width = 200, int height = 200, string caption = null, bool includeCachebuster = false)
-        {
-            return new Image(
-                $"{httpContext.ImageBaseUrl}/{id}/{width}/{height}/{(includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty)}",
-                caption,
-                $"{httpContext.ImageBaseUrl}/{id}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
-        }
-
-        protected static Image MakeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string type, IImageSize imageSize)
-        {
-            return MakeImage(configuration, httpContext, id, type, imageSize.Width, imageSize.Height);
-        }
-        private static Image MakeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string type, int? width, int? height, string caption = null, bool includeCachebuster = false)
-        {
-            if (width.HasValue && height.HasValue && (width.Value != configuration.ThumbnailImageSize.Width ||
-                                                      height.Value != configuration.ThumbnailImageSize.Height))
-                return new Image(
-                    $"{httpContext.ImageBaseUrl}/{type}/{id}/{width}/{height}/{(includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty)}",
-                    caption,
-                    $"{httpContext.ImageBaseUrl}/{type}/{id}/{configuration.ThumbnailImageSize.Width}/{configuration.ThumbnailImageSize.Height}");
-            return new Image($"{httpContext.ImageBaseUrl}/{type}/{id}", caption, null);
-        }
-
-        protected static Image MakeLabelThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
-        {
-            return MakeThumbnailImage(configuration, httpContext, id, "label");
-        }
-
-        protected string MakeLastFmUrl(string artistName, string releaseTitle)
-        {
-            return "http://www.last.fm/music/" + HttpEncoder.UrlEncode($"{artistName}/{releaseTitle}");
-        }
-
-        protected Image MakeNewImage(string type)
-        {
-            return new Image($"{HttpContext.ImageBaseUrl}/{type}.jpg", null, null);
-        }
-
-        protected static Image MakePlaylistThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
-        {
-            return MakeThumbnailImage(configuration, httpContext, id, "playlist");
-        }
-
-        protected static Image MakeReleaseThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
-        {
-            return MakeThumbnailImage(configuration, httpContext, id, "release");
-        }
-
-        protected static Image MakeTrackThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
-        {
-            return MakeThumbnailImage(configuration, httpContext, id, "track");
-        }
-
-        protected static Image MakeUserThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
-        {
-            return MakeThumbnailImage(configuration, httpContext, id, "user");
-        }
+        protected string MakeLastFmUrl(string artistName, string releaseTitle) => "http://www.last.fm/music/" + HttpEncoder.UrlEncode($"{artistName}/{releaseTitle}");
 
         protected async Task<OperationResult<short>> SetArtistRating(Guid artistId, ApplicationUser user, short rating)
         {
@@ -358,7 +267,7 @@ namespace Roadie.Api.Services
             CacheManager.ClearRegion(user.CacheRegion);
             CacheManager.ClearRegion(artist.CacheRegion);
 
-            artist = GetArtist(artistId);
+            artist = await GetArtist(artistId);
 
             return new OperationResult<short>
             {
@@ -367,8 +276,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        protected async Task<OperationResult<short>> SetReleaseRating(Guid releaseId, ApplicationUser user,
-            short rating)
+        protected async Task<OperationResult<short>> SetReleaseRating(Guid releaseId, ApplicationUser user, short rating)
         {
             var release = DbContext.Releases
                 .Include(x => x.Artist)
@@ -413,7 +321,7 @@ namespace Roadie.Api.Services
             CacheManager.ClearRegion(release.CacheRegion);
             CacheManager.ClearRegion(release.Artist.CacheRegion);
 
-            release = GetRelease(releaseId);
+            release = await GetRelease(releaseId);
 
             return new OperationResult<short>
             {
@@ -477,8 +385,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        protected async Task<OperationResult<bool>> ToggleArtistDisliked(Guid artistId, ApplicationUser user,
-            bool isDisliked)
+        protected async Task<OperationResult<bool>> ToggleArtistDisliked(Guid artistId, ApplicationUser user, bool isDisliked)
         {
             var artist = DbContext.Artists
                 .Include(x => x.Genres)
@@ -594,8 +501,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        protected async Task<OperationResult<bool>> ToggleReleaseFavorite(Guid releaseId, ApplicationUser user,
-            bool isFavorite)
+        protected async Task<OperationResult<bool>> ToggleReleaseFavorite(Guid releaseId, ApplicationUser user, bool isFavorite)
         {
             var release = DbContext.Releases
                 .Include(x => x.Artist)
@@ -845,6 +751,7 @@ namespace Roadie.Api.Services
                                     join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
                                     where rl.LabelId == label.Id
                                     select t).Count();
+                label.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
                 CacheManager.ClearRegion(label.CacheRegion);
             }
@@ -883,6 +790,7 @@ namespace Roadie.Api.Services
                                     join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                     where rm.ReleaseId == releaseId
                                     select t).Sum(x => x.Duration);
+                release.LastUpdated = now;
                 await DbContext.SaveChangesAsync();
                 CacheManager.ClearRegion(release.CacheRegion);
             }
@@ -941,7 +849,5 @@ namespace Roadie.Api.Services
                     updateArtistRank);
             }
         }
-
-
     }
 }

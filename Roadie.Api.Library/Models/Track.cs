@@ -13,14 +13,14 @@ namespace Roadie.Library.Models
     [Serializable]
     public class Track : EntityModelBase
     {
-        public const string DefaultIncludes = "comments,stats";
+        public const string DefaultIncludes = "comments,stats,credits";
 
         private IEnumerable<string> _partTitles;
 
         [MaxLength(50)] public string AmgId { get; set; }
 
         public ArtistList Artist { get; set; }
-
+        public IEnumerable<CreditList> Credits { get; set; }
         public Image ArtistThumbnail { get; set; }
         public IEnumerable<Comment> Comments { get; set; }
         public int Duration { get; set; }

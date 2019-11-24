@@ -45,6 +45,7 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 
 #endregion Usings
@@ -78,6 +79,12 @@ namespace Roadie.Api
             //    c.SwaggerEndpoint("/swagger/swagger.json", "Roadie API");
             //    c.RoutePrefix = string.Empty;
             //});
+
+            app.Use((context, next) =>
+            {
+                context.Response.Headers["Roadie-Api-Version"] = RoadieApiVersion();
+                return next.Invoke();
+            });
 
             app.UseSerilogRequestLogging();
 
@@ -327,6 +334,20 @@ namespace Roadie.Api
             var sp = services.BuildServiceProvider();
             var adminService = sp.GetService<IAdminService>();
             adminService.PerformStartUpTasks();
+        }
+
+        private static string _roadieApiVersion = null;
+        public static string RoadieApiVersion()
+        {
+            if (string.IsNullOrEmpty(_roadieApiVersion))
+            {
+                _roadieApiVersion = typeof(Startup)
+                                    .GetTypeInfo()
+                                    .Assembly
+                                    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                                    .InformationalVersion;
+            }
+            return _roadieApiVersion;
         }
 
         private class IntegrationKey

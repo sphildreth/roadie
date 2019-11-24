@@ -5,6 +5,7 @@ using Roadie.Library.Configuration;
 using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
+using Roadie.Library.Imaging;
 using Roadie.Library.Models.Collections;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Playlists;
@@ -34,8 +35,7 @@ namespace Roadie.Api.Services
         {
         }
 
-        public Task<Library.Models.Pagination.PagedResult<models.BookmarkList>> List(User roadieUser,
-            PagedRequest request, bool? doRandomize = false, BookmarkType? filterType = null)
+        public async Task<Library.Models.Pagination.PagedResult<models.BookmarkList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, BookmarkType? filterType = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -66,7 +66,7 @@ namespace Roadie.Api.Services
             var rowCount = result.Count();
             var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
 
-            var user = GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId);
 
             foreach (var row in rows)
                 switch (row.Type)
@@ -80,8 +80,8 @@ namespace Roadie.Api.Services
                             Value = artist.RoadieId.ToString()
                         };
                         row.Artist =
-                            models.ArtistList.FromDataArtist(artist, MakeArtistThumbnailImage(Configuration, HttpContext, artist.RoadieId));
-                        row.Thumbnail = MakeArtistThumbnailImage(Configuration, HttpContext, artist.RoadieId);
+                            models.ArtistList.FromDataArtist(artist, ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, artist.RoadieId));
+                        row.Thumbnail = ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, artist.RoadieId);
                         row.SortName = artist.SortName ?? artist.Name;
                         break;
 
@@ -95,9 +95,9 @@ namespace Roadie.Api.Services
                             Value = release.RoadieId.ToString()
                         };
                         row.Release = ReleaseList.FromDataRelease(release, release.Artist, HttpContext.BaseUrl,
-                            MakeArtistThumbnailImage(Configuration, HttpContext, release.Artist.RoadieId),
-                            MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId));
-                        row.Thumbnail = MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId);
+                            ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, release.Artist.RoadieId),
+                            ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId));
+                        row.Thumbnail = ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId);
                         row.SortName = release.SortTitleValue;
                         break;
 
@@ -114,21 +114,21 @@ namespace Roadie.Api.Services
                             Text = track.Title,
                             Value = track.RoadieId.ToString()
                         };
-                        row.Track = models.TrackList.FromDataTrack(MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.Id, track.RoadieId),
+                        row.Track = models.TrackList.FromDataTrack(MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.RoadieId),
                             track,
                             track.ReleaseMedia.MediaNumber,
                             track.ReleaseMedia.Release,
                             track.ReleaseMedia.Release.Artist,
                             track.TrackArtist,
                             HttpContext.BaseUrl,
-                            MakeTrackThumbnailImage(Configuration, HttpContext, track.RoadieId),
-                            MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId),
-                            MakeArtistThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.Artist.RoadieId),
-                            MakeArtistThumbnailImage(Configuration, HttpContext, track.TrackArtist == null
+                            ImageHelper.MakeTrackThumbnailImage(Configuration, HttpContext, track.RoadieId),
+                            ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId),
+                            ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.Artist.RoadieId),
+                            ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, track.TrackArtist == null
                                 ? null
                                 : (Guid?)track.TrackArtist.RoadieId));
-                        row.Track.TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.Id, track.RoadieId);
-                        row.Thumbnail = MakeTrackThumbnailImage(Configuration, HttpContext, track.RoadieId);
+                        row.Track.TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.RoadieId);
+                        row.Thumbnail = ImageHelper.MakeTrackThumbnailImage(Configuration, HttpContext, track.RoadieId);
                         row.SortName = track.Title;
                         break;
 
@@ -143,9 +143,9 @@ namespace Roadie.Api.Services
                             Value = playlist.RoadieId.ToString()
                         };
                         row.Playlist = PlaylistList.FromDataPlaylist(playlist, playlist.User,
-                            MakePlaylistThumbnailImage(Configuration, HttpContext, playlist.RoadieId),
-                            MakeUserThumbnailImage(Configuration, HttpContext, playlist.User.RoadieId));
-                        row.Thumbnail = MakePlaylistThumbnailImage(Configuration, HttpContext, playlist.RoadieId);
+                            ImageHelper.MakePlaylistThumbnailImage(Configuration, HttpContext, playlist.RoadieId),
+                            ImageHelper.MakeUserThumbnailImage(Configuration, HttpContext, playlist.User.RoadieId));
+                        row.Thumbnail = ImageHelper.MakePlaylistThumbnailImage(Configuration, HttpContext, playlist.RoadieId);
                         row.SortName = playlist.Name;
                         break;
 
@@ -160,8 +160,8 @@ namespace Roadie.Api.Services
                         row.Collection = CollectionList.FromDataCollection(collection,
                             (from crc in DbContext.CollectionReleases
                              where crc.CollectionId == collection.Id
-                             select crc.Id).Count(), MakeCollectionThumbnailImage(Configuration, HttpContext, collection.RoadieId));
-                        row.Thumbnail = MakeCollectionThumbnailImage(Configuration, HttpContext, collection.RoadieId);
+                             select crc.Id).Count(), ImageHelper.MakeCollectionThumbnailImage(Configuration, HttpContext, collection.RoadieId));
+                        row.Thumbnail = ImageHelper.MakeCollectionThumbnailImage(Configuration, HttpContext, collection.RoadieId);
                         row.SortName = collection.SortName ?? collection.Name;
                         break;
 
@@ -173,22 +173,22 @@ namespace Roadie.Api.Services
                             Text = label.Name,
                             Value = label.RoadieId.ToString()
                         };
-                        row.Label = models.LabelList.FromDataLabel(label, MakeLabelThumbnailImage(Configuration, HttpContext, label.RoadieId));
-                        row.Thumbnail = MakeLabelThumbnailImage(Configuration, HttpContext, label.RoadieId);
+                        row.Label = models.LabelList.FromDataLabel(label, ImageHelper.MakeLabelThumbnailImage(Configuration, HttpContext, label.RoadieId));
+                        row.Thumbnail = ImageHelper.MakeLabelThumbnailImage(Configuration, HttpContext, label.RoadieId);
                         row.SortName = label.SortName ?? label.Name;
                         break;
                 }
 
             ;
             sw.Stop();
-            return Task.FromResult(new Library.Models.Pagination.PagedResult<models.BookmarkList>
+            return new Library.Models.Pagination.PagedResult<models.BookmarkList>
             {
                 TotalCount = rowCount,
                 CurrentPage = request.PageValue,
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
-            });
+            };
         }
     }
 }

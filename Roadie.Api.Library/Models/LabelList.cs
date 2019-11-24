@@ -4,7 +4,7 @@ using System;
 namespace Roadie.Library.Models
 {
     [Serializable]
-    public class LabelList : EntityInfoModelBase
+    public sealed class LabelList : EntityInfoModelBase
     {
         public int? ArtistCount { get; set; }
         public DataToken Label { get; set; }

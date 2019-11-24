@@ -113,9 +113,14 @@ namespace Roadie.Library.Data.Context.Implementation
             }
             else
             {
-                randomArtists = await Artists.OrderBy(x => Guid.NewGuid())
-                                             .Take(randomLimit)
-                                             .ToListAsync();
+                randomArtists = await (from a in Artists
+                                       join ua in UserArtists on a.Id equals ua.ArtistId into uag
+                                       from ua in uag.DefaultIfEmpty()
+                                       where (ua == null || (ua.UserId == userId && ua.IsDisliked == false))
+                                       select a)
+                                       .OrderBy(x => Guid.NewGuid())
+                                       .Take(randomLimit)
+                                       .ToListAsync();
             }
             var dict = randomArtists.Select((x, i) => new { key = i, value = x.Id }).Take(randomLimit).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);
@@ -164,9 +169,14 @@ namespace Roadie.Library.Data.Context.Implementation
             }
             else
             {
-                randomReleases = await Releases.OrderBy(x => Guid.NewGuid())
-                                               .Take(randomLimit)
-                                               .ToListAsync();
+                randomReleases = await(from r in Releases
+                                       join ur in UserReleases on r.Id equals ur.ReleaseId into urg
+                                       from ur in urg.DefaultIfEmpty()
+                                       where (ur == null || (ur.UserId == userId && ur.IsDisliked == false))
+                                       select r)
+                                       .OrderBy(x => Guid.NewGuid())
+                                       .Take(randomLimit)
+                                       .ToListAsync();
             }
             var dict = randomReleases.Select((x, i) => new { key = i, value = x.Id }).Take(randomLimit).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);
@@ -199,9 +209,14 @@ namespace Roadie.Library.Data.Context.Implementation
             }
             else
             {
-                randomTracks = await Tracks.OrderBy(x => Guid.NewGuid())
-                                           .Take(randomLimit)
-                                           .ToListAsync();
+                randomTracks = await (from t in Tracks
+                                      join ut in UserTracks on t.Id equals ut.TrackId into utg
+                                      from ut in utg.DefaultIfEmpty()
+                                      where (ut == null || (ut.UserId == userId && ut.IsDisliked == false))
+                                      select t)
+                                     .OrderBy(x => Guid.NewGuid())
+                                     .Take(randomLimit)
+                                     .ToListAsync();
             }
             var dict = randomTracks.Select((x, i) => new { key = i, value = x.Id }).Take(randomLimit).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);

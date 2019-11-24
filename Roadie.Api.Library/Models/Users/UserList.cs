@@ -6,7 +6,7 @@ using System.Linq;
 namespace Roadie.Library.Models.Users
 {
     [Serializable]
-    public class UserList : EntityInfoModelBase
+    public sealed class UserList : EntityInfoModelBase
     {
         public bool IsEditor { get; set; }
         public bool IsAdmin { get; set; }

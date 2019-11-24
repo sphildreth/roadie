@@ -8,25 +8,24 @@ namespace Roadie.Library.Data
     {
         [Column("alternateNames", TypeName = "text")]
         [MaxLength(65535)]
-        public string AlternateNames { get; set; }
+        public virtual string AlternateNames { get; set; }
 
-        [MaxLength(250)] [Column("name")] public string Name { get; set; }
+        [MaxLength(250)]
+        [Column("name")]
+        public virtual string Name { get; set; }
 
-        [Column("sortName")] [MaxLength(250)] public string SortName { get; set; }
+        [Column("sortName")] 
+        [MaxLength(250)] 
+        public virtual string SortName { get; set; }
 
-        public string SortNameValue => string.IsNullOrEmpty(SortName) ? Name : SortName;
+        public virtual string SortNameValue => string.IsNullOrEmpty(SortName) ? Name : SortName;
 
         [Column("tags", TypeName = "text")]
         [MaxLength(65535)]
-        public string Tags { get; set; }
-
-        [Obsolete("Images moved to file system")]
-        [Column("thumbnail", TypeName = "blob")]
-        [MaxLength(65535)]
-        public byte[] Thumbnail { get; set; }
+        public virtual string Tags { get; set; }
 
         [Column("urls", TypeName = "text")]
         [MaxLength(65535)]
-        public string URLs { get; set; }
+        public virtual string URLs { get; set; }
     }
 }

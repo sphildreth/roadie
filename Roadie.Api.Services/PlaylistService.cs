@@ -123,10 +123,10 @@ namespace Roadie.Api.Services
             {
                 if (result?.Data?.Tracks != null)
                 {
-                    var user = GetUser(roadieUser.UserId);
+                    var user = await GetUser(roadieUser.UserId);
                     foreach (var track in result.Data.Tracks)
                     {
-                        track.Track.TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.Track.DatabaseId, track.Track.Id);
+                        track.Track.TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.Track.Id);
                     }
                 }
 
@@ -134,7 +134,7 @@ namespace Roadie.Api.Services
                 var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Playlist);
                 if (userBookmarkResult.IsSuccess)
                 {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == result.Data.Id.ToString()) != null;
                 }
                 if (result.Data.Comments.Any())
                 {
@@ -255,9 +255,9 @@ namespace Roadie.Api.Services
                              TrackCount = pl.TrackCount,
                              CreatedDate = pl.CreatedDate,
                              LastUpdated = pl.LastUpdated,
-                             UserThumbnail = MakeUserThumbnailImage(Configuration, HttpContext, u.RoadieId),
+                             UserThumbnail = ImageHelper.MakeUserThumbnailImage(Configuration, HttpContext, u.RoadieId),
                              Id = pl.RoadieId,
-                             Thumbnail = MakePlaylistThumbnailImage(Configuration, HttpContext, pl.RoadieId)
+                             Thumbnail = ImageHelper.MakePlaylistThumbnailImage(Configuration, HttpContext, pl.RoadieId)
                          };
             var sortBy = string.IsNullOrEmpty(request.Sort)
                 ? request.OrderValue(new Dictionary<string, string> { { "Playlist.Text", "ASC" } })
@@ -441,7 +441,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private Task<OperationResult<Playlist>> PlaylistByIdAction(Guid id, IEnumerable<string> includes = null)
+        private async Task<OperationResult<Playlist>> PlaylistByIdAction(Guid id, IEnumerable<string> includes = null)
         {
             var timings = new Dictionary<string, long>();
             var tsw = new Stopwatch();
@@ -450,13 +450,13 @@ namespace Roadie.Api.Services
             sw.Start();
 
             tsw.Restart();
-            var playlist = GetPlaylist(id);
+            var playlist = await GetPlaylist(id);
             tsw.Stop();
             timings.Add("getPlaylist", tsw.ElapsedMilliseconds);
 
             if (playlist == null)
             {
-                return Task.FromResult(new OperationResult<Playlist>(true, string.Format("Playlist Not Found [{0}]", id)));
+                return new OperationResult<Playlist>(true, string.Format("Playlist Not Found [{0}]", id));
             }
             tsw.Restart();
             var result = playlist.Adapt<Playlist>();
@@ -464,9 +464,9 @@ namespace Roadie.Api.Services
             result.Tags = playlist.Tags;
             result.URLs = playlist.URLs;
             var maintainer = DbContext.Users.Include(x => x.UserRoles).Include("UserRoles.Role").FirstOrDefault(x => x.Id == playlist.UserId);
-            result.Maintainer = UserList.FromDataUser(maintainer, MakeUserThumbnailImage(Configuration, HttpContext, maintainer.RoadieId));
-            result.Thumbnail = MakePlaylistThumbnailImage(Configuration, HttpContext, playlist.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "playlist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            result.Maintainer = UserList.FromDataUser(maintainer, ImageHelper.MakeUserThumbnailImage(Configuration, HttpContext, maintainer.RoadieId));
+            result.Thumbnail = ImageHelper.MakePlaylistThumbnailImage(Configuration, HttpContext, playlist.RoadieId);
+            result.MediumThumbnail = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "playlist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (includes != null && includes.Any())
@@ -509,10 +509,10 @@ namespace Roadie.Api.Services
                                              releaseArtist,
                                              trackArtist,
                                              HttpContext.BaseUrl,
-                                             MakeTrackThumbnailImage(Configuration, HttpContext, plt.t.RoadieId),
-                                             MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId),
-                                             MakeArtistThumbnailImage(Configuration, HttpContext, releaseArtist.RoadieId),
-                                             MakeArtistThumbnailImage(Configuration, HttpContext, trackArtist == null ? null : (Guid?)trackArtist.RoadieId))
+                                             ImageHelper.MakeTrackThumbnailImage(Configuration, HttpContext, plt.t.RoadieId),
+                                             ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId),
+                                             ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, releaseArtist.RoadieId),
+                                             ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, trackArtist == null ? null : (Guid?)trackArtist.RoadieId))
                                      }).ToArray();
                     tsw.Stop();
                     timings.Add("tracks", tsw.ElapsedMilliseconds);
@@ -535,7 +535,7 @@ namespace Roadie.Api.Services
                         {
                             var comment = playlistComment.Adapt<Comment>();
                             comment.DatabaseId = playlistComment.Id;
-                            comment.User = UserList.FromDataUser(playlistComment.User, MakeUserThumbnailImage(Configuration, HttpContext, playlistComment.User.RoadieId));
+                            comment.User = UserList.FromDataUser(playlistComment.User, ImageHelper.MakeUserThumbnailImage(Configuration, HttpContext, playlistComment.User.RoadieId));
                             comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == playlistComment.Id && x.ReactionValue == CommentReaction.Dislike);
                             comment.LikedCount = userCommentReactions.Count(x => x.CommentId == playlistComment.Id && x.ReactionValue == CommentReaction.Like);
                             comments.Add(comment);
@@ -549,12 +549,12 @@ namespace Roadie.Api.Services
 
             sw.Stop();
             Logger.LogInformation($"ByIdAction: Playlist `{ playlist }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
-            return Task.FromResult(new OperationResult<Playlist>
+            return new OperationResult<Playlist>
             {
                 Data = result,
                 IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
-            });
+            };
         }
     }
 }

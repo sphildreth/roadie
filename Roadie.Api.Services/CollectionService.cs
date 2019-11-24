@@ -60,8 +60,8 @@ namespace Roadie.Api.Services
             };
             var result = collection.Adapt<Collection>();
             result.Id = id;
-            result.Thumbnail = MakeNewImage("collection");
-            result.MediumThumbnail = MakeNewImage("collection");
+            result.Thumbnail = ImageHelper.MakeNewImage(HttpContext,"collection");
+            result.MediumThumbnail = ImageHelper.MakeNewImage(HttpContext,"collection");
             result.Maintainer = new DataToken
             {
                 Value = roadieUser.UserId.ToString(),
@@ -94,7 +94,7 @@ namespace Roadie.Api.Services
                 var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Collection);
                 if (userBookmarkResult.IsSuccess)
                 {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == result.Data.Id.ToString()) != null;
                 }
                 if (result.Data.Comments.Any())
                 {
@@ -215,7 +215,7 @@ namespace Roadie.Api.Services
                              CreatedDate = c.CreatedDate,
                              IsLocked = c.IsLocked,
                              LastUpdated = c.LastUpdated,
-                             Thumbnail = MakeCollectionThumbnailImage(Configuration, HttpContext, c.RoadieId)
+                             Thumbnail = ImageHelper.MakeCollectionThumbnailImage(Configuration, HttpContext, c.RoadieId)
                          };
 
             var sortBy = string.IsNullOrEmpty(request.Sort)
@@ -327,7 +327,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private Task<OperationResult<Collection>> CollectionByIdAction(Guid id, IEnumerable<string> includes = null)
+        private async Task<OperationResult<Collection>> CollectionByIdAction(Guid id, IEnumerable<string> includes = null)
         {
             var timings = new Dictionary<string, long>();
             var tsw = new Stopwatch();
@@ -336,13 +336,13 @@ namespace Roadie.Api.Services
             sw.Start();
 
             tsw.Restart();
-            var collection = GetCollection(id);
+            var collection = await GetCollection(id);
             tsw.Stop();
             timings.Add("getCollection", tsw.ElapsedMilliseconds);
 
             if (collection == null)
             {
-                return Task.FromResult(new OperationResult<Collection>(true, string.Format("Collection Not Found [{0}]", id)));
+                return new OperationResult<Collection>(true, string.Format("Collection Not Found [{0}]", id));
             }
             var result = collection.Adapt<Collection>();
             var maintainer = DbContext.Users.FirstOrDefault(x => x.Id == collection.MaintainerId);
@@ -354,8 +354,8 @@ namespace Roadie.Api.Services
             result.AlternateNames = collection.AlternateNames;
             result.Tags = collection.Tags;
             result.URLs = collection.URLs;
-            result.Thumbnail = MakeCollectionThumbnailImage(Configuration, HttpContext, collection.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "collection", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            result.Thumbnail = ImageHelper.MakeCollectionThumbnailImage(Configuration, HttpContext, collection.RoadieId);
+            result.MediumThumbnail = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "collection", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             result.CollectionFoundCount = (from crc in DbContext.CollectionReleases
                                            where crc.CollectionId == collection.Id
                                            select crc.Id).Count();
@@ -384,7 +384,7 @@ namespace Roadie.Api.Services
                                        select new CollectionRelease
                                        {
                                            ListNumber = crc.ListNumber,
-                                           Release = ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, MakeArtistThumbnailImage(Configuration, HttpContext, r.Artist.RoadieId), MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId))
+                                           Release = ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, r.Artist.RoadieId), ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId))
                                        }).ToArray();
                     tsw.Stop();
                     timings.Add("releases", tsw.ElapsedMilliseconds);
@@ -438,7 +438,7 @@ namespace Roadie.Api.Services
                         {
                             var comment = collectionComment.Adapt<Comment>();
                             comment.DatabaseId = collectionComment.Id;
-                            comment.User = UserList.FromDataUser(collectionComment.User, MakeUserThumbnailImage(Configuration, HttpContext, collectionComment.User.RoadieId));
+                            comment.User = UserList.FromDataUser(collectionComment.User, ImageHelper.MakeUserThumbnailImage(Configuration, HttpContext, collectionComment.User.RoadieId));
                             comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == collectionComment.Id && x.ReactionValue == CommentReaction.Dislike);
                             comment.LikedCount = userCommentReactions.Count(x => x.CommentId == collectionComment.Id && x.ReactionValue == CommentReaction.Like);
                             comments.Add(comment);
@@ -451,12 +451,12 @@ namespace Roadie.Api.Services
             }
             Logger.LogInformation($"ByIdAction: Collection `{ collection }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
             sw.Stop();
-            return Task.FromResult(new OperationResult<Collection>
+            return new OperationResult<Collection>
             {
                 Data = result,
                 IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
-            });
+            };
         }
     }
 }

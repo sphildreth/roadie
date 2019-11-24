@@ -153,6 +153,16 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("deleteAllBookmarks")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> DeleteAllBookmarks()
+        {
+            var result = await UserService.DeleteAllBookmarks(await CurrentUserModel());
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            CacheManager.ClearRegion(ControllerCacheRegionUrn);
+            return Ok(result);
+        }
+
         [HttpPost("setCollectionBookmark/{collectionId}/{isBookmarked}")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetCollectionBookmark(Guid collectionId, bool isBookmarked)

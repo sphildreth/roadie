@@ -3,7 +3,7 @@
 namespace Roadie.Library.Models.Playlists
 {
     [Serializable]
-    public class PlaylistTrackList : EntityInfoModelBase
+    public sealed class PlaylistTrackList : EntityInfoModelBase
     {
         public DataToken Artist { get; set; }
         public string ArtistThumbnailUrl { get; set; }

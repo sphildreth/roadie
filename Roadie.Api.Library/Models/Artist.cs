@@ -14,8 +14,7 @@ namespace Roadie.Library.Models
     [Serializable]
     public class Artist : EntityModelBase
     {
-        public const string DefaultIncludes =
-            "stats,images,associatedartists,similarartists,comments,collections,playlists,contributions,labels";
+        public const string DefaultIncludes = "stats,images,associatedartists,similarartists,comments,collections,playlists,contributions,labels,genres";
 
         public IEnumerable<ReleaseList> ArtistContributionReleases;
         public IEnumerable<LabelList> ArtistLabels;
@@ -40,7 +39,7 @@ namespace Roadie.Library.Models
 
         [MaxLength(50)] public string DiscogsId { get; set; }
 
-        public IEnumerable<DataToken> Genres { get; set; }
+        public IEnumerable<GenreList> Genres { get; set; }
 
         public IEnumerable<Image> Images { get; set; }
 

@@ -11,12 +11,15 @@ namespace Roadie.Library.Models
     {
         public const string DefaultIncludes = "comments,stats";
 
-        [MaxLength(65535)] public string BioContext { get; set; }
+        [MaxLength(65535)] 
+        public string BioContext { get; set; }
 
         public DateTime? BirthDate { get; set; }
 
         public IEnumerable<Comment> Comments { get; set; }
-        [MaxLength(50)] public string DiscogsId { get; set; }
+        
+        [MaxLength(50)] 
+        public string DiscogsId { get; set; }
 
         public decimal? Duration { get; set; }
 
@@ -30,14 +33,18 @@ namespace Roadie.Library.Models
         }
 
         public Image MediumThumbnail { get; set; }
-        [MaxLength(100)] public string MusicBrainzId { get; set; }
+        
+        [MaxLength(100)] 
+        public string MusicBrainzId { get; set; }
 
-        [MaxLength(250)] public string Name { get; set; }
+        [MaxLength(250)]
+        public string Name { get; set; }
 
         // When populated a "data:image" base64 byte array of an image to use as new Thumbnail
         public string NewThumbnailData { get; set; }
 
-        [MaxLength(65535)] public string Profile { get; set; }
+        [MaxLength(65535)] 
+        public string Profile { get; set; }
 
         public ReleaseGroupingStatistics Statistics { get; set; }
         public Image Thumbnail { get; set; }

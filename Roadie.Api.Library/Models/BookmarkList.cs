@@ -8,11 +8,12 @@ using System;
 namespace Roadie.Library.Models
 {
     [Serializable]
-    public class BookmarkList : EntityInfoModelBase
+    public sealed class BookmarkList : EntityInfoModelBase
     {
         public ArtistList Artist { get; set; }
         public DataToken Bookmark { get; set; }
-        [JsonIgnore] public int BookmarkTargetId { get; set; }
+        [JsonIgnore] 
+        public int BookmarkTargetId { get; set; }
         public string BookmarkType => Type.ToString();
         public CollectionList Collection { get; set; }
         public string Comment { get; set; }

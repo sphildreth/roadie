@@ -5,7 +5,7 @@ using System.Linq;
 namespace Roadie.Library.Models.Releases
 {
     [Serializable]
-    public class ReleaseMediaList : EntityInfoModelBase
+    public sealed class ReleaseMediaList : EntityInfoModelBase
     {
         public short? MediaNumber { get; set; }
         public string SubTitle { get; set; }

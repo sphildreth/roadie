@@ -5,7 +5,7 @@ using System;
 namespace Roadie.Library.Models.Playlists
 {
     [Serializable]
-    public class PlaylistList : EntityInfoModelBase
+    public sealed class PlaylistList : EntityInfoModelBase
     {
         public decimal? Duration { get; set; }
 

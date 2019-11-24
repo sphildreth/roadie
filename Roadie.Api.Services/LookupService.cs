@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -21,6 +22,8 @@ namespace Roadie.Api.Services
     /// </summary>
     public class LookupService : ServiceBase, ILookupService
     {
+        public const string CreditCategoriesCacheKey = "urn:creditCategories";
+
         public LookupService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
@@ -117,6 +120,25 @@ namespace Roadie.Api.Services
                 IsSuccess = true,
                 OperationTime = sw.ElapsedMilliseconds
             });
+        }
+
+        public async Task<OperationResult<IEnumerable<DataToken>>> CreditCategories()
+        {
+            var sw = Stopwatch.StartNew();
+            var data = await CacheManager.GetAsync(CreditCategoriesCacheKey, async () =>
+            {
+                return (await DbContext.CreditCategory.ToListAsync()).Select(x => new DataToken
+                {
+                    Value = x.RoadieId.ToString(),
+                    Text = x.Name
+                }).ToArray();
+            }, CacheManagerBase.SystemCacheRegionUrn);
+            return new OperationResult<IEnumerable<DataToken>>
+            {
+                Data = data,
+                IsSuccess = true,
+                OperationTime = sw.ElapsedMilliseconds
+            };
         }
 
         public Task<OperationResult<IEnumerable<DataToken>>> Status()

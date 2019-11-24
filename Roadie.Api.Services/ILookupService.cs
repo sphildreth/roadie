@@ -24,5 +24,7 @@ namespace Roadie.Api.Services
         Task<OperationResult<IEnumerable<DataToken>>> RequestStatus();
 
         Task<OperationResult<IEnumerable<DataToken>>> Status();
+
+        Task<OperationResult<IEnumerable<DataToken>>> CreditCategories();
     }
 }

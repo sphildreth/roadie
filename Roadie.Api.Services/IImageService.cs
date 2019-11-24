@@ -20,8 +20,6 @@ namespace Roadie.Api.Services
 
         Task<FileOperationResult<IImage>> ArtistSecondaryImage(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null);
 
-        Task<FileOperationResult<IImage>> ById(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
-
         Task<FileOperationResult<IImage>> CollectionImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);
 
         Task<FileOperationResult<IImage>> GenreImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null);

@@ -117,5 +117,16 @@ namespace Roadie.Api.Controllers
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
+
+        [HttpGet("creditCategory")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> CreditCategories(Guid id, string inc = null)
+        {
+            var result = await LookupService.Status();
+            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            return Ok(result);
+        }
+
     }
 }

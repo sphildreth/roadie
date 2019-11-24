@@ -16,11 +16,15 @@ namespace Roadie.Library.Data
 
         public virtual bool? IsLocked { get; set; }
 
-        [Column("lastUpdated")] public DateTime? LastUpdated { get; set; }
+        [Column("lastUpdated")] 
+        public DateTime? LastUpdated { get; set; }
 
-        [Column("RoadieId")] [Required] public Guid RoadieId { get; set; }
+        [Column("RoadieId")] 
+        [Required] 
+        public Guid RoadieId { get; set; }
 
-        [Column("status")] public Statuses? Status { get; set; }
+        [Column("status")] 
+        public Statuses? Status { get; set; }
 
         public EntityBase()
         {

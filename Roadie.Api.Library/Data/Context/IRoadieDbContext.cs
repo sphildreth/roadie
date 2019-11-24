@@ -24,6 +24,8 @@ namespace Roadie.Library.Data.Context
         DbSet<Collection> Collections { get; set; }
         DbSet<CommentReaction> CommentReactions { get; set; }
         DbSet<Comment> Comments { get; set; }
+        DbSet<Credit> Credits { get; set; }
+        DbSet<CreditCategory> CreditCategory { get; set; }
         DatabaseFacade Database { get; }
         DbSet<Genre> Genres { get; set; }
         DbSet<Label> Labels { get; set; }

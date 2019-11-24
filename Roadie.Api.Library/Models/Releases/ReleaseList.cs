@@ -11,7 +11,7 @@ namespace Roadie.Library.Models.Releases
 {
     [Serializable]
     [DebuggerDisplay("DatabaseId [{ DatabaseId }] Name [{ ReleaseName }] IsValid [{ IsValid }]")]
-    public class ReleaseList : EntityInfoModelBase
+    public sealed class ReleaseList : EntityInfoModelBase
     {
         public DataToken Artist { get; set; }
         public Image ArtistThumbnail { get; set; }

@@ -3,7 +3,7 @@
 namespace Roadie.Library.Models.Collections
 {
     [Serializable]
-    public class CollectionList : EntityInfoModelBase
+    public sealed class CollectionList : EntityInfoModelBase
     {
         public DataToken Artist { get; set; }
         public DataToken Collection { get; set; }

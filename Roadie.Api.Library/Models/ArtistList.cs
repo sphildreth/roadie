@@ -8,7 +8,7 @@ namespace Roadie.Library.Models
 {
     [Serializable]
     [DebuggerDisplay("Artist Id {Id}, Name {Artist.Text}")]
-    public class ArtistList : EntityInfoModelBase
+    public sealed class ArtistList : EntityInfoModelBase
     {
         public DataToken Artist { get; set; }
         public bool IsValid => Id != Guid.Empty;

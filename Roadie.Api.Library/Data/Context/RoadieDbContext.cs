@@ -32,6 +32,9 @@ namespace Roadie.Library.Data.Context
 
         public DbSet<Comment> Comments { get; set; }
 
+        public DbSet<Credit> Credits { get; set; }
+        public DbSet<CreditCategory> CreditCategory { get; set; }
+
         public DbSet<Genre> Genres { get; set; }
 
         public DbSet<Label> Labels { get; set; }

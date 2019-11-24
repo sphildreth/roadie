@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Threading.Tasks;
 using models = Roadie.Library.Models.Users;
 
@@ -150,6 +151,6 @@ namespace Roadie.Api.Controllers
             result.IsAdmin = User.IsInRole("Admin");
             result.IsEditor = User.IsInRole("Editor") || result.IsAdmin;
             return result;
-        }
+        }        
     }
 }

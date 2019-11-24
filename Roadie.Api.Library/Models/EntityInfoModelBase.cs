@@ -26,7 +26,8 @@ namespace Roadie.Library.Models
 
         public DateTime? LastUpdated { get; set; }
 
-        [MaxLength(250)] public string SortName { get; set; }
+        [MaxLength(250)]
+        public virtual string SortName { get; set; }
 
         /// <summary>
         ///     Random int to sort when Random Request

@@ -2,6 +2,7 @@
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.MetaData.Audio;
+using models = Roadie.Library.Models;
 using Roadie.Library.SearchEngines.Imaging;
 using Roadie.Library.Utility;
 using SixLabors.ImageSharp;
@@ -398,5 +399,101 @@ namespace Roadie.Library.Imaging
 
             return imageMetaData;
         }
+
+        public static models.Image MakeThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string type, int? width = null, int? height = null, bool includeCachebuster = false)
+        {
+            return MakeImage(configuration, httpContext, id, type, width ?? configuration.ThumbnailImageSize.Width, height ?? configuration.ThumbnailImageSize.Height, null, includeCachebuster);
+        }
+
+        public static models.Image MakeNewImage(IHttpContext httpContext, string type)
+        {
+            return new models.Image($"{httpContext.ImageBaseUrl}/{type}.jpg", null, null);
+        }
+
+        public static models.Image MakePlaylistThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
+        {
+            return MakeThumbnailImage(configuration, httpContext, id, "playlist");
+        }
+
+        public static models.Image MakeReleaseThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
+        {
+            return MakeThumbnailImage(configuration, httpContext, id, "release");
+        }
+
+        public static models.Image MakeTrackThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
+        {
+            return MakeThumbnailImage(configuration, httpContext, id, "track");
+        }
+
+        public static models.Image MakeUserThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
+        {
+            return MakeThumbnailImage(configuration, httpContext, id, "user");
+        }
+
+        public static models.Image MakeLabelThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
+        {
+            return MakeThumbnailImage(configuration, httpContext, id, "label");
+        }
+
+        public static models.Image MakeArtistThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid? id)
+        {
+            if (!id.HasValue) return null;
+            return MakeThumbnailImage(configuration, httpContext, id.Value, "artist");
+        }
+
+        public static models.Image MakeCollectionThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
+        {
+            return MakeThumbnailImage(configuration, httpContext, id, "collection");
+        }
+
+        public static models.Image MakeFullsizeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string caption = null)
+        {
+            return new models.Image($"{httpContext.ImageBaseUrl}/{id}", caption,
+                $"{httpContext.ImageBaseUrl}/{id}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
+        }
+
+        public static models.Image MakeFullsizeSecondaryImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, ImageType type, int imageId, string caption = null)
+        {
+            if (type == ImageType.ArtistSecondary)
+            {
+                return new models.Image($"{httpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}", caption, $"{httpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
+            }
+            return new models.Image($"{httpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}", caption, $"{httpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
+        }
+
+        public static models.Image MakeGenreThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
+        {
+            return MakeThumbnailImage(configuration, httpContext, id, "genre");
+        }
+
+        public static models.Image MakeUnknownImage(IHttpContext httpContext, string unknownType = "unknown")
+        {
+            return new models.Image($"{httpContext.ImageBaseUrl}/{ unknownType }.jpg");
+        }
+
+        public static models.Image MakeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, int width = 200, int height = 200, string caption = null, bool includeCachebuster = false)
+        {
+            return new models.Image($"{httpContext.ImageBaseUrl}/{id}/{width}/{height}/{(includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty)}",
+                caption,
+                $"{httpContext.ImageBaseUrl}/{id}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
+        }
+
+        public static models.Image MakeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string type, IImageSize imageSize)
+        {
+            return MakeImage(configuration, httpContext, id, type, imageSize.Width, imageSize.Height);
+        }
+
+        public static models.Image MakeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string type, int? width, int? height, string caption = null, bool includeCachebuster = false)
+        {
+            if (width.HasValue && height.HasValue && (width.Value != configuration.ThumbnailImageSize.Width ||
+                                                      height.Value != configuration.ThumbnailImageSize.Height))
+                return new models.Image(
+                    $"{httpContext.ImageBaseUrl}/{type}/{id}/{width}/{height}/{(includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty)}",
+                    caption,
+                    $"{httpContext.ImageBaseUrl}/{type}/{id}/{configuration.ThumbnailImageSize.Width}/{configuration.ThumbnailImageSize.Height}");
+            return new models.Image($"{httpContext.ImageBaseUrl}/{type}/{id}", caption, null);
+        }
+
+
     }
 }

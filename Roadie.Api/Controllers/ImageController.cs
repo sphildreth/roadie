@@ -1,8 +1,7 @@
-﻿using Mapster;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -43,12 +42,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
-            var model = result.Data.Adapt<Library.Models.Image>();
-            return File(model.Bytes,
-                result.ContentType,
-                $"{model.Caption ?? id.ToString()}.jpg",
-                result.LastModified,
-                result.ETag);
+            return MakeFileResult(result.Data.Bytes, $"{id}.jpg", result.ContentType, result.LastModified, result.ETag);
         }
 
         [HttpGet("artist-secondary/{id}/{imageId}/{width:int?}/{height:int?}/{cacheBuster?}")]
@@ -65,12 +59,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
-            var model = result.Data.Adapt<Library.Models.Image>();
-            return File(model.Bytes,
-                result.ContentType,
-                $"{model.Caption ?? id.ToString()}.jpg",
-                result.LastModified,
-                result.ETag);
+            return MakeFileResult(result.Data.Bytes, $"{id}.jpg", result.ContentType, result.LastModified, result.ETag);
         }
 
         [HttpGet("collection/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
@@ -87,34 +76,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
-            var model = result.Data.Adapt<Library.Models.Image>();
-            return File(model.Bytes,
-                result.ContentType,
-                $"{model.Caption ?? id.ToString()}.jpg",
-                result.LastModified,
-                result.ETag);
-        }
-
-        [HttpGet("{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
-        public async Task<IActionResult> Get(Guid id, int? width, int? height)
-        {
-            var result = await ImageService.ById(id, width, height);
-            if (result == null)
-            {
-                return NotFound();
-            }
-            if (!result.IsSuccess)
-            {
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            var model = result.Data.Adapt<Library.Models.Image>();
-            return File(model.Bytes,
-                result.ContentType,
-                $"{model.Caption ?? id.ToString()}.jpg",
-                result.LastModified,
-                result.ETag);
+            return MakeFileResult(result.Data.Bytes, $"{id}.jpg", result.ContentType, result.LastModified, result.ETag);
         }
 
         [HttpGet("label/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
@@ -131,12 +93,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
-            var model = result.Data.Adapt<Library.Models.Image>();
-            return File(model.Bytes,
-                result.ContentType,
-                $"{model.Caption ?? id.ToString()}.jpg",
-                result.LastModified,
-                result.ETag);
+            return MakeFileResult(result.Data.Bytes, $"{id}.jpg", result.ContentType, result.LastModified, result.ETag);
         }
 
         [HttpGet("genre/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
@@ -153,12 +110,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
-            var model = result.Data.Adapt<Library.Models.Image>();
-            return File(model.Bytes,
-                result.ContentType,
-                $"{model.Caption ?? id.ToString()}.jpg",
-                result.LastModified,
-                result.ETag);
+            return MakeFileResult(result.Data.Bytes, $"{id}.jpg", result.ContentType, result.LastModified, result.ETag);
         }
 
         [HttpGet("playlist/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
@@ -175,12 +127,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
-            var model = result.Data.Adapt<Library.Models.Image>();
-            return File(model.Bytes,
-                result.ContentType,
-                $"{model.Caption ?? id.ToString()}.jpg",
-                result.LastModified,
-                result.ETag);
+            return MakeFileResult(result.Data.Bytes, $"{id}.jpg", result.ContentType, result.LastModified, result.ETag);
         }
 
         [HttpGet("release/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
@@ -197,12 +144,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
-            var model = result.Data.Adapt<Library.Models.Image>();
-            return File(model.Bytes,
-                result.ContentType,
-                $"{model.Caption ?? id.ToString()}.jpg",
-                result.LastModified,
-                result.ETag);
+            return MakeFileResult(result.Data.Bytes, $"{id}.jpg", result.ContentType, result.LastModified, result.ETag);
         }
 
         [HttpGet("release-secondary/{id}/{imageId}/{width:int?}/{height:int?}/{cacheBuster?}")]
@@ -219,12 +161,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
-            var model = result.Data.Adapt<Library.Models.Image>();
-            return File(model.Bytes,
-                result.ContentType,
-                $"{model.Caption ?? id.ToString()}.jpg",
-                result.LastModified,
-                result.ETag);
+            return MakeFileResult(result.Data.Bytes, $"{id}.jpg", result.ContentType, result.LastModified, result.ETag);
         }
 
         [HttpPost("search/artist/{query}/{resultsCount:int?}")]
@@ -297,16 +234,13 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
-            var model = result.Data.Adapt<Library.Models.Image>();
-            return File(model.Bytes,
-                result.ContentType,
-                $"{model.Caption ?? id.ToString()}.jpg",
-                result.LastModified,
-                result.ETag);
+            return MakeFileResult(result.Data.Bytes, $"{id}.jpg", result.ContentType, result.LastModified, result.ETag);
         }
 
+        private IActionResult MakeFileResult(byte[] bytes, string fileName, string contentType, DateTimeOffset? lastModified, EntityTagHeaderValue eTag) => File(bytes, contentType, fileName, lastModified, eTag);
+
         /// <summary>
-        ///     NOTE that user images/avatars are GIF not JPG this is so it looks better in the menus/applications
+        /// NOTE that user images/avatars are GIF not JPG this is so it looks better in the menus/applications and allows for animated avatars.
         /// </summary>
         [HttpGet("user/{id}/{width:int?}/{height:int?}/{cacheBuster?}")]
         [ProducesResponseType(200)]
@@ -322,12 +256,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
-            var model = result.Data.Adapt<Library.Models.Image>();
-            return File(model.Bytes,
-                result.ContentType,
-                $"{model.Caption ?? id.ToString()}.gif",
-                result.LastModified,
-                result.ETag);
+            return MakeFileResult(result.Data.Bytes, $"{id}.gif", result.ContentType, result.LastModified, result.ETag);
         }
     }
 }

@@ -4,50 +4,46 @@ using System.ComponentModel.DataAnnotations;
 namespace Roadie.Library.Models
 {
     /// <summary>
-    /// Image class served to API consumers.
+    /// Image model class served to API consumers.
     /// </summary>
     [Serializable]
-    public class Image : EntityModelBase
+    public sealed class Image : EntityModelBase
     {
-        public byte[] Bytes { get; set; }
+        public byte[] Bytes { get; } 
 
-        [MaxLength(100)] public string Caption { get; set; }
+        [MaxLength(100)]
+        public string Caption { get; }
 
-        [Obsolete("Only here for transition. Will be removed in future release.")]
-        public Guid? ArtistId { get; set; }
-        [Obsolete("Only here for transition. Will be removed in future release.")]
-        public Guid? ReleaseId { get; set; }
-        [MaxLength(50)] public string Signature { get; set; }
+        public string ThumbnailUrl { get; }
 
-        [MaxLength(500)] public string ThumbnailUrl { get; set; }
-
-        [MaxLength(500)] public string Url { get; set; }
+        public string Url { get; }
 
         public Image()
         {
         }
 
         /// <summary>
-        ///     Set image Url to given value and nullify other entity values, intended to be used in List collection (like images
-        ///     for an artist)
+        ///     Set image Url to given value and nullify other entity values, intended to be used in List collection (like images for an artist)
         /// </summary>
-        public Image(string url) : this(url, null, null)
+        public Image(string url)
+            : this(url, null, null)
         {
         }
 
-        public Image(string url, string caption, string thumbnailUrl)
+        public Image(byte[] bytes)
+            : this(null, null, null, bytes)
         {
+        }
+
+        public Image(string url, string caption, string thumbnailUrl, byte[] bytes = null)
+        {
+            Bytes = bytes;
             Url = url;
             ThumbnailUrl = thumbnailUrl;
             CreatedDate = null;
             Id = null;
             Status = null;
             Caption = caption;
-        }
-
-        public Image(byte[] bytes)
-        {
-            Bytes = bytes;
         }
     }
 }

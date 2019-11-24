@@ -21,9 +21,9 @@ namespace Roadie.Library.Models
         [MaxLength(65535)]
         [JsonIgnore]
         [IgnoreDataMember]
-        public string AlternateNames { get; set; }
+        public virtual string AlternateNames { get; set; }
 
-        public IEnumerable<string> AlternateNamesList
+        public virtual IEnumerable<string> AlternateNamesList
         {
             get
             {
@@ -39,11 +39,12 @@ namespace Roadie.Library.Models
             set => _alternateNamesList = value;
         }
 
-        public DateTime? BeginDate { get; set; }
+        public virtual DateTime? BeginDate { get; set; }
 
-        [Required] public virtual DateTime? CreatedDate { get; set; }
+        [Required] 
+        public virtual DateTime? CreatedDate { get; set; }
 
-        public DateTime? EndDate { get; set; }
+        public virtual DateTime? EndDate { get; set; }
 
         /// <summary>
         /// This is the exposed Id for API consumers, not the Database Id.
@@ -51,22 +52,23 @@ namespace Roadie.Library.Models
         [AdaptMember("RoadieId")]
         public virtual Guid? Id { get; set; }
 
-        public bool? IsLocked { get; set; }
+        public virtual bool? IsLocked { get; set; }
 
-        public DateTime? LastUpdated { get; set; }
+        public virtual DateTime? LastUpdated { get; set; }
 
-        [MaxLength(250)] public string SortName { get; set; }
+        [MaxLength(250)]
+        public virtual string SortName { get; set; }
 
-        public int? Status { get; set; }
+        public virtual int? Status { get; set; }
 
         public string StatusVerbose => SafeParser.ToEnum<Statuses>(Status).ToString();
 
         [MaxLength(65535)]
         [JsonIgnore]
         [IgnoreDataMember]
-        public string Tags { get; set; }
+        public virtual string Tags { get; set; }
 
-        public IEnumerable<string> TagsList
+        public virtual IEnumerable<string> TagsList
         {
             get
             {
@@ -84,9 +86,9 @@ namespace Roadie.Library.Models
         [MaxLength(65535)]
         [JsonIgnore]
         [IgnoreDataMember]
-        public string URLs { get; set; }
+        public virtual string URLs { get; set; }
 
-        public IEnumerable<string> URLsList
+        public virtual IEnumerable<string> URLsList
         {
             get
             {
@@ -101,7 +103,7 @@ namespace Roadie.Library.Models
             set => _urlsList = value;
         }
 
-        public bool? UserBookmarked { get; set; }
+        public virtual bool? UserBookmarked { get; set; }
 
         public EntityModelBase()
         {

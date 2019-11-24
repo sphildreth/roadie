@@ -57,7 +57,7 @@ namespace Roadie.Api.Services
                 var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Label);
                 if (userBookmarkResult.IsSuccess)
                 {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Text == result.Data.Id.ToString()) != null;
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == result.Data.Id.ToString()) != null;
                 }
                 if (result.Data.Comments.Any())
                 {
@@ -162,7 +162,7 @@ namespace Roadie.Api.Services
                              ArtistCount = l.ArtistCount,
                              ReleaseCount = l.ReleaseCount,
                              TrackCount = l.TrackCount,
-                             Thumbnail = MakeLabelThumbnailImage(Configuration, HttpContext, l.RoadieId)
+                             Thumbnail = ImageHelper.MakeLabelThumbnailImage(Configuration, HttpContext, l.RoadieId)
                          };
             LabelList[] rows = null;
             rowCount = rowCount ?? result.Count();
@@ -356,7 +356,7 @@ namespace Roadie.Api.Services
             return await SaveImageBytes(user, id, bytes);
         }
 
-        private Task<OperationResult<Label>> LabelByIdAction(Guid id, IEnumerable<string> includes = null)
+        private async Task<OperationResult<Label>> LabelByIdAction(Guid id, IEnumerable<string> includes = null)
         {
             var timings = new Dictionary<string, long>();
             var tsw = new Stopwatch();
@@ -365,20 +365,20 @@ namespace Roadie.Api.Services
             sw.Start();
 
             tsw.Restart();
-            var label = GetLabel(id);
+            var label = await GetLabel(id);
             tsw.Stop();
             timings.Add("GetLabel", tsw.ElapsedMilliseconds);
             if (label == null)
             {
-                return Task.FromResult(new OperationResult<Label>(true, string.Format("Label Not Found [{0}]", id)));
+                return new OperationResult<Label>(true, string.Format("Label Not Found [{0}]", id));
             }
             tsw.Restart();
             var result = label.Adapt<Label>();
             result.AlternateNames = label.AlternateNames;
             result.Tags = label.Tags;
             result.URLs = label.URLs;
-            result.Thumbnail = MakeLabelThumbnailImage(Configuration, HttpContext, label.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "label", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            result.Thumbnail = ImageHelper.MakeLabelThumbnailImage(Configuration, HttpContext, label.RoadieId);
+            result.MediumThumbnail = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "label", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (includes != null && includes.Any())
@@ -430,7 +430,7 @@ namespace Roadie.Api.Services
                         {
                             var comment = labelComment.Adapt<Comment>();
                             comment.DatabaseId = labelComment.Id;
-                            comment.User = UserList.FromDataUser(labelComment.User, MakeUserThumbnailImage(Configuration, HttpContext, labelComment.User.RoadieId));
+                            comment.User = UserList.FromDataUser(labelComment.User, ImageHelper.MakeUserThumbnailImage(Configuration, HttpContext, labelComment.User.RoadieId));
                             comment.DislikedCount = userCommentReactions.Count(x => x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Dislike);
                             comment.LikedCount = userCommentReactions.Count(x => x.CommentId == labelComment.Id && x.ReactionValue == CommentReaction.Like);
                             comments.Add(comment);
@@ -444,12 +444,12 @@ namespace Roadie.Api.Services
 
             sw.Stop();
             Logger.LogInformation($"ByIdAction: Label `{ label }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
-            return Task.FromResult(new OperationResult<Label>
+            return new OperationResult<Label>
             {
                 Data = result,
                 IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
-            });
+            };
         }
 
         private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
@@ -483,7 +483,7 @@ namespace Roadie.Api.Services
             return new OperationResult<Library.Models.Image>
             {
                 IsSuccess = !errors.Any(),
-                Data = MakeThumbnailImage(Configuration, HttpContext, id, "label", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),
+                Data = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "label", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };

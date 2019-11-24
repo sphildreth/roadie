@@ -13,6 +13,8 @@ namespace Roadie.Api.Services
 
         Task<PagedResult<UserList>> List(PagedRequest request);
 
+        Task<OperationResult<bool>> DeleteAllBookmarks(User roadieUser);
+
         Task<OperationResult<bool>> SetArtistBookmark(Guid artistId, User roadieUser, bool isBookmarked);
 
         Task<OperationResult<bool>> SetArtistDisliked(Guid artistId, User roadieUser, bool isDisliked);

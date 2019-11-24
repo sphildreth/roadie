@@ -8,9 +8,11 @@ namespace Roadie.Library.Data
     [Table("collection")]
     public partial class Collection : NamedEntityBase
     {
-        [Column("collectionCount")] public int CollectionCount { get; set; }
+        [Column("collectionCount")]
+        public int CollectionCount { get; set; }
 
-        [Column("collectionType")] public CollectionType? CollectionType { get; set; }
+        [Column("collectionType")] 
+        public CollectionType? CollectionType { get; set; }
 
         public ICollection<Comment> Comments { get; set; }
 
@@ -18,7 +20,9 @@ namespace Roadie.Library.Data
         [MaxLength(4000)]
         public string Description { get; set; }
 
-        [Column("edition")] [MaxLength(200)] public string Edition { get; set; }
+        [Column("edition")] 
+        [MaxLength(200)] 
+        public string Edition { get; set; }
 
         [Column("listInCSV", TypeName = "text")]
         [MaxLength(65535)]
@@ -28,7 +32,8 @@ namespace Roadie.Library.Data
         [MaxLength(200)]
         public string ListInCSVFormat { get; set; }
 
-        [Column("maintainerId")] public int MaintainerId { get; set; }
+        [Column("maintainerId")] 
+        public int MaintainerId { get; set; }
 
         public ICollection<CollectionRelease> Releases { get; set; }
     }

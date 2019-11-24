@@ -129,9 +129,8 @@ namespace Roadie.Api.Services
                              ArtistCount = artistCount,
                              CreatedDate = g.CreatedDate,
                              LastUpdated = g.LastUpdated,
-                             Thumbnail = MakeGenreThumbnailImage(Configuration, HttpContext, g.RoadieId)
+                             Thumbnail = ImageHelper.MakeGenreThumbnailImage(Configuration, HttpContext, g.RoadieId)
                          };
-
             GenreList[] rows;
             rowCount = rowCount ?? result.Count();
             if (doRandomize ?? false)
@@ -276,8 +275,8 @@ namespace Roadie.Api.Services
             var result = genre.Adapt<Genre>();
             result.AlternateNames = genre.AlternateNames;
             result.Tags = genre.Tags;
-            result.Thumbnail = MakeGenreThumbnailImage(Configuration, HttpContext, genre.RoadieId);
-            result.MediumThumbnail = MakeThumbnailImage(Configuration, HttpContext, id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            result.Thumbnail = ImageHelper.MakeGenreThumbnailImage(Configuration, HttpContext, genre.RoadieId);
+            result.MediumThumbnail = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);
             if (includes != null && includes.Any())
@@ -344,7 +343,7 @@ namespace Roadie.Api.Services
             return new OperationResult<Library.Models.Image>
             {
                 IsSuccess = !errors.Any(),
-                Data = MakeThumbnailImage(Configuration, HttpContext, id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),
+                Data = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };
