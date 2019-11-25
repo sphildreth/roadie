@@ -31,10 +31,14 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
                 ArtistSearchResult data = null;
                 if (response?.Data?.query?.pages?.Any() ?? false)
                 {
-                    data = new ArtistSearchResult
+                    var bio = response?.Data?.query?.pages.FirstOrDefault()?.extract;
+                    if (bio != null)
                     {
-                        Bio = response.Data.query.pages.First().extract
-                    };
+                        data = new ArtistSearchResult
+                        {
+                            Bio = response.Data.query.pages.First().extract
+                        };
+                    }
                 }
                 tcs.SetResult(new OperationResult<IEnumerable<ArtistSearchResult>>
                 {

@@ -17,6 +17,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Controllers
@@ -27,7 +28,6 @@ namespace Roadie.Api.Controllers
     [AllowAnonymous]
     public class AccountController : ControllerBase
     {
-        private readonly IConfiguration Configuration;
         private readonly ILogger<AccountController> Logger;
         private readonly SignInManager<ApplicationUser> SignInManager;
         private readonly ITokenService TokenService;
@@ -62,13 +62,12 @@ namespace Roadie.Api.Controllers
 
         private IRoadieSettings RoadieSettings { get; }
 
-        public AccountController(IAdminService adminService, UserManager<ApplicationUser> userManager,SignInManager<ApplicationUser> signInManager,
-                                 IConfiguration configuration, ILogger<AccountController> logger, ITokenService tokenService, 
+        public AccountController(IAdminService adminService, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
+                                 IConfiguration configuration, ILogger<AccountController> logger, ITokenService tokenService,
                                  ICacheManager cacheManager, IEmailSender emailSender, IHttpContext httpContext)
         {
             UserManager = userManager;
             SignInManager = signInManager;
-            Configuration = configuration;
             Logger = logger;
             TokenService = tokenService;
             CacheManager = cacheManager;
@@ -83,14 +82,20 @@ namespace Roadie.Api.Controllers
         [HttpGet("confirmemail")]
         public IActionResult ConfirmEmail(string userid, string code)
         {
-            var user = UserManager.FindByIdAsync(userid).Result;
-            var result = UserManager.ConfirmEmailAsync(user, code).Result;
-            if (result.Succeeded)
+            try
             {
-                Logger.LogTrace("User [{0}] Confirmed Email Successfully", userid);
-                return Content($"Email for {RoadieSettings.SiteName} account confirmed successfully!");
+                var user = UserManager.FindByIdAsync(userid).Result;
+                var result = UserManager.ConfirmEmailAsync(user, code).Result;
+                if (result.Succeeded)
+                {
+                    Logger.LogTrace("User [{0}] Confirmed Email Successfully", userid);
+                    return Content($"Email for {RoadieSettings.SiteName} account confirmed successfully!");
+                }
             }
-
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+            }
             return Content("Error while confirming your email!");
         }
 
@@ -99,6 +104,7 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> CreateToken([FromBody] LoginModel model)
         {
             if (ModelState.IsValid)
+            {
                 try
                 {
                     // Login user
@@ -129,7 +135,7 @@ namespace Roadie.Api.Controllers
                         }
 
                     CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-                    var avatarUrl =  $"{RoadieHttpContext.ImageBaseUrl}/user/{user.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
+                    var avatarUrl = $"{RoadieHttpContext.ImageBaseUrl}/user/{user.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
                     return Ok(new
                     {
                         Username = user.UserName,
@@ -150,7 +156,7 @@ namespace Roadie.Api.Controllers
                     Logger.LogError(ex, $"Error in CreateToken For User [{model.Username}]");
                     return BadRequest();
                 }
-
+            }
             return BadRequest(ModelState);
         }
 
@@ -159,17 +165,22 @@ namespace Roadie.Api.Controllers
         [Route("refreshtoken")]
         public async Task<IActionResult> RefreshToken()
         {
-            var username = User.Identity.Name ??
-                           User.Claims.Where(c => c.Properties.ContainsKey("unique_name")).Select(c => c.Value)
-                               .FirstOrDefault();
-
-            if (!string.IsNullOrWhiteSpace(username))
+            try
             {
-                var user = await UserManager.FindByNameAsync(username);
-                return Ok(await TokenService.GenerateToken(user, UserManager));
+                var username = User.Identity.Name ??
+                       User.Claims.Where(c => c.Properties.ContainsKey("unique_name")).Select(c => c.Value)
+                           .FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(username))
+                {
+                    var user = await UserManager.FindByNameAsync(username);
+                    return Ok(await TokenService.GenerateToken(user, UserManager));
+                }
+                ModelState.AddModelError("Authentication", "Authentication failed!");
             }
-
-            ModelState.AddModelError("Authentication", "Authentication failed!");
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+            }
             return BadRequest(ModelState);
         }
 
@@ -178,83 +189,89 @@ namespace Roadie.Api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterModel registerModel)
         {
-            if (ModelState.IsValid)
+            try
             {
-                var now = DateTime.UtcNow;
-                var user = new ApplicationUser
+                if (ModelState.IsValid)
                 {
-                    UserName = registerModel.Username,
-                    RegisteredOn = now,
-                    LastLogin = now,
-                    DoUseHtmlPlayer = true,
-                    Email = registerModel.Email
-                };
-
-                if(RoadieSettings.UseRegistrationTokens)
-                {
-                    var tokenValidation = await AdminService.ValidateInviteToken(registerModel.InviteToken);
-                    if(!tokenValidation.IsSuccess)
+                    var now = DateTime.UtcNow;
+                    var user = new ApplicationUser
                     {
-                        Logger.LogTrace("Invalid Invite Token");
-                        return StatusCode((int)HttpStatusCode.BadRequest, new { Title = "Invite Token Is Required" });
-                    }
-                }
+                        UserName = registerModel.Username,
+                        RegisteredOn = now,
+                        LastLogin = now,
+                        DoUseHtmlPlayer = true,
+                        Email = registerModel.Email
+                    };
 
-                var existinUserByUsername = await UserManager.FindByNameAsync(registerModel.Username);
-                if (existinUserByUsername != null)
-                {
-                    return StatusCode((int)HttpStatusCode.BadRequest, new { Title = "User With Username Already Exists!" });
-                }
-
-                var existingUserByEmail = await UserManager.FindByEmailAsync(registerModel.Email);
-                if(existingUserByEmail != null)
-                {
-                    return StatusCode((int)HttpStatusCode.BadRequest, new { Title = "User With Email Already Exists!" });
-                }
-
-                var identityResult = await UserManager.CreateAsync(user, registerModel.Password);
-                if (identityResult.Succeeded)
-                {
-                    if (user.Id == 1) await AdminService.DoInitialSetup(user, UserManager);
-                    try
+                    if (RoadieSettings.UseRegistrationTokens)
                     {
-                        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
-                        var callbackUrl = $"{BaseUrl}/auth/confirmemail?userId={user.Id}&code={code}";
-                        await EmailSender.SendEmailAsync(user.Email, $"Confirm your {RoadieSettings.SiteName} email",
-                            $"Please confirm your {RoadieSettings.SiteName} account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogError(ex, $"Error Sending Register Email to [{registerModel.Email}]");
+                        var tokenValidation = await AdminService.ValidateInviteToken(registerModel.InviteToken);
+                        if (!tokenValidation.IsSuccess)
+                        {
+                            Logger.LogTrace("Invalid Invite Token");
+                            return StatusCode((int)HttpStatusCode.BadRequest, new { Title = "Invite Token Is Required" });
+                        }
                     }
 
-                    await SignInManager.SignInAsync(user, false);
-                    var t = await TokenService.GenerateToken(user, UserManager);
-                    Logger.LogTrace($"Successfully created and authenticated User [{registerModel.Username}]");
-                    CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-                    var avatarUrl = $"{RoadieHttpContext.ImageBaseUrl}/user/{user.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
-                    if (registerModel.InviteToken.HasValue)
+                    var existinUserByUsername = await UserManager.FindByNameAsync(registerModel.Username);
+                    if (existinUserByUsername != null)
                     {
-                        await AdminService.UpdateInviteTokenUsed(registerModel.InviteToken);
+                        return StatusCode((int)HttpStatusCode.BadRequest, new { Title = "User With Username Already Exists!" });
                     }
-                    return Ok(new
-                    {
-                        Username = user.UserName,
-                        InstanceName = RoadieSettings.SiteName,
-                        RecentLimit = user.RecentlyPlayedLimit,
-                        user.RemoveTrackFromQueAfterPlayed,
-                        user.Email,
-                        user.LastLogin,
-                        avatarUrl,
-                        Token = t,
-                        user.Timeformat,
-                        user.Timezone
-                    });
-                }
 
-                return BadRequest(identityResult.Errors);
+                    var existingUserByEmail = await UserManager.FindByEmailAsync(registerModel.Email);
+                    if (existingUserByEmail != null)
+                    {
+                        return StatusCode((int)HttpStatusCode.BadRequest, new { Title = "User With Email Already Exists!" });
+                    }
+
+                    var identityResult = await UserManager.CreateAsync(user, registerModel.Password);
+                    if (identityResult.Succeeded)
+                    {
+                        if (user.Id == 1) await AdminService.DoInitialSetup(user, UserManager);
+                        try
+                        {
+                            var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+                            var callbackUrl = $"{BaseUrl}/auth/confirmemail?userId={user.Id}&code={code}";
+                            await EmailSender.SendEmailAsync(user.Email, $"Confirm your {RoadieSettings.SiteName} email",
+                                $"Please confirm your {RoadieSettings.SiteName} account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex, $"Error Sending Register Email to [{registerModel.Email}]");
+                        }
+
+                        await SignInManager.SignInAsync(user, false);
+                        var t = await TokenService.GenerateToken(user, UserManager);
+                        Logger.LogTrace($"Successfully created and authenticated User [{registerModel.Username}]");
+                        CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+                        var avatarUrl = $"{RoadieHttpContext.ImageBaseUrl}/user/{user.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
+                        if (registerModel.InviteToken.HasValue)
+                        {
+                            await AdminService.UpdateInviteTokenUsed(registerModel.InviteToken);
+                        }
+                        return Ok(new
+                        {
+                            Username = user.UserName,
+                            InstanceName = RoadieSettings.SiteName,
+                            RecentLimit = user.RecentlyPlayedLimit,
+                            user.RemoveTrackFromQueAfterPlayed,
+                            user.Email,
+                            user.LastLogin,
+                            avatarUrl,
+                            Token = t,
+                            user.Timeformat,
+                            user.Timezone
+                        });
+                    }
+
+                    return BadRequest(identityResult.Errors);
+                }
             }
-
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, $"Error In Register. Model [{0}]", JsonSerializer.Serialize(registerModel));
+            }
             return BadRequest(ModelState);
         }
 
@@ -265,41 +282,47 @@ namespace Roadie.Api.Controllers
             {
                 RoadieSettings.IsRegistrationClosed,
                 RoadieSettings.UseRegistrationTokens
-            }) ;
+            });
         }
-
 
         [HttpPost("resetpassword")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel resetPasswordModel)
         {
-            if (ModelState.IsValid)
+            try
             {
-                var user = await UserManager.FindByNameAsync(resetPasswordModel.Username);
-                var token = Encoding.ASCII.GetString(WebEncoders.Base64UrlDecode(resetPasswordModel.Token));
-                var identityResult = await UserManager.ResetPasswordAsync(user, token, resetPasswordModel.Password);
-                if (identityResult.Succeeded)
+                if (ModelState.IsValid)
                 {
-                    CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
-                    await SignInManager.SignInAsync(user, false);
-                    var avatarUrl =
-                        $"{RoadieHttpContext.ImageBaseUrl}/user/{user.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
-                    var t = await TokenService.GenerateToken(user, UserManager);
-                    return Ok(new
+                    var user = await UserManager.FindByNameAsync(resetPasswordModel.Username);
+                    var token = Encoding.ASCII.GetString(WebEncoders.Base64UrlDecode(resetPasswordModel.Token));
+                    var identityResult = await UserManager.ResetPasswordAsync(user, token, resetPasswordModel.Password);
+                    if (identityResult.Succeeded)
                     {
-                        Username = user.UserName,
-                        InstanceName = RoadieSettings.SiteName,
-                        RecentLimit = user.RecentlyPlayedLimit,
-                        user.RemoveTrackFromQueAfterPlayed,
-                        user.Email,
-                        user.LastLogin,
-                        avatarUrl,
-                        Token = t,
-                        user.Timeformat,
-                        user.Timezone
-                    });
-                }
+                        CacheManager.ClearRegion(EntityControllerBase.ControllerCacheRegionUrn);
+                        await SignInManager.SignInAsync(user, false);
+                        var avatarUrl =
+                            $"{RoadieHttpContext.ImageBaseUrl}/user/{user.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
+                        var t = await TokenService.GenerateToken(user, UserManager);
+                        return Ok(new
+                        {
+                            Username = user.UserName,
+                            InstanceName = RoadieSettings.SiteName,
+                            RecentLimit = user.RecentlyPlayedLimit,
+                            user.RemoveTrackFromQueAfterPlayed,
+                            user.Email,
+                            user.LastLogin,
+                            avatarUrl,
+                            Token = t,
+                            user.Timeformat,
+                            user.Timezone
+                        });
+                    }
 
-                return BadRequest(identityResult.Errors);
+                    return BadRequest(identityResult.Errors);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, $"Error In ResetPassword. Model [{0}]", JsonSerializer.Serialize(resetPasswordModel));
             }
 
             return BadRequest(ModelState);
@@ -308,29 +331,28 @@ namespace Roadie.Api.Controllers
         [HttpGet("sendpasswordresetemail")]
         public async Task<IActionResult> SendPasswordResetEmail(string username, string callbackUrl)
         {
-            var user = await UserManager.FindByNameAsync(username);
-            if (user == null)
-            {
-                Logger.LogError($"Unable to find user by username [{username}]");
-                return StatusCode(500);
-            }
-
-            var token = await UserManager.GeneratePasswordResetTokenAsync(user);
-            callbackUrl = callbackUrl + "?username=" + username + "&token=" +
-                          WebEncoders.Base64UrlEncode(Encoding.ASCII.GetBytes(token));
             try
             {
-                await EmailSender.SendEmailAsync(user.Email, $"Reset your {RoadieSettings.SiteName} password",
-                    $"A request has been made to reset your password for your {RoadieSettings.SiteName} account. To proceed <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>click here</a>.");
-                Logger.LogTrace("User [{0}] Email [{1}] Requested Password Reset Callback [{2}]", username,
-                    user.Email, callbackUrl);
-                return Ok();
+                var user = await UserManager.FindByNameAsync(username);
+                if (user == null)
+                {
+                    Logger.LogError($"Unable to find user by username [{username}]");
+                    return StatusCode(500);
+                }
+
+                var token = await UserManager.GeneratePasswordResetTokenAsync(user);
+                callbackUrl = callbackUrl + "?username=" + username + "&token=" +
+                              WebEncoders.Base64UrlEncode(Encoding.ASCII.GetBytes(token));
+                    await EmailSender.SendEmailAsync(user.Email, $"Reset your {RoadieSettings.SiteName} password",
+                        $"A request has been made to reset your password for your {RoadieSettings.SiteName} account. To proceed <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>click here</a>.");
+                    Logger.LogTrace("User [{0}] Email [{1}] Requested Password Reset Callback [{2}]", username,
+                        user.Email, callbackUrl);
+                    return Ok();
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex);
             }
-
             return StatusCode(500);
         }
     }

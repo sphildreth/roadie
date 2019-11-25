@@ -791,7 +791,7 @@ namespace Roadie.Library.Engines
                 {
                     releaseImages.Add(new Imaging.Image()
                     {
-                        Bytes = metadataImage.Data
+                        Bytes = metadataImage?.Data
                     });
                 }
             }

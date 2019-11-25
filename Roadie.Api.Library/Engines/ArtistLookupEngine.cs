@@ -548,29 +548,40 @@ namespace Roadie.Library.Engines
                     var discogsResult = await DiscogsArtistSearchEngine.PerformArtistSearch(result.Name, 1);
                     if (discogsResult.IsSuccess)
                     {
-                        var d = discogsResult.Data.First();
-                        if (d.Urls != null) result.URLs = result.URLs.AddToDelimitedList(d.Urls);
-                        if (d.ImageUrls != null) artistImageUrls.AddRange(d.ImageUrls);
-                        if (d.AlternateNames != null)
+                        var d = discogsResult?.Data?.FirstOrDefault();
+                        if (d != null)
                         {
-                            result.AlternateNames = result.AlternateNames.AddToDelimitedList(d.AlternateNames);
+                            if (d.Urls != null)
+                            {
+                                result.URLs = result.URLs.AddToDelimitedList(d.Urls);
+                            }
+                            if (d.ImageUrls != null)
+                            {
+                                artistImageUrls.AddRange(d.ImageUrls);
+                            }
+                            if (d.AlternateNames != null)
+                            {
+                                result.AlternateNames = result.AlternateNames.AddToDelimitedList(d.AlternateNames);
+                            }
+                            if (!string.IsNullOrEmpty(d.ArtistName) &&
+                                !d.ArtistName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
+                            {
+                                result.AlternateNames.AddToDelimitedList(new[] { d.ArtistName });
+                            }
+                            result.CopyTo(new Artist
+                            {
+                                Profile = HttpEncoder.HtmlEncode(d.Profile),
+                                DiscogsId = d.DiscogsId,
+                                Name = result.Name ?? d.ArtistName,
+                                RealName = result.RealName ?? d.ArtistRealName,
+                                ArtistType = result.ArtistType ?? d.ArtistType
+                            });
                         }
-                        if (!string.IsNullOrEmpty(d.ArtistName) &&
-                            !d.ArtistName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
-                        {
-                            result.AlternateNames.AddToDelimitedList(new[] { d.ArtistName });
-                        }
-                        result.CopyTo(new Artist
-                        {
-                            Profile = HttpEncoder.HtmlEncode(d.Profile),
-                            DiscogsId = d.DiscogsId,
-                            Name = result.Name ?? d.ArtistName,
-                            RealName = result.RealName ?? d.ArtistRealName,
-                            ArtistType = result.ArtistType ?? d.ArtistType
-                        });
                     }
-
-                    if (discogsResult.Errors != null) resultsExceptions.AddRange(discogsResult.Errors);
+                    if (discogsResult.Errors != null)
+                    {
+                        resultsExceptions.AddRange(discogsResult.Errors);
+                    }
                     sw2.Stop();
                     Logger.LogTrace($"PerformMetaDataProvidersArtistSearch: DiscogsArtistSearchEngine Complete [{ sw2.ElapsedMilliseconds }]");
                 }
