@@ -37,7 +37,8 @@ Core Features:
 
 Database Providers:
 ---------
-* File (no database server required, one table per file in a folder of your choice)
+* SQLite
+* File (one table per file in a folder of your choice)
 * MySQL/MariaDB
 
 Metadata Providers:
