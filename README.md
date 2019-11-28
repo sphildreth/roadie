@@ -9,9 +9,9 @@
  
 Roadie
 ======
-Powerful API Music Server.
+Powerful API Music Server. Serve (stream) your high quality MP3 files.
 
-API server that works well with [roadie-vuejs](https://github.com/sphildreth/roadie-vuejs) and also has a full [Subsonic compatible API](http://www.subsonic.org/pages/apps.jsp) that works with many Subsonic mobile applications. Roadie was built to be able to handle music collections with [hundreds of thousands of tracks](http://www.redferret.net/?page_id=38781).
+Roadie is an API server that works well with [roadie-vuejs](https://github.com/sphildreth/roadie-vuejs) as a graphical UI Front End and also has a full [Subsonic compatible API](http://www.subsonic.org/pages/apps.jsp) that works with many Subsonic mobile applications. Roadie was built to be able to handle music collections with [hundreds of thousands of tracks](http://www.redferret.net/?page_id=38781).
 
 Demo Site:
 ---------
@@ -37,7 +37,8 @@ Core Features:
 
 Database Providers:
 ---------
-* File (no database server required, one table per file in a folder of your choice)
+* SQLite
+* File (one table per file in a folder of your choice)
 * MySQL/MariaDB
 
 Metadata Providers:
