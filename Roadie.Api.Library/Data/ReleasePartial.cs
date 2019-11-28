@@ -3,7 +3,6 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 
 namespace Roadie.Library.Data
 {
@@ -106,7 +105,7 @@ namespace Roadie.Library.Data
 
         public override string ToString()
         {
-            return $"Id [{Id}], Status [{ Status }], LibraryStatus [{ LibraryStatus }], Title [{Title}], SortTitle [{ SortTitleValue }], Release Date [{ReleaseYear}]";
+            return $"Id [{Id}], Status [{ Status }], LibraryStatus [{ LibraryStatus }], Title [{Title}], SortTitle [{ SortTitle }], Release Date [{ReleaseYear}]";
         }
     }
 }

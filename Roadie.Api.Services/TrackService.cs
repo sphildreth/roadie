@@ -110,7 +110,7 @@ namespace Roadie.Api.Services
             return result;
         }
 
-        public async Task<OperationResult<Track>> ById(User roadieUser, Guid id, IEnumerable<string> includes)
+        public async Task<OperationResult<Track>> ById(Library.Models.Users.User roadieUser, Guid id, IEnumerable<string> includes)
         {
             var timings = new Dictionary<string, long>();
             var tsw = new Stopwatch();
@@ -144,9 +144,7 @@ namespace Roadie.Api.Services
                 var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Track);
                 if (userBookmarkResult.IsSuccess)
                 {
-                    result.Data.UserBookmarked =
-                        userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == track.RoadieId.ToString()) !=
-                        null;
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x?.Bookmark?.Value == track?.RoadieId.ToString()) != null;
                 }
                 tsw.Stop();
                 timings.Add("userBookmarks", tsw.ElapsedMilliseconds);
@@ -199,7 +197,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<TrackList>> List(PagedRequest request, User roadieUser, bool? doRandomize = false, Guid? releaseId = null)
+        public async Task<Library.Models.Pagination.PagedResult<TrackList>> List(PagedRequest request, Library.Models.Users.User roadieUser, bool? doRandomize = false, Guid? releaseId = null)
         {
             try
             {
@@ -396,7 +394,7 @@ namespace Roadie.Api.Services
                                           LibraryStatus = r.LibraryStatus,
                                           MediaCount = r.MediaCount,
                                           Rating = r.Rating,
-                                          Rank = r.Rank,
+                                          Rank = (double?)r.Rank,
                                           ReleaseDateDateTime = r.ReleaseDate,
                                           ReleasePlayUrl = $"{HttpContext.BaseUrl}/play/release/{r.RoadieId}",
                                           Status = r.Status,
@@ -413,7 +411,7 @@ namespace Roadie.Api.Services
                                               Artist = new DataToken
                                               { Text = trackArtist.Name, Value = trackArtist.RoadieId.ToString() },
                                               Rating = trackArtist.Rating,
-                                              Rank = trackArtist.Rank,
+                                              Rank = (double?)trackArtist.Rank,
                                               CreatedDate = trackArtist.CreatedDate,
                                               LastUpdated = trackArtist.LastUpdated,
                                               LastPlayed = trackArtist.LastPlayed,
@@ -430,7 +428,7 @@ namespace Roadie.Api.Services
                                           Artist = new DataToken
                                           { Text = releaseArtist.Name, Value = releaseArtist.RoadieId.ToString() },
                                           Rating = releaseArtist.Rating,
-                                          Rank = releaseArtist.Rank,
+                                          Rank = (double?)releaseArtist.Rank,
                                           CreatedDate = releaseArtist.CreatedDate,
                                           LastUpdated = releaseArtist.LastUpdated,
                                           LastPlayed = releaseArtist.LastPlayed,
@@ -489,7 +487,7 @@ namespace Roadie.Api.Services
 
                 if (!doRandomize ?? false)
                 {
-                    if (request.Action == User.ActionKeyUserRated)
+                    if (request.Action == Library.Models.Users.User.ActionKeyUserRated)
                     {
                         sortBy = string.IsNullOrEmpty(request.Sort)
                             ? request.OrderValue(new Dictionary<string, string> { { "UserTrack.Rating", "DESC" }, { "MediaNumber", "ASC" }, { "TrackNumber", "ASC" } })
@@ -645,7 +643,7 @@ namespace Roadie.Api.Services
         /// <summary>
         ///     Fast as possible check if exists and return minimum information on Track
         /// </summary>
-        public OperationResult<Track> StreamCheckAndInfo(User roadieUser, Guid id)
+        public OperationResult<Track> StreamCheckAndInfo(Library.Models.Users.User roadieUser, Guid id)
         {
             var track = DbContext.Tracks.FirstOrDefault(x => x.RoadieId == id);
             if (track == null)
@@ -660,7 +658,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes, User roadieUser)
+        public async Task<OperationResult<TrackStreamInfo>> TrackStreamInfo(Guid trackId, long beginBytes, long endBytes, Library.Models.Users.User roadieUser)
         {
             var track = DbContext.Tracks.FirstOrDefault(x => x.RoadieId == trackId);
             if (!(track?.IsValid ?? true))
@@ -672,7 +670,7 @@ namespace Roadie.Api.Services
                                select r).FirstOrDefault();
                 if (!release.IsLocked ?? false && roadieUser != null)
                 {
-                    await AdminService.ScanRelease(new ApplicationUser
+                    await AdminService.ScanRelease(new Library.Identity.User
                     {
                         Id = roadieUser.Id.Value
                     }, release.RoadieId, false, true);
@@ -711,7 +709,7 @@ namespace Roadie.Api.Services
                                select r).FirstOrDefault();
                 if (!release.IsLocked ?? false && roadieUser != null)
                 {
-                    await AdminService.ScanRelease(new ApplicationUser
+                    await AdminService.ScanRelease(new Library.Identity.User
                     {
                         Id = roadieUser.Id.Value
                     }, release.RoadieId, false, true);
@@ -799,7 +797,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> UpdateTrack(User user, Track model)
+        public async Task<OperationResult<bool>> UpdateTrack(Library.Models.Users.User user, Track model)
         {
             var didChangeTrack = false;
             var sw = new Stopwatch();

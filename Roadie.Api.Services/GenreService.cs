@@ -38,7 +38,7 @@ namespace Roadie.Api.Services
         {
         }
 
-        public async Task<OperationResult<Genre>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
+        public async Task<OperationResult<Genre>> ById(Library.Models.Users.User roadieUser, Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
@@ -58,7 +58,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> Delete(ApplicationUser user, Guid id)
+        public async Task<OperationResult<bool>> Delete(Library.Identity.User user, Guid id)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -84,7 +84,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<GenreList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false)
+        public async Task<Library.Models.Pagination.PagedResult<GenreList>> List(Library.Models.Users.User roadieUser, PagedRequest request, bool? doRandomize = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -161,12 +161,12 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<Library.Models.Image>> SetGenreImageByUrl(User user, Guid id, string imageUrl)
+        public async Task<OperationResult<Library.Models.Image>> SetGenreImageByUrl(Library.Models.Users.User user, Guid id, string imageUrl)
         {
             return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
 
-        public async Task<OperationResult<bool>> UpdateGenre(User user, Genre model)
+        public async Task<OperationResult<bool>> UpdateGenre(Library.Models.Users.User user, Genre model)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -243,7 +243,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Library.Models.Image>> UploadGenreImage(User user, Guid id, IFormFile file)
+        public async Task<OperationResult<Library.Models.Image>> UploadGenreImage(Library.Models.Users.User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
             using (var ms = new MemoryStream())
@@ -309,7 +309,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
+        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(Library.Models.Users.User user, Guid id, byte[] imageBytes)
         {
             var sw = new Stopwatch();
             sw.Start();

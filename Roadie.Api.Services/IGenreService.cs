@@ -12,16 +12,16 @@ namespace Roadie.Api.Services
 {
     public interface IGenreService
     {
-        Task<OperationResult<Genre>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null);
+        Task<OperationResult<Genre>> ById(Library.Models.Users.User roadieUser, Guid id, IEnumerable<string> includes = null);
 
-        Task<OperationResult<bool>> Delete(ApplicationUser user, Guid id);
+        Task<OperationResult<bool>> Delete(Library.Identity.User user, Guid id);
 
-        Task<PagedResult<GenreList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false);
+        Task<PagedResult<GenreList>> List(Library.Models.Users.User roadieUser, PagedRequest request, bool? doRandomize = false);
 
-        Task<OperationResult<Image>> SetGenreImageByUrl(User user, Guid id, string imageUrl);
+        Task<OperationResult<Image>> SetGenreImageByUrl(Library.Models.Users.User user, Guid id, string imageUrl);
 
-        Task<OperationResult<bool>> UpdateGenre(User user, Genre model);
+        Task<OperationResult<bool>> UpdateGenre(Library.Models.Users.User user, Genre model);
 
-        Task<OperationResult<Image>> UploadGenreImage(User user, Guid id, IFormFile file);
+        Task<OperationResult<Image>> UploadGenreImage(Library.Models.Users.User user, Guid id, IFormFile file);
     }
 }

@@ -24,7 +24,7 @@ namespace Roadie.Api.Controllers
         private IPlaylistService PlaylistService { get; }
 
         public PlaylistController(IPlaylistService playlistService, ILogger<PlaylistController> logger, ICacheManager cacheManager,
-                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+                    UserManager<User> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -82,7 +82,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await PlaylistService.ById(await CurrentUserModel(), id,(inc ?? Playlist.DefaultIncludes).ToLower().Split(","));
+            var result = await PlaylistService.ById(await CurrentUserModel(), id, (inc ?? Playlist.DefaultIncludes).ToLower().Split(","));
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();

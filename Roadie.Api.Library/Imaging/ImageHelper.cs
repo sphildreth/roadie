@@ -49,7 +49,7 @@ namespace Roadie.Library.Imaging
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"Error Converting Image to Jpg [{ ex.Message }]");
+                Trace.WriteLine($"Error Converting Image to Jpg [{ ex.Message }]", "Warning");
             }
             return null;
         }
@@ -74,7 +74,7 @@ namespace Roadie.Library.Imaging
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"Error Converting Image to Gif [{ ex.Message }]");
+                Trace.WriteLine($"Error Converting Image to Gif [{ ex.Message }]", "Warning");
             }
             return null;
         }
@@ -293,7 +293,7 @@ namespace Roadie.Library.Imaging
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"Error Resizing Image [{ex}]");
+                Trace.WriteLine($"Error Resizing Image [{ex}]", "Warning");
             }
             return null;
         }
@@ -312,7 +312,7 @@ namespace Roadie.Library.Imaging
             var result = ImageHelper.ResizeImage(ImageHelper.ConvertToJpegFormat(imageBytes), width, height, true)?.Item2;
             if (result?.Length >= ImageHelper.MaximumThumbnailByteSize)
             {
-                Trace.WriteLine($"Thumbnail larger than maximum size after resizing to [{configuration.ThumbnailImageSize.Width}x{configuration.ThumbnailImageSize.Height}] Thumbnail Size [{result.Length}]");
+                Trace.WriteLine($"Thumbnail larger than maximum size after resizing to [{configuration.ThumbnailImageSize.Width}x{configuration.ThumbnailImageSize.Height}] Thumbnail Size [{result.Length}]", "Warning");
                 result = new byte[0];
             }
             return result;

@@ -178,7 +178,7 @@ namespace Roadie.Api.Services
         public async Task<FileOperationResult<IImage>> UserImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
         {
             return await GetImageFileOperation("UserById",
-                ApplicationUser.CacheRegionUrn(id),
+                User.CacheRegionUrn(id),
                 id,
                 width,
                 height,
@@ -206,7 +206,7 @@ namespace Roadie.Api.Services
                     artistFolder = artist.ArtistFileFolder(Configuration);
                     if (!Directory.Exists(artistFolder))
                     {
-                        Logger.LogTrace($"Artist Folder [{artistFolder}], Not Found For Artist `{artist}`");
+                        Logger.LogWarning($"Artist Folder [{artistFolder}], Not Found For Artist `{artist}`");
                     }
                     else
                     {
@@ -257,7 +257,7 @@ namespace Roadie.Api.Services
                     artistFolder = artist.ArtistFileFolder(Configuration);
                     if (!Directory.Exists(artistFolder))
                     {
-                        Logger.LogTrace($"Artist Folder [{artistFolder}], Not Found For Artist `{artist}`");
+                        Logger.LogWarning($"Artist Folder [{artistFolder}], Not Found For Artist `{artist}`");
                     }
                     else
                     {
@@ -545,7 +545,7 @@ namespace Roadie.Api.Services
                     artistFolder = release.Artist.ArtistFileFolder(Configuration);
                     if (!Directory.Exists(artistFolder))
                     {
-                        Logger.LogTrace($"Artist Folder [{artistFolder}], Not Found For Artist `{release.Artist}`");
+                        Logger.LogWarning($"Artist Folder [{artistFolder}], Not Found For Artist `{release.Artist}`");
                     }
                     else
                     {
@@ -605,7 +605,7 @@ namespace Roadie.Api.Services
                     artistFolder = release.Artist.ArtistFileFolder(Configuration);
                     if (!Directory.Exists(artistFolder))
                     {
-                        Logger.LogTrace($"Artist Folder [{artistFolder}], Not Found For Artist `{release.Artist}`");
+                        Logger.LogWarning($"Artist Folder [{artistFolder}], Not Found For Artist `{release.Artist}`");
                     }
                     else
                     {

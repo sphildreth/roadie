@@ -25,7 +25,7 @@ namespace Roadie.Api.Controllers
 
         public CollectionController(ICollectionService collectionService, ILogger<CollectionController> logger,
                     ICacheManager cacheManager,
-            UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+            UserManager<User> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;

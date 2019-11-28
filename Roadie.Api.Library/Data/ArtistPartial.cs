@@ -3,8 +3,6 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Security.Cryptography;
 
 namespace Roadie.Library.Data
 {
@@ -28,8 +26,6 @@ namespace Roadie.Library.Data
         public bool IsNew => Id < 1;
 
         public bool IsValid => !string.IsNullOrEmpty(Name);
-
-        public string SortNameValue => string.IsNullOrEmpty(SortName) ? Name : SortName;
 
         public string GroupBy => SortNameValue.Substring(0, 1).ToUpper();
 
@@ -55,7 +51,7 @@ namespace Roadie.Library.Data
 
         public override string ToString()
         {
-            return $"Id [{ Id }], Status [{ Status }], Name [{ Name }], SortName [{ SortNameValue}], RoadieId [{ RoadieId}]";
+            return $"Id [{ Id }], Status [{ Status }], Name [{ Name }], SortName [{ SortName }], RoadieId [{ RoadieId}]";
         }
     }
 }

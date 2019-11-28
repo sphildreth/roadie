@@ -86,7 +86,7 @@ namespace Roadie.Library.Models
 
         [MaxLength(65535)] public string Profile { get; set; }
 
-        public decimal? Rank { get; set; }
+        public double? Rank { get; set; }
 
         /// <summary>
         ///     The Position of this Artist as ranked against other Artists (highest ranking Artist is #1)

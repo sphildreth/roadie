@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Mapster;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -40,6 +41,7 @@ namespace Roadie.Api.Services
         private ILabelService LabelService { get; }
         private IArtistLookupEngine ArtistLookupEngine { get; }
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
+        private IBookmarkService BookmarkService { get; }
 
         private IReleaseService ReleaseService { get; }
 
@@ -47,7 +49,7 @@ namespace Roadie.Api.Services
                             IRoadieDbContext context, ICacheManager cacheManager, ILogger<ArtistService> logger,
                             IHubContext<ScanActivityHub> scanActivityHub, IFileDirectoryProcessorService fileDirectoryProcessorService, IArtistService artistService,
                             IReleaseService releaseService, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine, 
-                            ILabelService labelService, IGenreService genreService
+                            ILabelService labelService, IGenreService genreService, IBookmarkService bookmarkService
         )
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
@@ -62,9 +64,10 @@ namespace Roadie.Api.Services
             ArtistLookupEngine = artistLookupEngine;
             ReleaseLookupEngine = releaseLookupEngine;
             FileDirectoryProcessorService = fileDirectoryProcessorService;
+            BookmarkService = bookmarkService;
         }
 
-        public async Task<OperationResult<bool>> DeleteArtist(ApplicationUser user, Guid artistId, bool deleteFolder)
+        public async Task<OperationResult<bool>> DeleteArtist(User user, Guid artistId, bool deleteFolder)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -105,7 +108,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteArtistReleases(ApplicationUser user, Guid artistId, bool doDeleteFiles = false)
+        public async Task<OperationResult<bool>> DeleteArtistReleases(User user, Guid artistId, bool doDeleteFiles = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -140,7 +143,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteArtistSecondaryImage(ApplicationUser user, Guid artistId, int index)
+        public async Task<OperationResult<bool>> DeleteArtistSecondaryImage(User user, Guid artistId, int index)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -181,7 +184,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteGenre(ApplicationUser user, Guid genreId)
+        public async Task<OperationResult<bool>> DeleteGenre(User user, Guid genreId)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -205,7 +208,7 @@ namespace Roadie.Api.Services
                 errors.Add(ex);
             }
 
-            sw.Stop();
+            sw.Stop();            
             await LogAndPublish($"DeleteGenre `{genre}`, By User `{user}`", LogLevel.Information);
             return new OperationResult<bool>
             {
@@ -216,7 +219,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteLabel(ApplicationUser user, Guid labelId)
+        public async Task<OperationResult<bool>> DeleteLabel(User user, Guid labelId)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -251,7 +254,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteRelease(ApplicationUser user, Guid releaseId, bool? doDeleteFiles)
+        public async Task<OperationResult<bool>> DeleteRelease(User user, Guid releaseId, bool? doDeleteFiles)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -266,7 +269,6 @@ namespace Roadie.Api.Services
                     await LogAndPublish($"DeleteRelease Unknown Release [{releaseId}]", LogLevel.Warning);
                     return new OperationResult<bool>(true, $"Release Not Found [{releaseId}]");
                 }
-
                 await ReleaseService.Delete(user, release, doDeleteFiles ?? false);
             }
             catch (Exception ex)
@@ -288,7 +290,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteReleaseSecondaryImage(ApplicationUser user, Guid releaseId, int index)
+        public async Task<OperationResult<bool>> DeleteReleaseSecondaryImage(User user, Guid releaseId, int index)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -329,7 +331,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteTracks(ApplicationUser user, IEnumerable<Guid> trackIds, bool? doDeleteFile)
+        public async Task<OperationResult<bool>> DeleteTracks(User user, IEnumerable<Guid> trackIds, bool? doDeleteFile)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -376,8 +378,8 @@ namespace Roadie.Api.Services
                             Logger.LogError(ex, string.Format("Error Deleting File [{0}] For Track [{1}] Exception [{2}]", trackPath, track.Id, ex.Serialize()));
                         }
                     }
-
                     await ReleaseService.ScanReleaseFolder(user, track.ReleaseMedia.Release.RoadieId, false, track.ReleaseMedia.Release);
+                    await BookmarkService.RemoveAllBookmarksForItem(BookmarkType.Track, track.Id);
                 }
                 catch (Exception ex)
                 {
@@ -399,7 +401,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteUser(ApplicationUser applicationUser, Guid userId)
+        public async Task<OperationResult<bool>> DeleteUser(User applicationUser, Guid userId)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -452,20 +454,31 @@ namespace Roadie.Api.Services
         /// <summary>
         ///     This is a very simple way to seed the database or setup configuration when the first (who becomes "Admin") user registers
         /// </summary>
-        public async Task<OperationResult<bool>> DoInitialSetup(ApplicationUser user, UserManager<ApplicationUser> userManager)
+        public async Task<OperationResult<bool>> DoInitialSetup(User user, UserManager<User> userManager)
         {
             var sw = new Stopwatch();
             sw.Start();
 
             // Create user roles
-            DbContext.UserRoles.Add(new ApplicationRole
+            DbContext.UserRoles.Add(new UserRole
             {
+                Id = 1,
+                Status = (short)Statuses.Ok,
+                CreatedDate = DateTime.UtcNow,
+                IsLocked = false,
+                RoadieId = Guid.NewGuid().ToString(),
                 Name = "Admin",
                 Description = "Users with Administrative (full) access",
                 NormalizedName = "ADMIN"
             });
-            DbContext.UserRoles.Add(new ApplicationRole
+
+            DbContext.UserRoles.Add(new UserRole
             {
+                Id = 2,
+                Status = (short)Statuses.Ok,
+                CreatedDate = DateTime.UtcNow,
+                IsLocked = false,
+                RoadieId = Guid.NewGuid().ToString(),
                 Name = "Editor",
                 Description = "Users who have Edit Permissions",
                 NormalizedName = "EDITOR"
@@ -512,7 +525,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleases(ApplicationUser user)
+        public Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleases(User user)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
@@ -606,6 +619,14 @@ namespace Roadie.Api.Services
                     Directory.CreateDirectory(Configuration.LabelImageFolder);
                     Logger.LogInformation($"Created Label Image Folder [{Configuration.LabelImageFolder}]");
                 }
+                if (Configuration.DbContextToUse != DbContexts.MySQL)
+                {
+                    if (!Directory.Exists(Configuration.FileDatabaseOptions.DatabaseFolder))
+                    {
+                        Directory.CreateDirectory(Configuration.FileDatabaseOptions.DatabaseFolder);
+                        Logger.LogInformation($"Created File Database Folder [{Configuration.FileDatabaseOptions.DatabaseFolder}]");
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -619,14 +640,14 @@ namespace Roadie.Api.Services
             Logger.LogInformation($"Administration startup tasks completed, elapsed time [{ sw.ElapsedMilliseconds }]");
         }
 
-        public async Task<OperationResult<bool>> ScanAllCollections(ApplicationUser user, bool isReadOnly = false,
+        public async Task<OperationResult<bool>> ScanAllCollections(User user, bool isReadOnly = false,
             bool doPurgeFirst = false)
         {
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
 
-            var collections = DbContext.Collections.Where(x => x.IsLocked == false).ToArray();
+            var collections = await DbContext.Collections.Where(x => x.IsLocked == false).ToArrayAsync();
             var updatedReleaseIds = new List<int>();
             foreach (var collection in collections)
                 try
@@ -659,7 +680,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> ScanArtist(ApplicationUser user, Guid artistId, bool isReadOnly = false)
+        public async Task<OperationResult<bool>> ScanArtist(User user, Guid artistId, bool isReadOnly = false)
         {
             var sw = Stopwatch.StartNew();
 
@@ -702,7 +723,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> ScanArtists(ApplicationUser user, IEnumerable<Guid> artistIds, bool isReadOnly = false)
+        public async Task<OperationResult<bool>> ScanArtists(User user, IEnumerable<Guid> artistIds, bool isReadOnly = false)
         {
             var sw = Stopwatch.StartNew();
 
@@ -728,7 +749,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> ScanCollection(ApplicationUser user, Guid collectionId, bool isReadOnly = false, bool doPurgeFirst = false, bool doUpdateRanks = true)
+        public async Task<OperationResult<bool>> ScanCollection(User user, Guid collectionId, bool isReadOnly = false, bool doPurgeFirst = false, bool doUpdateRanks = true)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -749,7 +770,7 @@ namespace Roadie.Api.Services
                 if (doPurgeFirst)
                 {
                     await LogAndPublish($"ScanCollection Purging Collection [{collectionId}]", LogLevel.Warning);
-                    var crs = DbContext.CollectionReleases.Where(x => x.CollectionId == collection.Id).ToArray();
+                    var crs = await DbContext.CollectionReleases.Where(x => x.CollectionId == collection.Id).ToArrayAsync();
                     DbContext.CollectionReleases.RemoveRange(crs);
                     await DbContext.SaveChangesAsync();
                 }
@@ -907,19 +928,19 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> ScanInboundFolder(ApplicationUser user, bool isReadOnly = false)
+        public async Task<OperationResult<bool>> ScanInboundFolder(User user, bool isReadOnly = false)
         {
             var d = new DirectoryInfo(Configuration.InboundFolder);
             return await ScanFolder(user, d, isReadOnly);
         }
 
-        public async Task<OperationResult<bool>> ScanLibraryFolder(ApplicationUser user, bool isReadOnly = false)
+        public async Task<OperationResult<bool>> ScanLibraryFolder(User user, bool isReadOnly = false)
         {
             var d = new DirectoryInfo(Configuration.LibraryFolder);
             return await ScanFolder(user, d, isReadOnly, false);
         }
 
-        public async Task<OperationResult<bool>> ScanRelease(ApplicationUser user, Guid releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
+        public async Task<OperationResult<bool>> ScanRelease(User user, Guid releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -964,7 +985,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> ScanReleases(ApplicationUser user, IEnumerable<Guid> releaseIds, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
+        public async Task<OperationResult<bool>> ScanReleases(User user, IEnumerable<Guid> releaseIds, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
         {
             var sw = Stopwatch.StartNew();
 
@@ -1080,7 +1101,7 @@ namespace Roadie.Api.Services
             await ScanActivityHub.Clients.All.SendAsync("SendSystemActivity", message);
         }
 
-        private async Task<OperationResult<bool>> ScanFolder(ApplicationUser user, DirectoryInfo d, bool isReadOnly, bool doDeleteFiles = true)
+        private async Task<OperationResult<bool>> ScanFolder(User user, DirectoryInfo d, bool isReadOnly, bool doDeleteFiles = true)
         {
             var sw = new Stopwatch();
             sw.Start();

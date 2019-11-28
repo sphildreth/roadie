@@ -20,7 +20,7 @@ namespace Roadie.Library.Models.Users
         public Image Thumbnail { get; set; }
         public DataToken User { get; set; }
 
-        public static UserList FromDataUser(ApplicationUser user, Image thumbnail)
+        public static UserList FromDataUser(Identity.User user, Image thumbnail)
         {
             return new UserList
             {

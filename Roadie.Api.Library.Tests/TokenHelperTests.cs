@@ -18,7 +18,7 @@ namespace Roadie.Library.Tests
         {
             var sw = Stopwatch.StartNew();
 
-            var token = ServiceBase.TrackPlayToken(new ApplicationUser
+            var token = ServiceBase.TrackPlayToken(new User
             {
                 Id = 1,
                 CreatedDate = DateTime.UtcNow

@@ -1,5 +1,6 @@
 ﻿using Roadie.Library.Enums;
 using Roadie.Library.Models.Users;
+using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,7 +16,7 @@ namespace Roadie.Library.Models
         public DateTime? LastPlayed { get; set; }
         public IEnumerable<string> MissingReleasesForCollection { get; set; }
         public int? PlayedCount { get; set; }
-        public decimal? Rank { get; set; }
+        public double? Rank { get; set; }
         public short? Rating { get; set; }
         public int? ReleaseCount { get; set; }
         public Image Thumbnail { get; set; }
@@ -37,7 +38,7 @@ namespace Roadie.Library.Models
                 },
                 Thumbnail = thumbnail,
                 Rating = artist.Rating,
-                Rank = artist.Rank,
+                Rank = SafeParser.ToNumber<double?>(artist.Rank),
                 CreatedDate = artist.CreatedDate,
                 LastUpdated = artist.LastUpdated,
                 LastPlayed = artist.LastPlayed,

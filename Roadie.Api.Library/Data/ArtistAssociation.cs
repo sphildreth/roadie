@@ -6,15 +6,20 @@ namespace Roadie.Library.Data
     [Table("artistAssociation")]
     public class ArtistAssociation
     {
-        //[ForeignKey("artistId")]
-        public Artist Artist { get; set; }
+        [ForeignKey(nameof(ArtistId))]
+        [InverseProperty("AssociatedArtists")]
+        public virtual Artist Artist { get; set; }
 
-        [Column("artistId")] [Required] public int ArtistId { get; set; }
+        [Column("artistId")]
+        [Required]
+        public int ArtistId { get; set; }
 
-        //[ForeignKey("associatedArtistId")]
-        public Artist AssociatedArtist { get; set; }
+        [ForeignKey(nameof(AssociatedArtistId))]
+        public virtual Artist AssociatedArtist { get; set; }
 
-        [Column("associatedArtistId")] public int AssociatedArtistId { get; set; }
+        [Column("associatedArtistId")]
+        [Required]
+        public int AssociatedArtistId { get; set; }
 
         [Key]
         [Column("id")]

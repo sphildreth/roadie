@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +17,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Roadie.Api.Hubs;
 using Roadie.Api.ModelBinding;
 using Roadie.Api.Services;
@@ -45,6 +45,7 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Text;
 
@@ -105,7 +106,6 @@ namespace Roadie.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
             var settings = new RoadieSettings();
             _configuration.GetSection("RoadieSettings").Bind(settings);
 
@@ -118,6 +118,8 @@ namespace Roadie.Api
                 var logger = options.GetService<ILogger<MemoryCacheManager>>();
                 return new MemoryCacheManager(logger, new CachePolicy(TimeSpan.FromHours(4)));
             });
+
+            var dbFolder = new DirectoryInfo(settings.FileDatabaseOptions.DatabaseFolder);
 
             switch (settings.DbContextToUse)
             {
@@ -143,7 +145,31 @@ namespace Roadie.Api
                             }
                         ));
                     break;
+
+                case DbContexts.SQLite:
+                    if (!dbFolder.Exists)
+                    {
+                        dbFolder.Create();
+                    }
+                    var builder = new SqliteConnectionStringBuilder()
+                    {
+                        DataSource = Path.Combine(settings.FileDatabaseOptions.DatabaseFolder, $"{ settings.FileDatabaseOptions.DatabaseName }.db"),
+                        Mode = SqliteOpenMode.ReadWriteCreate,
+                        Cache = SqliteCacheMode.Shared
+                    };
+                    services.AddDbContext<ApplicationUserDbContext>(
+                        options => options.UseSqlite(builder.ConnectionString)
+                    );
+                    services.AddDbContext<IRoadieDbContext, SQLiteRoadieDbContext>(
+                        options => options.UseSqlite(builder.ConnectionString)
+                    );
+                    break;
+
                 case DbContexts.File:
+                    if (!dbFolder.Exists)
+                    {
+                        dbFolder.Create();
+                    }
                     services.AddDbContext<ApplicationUserDbContext>(
                         options => options.UseFileContextDatabase(settings.FileDatabaseOptions.DatabaseFormat.ToString().ToLower(),
                                                                   databaseName: settings.FileDatabaseOptions.DatabaseName,
@@ -155,16 +181,13 @@ namespace Roadie.Api
                                                                   location: settings.FileDatabaseOptions.DatabaseFolder)
                     );
                     break;
+
                 default:
                     throw new NotImplementedException("Unknown DbContext Type");
             }
 
-            //services.AddDefaultIdentity<ApplicationUser>(
-            //            options => options.SignIn.RequireConfirmedAccount = false)
-            //            .AddEntityFrameworkStores<ApplicationUserDbContext>();
-
-            services.AddIdentity<ApplicationUser, ApplicationRole>()
-                .AddRoles<ApplicationRole>()
+            services.AddIdentity<User, UserRole>()
+                .AddRoles<UserRole>()
                 .AddEntityFrameworkStores<ApplicationUserDbContext>()
                 .AddDefaultTokenProviders();
 
@@ -337,6 +360,7 @@ namespace Roadie.Api
         }
 
         private static string _roadieApiVersion = null;
+
         public static string RoadieApiVersion()
         {
             if (string.IsNullOrEmpty(_roadieApiVersion))

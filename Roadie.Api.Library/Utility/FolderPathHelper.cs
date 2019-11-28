@@ -169,18 +169,6 @@ namespace Roadie.Library.Utility
             return directoryInfo.FullName;
         }
 
-
-        [Obsolete("This is only here for migration will be removed in future release.")]
-        public static string ArtistPathOld(IRoadieSettings configuration, string artistSortName)
-        {
-            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artistSortName),"Invalid Artist Sort Name");
-
-            var artistFolder = artistSortName.ToTitleCase(false);
-            var directoryInfo = new DirectoryInfo(Path.Combine(configuration.LibraryFolder, artistFolder.ToFolderNameFriendly()));
-            return directoryInfo.FullName;
-        }
-
-
         /// <summary>
         ///     Full path to Release folder using given full Artist folder
         /// </summary>
@@ -222,17 +210,6 @@ namespace Roadie.Library.Utility
             return directoryInfo.FullName;
         }
 
-        [Obsolete("This is only here for migration will be removed in future release.")]
-        public static string ReleasePathOld(string artistFolder, string releaseTitle, DateTime releaseDate)
-        {
-            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artistFolder), "Invalid Artist Folder");
-            SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(releaseTitle), "Invalid Release Title");
-            SimpleContract.Requires<ArgumentException>(releaseDate != DateTime.MinValue, "Invalid Release Date");
-
-            var directoryInfo = new DirectoryInfo(Path.Combine(artistFolder, string.Format("{1}{0}", releaseTitle.ToTitleCase(false).ToFolderNameFriendly(), string.Format("[{0}] ", releaseDate.ToString("yyyy")))));
-            return directoryInfo.FullName;
-        }
-
         /// <summary>
         ///     Delete any empty folders in the given folder
         /// </summary>
@@ -260,7 +237,7 @@ namespace Roadie.Library.Utility
                             if (!folder.GetFiles("*.*", SearchOption.AllDirectories).Any())
                             {
                                 folder.Delete(true);
-                                Trace.WriteLine($"Deleting Empty Folder [{folder.FullName}]", "Debug");
+                                Trace.WriteLine($"Deleting Empty Folder [{folder.FullName}]", "Warning");
                                 result = true;
                             }
                         }
@@ -268,24 +245,24 @@ namespace Roadie.Library.Utility
                     catch (UnauthorizedAccessException)
                     {
                         result = false;
-                        Trace.WriteLine($"UnauthorizedAccessException Deleting Empty Folder [{folder.FullName}]", "Debug");
+                        Trace.WriteLine($"UnauthorizedAccessException Deleting Empty Folder [{folder.FullName}]", "Warning");
                     }
                     catch (DirectoryNotFoundException)
                     {
                         result = false;
-                        Trace.WriteLine($"DirectoryNotFoundException Deleting Empty Folder [{folder.FullName}]", "Debug");
+                        Trace.WriteLine($"DirectoryNotFoundException Deleting Empty Folder [{folder.FullName}]", "Warning");
                     }
                 }
             }
             catch (UnauthorizedAccessException)
             {
                 result = false;
-                Trace.WriteLine($"UnauthorizedAccessException Deleting Empty Folder [{processingFolder.FullName}]", "Debug");
+                Trace.WriteLine($"UnauthorizedAccessException Deleting Empty Folder [{processingFolder.FullName}]", "Warning");
             }
             catch (DirectoryNotFoundException)
             {
                 result = false;
-                Trace.WriteLine($"DirectoryNotFoundException Deleting Empty Folder [{processingFolder.FullName}]", "Debug");
+                Trace.WriteLine($"DirectoryNotFoundException Deleting Empty Folder [{processingFolder.FullName}]", "Warning");
             }
             return result;
         }

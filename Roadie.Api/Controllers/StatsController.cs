@@ -21,7 +21,7 @@ namespace Roadie.Api.Controllers
         private IStatisticsService StatisticsService { get; }
 
         public StatsController(IStatisticsService statisticsService, ILogger<StatsController> logger, ICacheManager cacheManager,
-                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+                    UserManager<User> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;

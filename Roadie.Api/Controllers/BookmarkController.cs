@@ -22,7 +22,7 @@ namespace Roadie.Api.Controllers
         private IBookmarkService BookmarkService { get; }
 
         public BookmarkController(IBookmarkService bookmarkService, ILogger<BookmarkController> logger, ICacheManager cacheManager,
-                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+                    UserManager<User> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;

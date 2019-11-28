@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.UI.Services;
 using Roadie.Library.Configuration;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
@@ -17,6 +18,11 @@ namespace Roadie.Api.Services
 
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
+            if(string.IsNullOrEmpty(Configuration.SmtpHost))
+            {
+                Trace.WriteLine("Email Server (Configuration.SmtpHost) Not Configured", "Warning");
+                return;
+            }
             using (var mail = new MailMessage(Configuration.SmtpFromAddress, email))
             {
                 using (var client = new SmtpClient())

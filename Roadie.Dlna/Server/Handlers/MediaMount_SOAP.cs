@@ -375,7 +375,7 @@ namespace Roadie.Dlna.Server
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"Not all params provided. Ex [{ ex }]");
+                Trace.WriteLine($"Not all params provided. Ex [{ ex }]", "Error");
             }
 
             var root = GetItem(id, false) as IMediaFolder;

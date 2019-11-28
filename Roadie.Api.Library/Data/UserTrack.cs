@@ -8,23 +8,36 @@ namespace Roadie.Library.Data
     [Table("usertrack")]
     public class UserTrack : EntityBase
     {
-        [Column("isDisliked")] public bool? IsDisliked { get; set; }
+        [Column("isDisliked")]
+        public bool? IsDisliked { get; set; }
 
-        [Column("isFavorite")] public bool? IsFavorite { get; set; }
+        [Column("isFavorite")]
+        public bool? IsFavorite { get; set; }
 
-        [Column("lastPlayed")] public DateTime? LastPlayed { get; set; }
+        [Column("lastPlayed")]
+        public DateTime? LastPlayed { get; set; }
 
-        [Column("playedCount")] public int? PlayedCount { get; set; }
+        [Column("playedCount")]
+        public int? PlayedCount { get; set; }
 
-        [Column("rating")] public short Rating { get; set; }
+        [Column("rating")]
+        public short Rating { get; set; }
 
-        public Track Track { get; set; }
+        [ForeignKey(nameof(TrackId))]
+        [InverseProperty("UserTracks")]
+        public virtual Track Track { get; set; }
 
-        [Column("trackId")] [Required] public int TrackId { get; set; }
+        [Column("trackId")]
+        [Required]
+        public int TrackId { get; set; }
 
-        public ApplicationUser User { get; set; }
+        [ForeignKey(nameof(UserId))]
+        [InverseProperty("UserTracks")]
+        public virtual User User { get; set; }
 
-        [Column("userId")] [Required] public int UserId { get; set; }
+        [Column("userId")]
+        [Required]
+        public int UserId { get; set; }
 
         public UserTrack()
         {

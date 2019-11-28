@@ -1,5 +1,6 @@
 ﻿using Roadie.Library.Enums;
 using System;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Roadie.Library.Imaging
@@ -25,7 +26,15 @@ namespace Roadie.Library.Imaging
             {
                 return null;
             }
-            return ImageHasher.AverageHash(Bytes).ToString();
+            try
+            {
+                return ImageHasher.AverageHash(Bytes).ToString();
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Error Generating Signature Ex [{ ex }]", "Warning");                
+            }
+            return null;
         }
 
         public Image()

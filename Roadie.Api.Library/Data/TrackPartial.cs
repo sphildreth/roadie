@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
 
 namespace Roadie.Library.Data
 {
@@ -38,9 +36,11 @@ namespace Roadie.Library.Data
             }
         }
 
-        public Artist TrackArtist { get; set; }
-
-        [NotMapped] public IEnumerable<string> TrackArtists { get; set; }
+        /// <summary>
+        /// This is used when finding metadata, not storedin the database.
+        /// </summary>
+        [NotMapped]
+        public virtual IEnumerable<string> TrackArtists { get; set; }
 
         public static string CacheRegionUrn(Guid Id)
         {
@@ -63,7 +63,7 @@ namespace Roadie.Library.Data
         public bool DoesFileForTrackExist(IRoadieSettings configuration)
         {
             var trackPath = PathToTrack(configuration);
-            if(string.IsNullOrEmpty(trackPath))
+            if (string.IsNullOrEmpty(trackPath))
             {
                 return false;
             }

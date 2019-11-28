@@ -24,7 +24,7 @@ namespace Roadie.Api.Controllers
         private ICommentService CommentService { get; }
 
         public CommentController(ILogger<CommentController> logger, ICacheManager cacheManager,
-                    UserManager<ApplicationUser> userManager,
+                    UserManager<User> userManager,
             IRoadieSettings roadieSettings, ICommentService commentService)
             : base(cacheManager, roadieSettings, userManager)
         {

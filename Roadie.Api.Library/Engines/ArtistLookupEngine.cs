@@ -87,37 +87,38 @@ namespace Roadie.Library.Engines
                 if (artist.Id < 1 && addArtistResult.Entity.Id > 0) artist.Id = addArtistResult.Entity.Id;
                 if (inserted > 0 && artist.Id > 0)
                 {
-                    if (artistGenreTables != null && artistGenreTables.Any(x => x.GenreId == null))
+                    if (artistGenreTables != null)
                     {
-                        foreach (var artistGenreTable in artistGenreTables)
+                        if (artistGenreTables != null)
                         {
-                            var genreName = artistGenreTable.Genre?.Name?.ToAlphanumericName();
-                            if (string.IsNullOrEmpty(genreName)) continue;
-                            if (artistGenreTable.Genre.Name.Length > 100)
+                            foreach (var artistGenreTable in artistGenreTables.Select(x => x.Genre?.Name).Distinct())
                             {
-                                var originalName = artistGenreTable.Genre.Name;
-                                artistGenreTable.Genre.Name = artistGenreTable.Genre.Name.Substring(0, 99);
-                                genreName = genreName.Substring(0, 99);
-                                Logger.LogWarning($"Genre Name Too long was [{originalName}] truncated to [{artistGenreTable.Genre.Name}]");
-                            }
-                            var genre = DbContext.Genres.FirstOrDefault(x => x.NormalizedName == genreName);
-                            if (genre == null)
-                            {
-                                genre = new Genre
+                                var genreName = artistGenreTable.ToAlphanumericName().ToTitleCase();
+                                var normalizedName = genreName.ToUpper();
+                                if (string.IsNullOrEmpty(genreName)) continue;
+                                if (genreName.Length > 100)
                                 {
-                                    Name = artistGenreTable.Genre.Name,
-                                    NormalizedName = genreName
-                                };
-                                DbContext.Genres.Add(genre);
-                                await DbContext.SaveChangesAsync();
-                            }
-                            if (genre != null && genre.Id > 0)
-                            {
+                                    var originalName = genreName;
+                                    genreName = genreName.Substring(0, 99);
+                                    Logger.LogWarning($"Genre Name Too long was [{originalName}] truncated to [{genreName}]");
+                                }
+                                var genre = DbContext.Genres.FirstOrDefault(x => x.NormalizedName == normalizedName);
+                                if (genre == null)
+                                {
+                                    genre = new Genre
+                                    {
+                                        Name = genreName,
+                                        NormalizedName = normalizedName
+                                    };
+                                    DbContext.Genres.Add(genre);
+                                    await DbContext.SaveChangesAsync();
+                                }
                                 DbContext.ArtistGenres.Add(new ArtistGenre
                                 {
                                     ArtistId = artist.Id,
                                     GenreId = genre.Id
                                 });
+                                await DbContext.SaveChangesAsync();
                             }
                         }
                     }
@@ -157,7 +158,7 @@ namespace Roadie.Library.Engines
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, ex.Serialize());
+                Logger.LogError(ex, $"Error Adding Artist `{ artist }`, Ex [{ ex.Serialize() }]");
             }
             return new OperationResult<Artist>
             {

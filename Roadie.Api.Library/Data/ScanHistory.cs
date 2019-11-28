@@ -7,23 +7,31 @@ namespace Roadie.Library.Data
     [Table("scanHistory")]
     public class ScanHistory : EntityBase
     {
-        [Column("forArtistId")] public int? ForArtistId { get; set; }
+        [Column("forArtistId")]
+        public int? ForArtistId { get; set; }
 
-        [Column("forReleaseId")] public int? ForReleaseId { get; set; }
+        [Column("forReleaseId")]
+        public int? ForReleaseId { get; set; }
 
-        [NotMapped] public new bool? IsLocked { get; set; }
+        [NotMapped]
+        public new bool? IsLocked { get; set; }
 
-        [Column("newArtists")] public int? NewArtists { get; set; }
+        [Column("newArtists")]
+        public int? NewArtists { get; set; }
 
-        [Column("newReleases")] public int? NewReleases { get; set; }
+        [Column("newReleases")]
+        public int? NewReleases { get; set; }
 
-        [Column("newTracks")] public int? NewTracks { get; set; }
+        [Column("newTracks")]
+        public int? NewTracks { get; set; }
 
-        [Column("timeSpanInSeconds")] public int TimeSpanInSeconds { get; set; }
+        [Column("timeSpanInSeconds")]
+        public int TimeSpanInSeconds { get; set; }
 
-        public ApplicationUser User { get; set; }
+        public virtual User User { get; set; }
 
-        [Column("userId")] public int UserId { get; set; }
+        [Column("userId")]
+        public int UserId { get; set; }
 
         public ScanHistory()
         {

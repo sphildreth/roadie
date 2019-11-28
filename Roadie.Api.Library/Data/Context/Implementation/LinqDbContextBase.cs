@@ -169,11 +169,11 @@ namespace Roadie.Library.Data.Context.Implementation
             }
             else
             {
-                randomReleases = await(from r in Releases
-                                       join ur in UserReleases on r.Id equals ur.ReleaseId into urg
-                                       from ur in urg.DefaultIfEmpty()
-                                       where (ur == null || (ur.UserId == userId && ur.IsDisliked == false))
-                                       select r)
+                randomReleases = await (from r in Releases
+                                        join ur in UserReleases on r.Id equals ur.ReleaseId into urg
+                                        from ur in urg.DefaultIfEmpty()
+                                        where (ur == null || (ur.UserId == userId && ur.IsDisliked == false))
+                                        select r)
                                        .OrderBy(x => Guid.NewGuid())
                                        .Take(randomLimit)
                                        .ToListAsync();

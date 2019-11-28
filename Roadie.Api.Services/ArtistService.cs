@@ -71,7 +71,7 @@ namespace Roadie.Api.Services
             FileDirectoryProcessorService = fileDirectoryProcessorService;
         }
 
-        public async Task<OperationResult<Artist>> ById(User roadieUser, Guid id, IEnumerable<string> includes)
+        public async Task<OperationResult<Artist>> ById(Library.Models.Users.User roadieUser, Guid id, IEnumerable<string> includes)
         {
             var timings = new Dictionary<string, long>();
             var tsw = new Stopwatch();
@@ -94,11 +94,10 @@ namespace Roadie.Api.Services
                 tsw.Stop();
                 timings.Add("getArtist", tsw.ElapsedMilliseconds);
                 tsw.Restart();
-                var userBookmarkResult =
-                    await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Artist);
+                var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Artist);
                 if (userBookmarkResult.IsSuccess)
                 {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == artist.RoadieId.ToString()) != null;
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x?.Bookmark?.Value == artist?.RoadieId.ToString()) != null;
                 }
                 tsw.Stop();
                 timings.Add("userBookmarkResult", tsw.ElapsedMilliseconds);
@@ -148,7 +147,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> Delete(ApplicationUser user, data.Artist artist, bool deleteFolder)
+        public async Task<OperationResult<bool>> Delete(Library.Identity.User user, data.Artist artist, bool deleteFolder)
         {
             var isSuccess = false;
             try
@@ -159,9 +158,25 @@ namespace Roadie.Api.Services
                     await DbContext.SaveChangesAsync();
                     if(deleteFolder)
                     {
+                        // Delete all image files for Artist                
+                        foreach (var file in ImageHelper.ImageFilesInFolder(artist.ArtistFileFolder(Configuration), SearchOption.TopDirectoryOnly))
+                        {
+                            try
+                            {
+                                File.Delete(file);
+                                Logger.LogWarning("For Artist [{0}], Deleted File [{1}]", artist.Id, file);
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.LogError(ex, $"Error Deleting File [{file}] Exception [{ex}]");
+                            }
+                        }
+
                         var artistDir = new DirectoryInfo(artist.ArtistFileFolder(Configuration));
                         FolderPathHelper.DeleteEmptyFolders(artistDir.Parent);
                     }
+                    await BookmarkService.RemoveAllBookmarksForItem(BookmarkType.Artist, artist.Id);
+                    await UpdatePlaylistCountsForArtist(artist.Id, DateTime.UtcNow);
                     CacheManager.ClearRegion(artist.CacheRegion);
                     Logger.LogWarning("User `{0}` deleted Artist `{1}]`", user, artist);
                     isSuccess = true;
@@ -183,7 +198,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<ArtistList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true)
+        public async Task<Library.Models.Pagination.PagedResult<ArtistList>> List(Library.Models.Users.User roadieUser, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -287,7 +302,7 @@ namespace Roadie.Api.Services
                               },
                               Thumbnail = ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, a.RoadieId),
                               Rating = a.Rating,
-                              Rank = a.Rank,
+                              Rank = (double?)a.Rank,
                               CreatedDate = a.CreatedDate,
                               LastUpdated = a.LastUpdated,
                               LastPlayed = a.LastPlayed,
@@ -313,7 +328,7 @@ namespace Roadie.Api.Services
             else
             {
                 string sortBy;
-                if (request.ActionValue == User.ActionKeyUserRated)
+                if (request.ActionValue == Library.Models.Users.User.ActionKeyUserRated)
                 {
                     sortBy = string.IsNullOrEmpty(request.Sort)
                         ? request.OrderValue(new Dictionary<string, string> { { "Rating", "DESC" }, { "Artist.Text", "ASC" } })
@@ -380,7 +395,7 @@ namespace Roadie.Api.Services
         /// <param name="artistToMerge">The Artist to be merged</param>
         /// <param name="artistToMergeInto">The Artist to merge into</param>
         /// <returns></returns>
-        public async Task<OperationResult<bool>> MergeArtists(ApplicationUser user, Guid artistToMergeId, Guid artistToMergeIntoId)
+        public async Task<OperationResult<bool>> MergeArtists(Library.Identity.User user, Guid artistToMergeId, Guid artistToMergeIntoId)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -434,7 +449,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> RefreshArtistMetadata(ApplicationUser user, Guid artistId)
+        public async Task<OperationResult<bool>> RefreshArtistMetadata(Library.Identity.User user, Guid artistId)
         {
             SimpleContract.Requires<ArgumentOutOfRangeException>(artistId != Guid.Empty, "Invalid ArtistId");
 
@@ -498,7 +513,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> ScanArtistReleasesFolders(ApplicationUser user, Guid artistId, string destinationFolder, bool doJustInfo)
+        public async Task<OperationResult<bool>> ScanArtistReleasesFolders(Library.Identity.User user, Guid artistId, string destinationFolder, bool doJustInfo)
         {
             SimpleContract.Requires<ArgumentOutOfRangeException>(artistId != Guid.Empty, "Invalid ArtistId");
 
@@ -581,12 +596,12 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(ApplicationUser user, Guid id, string imageUrl)
+        public async Task<OperationResult<Library.Models.Image>> SetReleaseImageByUrl(Library.Identity.User user, Guid id, string imageUrl)
         {
             return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
 
-        public async Task<OperationResult<bool>> UpdateArtist(ApplicationUser user, Artist model)
+        public async Task<OperationResult<bool>> UpdateArtist(Library.Identity.User user, Artist model)
         {
             var didRenameArtist = false;
             var sw = new Stopwatch();
@@ -853,7 +868,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Library.Models.Image>> UploadArtistImage(ApplicationUser user, Guid id, IFormFile file)
+        public async Task<OperationResult<Library.Models.Image>> UploadArtistImage(Library.Identity.User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
             using (var ms = new MemoryStream())
@@ -890,7 +905,7 @@ namespace Roadie.Api.Services
                 ? null
                 : result.BirthDate;
             result.RankPosition = result.Rank > 0
-                ? SafeParser.ToNumber<int?>(DbContext.Artists.Count(x => x.Rank > result.Rank) + 1)
+                ? SafeParser.ToNumber<int?>(DbContext.Artists.Count(x => (double?)x.Rank > result.Rank) + 1)
                 : null;
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);
@@ -1044,7 +1059,7 @@ namespace Roadie.Api.Services
                                                      },
                                                      Thumbnail = ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, a.RoadieId),
                                                      Rating = a.Rating,
-                                                     Rank = a.Rank,
+                                                     Rank = (double?)a.Rank,
                                                      CreatedDate = a.CreatedDate,
                                                      LastUpdated = a.LastUpdated,
                                                      LastPlayed = a.LastPlayed,
@@ -1068,7 +1083,7 @@ namespace Roadie.Api.Services
                                                  },
                                                  Thumbnail = ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, a.RoadieId),
                                                  Rating = a.Rating,
-                                                 Rank = a.Rank,
+                                                 Rank = (double?)a.Rank,
                                                  CreatedDate = a.CreatedDate,
                                                  LastUpdated = a.LastUpdated,
                                                  LastPlayed = a.LastPlayed,
@@ -1100,7 +1115,7 @@ namespace Roadie.Api.Services
                                                   },
                                                   Thumbnail = ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, a.RoadieId),
                                                   Rating = a.Rating,
-                                                  Rank = a.Rank,
+                                                  Rank = (double?)a.Rank,
                                                   CreatedDate = a.CreatedDate,
                                                   LastUpdated = a.LastUpdated,
                                                   LastPlayed = a.LastPlayed,
@@ -1124,7 +1139,7 @@ namespace Roadie.Api.Services
                                               },
                                               Thumbnail = ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, a.RoadieId),
                                               Rating = a.Rating,
-                                              Rank = a.Rank,
+                                              Rank = (double?)a.Rank,
                                               CreatedDate = a.CreatedDate,
                                               LastUpdated = a.LastUpdated,
                                               LastPlayed = a.LastPlayed,
@@ -1283,7 +1298,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<data.Artist>> MergeArtists(ApplicationUser user, data.Artist artistToMerge, data.Artist artistToMergeInto)
+        private async Task<OperationResult<data.Artist>> MergeArtists(Library.Identity.User user, data.Artist artistToMerge, data.Artist artistToMergeInto)
         {
             SimpleContract.Requires<ArgumentNullException>(artistToMerge != null, "Invalid Artist");
             SimpleContract.Requires<ArgumentNullException>(artistToMergeInto != null, "Invalid Artist");
@@ -1437,7 +1452,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(ApplicationUser user, Guid id, byte[] imageBytes)
+        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(Library.Identity.User user, Guid id, byte[] imageBytes)
         {
             var sw = new Stopwatch();
             sw.Start();

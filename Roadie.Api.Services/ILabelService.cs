@@ -12,18 +12,18 @@ namespace Roadie.Api.Services
 {
     public interface ILabelService
     {
-        Task<OperationResult<Label>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null);
+        Task<OperationResult<Label>> ById(Library.Models.Users.User roadieUser, Guid id, IEnumerable<string> includes = null);
 
-        Task<OperationResult<bool>> Delete(ApplicationUser user, Guid id);
+        Task<OperationResult<bool>> Delete(Library.Identity.User user, Guid id);
 
-        Task<PagedResult<LabelList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false);
+        Task<PagedResult<LabelList>> List(Library.Models.Users.User roadieUser, PagedRequest request, bool? doRandomize = false);
 
-        Task<OperationResult<bool>> MergeLabelsIntoLabel(ApplicationUser user, Guid intoLabelId, IEnumerable<Guid> labelIdsToMerge);
+        Task<OperationResult<bool>> MergeLabelsIntoLabel(Library.Identity.User user, Guid intoLabelId, IEnumerable<Guid> labelIdsToMerge);
 
-        Task<OperationResult<Image>> SetLabelImageByUrl(User user, Guid id, string imageUrl);
+        Task<OperationResult<Image>> SetLabelImageByUrl(Library.Models.Users.User user, Guid id, string imageUrl);
 
-        Task<OperationResult<bool>> UpdateLabel(User user, Label label);
+        Task<OperationResult<bool>> UpdateLabel(Library.Models.Users.User user, Label label);
 
-        Task<OperationResult<Image>> UploadLabelImage(User user, Guid id, IFormFile file);
+        Task<OperationResult<Image>> UploadLabelImage(Library.Models.Users.User user, Guid id, IFormFile file);
     }
 }

@@ -50,7 +50,7 @@ namespace Roadie.Dlna.Services
                 }
                 catch (Exception ex)
                 {
-                    Trace.WriteLine($"Failed to access CachedCover Ex [{ ex }]");
+                    Trace.WriteLine($"Failed to access CachedCover Ex [{ ex }]", "Warning");
                 }
                 if (MetaAlbum != null)
                 {

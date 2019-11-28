@@ -98,7 +98,9 @@ namespace Roadie.Library.Data
         public Collection()
         {
             Releases = new HashSet<CollectionRelease>();
+            MissingReleases = new HashSet<CollectionMissing>();
             Comments = new HashSet<Comment>();
+
             ListInCSVFormat = "Position,Release,Artist";
             CollectionType = Enums.CollectionType.Rank;
         }
@@ -128,19 +130,21 @@ namespace Roadie.Library.Data
                     };
                     configuration.BadDataFound = context =>
                     {
-                        Trace.WriteLine($"PositionArtistReleases: Bad data found on row '{context.RawRow}'");
+                        Trace.WriteLine($"PositionArtistReleases: Bad data found on row '{context.RawRow}'", "Warning");
                     };
-                    var csv = new CsvReader(sr, configuration);
-                    while (csv.Read())
+                    using (var csv = new CsvReader(sr, configuration))
                     {
-                        index++;
-                        rows.Add(new PositionArtistRelease
+                        while (csv.Read())
                         {
-                            Index = index,
-                            Position = csv.GetField<int>(PositionColumn),
-                            Artist = SafeParser.ToString(csv.GetField<string>(ArtistColumn)),
-                            Release = SafeParser.ToString(csv.GetField<string>(ReleaseColumn))
-                        });
+                            index++;
+                            rows.Add(new PositionArtistRelease
+                            {
+                                Index = index,
+                                Position = csv.GetField<int>(PositionColumn),
+                                Artist = SafeParser.ToString(csv.GetField<string>(ArtistColumn)),
+                                Release = SafeParser.ToString(csv.GetField<string>(ReleaseColumn))
+                            });
+                        }
                     }
                 }
 
@@ -156,30 +160,5 @@ namespace Roadie.Library.Data
         }
     }
 
-    [Serializable]
-    public class PositionArtistRelease
-    {
-        public string Artist { get; set; }
 
-        /// <summary>
-        ///     This is the index (position in the list regardless of the position number)
-        /// </summary>
-        [JsonIgnore]
-        public int Index { get; set; }
-
-        /// <summary>
-        ///     This is the position number for the list (can be a year "1984" can be a number "14")
-        /// </summary>
-        public int Position { get; set; }
-
-        public string Release { get; set; }
-        [JsonIgnore] public Statuses Status { get; set; }
-
-        [JsonProperty("Status")] public string StatusVerbose => Status.ToString();
-
-        public override string ToString()
-        {
-            return string.Format("Position [{0}], Artist [{1}], Release [{2}]", Position, Artist, Release);
-        }
-    }
 }

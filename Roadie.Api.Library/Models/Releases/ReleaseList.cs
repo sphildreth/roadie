@@ -50,7 +50,7 @@ namespace Roadie.Library.Models.Releases
 
         public IEnumerable<ReleaseMediaList> Media { get; set; }
         public int? MediaCount { get; set; }
-        public decimal? Rank { get; set; }
+        public double? Rank { get; set; }
         public short? Rating { get; set; }
         public DataToken Release { get; set; }
 
@@ -98,7 +98,7 @@ namespace Roadie.Library.Models.Releases
                 LibraryStatus = release.LibraryStatus,
                 MediaCount = release.MediaCount,
                 Rating = release.Rating,
-                Rank = release.Rank,
+                Rank = SafeParser.ToNumber<double?>(release.Rank),
                 ReleaseDateDateTime = release.ReleaseDate,
                 ReleasePlayUrl = $"{baseUrl}/play/release/{release.RoadieId}",
                 Status = release.Status,

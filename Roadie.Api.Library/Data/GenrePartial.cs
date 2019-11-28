@@ -26,22 +26,12 @@ namespace Roadie.Library.Data
         public string PathToImage(IRoadieSettings configuration, bool makeFolderIfNotExist = false)
         {
             var folder = FolderPathHelper.GenrePath(configuration, SortNameValue);
-            if(!Directory.Exists(folder) && makeFolderIfNotExist)
+            if (!Directory.Exists(folder) && makeFolderIfNotExist)
             {
                 Directory.CreateDirectory(folder);
             }
             return Path.Combine(folder, $"{ SortNameValue.ToFileNameFriendly() } [{ Id }].jpg");
         }
-
-        /// <summary>
-        ///     Returns a full file path to the Label Image
-        /// </summary>
-        [Obsolete("This is only here for migration will be removed in future release.")]
-        public string OldPathToImage(IRoadieSettings configuration)
-        {
-            return Path.Combine(configuration.GenreImageFolder, $"{ SortNameValue.ToFileNameFriendly() } [{ Id }].jpg");
-        }
-
 
         public static string CacheRegionUrn(Guid Id)
         {

@@ -12,8 +12,12 @@ namespace Roadie.Library.Data
         [MaxLength(5000)]
         public string Message { get; set; }
 
-        public ApplicationUser User { get; set; }
+        [ForeignKey(nameof(UserId))]
+        [InverseProperty("ChatMessages")]
+        public virtual User User { get; set; }
 
-        [Column("userId")] [Required] public int UserId { get; set; }
+        [Column("userId")]
+        [Required]
+        public int UserId { get; set; }
     }
 }

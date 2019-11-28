@@ -58,7 +58,7 @@ namespace Roadie.Library.Models.Releases
 
         [MaxLength(65535)] public string Profile { get; set; }
 
-        public decimal? Rank { get; set; }
+        public double? Rank { get; set; }
 
         /// <summary>
         ///     The Position of this Release as ranked against other Releases (highest ranking Release is #1)

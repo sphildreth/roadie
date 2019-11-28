@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Roadie.Library.Configuration
+﻿namespace Roadie.Library.Configuration
 {
     public enum DbContexts : short
     {
-        MySQL = 1,
-        File = 2
+        Unknown = 0,
+        SQLite = 1,
+        File = 2,
+        MySQL = 3
     }
 }

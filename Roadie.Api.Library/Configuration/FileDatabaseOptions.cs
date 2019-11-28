@@ -19,7 +19,7 @@ namespace Roadie.Library.Configuration
         {
             DatabaseFormat = FileDatabaseFormat.BSON;
             DatabaseName = "roadie";
-            DatabaseFolder = @"M:\db";
+            DatabaseFolder = "data/db";
         }
     }
 }

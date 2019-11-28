@@ -1,4 +1,5 @@
 ﻿using Roadie.Library.Enums;
+using Roadie.Library.Identity;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -11,17 +12,18 @@ namespace Roadie.Library.Data
         [Column("collectionCount")]
         public int CollectionCount { get; set; }
 
-        [Column("collectionType")] 
+        [Column("collectionType")]
         public CollectionType? CollectionType { get; set; }
 
-        public ICollection<Comment> Comments { get; set; }
+        [InverseProperty("Collection")]
+        public virtual ICollection<Comment> Comments { get; set; }
 
         [Column("description")]
         [MaxLength(4000)]
         public string Description { get; set; }
 
-        [Column("edition")] 
-        [MaxLength(200)] 
+        [Column("edition")]
+        [MaxLength(200)]
         public string Edition { get; set; }
 
         [Column("listInCSV", TypeName = "text")]
@@ -32,9 +34,17 @@ namespace Roadie.Library.Data
         [MaxLength(200)]
         public string ListInCSVFormat { get; set; }
 
-        [Column("maintainerId")] 
+        [Column("maintainerId")]
         public int MaintainerId { get; set; }
 
-        public ICollection<CollectionRelease> Releases { get; set; }
+        [ForeignKey(nameof(MaintainerId))]
+        [InverseProperty(nameof(User.Collections))]
+        public virtual User Maintainer { get; set; }
+
+        [InverseProperty("Collection")]
+        public virtual ICollection<CollectionRelease> Releases { get; set; }
+
+        [InverseProperty("Collection")]
+        public virtual ICollection<CollectionMissing> MissingReleases { get; set; }
     }
 }

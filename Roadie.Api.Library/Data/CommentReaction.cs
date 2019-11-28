@@ -10,14 +10,25 @@ namespace Roadie.Library.Data
     {
         public Comment Comment { get; set; }
 
-        [Column("commentId")] [Required] public int CommentId { get; set; }
-        [NotMapped] public new bool? IsLocked { get; set; }
-        [Column("reaction")] public string Reaction { get; set; }
+        [Column("commentId")]
+        [Required]
+        public int CommentId { get; set; }
+
+        [NotMapped]
+        public new bool? IsLocked { get; set; }
+
+        [Column("reaction")]
+        public string Reaction { get; set; }
 
         [NotMapped]
         public Enums.CommentReaction ReactionValue => SafeParser.ToEnum<Enums.CommentReaction>(Reaction ?? "Unknown");
 
-        public ApplicationUser User { get; set; }
-        [Column("userId")] [Required] public int UserId { get; set; }
+        [ForeignKey(nameof(UserId))]
+        [InverseProperty("CommentReactions")]
+        public virtual User User { get; set; }
+
+        [Column("userId")]
+        [Required]
+        public int UserId { get; set; }
     }
 }

@@ -263,7 +263,7 @@ namespace Roadie.Dlna.Server
                     }
                     catch (Exception ex)
                     {
-                        Trace.WriteLine($"Failed to get uname Ex [{ ex }]");
+                        Trace.WriteLine($"Failed to get uname Ex [{ ex }]", "Warning");
                     }
                     break;
             }

@@ -134,7 +134,7 @@ namespace Roadie.Api.Services
                 var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Playlist);
                 if (userBookmarkResult.IsSuccess)
                 {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == result.Data.Id.ToString()) != null;
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x?.Bookmark?.Value == result?.Data?.Id?.ToString()) != null;
                 }
                 if (result.Data.Comments.Any())
                 {
@@ -182,6 +182,7 @@ namespace Roadie.Api.Services
 
             DbContext.Playlists.Remove(playlist);
             await DbContext.SaveChangesAsync();
+            await BookmarkService.RemoveAllBookmarksForItem(BookmarkType.Playlist, playlist.Id);
 
             var playlistImageFilename = playlist.PathToImage(Configuration);
             if (File.Exists(playlistImageFilename))

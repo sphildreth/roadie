@@ -42,8 +42,8 @@ namespace Roadie.Library.Data.Context
         DbSet<UserArtist> UserArtists { get; set; }
         DbSet<UserQue> UserQues { get; set; }
         DbSet<UserRelease> UserReleases { get; set; }
-        DbSet<ApplicationRole> UserRoles { get; set; }
-        DbSet<ApplicationUser> Users { get; set; }
+        DbSet<UserRole> UserRoles { get; set; }
+        DbSet<User> Users { get; set; }
         DbSet<UserTrack> UserTracks { get; set; }
 
         DbSet<InviteToken> InviteTokens { get; set; }

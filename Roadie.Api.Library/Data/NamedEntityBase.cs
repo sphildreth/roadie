@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Roadie.Library.Data
@@ -14,8 +13,8 @@ namespace Roadie.Library.Data
         [Column("name")]
         public virtual string Name { get; set; }
 
-        [Column("sortName")] 
-        [MaxLength(250)] 
+        [Column("sortName")]
+        [MaxLength(250)]
         public virtual string SortName { get; set; }
 
         public virtual string SortNameValue => string.IsNullOrEmpty(SortName) ? Name : SortName;

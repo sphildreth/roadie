@@ -20,7 +20,7 @@ namespace Roadie.Api.Services
             _configuration = configuration;
         }
 
-        public async Task<string> GenerateToken(ApplicationUser user, UserManager<ApplicationUser> userManager)
+        public async Task<string> GenerateToken(User user, UserManager<User> userManager)
         {
             var utcNow = DateTime.UtcNow;
 

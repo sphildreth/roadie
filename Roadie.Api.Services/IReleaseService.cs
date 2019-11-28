@@ -15,26 +15,26 @@ namespace Roadie.Api.Services
     {
         IEnumerable<int> AddedTrackIds { get; }
 
-        Task<OperationResult<Release>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null);
+        Task<OperationResult<Release>> ById(Library.Models.Users.User roadieUser, Guid id, IEnumerable<string> includes = null);
 
-        Task<OperationResult<bool>> Delete(ApplicationUser user, Library.Data.Release release, bool doDeleteFiles = false, bool doUpdateArtistCounts = true);
+        Task<OperationResult<bool>> Delete(Library.Identity.User user, Library.Data.Release release, bool doDeleteFiles = false, bool doUpdateArtistCounts = true);
 
-        Task<OperationResult<bool>> DeleteReleases(ApplicationUser user, IEnumerable<Guid> releaseIds, bool doDeleteFiles = false);
+        Task<OperationResult<bool>> DeleteReleases(Library.Identity.User user, IEnumerable<Guid> releaseIds, bool doDeleteFiles = false);
 
-        Task<PagedResult<ReleaseList>> List(User user, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null);
+        Task<PagedResult<ReleaseList>> List(Library.Models.Users.User user, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null);
 
-        Task<OperationResult<bool>> MergeReleases(ApplicationUser user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia);
+        Task<OperationResult<bool>> MergeReleases(Library.Identity.User user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia);
 
-        Task<OperationResult<bool>> MergeReleases(ApplicationUser user, Library.Data.Release releaseToMerge, Library.Data.Release releaseToMergeInto, bool addAsMedia);
+        Task<OperationResult<bool>> MergeReleases(Library.Identity.User user, Library.Data.Release releaseToMerge, Library.Data.Release releaseToMergeInto, bool addAsMedia);
 
-        Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id);
+        Task<FileOperationResult<byte[]>> ReleaseZipped(Library.Models.Users.User roadieUser, Guid id);
 
-        Task<OperationResult<bool>> ScanReleaseFolder(ApplicationUser user, Guid releaseId, bool doJustInfo, Library.Data.Release releaseToScan = null);
+        Task<OperationResult<bool>> ScanReleaseFolder(Library.Identity.User user, Guid releaseId, bool doJustInfo, Library.Data.Release releaseToScan = null);
 
-        Task<OperationResult<Image>> SetReleaseImageByUrl(ApplicationUser user, Guid id, string imageUrl);
+        Task<OperationResult<Image>> SetReleaseImageByUrl(Library.Identity.User user, Guid id, string imageUrl);
 
-        Task<OperationResult<bool>> UpdateRelease(ApplicationUser user, Release release, string originalReleaseFolder = null);
+        Task<OperationResult<bool>> UpdateRelease(Library.Identity.User user, Release release, string originalReleaseFolder = null);
 
-        Task<OperationResult<Image>> UploadReleaseImage(ApplicationUser user, Guid id, IFormFile file);
+        Task<OperationResult<Image>> UploadReleaseImage(Library.Identity.User user, Guid id, IFormFile file);
     }
 }

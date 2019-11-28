@@ -2,10 +2,7 @@
 using Roadie.Library.Extensions;
 using Roadie.Library.Utility;
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
 
 namespace Roadie.Library.Data
 {
@@ -23,8 +20,6 @@ namespace Roadie.Library.Data
             }
         }
 
-        public string SortNameValue => string.IsNullOrEmpty(SortName) ? Name : SortName;
-
         /// <summary>
         ///     Returns a full file path to the Label Image
         /// </summary>
@@ -36,15 +31,6 @@ namespace Roadie.Library.Data
                 Directory.CreateDirectory(folder);
             }
             return Path.Combine(folder, $"{ SortNameValue.ToFileNameFriendly() } [{ Id }].jpg");
-        }
-
-        /// <summary>
-        ///     Returns a full file path to the Label Image
-        /// </summary>
-        [Obsolete("This is only here for migration will be removed in future release.")]
-        public string OldPathToImage(IRoadieSettings configuration)
-        {
-            return Path.Combine(configuration.LabelImageFolder, $"{ SortNameValue.ToFileNameFriendly() } [{ Id }].jpg");
         }
 
         public bool IsValid => !string.IsNullOrEmpty(Name);

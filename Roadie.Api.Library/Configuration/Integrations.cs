@@ -19,8 +19,7 @@ namespace Roadie.Library.Configuration
                 var keySetting = ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey");
                 if (keySetting != null)
                     return keySetting.Key;
-                Trace.WriteLine(
-                    "Unable To Find Api Key with Key Name of 'DiscogsConsumerKey', Discogs Integration Disabled");
+                Trace.WriteLine("Unable To Find Api Key with Key Name of 'DiscogsConsumerKey', Discogs Integration Disabled", "Warning");
                 return null;
             }
         }
@@ -32,8 +31,7 @@ namespace Roadie.Library.Configuration
                 var keySetting = ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey");
                 if (keySetting != null)
                     return keySetting.KeySecret;
-                Trace.WriteLine(
-                    "Unable To Find Api Key with Key Name of 'DiscogsConsumerKey', Discogs Integration Disabled");
+                Trace.WriteLine("Unable To Find Api Key with Key Name of 'DiscogsConsumerKey', Discogs Integration Disabled", "Warning");
                 return null;
             }
         }
@@ -77,7 +75,7 @@ namespace Roadie.Library.Configuration
                 var keySetting = ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey");
                 if (keySetting != null)
                     return keySetting.Key;
-                Trace.WriteLine("Unable To Find Api Key with Key Name of 'LastFMApiKey', Last FM Integration Disabled");
+                Trace.WriteLine("Unable To Find Api Key with Key Name of 'LastFMApiKey', Last FM Integration Disabled", "Warning");
                 return null;
             }
         }
@@ -89,7 +87,7 @@ namespace Roadie.Library.Configuration
                 var keySetting = ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey");
                 if (keySetting != null)
                     return keySetting.KeySecret;
-                Trace.WriteLine("Unable To Find Api Key with Key Name of 'LastFMApiKey', Last FM Integration Disabled");
+                Trace.WriteLine("Unable To Find Api Key with Key Name of 'LastFMApiKey', Last FM Integration Disabled", "Warning");
                 return null;
             }
         }

@@ -29,9 +29,9 @@ namespace Roadie.Api.Controllers
     public class AccountController : ControllerBase
     {
         private readonly ILogger<AccountController> Logger;
-        private readonly SignInManager<ApplicationUser> SignInManager;
+        private readonly SignInManager<User> SignInManager;
         private readonly ITokenService TokenService;
-        private readonly UserManager<ApplicationUser> UserManager;
+        private readonly UserManager<User> UserManager;
         private string _baseUrl;
 
         private IAdminService AdminService { get; }
@@ -62,7 +62,7 @@ namespace Roadie.Api.Controllers
 
         private IRoadieSettings RoadieSettings { get; }
 
-        public AccountController(IAdminService adminService, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
+        public AccountController(IAdminService adminService, UserManager<User> userManager, SignInManager<User> signInManager,
                                  IConfiguration configuration, ILogger<AccountController> logger, ITokenService tokenService,
                                  ICacheManager cacheManager, IEmailSender emailSender, IHttpContext httpContext)
         {
@@ -194,7 +194,7 @@ namespace Roadie.Api.Controllers
                 if (ModelState.IsValid)
                 {
                     var now = DateTime.UtcNow;
-                    var user = new ApplicationUser
+                    var user = new User
                     {
                         UserName = registerModel.Username,
                         RegisteredOn = now,
@@ -343,11 +343,11 @@ namespace Roadie.Api.Controllers
                 var token = await UserManager.GeneratePasswordResetTokenAsync(user);
                 callbackUrl = callbackUrl + "?username=" + username + "&token=" +
                               WebEncoders.Base64UrlEncode(Encoding.ASCII.GetBytes(token));
-                    await EmailSender.SendEmailAsync(user.Email, $"Reset your {RoadieSettings.SiteName} password",
-                        $"A request has been made to reset your password for your {RoadieSettings.SiteName} account. To proceed <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>click here</a>.");
-                    Logger.LogTrace("User [{0}] Email [{1}] Requested Password Reset Callback [{2}]", username,
-                        user.Email, callbackUrl);
-                    return Ok();
+                await EmailSender.SendEmailAsync(user.Email, $"Reset your {RoadieSettings.SiteName} password",
+                    $"A request has been made to reset your password for your {RoadieSettings.SiteName} account. To proceed <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>click here</a>.");
+                Logger.LogTrace("User [{0}] Email [{1}] Requested Password Reset Callback [{2}]", username,
+                    user.Email, callbackUrl);
+                return Ok();
             }
             catch (Exception ex)
             {

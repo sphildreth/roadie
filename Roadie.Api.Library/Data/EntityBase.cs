@@ -7,7 +7,9 @@ namespace Roadie.Library.Data
 {
     public abstract class EntityBase
     {
-        [Column("createdDate")] [Required] public DateTime CreatedDate { get; set; }
+        [Column("createdDate")]
+        [Required]
+        public DateTime CreatedDate { get; set; }
 
         [Column("id")]
         [Key]
@@ -16,14 +18,14 @@ namespace Roadie.Library.Data
 
         public virtual bool? IsLocked { get; set; }
 
-        [Column("lastUpdated")] 
+        [Column("lastUpdated")]
         public DateTime? LastUpdated { get; set; }
 
-        [Column("RoadieId")] 
-        [Required] 
+        [Column("RoadieId")]
+        [Required]
         public Guid RoadieId { get; set; }
 
-        [Column("status")] 
+        [Column("status")]
         public Statuses? Status { get; set; }
 
         public EntityBase()

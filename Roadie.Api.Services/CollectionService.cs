@@ -77,8 +77,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Collection>> ById(User roadieUser, Guid id,
-            IEnumerable<string> includes = null)
+        public async Task<OperationResult<Collection>> ById(User roadieUser, Guid id,  IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
@@ -94,7 +93,7 @@ namespace Roadie.Api.Services
                 var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Collection);
                 if (userBookmarkResult.IsSuccess)
                 {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == result.Data.Id.ToString()) != null;
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x?.Bookmark?.Value == result?.Data?.Id?.ToString()) != null;
                 }
                 if (result.Data.Comments.Any())
                 {
@@ -142,6 +141,7 @@ namespace Roadie.Api.Services
             {
                 DbContext.Collections.Remove(collection);
                 await DbContext.SaveChangesAsync();
+                await BookmarkService.RemoveAllBookmarksForItem(BookmarkType.Collection, collection.Id);
                 var collectionImageFilename = collection.PathToImage(Configuration);
                 if (File.Exists(collectionImageFilename))
                 {
@@ -277,7 +277,7 @@ namespace Roadie.Api.Services
             }
             collection.IsLocked = model.IsLocked;
             var oldPathToImage = collection.PathToImage(Configuration);
-            var didChangeName = collection.Name != model.Name;
+            var didChangeName = collection.Name != model.Name && !isNew;
             collection.Name = model.Name;
             collection.SortName = model.SortName;
             collection.Edition = model.Edition;
@@ -291,6 +291,21 @@ namespace Roadie.Api.Services
             collection.URLs = model.URLsList.ToDelimitedList();
             collection.AlternateNames = model.AlternateNamesList.ToDelimitedList();
             collection.CollectionCount = model.CollectionCount;
+
+            if (model.Maintainer?.Value != null)
+            {
+                var maintainer = DbContext.Users.FirstOrDefault(x => x.RoadieId == SafeParser.ToGuid(model.Maintainer.Value));
+                if (maintainer != null)
+                {
+                    collection.MaintainerId = maintainer.Id;
+                }
+            }
+
+            if (isNew)
+            {
+                await DbContext.Collections.AddAsync(collection);
+                await DbContext.SaveChangesAsync();                
+            }
 
             if (didChangeName)
             {
@@ -306,18 +321,12 @@ namespace Roadie.Api.Services
                 // Save unaltered collection image
                 File.WriteAllBytes(collection.PathToImage(Configuration, true), ImageHelper.ConvertToJpegFormat(collectionImage));
             }
-            if (model.Maintainer?.Value != null)
-            {
-                var maintainer = DbContext.Users.FirstOrDefault(x => x.RoadieId == SafeParser.ToGuid(model.Maintainer.Value));
-                if (maintainer != null) collection.MaintainerId = maintainer.Id;
-            }
 
             collection.LastUpdated = now;
-
-            if (isNew) await DbContext.Collections.AddAsync(collection);
             await DbContext.SaveChangesAsync();
+
             CacheManager.ClearRegion(collection.CacheRegion);
-            Logger.LogInformation($"UpdateArtist `{collection}` By User `{user}`");
+            Logger.LogInformation($"UpdateCollection `{collection}` By User `{user}`");
             return new OperationResult<bool>
             {
                 IsSuccess = !errors.Any(),

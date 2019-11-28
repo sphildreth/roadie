@@ -21,7 +21,7 @@ namespace Roadie.Api.Controllers
         private ILookupService LookupService { get; }
 
         public LookupController(ILabelService labelService, ILogger<LookupController> logger, ICacheManager cacheManager,
-                    UserManager<ApplicationUser> userManager, ILookupService lookupService, IRoadieSettings roadieSettings)
+                    UserManager<User> userManager, ILookupService lookupService, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -127,6 +127,5 @@ namespace Roadie.Api.Controllers
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
-
     }
 }

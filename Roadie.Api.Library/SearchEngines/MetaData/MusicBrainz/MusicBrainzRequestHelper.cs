@@ -63,13 +63,13 @@ namespace Roadie.Library.MetaData.MusicBrainz
                     var response = ex.Response as HttpWebResponse;
                     if(response?.StatusCode == HttpStatusCode.NotFound)
                     {
-                        Trace.WriteLine($"GetAsync: 404 Response For url [{ url }]");
+                        Trace.WriteLine($"GetAsync: 404 Response For url [{ url }]", "Warning");
                         return result;
                     }
                 }
                 catch (Exception ex)
                 {
-                    Trace.WriteLine($"GetAsync: [{ ex.ToString() }]");
+                    Trace.WriteLine($"GetAsync: [{ ex.ToString() }]", "Warning");
                     Thread.Sleep(100);
                 }
                 finally

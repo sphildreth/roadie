@@ -6,8 +6,11 @@ namespace Roadie.Library.Data
     [Table("submission")]
     public class Submission : EntityBase
     {
-        public ApplicationUser User { get; set; }
+        [ForeignKey(nameof(UserId))]
+        [InverseProperty("Submissions")]
+        public virtual User User { get; set; }
 
-        [Column("userId")] public int UserId { get; set; }
+        [Column("userId")]
+        public int UserId { get; set; }
     }
 }

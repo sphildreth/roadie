@@ -43,7 +43,7 @@ namespace Roadie.Api.Services
             BookmarkService = bookmarkService;
         }
 
-        public async Task<OperationResult<Label>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
+        public async Task<OperationResult<Label>> ById(Library.Models.Users.User roadieUser, Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
@@ -57,7 +57,7 @@ namespace Roadie.Api.Services
                 var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Label);
                 if (userBookmarkResult.IsSuccess)
                 {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark.Value == result.Data.Id.ToString()) != null;
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x?.Bookmark?.Value == result?.Data?.Id?.ToString()) != null;
                 }
                 if (result.Data.Comments.Any())
                 {
@@ -85,7 +85,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> Delete(ApplicationUser user, Guid id)
+        public async Task<OperationResult<bool>> Delete(Library.Identity.User user, Guid id)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -99,7 +99,7 @@ namespace Roadie.Api.Services
             {
                 File.Delete(labelImageFilename);
             }
-
+            await BookmarkService.RemoveAllBookmarksForItem(BookmarkType.Label, label.Id);
             Logger.LogWarning("User `{0}` deleted Label `{1}]`", user, label);
             CacheManager.ClearRegion(label.CacheRegion);
             sw.Stop();
@@ -111,7 +111,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<LabelList>> List(User roadieUser, PagedRequest request,
+        public async Task<Library.Models.Pagination.PagedResult<LabelList>> List(Library.Models.Users.User roadieUser, PagedRequest request,
             bool? doRandomize = false)
         {
             var sw = new Stopwatch();
@@ -198,7 +198,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> MergeLabelsIntoLabel(ApplicationUser user, Guid intoLabelId, IEnumerable<Guid> labelIdsToMerge)
+        public async Task<OperationResult<bool>> MergeLabelsIntoLabel(Library.Identity.User user, Guid intoLabelId, IEnumerable<Guid> labelIdsToMerge)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -258,12 +258,12 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Library.Models.Image>> SetLabelImageByUrl(User user, Guid id, string imageUrl)
+        public async Task<OperationResult<Library.Models.Image>> SetLabelImageByUrl(Library.Models.Users.User user, Guid id, string imageUrl)
         {
             return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
 
-        public async Task<OperationResult<bool>> UpdateLabel(User user, Label model)
+        public async Task<OperationResult<bool>> UpdateLabel(Library.Models.Users.User user, Label model)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -344,7 +344,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Library.Models.Image>> UploadLabelImage(User user, Guid id, IFormFile file)
+        public async Task<OperationResult<Library.Models.Image>> UploadLabelImage(Library.Models.Users.User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
             using (var ms = new MemoryStream())
@@ -452,7 +452,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(User user, Guid id, byte[] imageBytes)
+        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(Library.Models.Users.User user, Guid id, byte[] imageBytes)
         {
             var sw = new Stopwatch();
             sw.Start();

@@ -21,7 +21,7 @@ namespace Roadie.Api.Controllers
         private IImageService ImageService { get; }
 
         public ImageController(IImageService imageService, ILogger<ImageController> logger, ICacheManager cacheManager,
-                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+                    UserManager<User> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;

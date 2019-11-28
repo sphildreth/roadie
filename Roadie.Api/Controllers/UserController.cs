@@ -6,9 +6,7 @@ using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
-using Roadie.Library.Identity;
 using Roadie.Library.Models.Pagination;
-using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -31,7 +29,7 @@ namespace Roadie.Api.Controllers
         private IUserService UserService { get; }
 
         public UserController(IUserService userService, ILogger<UserController> logger, ICacheManager cacheManager,
-                            IConfiguration configuration, ITokenService tokenService, UserManager<ApplicationUser> userManager,
+                            IConfiguration configuration, ITokenService tokenService, UserManager<Library.Identity.User> userManager,
             IHttpContext httpContext, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
@@ -40,7 +38,6 @@ namespace Roadie.Api.Controllers
             TokenService = tokenService;
             RoadieHttpContext = httpContext;
         }
-
 
         [HttpGet("accountsettings/{id}")]
         [ProducesResponseType(200)]
@@ -69,7 +66,6 @@ namespace Roadie.Api.Controllers
             }
             return Ok(result);
         }
-
 
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
@@ -275,7 +271,7 @@ namespace Roadie.Api.Controllers
 
         [HttpPost("profile/edit")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> UpdateProfile(User model)
+        public async Task<IActionResult> UpdateProfile(Library.Models.Users.User model)
         {
             if (!ModelState.IsValid)
             {
@@ -286,7 +282,7 @@ namespace Roadie.Api.Controllers
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess)
             {
-                if(result.IsAccessDeniedResult)
+                if (result.IsAccessDeniedResult)
                 {
                     return StatusCode((int)HttpStatusCode.Forbidden);
                 }

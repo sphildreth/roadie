@@ -9,7 +9,7 @@ namespace Roadie.Library.Configuration
     {
         public static string RoadieImageFolder = "__roadie_images";
 
-        public DbContexts DbContextToUse { get; set; }
+        public DbContexts DbContextToUse { get; set; } = DbContexts.SQLite;
          
         /// <summary>
         ///     If the artist name is found in the values then use the key.
@@ -81,7 +81,6 @@ namespace Roadie.Library.Configuration
         }
 
         public ImageSize LargeImageSize { get; set; }
-
         public string LibraryFolder { get; set; }
         public string ListenAddress { get; set; }
 
@@ -151,7 +150,7 @@ namespace Roadie.Library.Configuration
 
         public RoadieSettings()
         {
-            DbContextToUse = DbContexts.MySQL;
+            DbContextToUse = DbContexts.SQLite;
             ArtistNameReplace = new Dictionary<string, IEnumerable<string>>
             {
                 { "AC/DC", new List<string>{ "AC; DC", "AC;DC", "AC/ DC", "AC DC" }},
@@ -159,10 +158,10 @@ namespace Roadie.Library.Configuration
             };
             DefaultTimeZone = "US / Central";
             DontDoMetaDataProvidersSearchArtists = new List<string> { "Various Artists", "Sound Tracks" };
-            FileExtensionsToDelete = new List<string> { ".accurip", ".bmp", ".cue", ".dat", ".db", ".exe", ".gif", ".htm", ".html", ".ini", ".log", ".jpg", ".jpeg", ".par", ".par2", ".pdf", ".png", ".md5", ".mht", ".mpg", ".m3u", ".nfo", ".nzb", ".pls", ".sfv", ".srr", ".txt", ".url" };
-            InboundFolder = "M:/inbound";
+            FileExtensionsToDelete = new List<string> { ".accurip", ".cue", ".dat", ".db", ".exe", ".htm", ".html", ".ini", ".log", ".par", ".par2", ".pdf", ".md5", ".mht", ".mpg", ".m3u", ".nfo", ".nzb", ".pls", ".sfv", ".srr", ".txt", ".url" };
+            InboundFolder = "data/inbound";
             LargeImageSize = new ImageSize { Width = 500, Height = 500 };
-            LibraryFolder = "M:/library";
+            LibraryFolder = "data/library";
             MaximumImageSize = new ImageSize { Width = 2048, Height = 2048 };
             MediumImageSize = new ImageSize { Width = 320, Height = 320 };
             RecordNoResultSearches = true;
@@ -174,7 +173,6 @@ namespace Roadie.Library.Configuration
             SmtpFromAddress = "noreply@roadie.rocks";
             SmtpPort = 587;
             SmtpUsername = "roadie";
-            SmtpHost = "smtp.roadie.rocks";
             SmtpUseSSl = true;
 
             Inspector = new Inspector();

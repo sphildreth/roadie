@@ -12,22 +12,22 @@ namespace Roadie.Api.Services
 {
     public interface IArtistService
     {
-        Task<OperationResult<Artist>> ById(User user, Guid id, IEnumerable<string> includes);
+        Task<OperationResult<Artist>> ById(Library.Models.Users.User user, Guid id, IEnumerable<string> includes);
 
-        Task<OperationResult<bool>> Delete(ApplicationUser user, Library.Data.Artist Artist, bool deleteFolder);
+        Task<OperationResult<bool>> Delete(Library.Identity.User user, Library.Data.Artist Artist, bool deleteFolder);
 
-        Task<PagedResult<ArtistList>> List(User user, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true);
+        Task<PagedResult<ArtistList>> List(Library.Models.Users.User user, PagedRequest request, bool? doRandomize = false, bool? onlyIncludeWithReleases = true);
 
-        Task<OperationResult<bool>> MergeArtists(ApplicationUser user, Guid artistToMergeId, Guid artistToMergeIntoId);
+        Task<OperationResult<bool>> MergeArtists(Library.Identity.User user, Guid artistToMergeId, Guid artistToMergeIntoId);
 
-        Task<OperationResult<bool>> RefreshArtistMetadata(ApplicationUser user, Guid ArtistId);
+        Task<OperationResult<bool>> RefreshArtistMetadata(Library.Identity.User user, Guid ArtistId);
 
-        Task<OperationResult<bool>> ScanArtistReleasesFolders(ApplicationUser user, Guid artistId, string destinationFolder, bool doJustInfo);
+        Task<OperationResult<bool>> ScanArtistReleasesFolders(Library.Identity.User user, Guid artistId, string destinationFolder, bool doJustInfo);
 
-        Task<OperationResult<Image>> SetReleaseImageByUrl(ApplicationUser user, Guid id, string imageUrl);
+        Task<OperationResult<Image>> SetReleaseImageByUrl(Library.Identity.User user, Guid id, string imageUrl);
 
-        Task<OperationResult<bool>> UpdateArtist(ApplicationUser user, Artist artist);
+        Task<OperationResult<bool>> UpdateArtist(Library.Identity.User user, Artist artist);
 
-        Task<OperationResult<Image>> UploadArtistImage(ApplicationUser user, Guid id, IFormFile file);
+        Task<OperationResult<Image>> UploadArtistImage(Library.Identity.User user, Guid id, IFormFile file);
     }
 }

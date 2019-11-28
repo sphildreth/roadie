@@ -8,7 +8,6 @@ using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
-using Roadie.Library.Identity;
 using Roadie.Library.Models.ThirdPartyApi.Subsonic;
 using Roadie.Library.Scrobble;
 using Roadie.Library.Utility;
@@ -41,7 +40,7 @@ namespace Roadie.Api.Controllers
         public SubsonicController(ISubsonicService subsonicService, ITrackService trackService,
                                                     IReleaseService releaseService,
             IPlayActivityService playActivityService, ILogger<SubsonicController> logger, ICacheManager cacheManager,
-            UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+            UserManager<Library.Identity.User> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -658,8 +657,10 @@ namespace Roadie.Api.Controllers
         {
             var appUser = await SubsonicService.Authenticate(request);
             if (!(appUser?.IsSuccess ?? false) || (appUser?.IsNotFoundResult ?? false))
+            {
                 return BuildResponse(request, appUser.Adapt<SubsonicOperationResult<Response>>());
-            SubsonicUser = UserModelForUser(appUser.Data.User);
+            }
+            SubsonicUser = UserModelForUser(appUser.Data.SubsonicUser);
             return null;
         }
 

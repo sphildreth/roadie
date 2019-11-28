@@ -33,7 +33,7 @@ namespace Roadie.Library.Utility
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"Error Reading Cue [{ cueFilename }] [{ ex }]");
+                Trace.WriteLine($"Error Reading Cue [{ cueFilename }] [{ ex }]", "Error");
             }
             return results;
         }
@@ -70,7 +70,7 @@ namespace Roadie.Library.Utility
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"Error Reading Sfv [{ sfvFilename }] [{ ex }]");
+                Trace.WriteLine($"Error Reading Sfv [{ sfvFilename }] [{ ex }]", "Error");
             }
             return results;
         }
@@ -101,7 +101,7 @@ namespace Roadie.Library.Utility
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"Error Reading Cue [{ m3uFilename }] [{ ex }]");
+                Trace.WriteLine($"Error Reading Cue [{ m3uFilename }] [{ ex }]", "Error");
             }
             return results;
         }

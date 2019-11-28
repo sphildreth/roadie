@@ -188,7 +188,7 @@ namespace Roadie.Library.Data.Context.Implementation
 	                                    WHERE ut.userId = {1} AND ut.isFavorite = 1) AND {2} = 1) OR {2} = 0)
                         order BY RIGHT( HEX( (1<<24) * (1+RAND()) ), 6)
                         LIMIT 0, {0}";
-            var ids = await Releases.FromSqlRaw(sql, randomLimit, userId, doOnlyFavorites ? "1" : "0", doOnlyRated ? "1" : "0").Select(x => x.Id).ToListAsync();
+            var ids = await Tracks.FromSqlRaw(sql, randomLimit, userId, doOnlyFavorites ? "1" : "0", doOnlyRated ? "1" : "0").Select(x => x.Id).ToListAsync();
             var dict = ids.Select((id, i) => new { key = i, value = id }).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);
         }

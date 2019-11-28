@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Roadie.Library.Data
@@ -16,5 +17,13 @@ namespace Roadie.Library.Data
 
         [NotMapped]
         public override string SortName { get; set; }
+
+        [InverseProperty("CreditCategory")]
+        public virtual ICollection<Credit> Credits { get; set; }
+
+        public CreditCategory()
+        {
+            Credits = new HashSet<Credit>();
+        }
     }
 }

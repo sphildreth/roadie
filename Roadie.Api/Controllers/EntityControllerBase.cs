@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Threading.Tasks;
 using models = Roadie.Library.Models.Users;
 
@@ -31,10 +30,10 @@ namespace Roadie.Api.Controllers
 
         protected IRoadieSettings RoadieSettings { get; }
 
-        protected UserManager<ApplicationUser> UserManager { get; }
+        protected UserManager<User> UserManager { get; }
 
         public EntityControllerBase(ICacheManager cacheManager, IRoadieSettings roadieSettings,
-                                            UserManager<ApplicationUser> userManager)
+                                            UserManager<User> userManager)
         {
             CacheManager = cacheManager;
             RoadieSettings = roadieSettings;
@@ -144,13 +143,13 @@ namespace Roadie.Api.Controllers
             return new EmptyResult();
         }
 
-        protected models.User UserModelForUser(ApplicationUser user)
+        protected models.User UserModelForUser(User user)
         {
             if (user == null) return null;
             var result = user.Adapt<models.User>();
             result.IsAdmin = User.IsInRole("Admin");
             result.IsEditor = User.IsInRole("Editor") || result.IsAdmin;
             return result;
-        }        
+        }
     }
 }

@@ -54,7 +54,7 @@ namespace Roadie.Api.Services
 
         private ITrackService TrackService { get; }
 
-        private UserManager<ApplicationUser> UserManger { get; }
+        private UserManager<Library.Identity.User> UserManger { get; }
 
         public SubsonicService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
@@ -70,7 +70,7 @@ namespace Roadie.Api.Services
             IImageService imageService,
             IBookmarkService bookmarkService,
             IPlayActivityService playActivityService,
-            UserManager<ApplicationUser> userManager
+            UserManager<Library.Identity.User> userManager
         )
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
@@ -89,7 +89,7 @@ namespace Roadie.Api.Services
         ///     Adds a message to the chat log.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> AddChatMessage(subsonic.Request request,
-            User roadieUser)
+            Library.Models.Users.User roadieUser)
         {
             if (string.IsNullOrEmpty(request.Message))
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
@@ -116,16 +116,14 @@ namespace Roadie.Api.Services
         /// <summary>
         ///     Authenticate the given credentials and return the corresponding ApplicationUser
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>> Authenticate(
-            subsonic.Request request)
+        public async Task<subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>> Authenticate(subsonic.Request request)
         {
             if (request == null || string.IsNullOrEmpty(request?.u))
                 return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>(
                     subsonic.ErrorCodes.WrongUsernameOrPassword, "Unknown Username");
             try
             {
-                var user = DbContext.Users
-                    .FirstOrDefault(x => x.UserName == request.u);
+                var user = DbContext.Users.FirstOrDefault(x => x.UserName == request.u);
                 if (user == null)
                 {
                     Logger.LogTrace($"Unknown User [{request.u}]");
@@ -170,14 +168,13 @@ namespace Roadie.Api.Services
                         subsonic.ErrorCodes.WrongUsernameOrPassword, "Unknown Username");
                 }
 
-                Logger.LogTrace(
-                    $"Subsonic: Successfully Authenticated User [{user}] via Application [{request.c}], Application Version [{request.v}]");
+                Logger.LogTrace($"Subsonic: Successfully Authenticated User [{user}] via Application [{request.c}], Application Version [{request.v}]");
                 return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>
                 {
                     IsSuccess = true,
                     Data = new subsonic.SubsonicAuthenticateResponse
                     {
-                        User = user
+                        SubsonicUser = user
                     }
                 };
             }
@@ -195,7 +192,7 @@ namespace Roadie.Api.Services
         ///     users.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> CreateBookmark(subsonic.Request request,
-            User roadieUser, int position, string comment)
+            Library.Models.Users.User roadieUser, int position, string comment)
         {
             if (!request.TrackId.HasValue)
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
@@ -255,7 +252,7 @@ namespace Roadie.Api.Services
         /// <param name="playlistId">The playlist ID. (if updating else blank is adding)</param>
         /// <returns></returns>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> CreatePlaylist(subsonic.Request request,
-            User roadieUser, string name, string[] songIds, string playlistId = null)
+            Library.Models.Users.User roadieUser, string name, string[] songIds, string playlistId = null)
         {
             data.Playlist playlist = null;
 
@@ -338,7 +335,7 @@ namespace Roadie.Api.Services
         ///     Deletes the bookmark for a given file.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> DeleteBookmark(subsonic.Request request,
-            User roadieUser)
+            Library.Models.Users.User roadieUser)
         {
             if (!request.TrackId.HasValue)
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
@@ -374,7 +371,7 @@ namespace Roadie.Api.Services
         /// <summary>
         ///     Deletes a saved playlist.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> DeletePlaylist(subsonic.Request request, User roadieUser)
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> DeletePlaylist(subsonic.Request request, Library.Models.Users.User roadieUser)
         {
             //request.PlaylistId.Value
 
@@ -410,7 +407,7 @@ namespace Roadie.Api.Services
         ///     Returns details for an album, including a list of songs. This method organizes music according to ID3 tags.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetAlbum(subsonic.Request request,
-            User roadieUser)
+            Library.Models.Users.User roadieUser)
         {
             try
             {
@@ -474,7 +471,7 @@ namespace Roadie.Api.Services
         /// <summary>
         ///     Returns album notes, image URLs etc, using data from last.fm.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetAlbumInfo(subsonic.Request request, User roadieUser, subsonic.AlbumInfoVersion version)
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetAlbumInfo(subsonic.Request request, Library.Models.Users.User roadieUser, subsonic.AlbumInfoVersion version)
         {
             var releaseId = SafeParser.ToGuid(request.id);
             if (!releaseId.HasValue)
@@ -521,7 +518,7 @@ namespace Roadie.Api.Services
         ///     Subsonic web interface.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetAlbumList(subsonic.Request request,
-            User roadieUser, subsonic.AlbumListVersions version)
+            Library.Models.Users.User roadieUser, subsonic.AlbumListVersions version)
         {
             var releaseResult = new PagedResult<ReleaseList>();
 
@@ -597,7 +594,7 @@ namespace Roadie.Api.Services
         ///     Returns details for an artist, including a list of albums. This method organizes music according to ID3 tags.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetArtist(subsonic.Request request,
-            User roadieUser)
+            Library.Models.Users.User roadieUser)
         {
             var artistId = SafeParser.ToGuid(request.id);
             if (!artistId.HasValue)
@@ -678,7 +675,7 @@ namespace Roadie.Api.Services
         ///     Similar to getIndexes, but organizes music according to ID3 tags.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetArtists(subsonic.Request request,
-            User roadieUser)
+            Library.Models.Users.User roadieUser)
         {
             var cacheKey = $"urn:subsonic_artists:{roadieUser.UserName}";
             return await CacheManager.GetAsync(cacheKey,
@@ -690,7 +687,7 @@ namespace Roadie.Api.Services
         ///     Returns all bookmarks for this user. A bookmark is a position within a certain media file.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetBookmarks(subsonic.Request request,
-            User roadieUser)
+            Library.Models.Users.User roadieUser)
         {
             var pagedRequest = request.PagedRequest;
             pagedRequest.Sort = "LastUpdated";
@@ -719,7 +716,7 @@ namespace Roadie.Api.Services
         ///     Returns the current visible (non-expired) chat messages.
         /// </summary>
         public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetChatMessages(subsonic.Request request,
-            User roadieUser, long? since)
+            Library.Models.Users.User roadieUser, long? since)
         {
             var messagesSince = since.HasValue ? (DateTime?)since.Value.FromUnixTime() : null;
             var chatMessages = (from cm in DbContext.ChatMessages
@@ -859,7 +856,7 @@ namespace Roadie.Api.Services
         ///     time (in milliseconds since 1 Jan 1970).
         /// </param>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetIndexes(subsonic.Request request,
-            User roadieUser, long? ifModifiedSince = null)
+            Library.Models.Users.User roadieUser, long? ifModifiedSince = null)
         {
             var cacheKey = "urn:subsonic_indexes";
             return await CacheManager.GetAsync(cacheKey, async () =>
@@ -928,7 +925,7 @@ namespace Roadie.Api.Services
         ///     getMusicDirectory.
         /// </param>
         /// <returns></returns>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetMusicDirectory(subsonic.Request request, User roadieUser)
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetMusicDirectory(subsonic.Request request, Library.Models.Users.User roadieUser)
         {
             var directory = new subsonic.Directory();
             var user = await GetUser(roadieUser?.UserId);
@@ -1048,7 +1045,7 @@ namespace Roadie.Api.Services
         ///     Returns what is currently being played by all users. Takes no extra parameters.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetNowPlaying(subsonic.Request request,
-            User roadieUser)
+            Library.Models.Users.User roadieUser)
         {
             var pagedRequest = request.PagedRequest;
             pagedRequest.Sort = "PlayedDateDateTime";
@@ -1097,7 +1094,7 @@ namespace Roadie.Api.Services
         ///     Returns a listing of files in a saved playlist.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPlaylist(subsonic.Request request,
-            User roadieUser)
+            Library.Models.Users.User roadieUser)
         {
             var playListId = SafeParser.ToGuid(request.id);
             if (!playListId.HasValue)
@@ -1131,7 +1128,7 @@ namespace Roadie.Api.Services
         ///     Returns all playlists a user is allowed to play.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPlaylists(subsonic.Request request,
-            User roadieUser, string filterToUserName)
+            Library.Models.Users.User roadieUser, string filterToUserName)
         {
             var pagedRequest = request.PagedRequest;
             pagedRequest.Sort = "Playlist.Text";
@@ -1160,7 +1157,7 @@ namespace Roadie.Api.Services
         ///     between different clients/apps while retaining the same play queue (for instance when listening to an audio book).
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPlayQueue(subsonic.Request request,
-            User roadieUser)
+            Library.Models.Users.User roadieUser)
         {
             var user = await GetUser(roadieUser.UserId);
 
@@ -1231,7 +1228,7 @@ namespace Roadie.Api.Services
         ///     Returns random songs matching the given criteria.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetRandomSongs(subsonic.Request request,
-            User roadieUser)
+            Library.Models.Users.User roadieUser)
         {
             var songs = new List<subsonic.Child>();
 
@@ -1258,7 +1255,7 @@ namespace Roadie.Api.Services
         ///     used for artist radio features.
         /// </summary>
         public Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetSimliarSongs(subsonic.Request request,
-            User roadieUser, subsonic.SimilarSongsVersion version, int? count = 50)
+            Library.Models.Users.User roadieUser, subsonic.SimilarSongsVersion version, int? count = 50)
         {
             // TODO How to determine similar songs? Perhaps by genre?
 
@@ -1307,7 +1304,7 @@ namespace Roadie.Api.Services
         ///     Returns details for a song.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetSong(subsonic.Request request,
-            User roadieUser)
+            Library.Models.Users.User roadieUser)
         {
             if (!request.TrackId.HasValue)
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
@@ -1337,7 +1334,7 @@ namespace Roadie.Api.Services
         ///     Returns songs in a given genre.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetSongsByGenre(subsonic.Request request,
-            User roadieUser)
+            Library.Models.Users.User roadieUser)
         {
             var pagedRequest = request.PagedRequest;
             pagedRequest.FilterByGenre = request.Genre;
@@ -1364,7 +1361,7 @@ namespace Roadie.Api.Services
         ///     Returns starred songs, albums and artists.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetStarred(subsonic.Request request,
-            User roadieUser, subsonic.StarredVersion version)
+            Library.Models.Users.User roadieUser, subsonic.StarredVersion version)
         {
             var pagedRequest = request.PagedRequest;
             pagedRequest.FilterFavoriteOnly = true;
@@ -1423,7 +1420,7 @@ namespace Roadie.Api.Services
         ///     Returns top songs for the given artist, using data from last.fm.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetTopSongs(subsonic.Request request,
-            User roadieUser, int? count = 50)
+            Library.Models.Users.User roadieUser, int? count = 50)
         {
             data.Artist artist = null;
             if (!string.IsNullOrEmpty(request.ArtistName))
@@ -1521,7 +1518,7 @@ namespace Roadie.Api.Services
         ///     while retaining the same play queue (for instance when listening to an audio book).
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> SavePlayQueue(subsonic.Request request,
-            User roadieUser, string current, long? position)
+            Library.Models.Users.User roadieUser, string current, long? position)
         {
             // Remove any existing Que for User
             var user = await GetUser(roadieUser.UserId);
@@ -1569,7 +1566,7 @@ namespace Roadie.Api.Services
         ///     Returns albums, artists and songs matching the given search criteria. Supports paging through the result.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> Search(subsonic.Request request,
-            User roadieUser, subsonic.SearchVersion version)
+            Library.Models.Users.User roadieUser, subsonic.SearchVersion version)
         {
             var query = HttpEncoder.UrlDecode(request.Query).Replace("*", "").Replace("%", "").Replace(";", "");
 
@@ -1652,7 +1649,7 @@ namespace Roadie.Api.Services
         ///     Sets the rating for a music file. If rating is zero then remove rating.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> SetRating(subsonic.Request request,
-            User roadieUser, short rating)
+            Library.Models.Users.User roadieUser, short rating)
         {
             var user = await GetUser(roadieUser.UserId);
             if (user == null)
@@ -1700,7 +1697,7 @@ namespace Roadie.Api.Services
         ///     Attaches a star to a song, album or artist.
         /// </summary>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> ToggleStar(subsonic.Request request,
-            User roadieUser, bool star, string[] albumIds = null, string[] artistIds = null)
+            Library.Models.Users.User roadieUser, bool star, string[] albumIds = null, string[] artistIds = null)
         {
             var user = await GetUser(roadieUser.UserId);
             if (user == null)
@@ -1783,7 +1780,7 @@ namespace Roadie.Api.Services
         /// <param name="songIdsToAdd">Add this song with this ID to the playlist. Multiple parameters allowed</param>
         /// <param name="songIndexesToRemove">Remove the song at this position in the playlist. Multiple parameters allowed.</param>
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> UpdatePlaylist(subsonic.Request request,
-            User roadieUser, string playListId, string name = null, string comment = null, bool? isPublic = null,
+            Library.Models.Users.User roadieUser, string playListId, string name = null, string comment = null, bool? isPublic = null,
             string[] songIdsToAdd = null, int[] songIndexesToRemove = null)
         {
             request.id = playListId ?? request.id;
@@ -1862,7 +1859,7 @@ namespace Roadie.Api.Services
         }
 
         private async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetArtistsAction(
-            subsonic.Request request, User roadieUser)
+            subsonic.Request request, Library.Models.Users.User roadieUser)
         {
             var indexes = new List<subsonic.IndexID3>();
             var musicFolder = MusicFolders().FirstOrDefault(x => x.id == (request.MusicFolderId ?? 2));
@@ -1905,7 +1902,7 @@ namespace Roadie.Api.Services
         }
 
         private async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetIndexesAction(
-            subsonic.Request request, User roadieUser, long? ifModifiedSince = null)
+            subsonic.Request request, Library.Models.Users.User roadieUser, long? ifModifiedSince = null)
         {
             var modifiedSinceFilter =
                 ifModifiedSince.HasValue ? (DateTime?)ifModifiedSince.Value.FromUnixTime() : null;
@@ -1988,7 +1985,7 @@ namespace Roadie.Api.Services
         }
 
         private new async Task<subsonic.SubsonicOperationResult<bool>> SetArtistRating(Guid artistId,
-            ApplicationUser user, short rating)
+            Library.Identity.User user, short rating)
         {
             var r = await base.SetArtistRating(artistId, user, rating);
             if (r.IsNotFoundResult)
@@ -2002,7 +1999,7 @@ namespace Roadie.Api.Services
         }
 
         private new async Task<subsonic.SubsonicOperationResult<bool>> SetReleaseRating(Guid releaseId,
-            ApplicationUser user, short rating)
+            Library.Identity.User user, short rating)
         {
             var r = await base.SetReleaseRating(releaseId, user, rating);
             if (r.IsNotFoundResult)
@@ -2016,7 +2013,7 @@ namespace Roadie.Api.Services
         }
 
         private new async Task<subsonic.SubsonicOperationResult<bool>> SetTrackRating(Guid trackId,
-            ApplicationUser user, short rating)
+            Library.Identity.User user, short rating)
         {
             var r = await base.SetTrackRating(trackId, user, rating);
             if (r.IsNotFoundResult)
@@ -2303,7 +2300,7 @@ namespace Roadie.Api.Services
             return playlists.Select(x => SubsonicPlaylistForPlaylist(x)).ToArray();
         }
 
-        private async Task<subsonic.User> SubsonicUserForUser(ApplicationUser user)
+        private async Task<subsonic.User> SubsonicUserForUser(Library.Identity.User user)
         {
             var isAdmin = await UserManger.IsInRoleAsync(user, "Admin");
             var isEditor = await UserManger.IsInRoleAsync(user, "Editor");
@@ -2332,7 +2329,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleArtistStar(Guid artistId, ApplicationUser user, bool starred)
+        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleArtistStar(Guid artistId, Library.Identity.User user, bool starred)
         {
             var r = await ToggleArtistFavorite(artistId, user, starred);
             if (r.IsNotFoundResult)
@@ -2346,7 +2343,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleReleaseStar(Guid releaseId, ApplicationUser user, bool starred)
+        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleReleaseStar(Guid releaseId, Library.Identity.User user, bool starred)
         {
             var r = await ToggleReleaseFavorite(releaseId, user, starred);
             if (r.IsNotFoundResult)
@@ -2360,7 +2357,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleTrackStar(Guid trackId, ApplicationUser user, bool starred)
+        private async Task<subsonic.SubsonicOperationResult<bool>> ToggleTrackStar(Guid trackId, Library.Identity.User user, bool starred)
         {
             var r = await ToggleTrackFavorite(trackId, user, starred);
             if (r.IsNotFoundResult)

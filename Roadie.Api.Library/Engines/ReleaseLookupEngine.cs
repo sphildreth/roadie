@@ -110,42 +110,36 @@ namespace Roadie.Library.Engines
                 if (inserted > 0 && release.Id > 0)
                 {
                     _addedReleaseIds.Add(release.Id);
-                    if (releaseGenreTables != null && releaseGenreTables.Any(x => x.GenreId == null))
+                    if (releaseGenreTables != null)
                     {
-                        var addedGenreIds = new List<int>();
-                        foreach (var releaseGenreTable in releaseGenreTables)
+                        foreach (var releaseGenreTable in releaseGenreTables.Select(x => x.Genre?.Name).Distinct())
                         {
-                            var genreName = releaseGenreTable.Genre?.Name?.ToAlphanumericName();
+                            var genreName = releaseGenreTable.ToAlphanumericName().ToTitleCase();
+                            var normalizedName = genreName.ToUpper();
                             if (string.IsNullOrEmpty(genreName)) continue;
-                            if (releaseGenreTable.Genre.Name.Length > 100)
+                            if (genreName.Length > 100)
                             {
-                                var originalName = releaseGenreTable.Genre.Name;
-                                releaseGenreTable.Genre.Name = releaseGenreTable.Genre.Name.Substring(0, 99);
+                                var originalName = genreName;
                                 genreName = genreName.Substring(0, 99);
-                                Logger.LogWarning($"Genre Name Too long was [{originalName}] truncated to [{releaseGenreTable.Genre.Name}]");
+                                Logger.LogWarning($"Genre Name Too long was [{originalName}] truncated to [{genreName}]");
                             }
-                            var genre = DbContext.Genres.FirstOrDefault(x => x.NormalizedName == genreName);
+                            var genre = DbContext.Genres.FirstOrDefault(x => x.NormalizedName == normalizedName);
                             if (genre == null)
                             {
                                 genre = new Genre
                                 {
-                                    Name = releaseGenreTable.Genre.Name,
-                                    NormalizedName = genreName
+                                    Name = genreName,
+                                    NormalizedName = normalizedName
                                 };
                                 DbContext.Genres.Add(genre);
                                 await DbContext.SaveChangesAsync();
                             }
-                            if (genre != null &&
-                                genre.Id > 0 &&
-                                !addedGenreIds.Any(x => x == genre.Id))
+                            DbContext.ReleaseGenres.Add(new ReleaseGenre
                             {
-                                DbContext.ReleaseGenres.Add(new ReleaseGenre
-                                {
-                                    ReleaseId = release.Id,
-                                    GenreId = genre.Id
-                                });
-                                addedGenreIds.Add(genre.Id);
-                            }
+                                ReleaseId = release.Id,
+                                GenreId = genre.Id
+                            });
+                            await DbContext.SaveChangesAsync();
                         }
                     }
 
@@ -363,32 +357,6 @@ namespace Roadie.Library.Engines
                 }
 
                 var release = DatabaseQueryForReleaseTitle(artist, metaData.Release);
-
-                //var searchName = metaData.Release.NormalizeName().ToLower();
-                //var specialSearchName = metaData.Release.ToAlphanumericName();
-
-                //var altStart = $"{searchName}|";
-                //var altIn = $"|{searchName}|";
-                //var altEnds = $"|{searchName}";
-
-                //var altStartSpecial = $"{specialSearchName}|";
-                //var altInSpecial = $"|{specialSearchName}|";
-                //var altEndsSpecial = $"|{specialSearchName}";
-
-                //var release = (from r in DbContext.Releases
-                //               where r.ArtistId == artist.Id
-                //               where r.Title == searchName ||
-                //                     r.Title == specialSearchName ||
-                //                     r.AlternateNames == searchName ||
-                //                     r.AlternateNames == specialSearchName ||
-                //                     r.AlternateNames.Contains(altStart) ||
-                //                     r.AlternateNames.Contains(altIn) ||
-                //                     r.AlternateNames.Contains(altEnds) ||
-                //                     r.AlternateNames.Contains(altStartSpecial) ||
-                //                     r.AlternateNames.Contains(altInSpecial) ||
-                //                     r.AlternateNames.Contains(altEndsSpecial)
-                //               select r
-                //    ).FirstOrDefault();
 
                 sw.Stop();
                 if (release == null || !release.IsValid)

@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Mapster;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data.Context;
@@ -25,14 +27,41 @@ namespace Roadie.Api.Services
 {
     public class BookmarkService : ServiceBase, IBookmarkService
     {
+        private IUserService UserService { get; }
+
         public BookmarkService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
             IRoadieDbContext context,
             ICacheManager cacheManager,
+            IUserService userService,
             ILogger<BookmarkService> logger)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
+            UserService = userService;
+        }
+
+        /// <summary>
+        /// When a bookmarkable item gets deleted then delete any bookmarks to that item, since its a generic column there is not FK setup.
+        /// </summary>
+        public async Task<OperationResult<bool>> RemoveAllBookmarksForItem(BookmarkType type, int id)
+        {
+            var bookmarks = await DbContext.Bookmarks.Include(x => x.User)
+                                           .Where(x => x.BookmarkType == type && x.BookmarkTargetId == id)
+                                           .ToListAsync();
+
+            var users = bookmarks.Select(x => x.User).ToList().Distinct();
+            DbContext.Bookmarks.RemoveRange(bookmarks);
+            await DbContext.SaveChangesAsync();
+            foreach(var user in users)
+            {
+                CacheManager.ClearRegion(user.CacheRegion);            
+            }            
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
+            };
         }
 
         public async Task<Library.Models.Pagination.PagedResult<models.BookmarkList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, BookmarkType? filterType = null)

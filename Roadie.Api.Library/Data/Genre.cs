@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -8,12 +7,14 @@ namespace Roadie.Library.Data
     [Table("genre")]
     public partial class Genre : EntityBase
     {
-        public ICollection<ArtistGenre> Artists { get; set; }
+        [InverseProperty("Genre")]
+        public virtual ICollection<ArtistGenre> Artists { get; set; }
 
-        public ICollection<Comment> Comments { get; set; }
+        [InverseProperty("Genre")]
+        public virtual ICollection<Comment> Comments { get; set; }
 
         [Column("name")]
-        [MaxLength(100)] 
+        [MaxLength(100)]
         [Required]
         public string Name { get; set; }
 
@@ -35,14 +36,12 @@ namespace Roadie.Library.Data
         [MaxLength(65535)]
         public string Tags { get; set; }
 
-        [Obsolete("Images moved to file system")]
-        [Column("thumbnail", TypeName = "blob")]
-        [MaxLength(65535)]
-        public byte[] Thumbnail { get; set; }
+        [Column("normalizedName")]
+        [MaxLength(100)]
+        public string NormalizedName { get; set; }
 
-        [Column("normalizedName")] [MaxLength(100)] public string NormalizedName { get; set; }
-
-        public ICollection<ReleaseGenre> Releases { get; set; }
+        [InverseProperty("Genre")]
+        public virtual ICollection<ReleaseGenre> Releases { get; set; }
 
         public Genre()
         {

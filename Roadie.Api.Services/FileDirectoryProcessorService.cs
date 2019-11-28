@@ -76,7 +76,7 @@ namespace Roadie.Api.Services
             return result;
         }
 
-        public async Task<OperationResult<bool>> Process(ApplicationUser user, DirectoryInfo folder, bool doJustInfo, int? submissionId = null, bool doDeleteFiles = true)
+        public async Task<OperationResult<bool>> Process(User user, DirectoryInfo folder, bool doJustInfo, int? submissionId = null, bool doDeleteFiles = true)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -121,7 +121,7 @@ namespace Roadie.Api.Services
         /// <summary>
         ///     Perform any operations to the given folder and the plugin results after processing
         /// </summary>
-        private async Task<bool> PostProcessFolder(ApplicationUser user, DirectoryInfo inboundFolder, IEnumerable<PluginResultInfo> pluginResults, bool doJustInfo, bool doDeleteFiles = true)
+        private async Task<bool> PostProcessFolder(User user, DirectoryInfo inboundFolder, IEnumerable<PluginResultInfo> pluginResults, bool doJustInfo, bool doDeleteFiles = true)
         {
             SimpleContract.Requires<ArgumentNullException>(inboundFolder != null, "Invalid InboundFolder");
             if (pluginResults != null)

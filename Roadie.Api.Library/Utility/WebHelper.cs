@@ -52,7 +52,7 @@ namespace Roadie.Library.Utility
             }
             catch (Exception ex)
             {
-                Trace.WriteLine(string.Format("Error with url [{0}] Exception [{1}]", url, ex));
+                Trace.WriteLine(string.Format("Error with url [{0}] Exception [{1}]", url, ex), "Warning");
             }
 
             return null;
@@ -90,7 +90,7 @@ namespace Roadie.Library.Utility
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"GetImageFromUrlAsync Url [{ url }], Exception [{ ex.ToString() }");
+                Trace.WriteLine($"GetImageFromUrlAsync Url [{ url }], Exception [{ ex.ToString() }", "Warning");
             }
             return null;
         }
@@ -104,7 +104,7 @@ namespace Roadie.Library.Utility
             }
             catch (Exception ex)
             {
-                Trace.WriteLine(ex.ToString());
+                Trace.WriteLine(ex.ToString(), "Error");
             }
 
             return false;

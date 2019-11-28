@@ -6,6 +6,6 @@ namespace Roadie.Api.Services
 {
     public interface ITokenService
     {
-        Task<string> GenerateToken(ApplicationUser user, UserManager<ApplicationUser> userManager);
+        Task<string> GenerateToken(User user, UserManager<User> userManager);
     }
 }

@@ -66,7 +66,7 @@ namespace Roadie.Api.Services
             AudioMetaDataHelper = audioMetaDataHelper;
         }
 
-        public async Task<OperationResult<Release>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null)
+        public async Task<OperationResult<Release>> ById(Library.Models.Users.User roadieUser, Guid id, IEnumerable<string> includes = null)
         {
             var timings = new Dictionary<string, long>();
             var tsw = new Stopwatch();
@@ -92,7 +92,7 @@ namespace Roadie.Api.Services
                 var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Release);
                 if (userBookmarkResult.IsSuccess)
                 {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x.Bookmark?.Value  == release.RoadieId.ToString()) != null;
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x?.Bookmark?.Value  == release?.RoadieId.ToString()) != null;
                 }
                 if (result.Data.Medias != null)
                 {
@@ -266,7 +266,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> Delete(ApplicationUser user, data.Release release, bool doDeleteFiles = false, bool doUpdateArtistCounts = true)
+        public async Task<OperationResult<bool>> Delete(Library.Identity.User user, data.Release release, bool doDeleteFiles = false, bool doUpdateArtistCounts = true)
         {
             SimpleContract.Requires<ArgumentNullException>(release != null, "Invalid Release");
             SimpleContract.Requires<ArgumentNullException>(release.Artist != null, "Invalid Artist");
@@ -277,13 +277,22 @@ namespace Roadie.Api.Services
             var result = false;
             var sw = new Stopwatch();
             sw.Start();
+            var releaseTracks = await (from r in DbContext.Releases
+                                       join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                       join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
+                                       where r.Id == release.Id
+                                       select t).ToArrayAsync();
+
+            var releaseLabelIds = await DbContext.ReleaseLabels.Where(x => x.ReleaseId == release.Id).Select(x => x.LabelId).ToArrayAsync();
+
+            var playlistIdsWithReleaseTracks = await (from r in DbContext.Releases
+                                                    join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
+                                                    join tr in DbContext.Tracks on rm.Id equals tr.ReleaseMediaId
+                                                    join plt in DbContext.PlaylistTracks on tr.Id equals plt.TrackId
+                                                    where r.Id == release.Id
+                                                    select plt.PlayListId).ToListAsync();
             if (doDeleteFiles)
             {
-                var releaseTracks = (from r in DbContext.Releases
-                                     join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
-                                     join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
-                                     where r.Id == release.Id
-                                     select t).ToArray();
                 foreach (var track in releaseTracks)
                 {
                     string trackPath = null;
@@ -325,8 +334,6 @@ namespace Roadie.Api.Services
                     Logger.LogError(ex);
                 }
             }
-
-            var releaseLabelIds = DbContext.ReleaseLabels.Where(x => x.ReleaseId == release.Id).Select(x => x.LabelId).ToArray();
             DbContext.Releases.Remove(release);
             var i = await DbContext.SaveChangesAsync();
             result = true;
@@ -337,13 +344,19 @@ namespace Roadie.Api.Services
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex,
-                    string.Format("Error Clearing Cache For Release [{0}] Exception [{1}]", release.Id,
-                        ex.Serialize()));
+                Logger.LogError(ex, string.Format("Error Clearing Cache For Release [{0}] Exception [{1}]", release.Id, ex.Serialize()));
             }
 
             var now = DateTime.UtcNow;
-            if (doUpdateArtistCounts) await UpdateArtistCounts(release.Artist.Id, now);
+            if (doUpdateArtistCounts)
+            {
+                var releaseArtistIds = new List<int>(release.ArtistId);
+                releaseArtistIds.AddRange(releaseTracks.Where(x => x.ArtistId.HasValue).Select(x => x.ArtistId.Value));
+                foreach (var artistId in releaseArtistIds.Distinct())
+                {
+                    await UpdateArtistCounts(artistId, now);
+                }                               
+            }
             if (releaseLabelIds != null && releaseLabelIds.Any())
             {
                 foreach (var releaseLabelId in releaseLabelIds)
@@ -352,6 +365,15 @@ namespace Roadie.Api.Services
                 }
             }
             sw.Stop();
+            await BookmarkService.RemoveAllBookmarksForItem(BookmarkType.Release, release.Id);
+            foreach(var releaseTrack in releaseTracks)
+            {
+                await BookmarkService.RemoveAllBookmarksForItem(BookmarkType.Track, releaseTrack.Id);
+            }
+            foreach(var playlistIdWithReleaseTracks in playlistIdsWithReleaseTracks)
+            {
+                await UpdatePlaylistCounts(playlistIdWithReleaseTracks, now);
+            }
             Logger.LogWarning("User `{0}` deleted Release `{1}]`", user, release);
             return new OperationResult<bool>
             {
@@ -361,10 +383,12 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> DeleteReleases(ApplicationUser user, IEnumerable<Guid> releaseIds, bool doDeleteFiles = false)
+        public async Task<OperationResult<bool>> DeleteReleases(Library.Identity.User user, IEnumerable<Guid> releaseIds, bool doDeleteFiles = false)
         {
-            SimpleContract.Requires<ArgumentNullException>(releaseIds != null && releaseIds.Any(),
-                "No Release Ids Found");
+            if (!releaseIds.Any())
+            {
+                return new OperationResult<bool>(true, "Invalid ReleaseIds");
+            }
             var result = false;
             var sw = new Stopwatch();
             sw.Start();
@@ -397,7 +421,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
+        public async Task<Library.Models.Pagination.PagedResult<ReleaseList>> List(Library.Models.Users.User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -528,7 +552,7 @@ namespace Roadie.Api.Services
                               LibraryStatus = r.LibraryStatus,
                               MediaCount = r.MediaCount,
                               Rating = r.Rating,
-                              Rank = r.Rank,
+                              Rank = (double?)r.Rank,
                               ReleaseDateDateTime = r.ReleaseDate,
                               ReleasePlayUrl = $"{HttpContext.BaseUrl}/play/release/{r.RoadieId}",
                               Status = r.Status,
@@ -553,7 +577,7 @@ namespace Roadie.Api.Services
             else
             {
                 string sortBy = null;
-                if (request.ActionValue == User.ActionKeyUserRated)
+                if (request.ActionValue == Library.Models.Users.User.ActionKeyUserRated)
                 {
                     sortBy = request.OrderValue(new Dictionary<string, string> { { "Rating", "DESC" } });
                 }
@@ -762,7 +786,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> MergeReleases(ApplicationUser user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
+        public async Task<OperationResult<bool>> MergeReleases(Library.Identity.User user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -825,7 +849,7 @@ namespace Roadie.Api.Services
         /// <param name="releaseToMergeInto">The release to merge into</param>
         /// <param name="addAsMedia">If true then add a ReleaseMedia to the release to be merged into</param>
         /// <returns></returns>
-        public async Task<OperationResult<bool>> MergeReleases(ApplicationUser user, data.Release releaseToMerge, data.Release releaseToMergeInto, bool addAsMedia)
+        public async Task<OperationResult<bool>> MergeReleases(Library.Identity.User user, data.Release releaseToMerge, data.Release releaseToMergeInto, bool addAsMedia)
         {
             SimpleContract.Requires<ArgumentNullException>(releaseToMerge != null, "Invalid Release");
             SimpleContract.Requires<ArgumentNullException>(releaseToMergeInto != null, "Invalid Release");
@@ -1063,7 +1087,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<FileOperationResult<byte[]>> ReleaseZipped(User roadieUser, Guid id)
+        public async Task<FileOperationResult<byte[]>> ReleaseZipped(Library.Models.Users.User roadieUser, Guid id)
         {
             var release = await GetRelease(id);
             if (release == null)
@@ -1126,7 +1150,7 @@ namespace Roadie.Api.Services
         /// <summary>
         ///     For the given ReleaseId, Scan folder adding new, removing not found and updating DB tracks for tracks found
         /// </summary>
-        public async Task<OperationResult<bool>> ScanReleaseFolder(ApplicationUser user, Guid releaseId, bool doJustInfo, data.Release releaseToScan = null)
+        public async Task<OperationResult<bool>> ScanReleaseFolder(Library.Identity.User user, Guid releaseId, bool doJustInfo, data.Release releaseToScan = null)
         {
             SimpleContract.Requires<ArgumentOutOfRangeException>(releaseId != Guid.Empty && releaseToScan == null || releaseToScan != null, "Invalid ReleaseId");
 
@@ -1513,6 +1537,7 @@ namespace Roadie.Api.Services
                 sw.Stop();
 
                 await UpdateReleaseCounts(release.Id, now);
+                await UpdatePlaylistCountsForRelease(release.Id, now);
                 await UpdateArtistCountsForRelease(release.Id, now);
                 await UpdateReleaseRank(release.Id);
 
@@ -1544,12 +1569,12 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Image>> SetReleaseImageByUrl(ApplicationUser user, Guid id, string imageUrl)
+        public async Task<OperationResult<Image>> SetReleaseImageByUrl(Library.Identity.User user, Guid id, string imageUrl)
         {
             return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
         }
 
-        public async Task<OperationResult<bool>> UpdateRelease(ApplicationUser user, Release model, string originalReleaseFolder = null)
+        public async Task<OperationResult<bool>> UpdateRelease(Library.Identity.User user, Release model, string originalReleaseFolder = null)
         {
             var didChangeArtist = false;
             var sw = new Stopwatch();
@@ -1826,7 +1851,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Image>> UploadReleaseImage(ApplicationUser user, Guid id, IFormFile file)
+        public async Task<OperationResult<Image>> UploadReleaseImage(Library.Identity.User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
             using (var ms = new MemoryStream())
@@ -1871,7 +1896,7 @@ namespace Roadie.Api.Services
             result.Tags = release.Tags;
             result.URLs = release.URLs;
             result.RankPosition = result.Rank > 0
-                ? SafeParser.ToNumber<int?>(DbContext.Releases.Count(x => x.Rank > result.Rank) + 1)
+                ? SafeParser.ToNumber<int?>(DbContext.Releases.Count(x => (double?)x.Rank > result.Rank) + 1)
                 : null;
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);
@@ -2181,7 +2206,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<Image>> SaveImageBytes(ApplicationUser user, Guid id, byte[] imageBytes)
+        private async Task<OperationResult<Image>> SaveImageBytes(Library.Identity.User user, Guid id, byte[] imageBytes)
         {
             var sw = new Stopwatch();
             sw.Start();

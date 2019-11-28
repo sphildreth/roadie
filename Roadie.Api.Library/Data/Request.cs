@@ -12,9 +12,14 @@ namespace Roadie.Library.Data
         [Required]
         public string Description { get; set; }
 
-        [NotMapped] public new bool? IsLocked { get; set; }
-        public ApplicationUser User { get; set; }
+        [NotMapped]
+        public new bool? IsLocked { get; set; }
 
-        [Column("userId")] public int? UserId { get; set; }
+        [ForeignKey(nameof(UserId))]
+        [InverseProperty("Requests")]
+        public virtual User User { get; set; }
+
+        [Column("userId")]
+        public int? UserId { get; set; }
     }
 }

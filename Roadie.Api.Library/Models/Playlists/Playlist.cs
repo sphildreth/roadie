@@ -19,7 +19,10 @@ namespace Roadie.Library.Models.Playlists
         {
             get
             {
-                if (!Duration.HasValue) return "--:--";
+                if (!Duration.HasValue)
+                {
+                    return "--:--";
+                }
                 return new TimeInfo(Duration.Value).ToFullFormattedString();
             }
         }

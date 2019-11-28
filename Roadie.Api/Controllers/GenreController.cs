@@ -26,7 +26,7 @@ namespace Roadie.Api.Controllers
         private IGenreService GenreService { get; }
 
         public GenreController(IGenreService genreService, ILogger<GenreController> logger, ICacheManager cacheManager,
-                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+                    UserManager<User> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -38,7 +38,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await GenreService.ById(await CurrentUserModel(), id,(inc ?? models.Genre.DefaultIncludes).ToLower().Split(","));
+            var result = await GenreService.ById(await CurrentUserModel(), id, (inc ?? models.Genre.DefaultIncludes).ToLower().Split(","));
             if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
@@ -142,6 +142,5 @@ namespace Roadie.Api.Controllers
             }
             return Ok(result);
         }
-
     }
 }

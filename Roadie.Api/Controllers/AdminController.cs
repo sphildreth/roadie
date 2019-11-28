@@ -22,7 +22,7 @@ namespace Roadie.Api.Controllers
         private IAdminService AdminService { get; }
 
         public AdminController(IAdminService adminService, ILogger<AdminController> logger, ICacheManager cacheManager,
-                    UserManager<ApplicationUser> userManager, IRoadieSettings roadieSettings)
+                    UserManager<User> userManager, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -160,7 +160,6 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-
         [HttpPost("delete/track/{id}")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteTrack(Guid id, bool? doDeleteFile)
@@ -257,7 +256,6 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-
         [HttpPost("scan/collection/{id}")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanCollection(Guid id, bool doPurgeFirst = false)
@@ -337,6 +335,5 @@ namespace Roadie.Api.Controllers
             }
             return Ok(result);
         }
-
     }
 }
