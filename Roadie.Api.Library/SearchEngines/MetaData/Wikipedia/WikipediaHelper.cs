@@ -23,6 +23,10 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
 
         public Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
         {
+            if(string.IsNullOrEmpty(query) || resultsCount == 0)
+            {
+                return Task.FromResult(new OperationResult<IEnumerable<ArtistSearchResult>>());
+            }
             var tcs = new TaskCompletionSource<OperationResult<IEnumerable<ArtistSearchResult>>>();
             var client = new RestClient("https://en.wikipedia.org/w/api.php?format=xml&action=query&redirects=1&prop=extracts&exintro=&explaintext=&titles=" + HttpEncoder.UrlEncode(query ?? string.Empty));
             var request = new RestRequest(Method.GET);

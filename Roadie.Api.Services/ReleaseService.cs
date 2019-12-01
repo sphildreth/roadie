@@ -2212,20 +2212,25 @@ namespace Roadie.Api.Services
             sw.Start();
             var errors = new List<Exception>();
             var release = DbContext.Releases.Include(x => x.Artist).FirstOrDefault(x => x.RoadieId == id);
-            if (release == null) return new OperationResult<Image>(true, string.Format("Release Not Found [{0}]", id));
+            if (release == null)
+            {
+                return new OperationResult<Image>(true, string.Format("Release Not Found [{0}]", id));
+            }
             try
             {
                 var now = DateTime.UtcNow;
+                imageBytes = ImageHelper.ConvertToJpegFormat(imageBytes);
                 if (imageBytes != null)
                 {
                     // Save unaltered image to cover file
-                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)), "cover.jpg");
-                    File.WriteAllBytes(coverFileName, ImageHelper.ConvertToJpegFormat(imageBytes));
+                    var coverFileName = Path.Combine(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration), true), "cover.jpg");
+                    File.WriteAllBytes(coverFileName, imageBytes);
+
+                    release.LastUpdated = now;
+                    await DbContext.SaveChangesAsync();
+                    CacheManager.ClearRegion(release.CacheRegion);
+                    Logger.LogInformation($"SaveImageBytes `{release}` By User `{user}`");
                 }
-                release.LastUpdated = now;
-                await DbContext.SaveChangesAsync();
-                CacheManager.ClearRegion(release.CacheRegion);
-                Logger.LogInformation($"SaveImageBytes `{release}` By User `{user}`");
             }
             catch (Exception ex)
             {

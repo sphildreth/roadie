@@ -65,6 +65,9 @@ namespace Roadie.Library.Tests
         [InlineData("CvR.Jpg")]
         [InlineData("Release.JPG")]
         [InlineData("folder.JPG")]
+        [InlineData("folder.jpg")]
+        [InlineData("FOLDER.jpg")]
+        [InlineData("FOLDER.JPG")]
         [InlineData("front.jpg")]
         [InlineData("FrOnt.jpg")]
         [InlineData("Art.jpg")]
@@ -81,6 +84,7 @@ namespace Roadie.Library.Tests
         [InlineData("BIG.JPg")]
         [InlineData("bigart.JPg")]
         [InlineData("BIG.PNG")]
+        [InlineData("00.jpg")]
         public void TestShouldBeReleaseImages(string input)
         {
             Assert.True(ImageHelper.IsReleaseImage(new FileInfo(input)));
@@ -183,6 +187,7 @@ namespace Roadie.Library.Tests
         [InlineData("Booklet-10.jpg")]
         [InlineData("Booklet_1.jpg")] 
         [InlineData("Booklet 3.jpg")] 
+        [InlineData("Digipack (01).jpg")] 
         [InlineData("Eagles - Long Road Out Of Eden - Booklet-6.jpg")]
         [InlineData("Long Road Out Of Eden - Booklet-6.jpg")]
         [InlineData("Long Road Out Of Eden Booklet-6.jpg")]
@@ -201,6 +206,8 @@ namespace Roadie.Library.Tests
         [InlineData("Cd.jpg")]
         [InlineData("CD.JPG")] 
         [InlineData("Cd1.jpg")]
+        [InlineData("CD (01).jpg")]
+        [InlineData("CD (02).jpg")] 
         [InlineData("CD-1.jpg")]
         [InlineData("CD 1.jpg")]
         [InlineData("CD_1.jpg")]

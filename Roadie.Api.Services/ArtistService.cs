@@ -1458,28 +1458,29 @@ namespace Roadie.Api.Services
             sw.Start();
             var errors = new List<Exception>();
             var artist = DbContext.Artists.FirstOrDefault(x => x.RoadieId == id);
-            if (artist == null) return new OperationResult<Library.Models.Image>(true, $"Artist Not Found [{id}]");
+            if (artist == null)
+            {
+                return new OperationResult<Library.Models.Image>(true, $"Artist Not Found [{id}]");
+            }
             try
             {
                 var now = DateTime.UtcNow;
+                imageBytes = ImageHelper.ConvertToJpegFormat(imageBytes);
                 if (imageBytes != null)
                 {
-                    // Ensure artist folder exists
-                    var artistFolder = artist.ArtistFileFolder(Configuration);
-                    if (!Directory.Exists(artistFolder))
-                    {
-                        Directory.CreateDirectory(artistFolder);
-                        Logger.LogTrace("Created Artist Folder [0] for `artist`", artistFolder, artist);
-                    }
-
-                    // Save unaltered image to artist file
+                    var artistFolder = artist.ArtistFileFolder(Configuration, true);
                     var artistImage = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
-                    File.WriteAllBytes(artistImage, ImageHelper.ConvertToJpegFormat(imageBytes));
+                    File.WriteAllBytes(artistImage, imageBytes);
+
+                    artist.LastUpdated = now;
+                    await DbContext.SaveChangesAsync();
+                    CacheManager.ClearRegion(artist.CacheRegion);
+                    Logger.LogInformation($"SaveImageBytes `{artist}` By User `{user}`");
                 }
-                artist.LastUpdated = now;
-                await DbContext.SaveChangesAsync();
-                CacheManager.ClearRegion(artist.CacheRegion);
-                Logger.LogInformation($"SaveImageBytes `{artist}` By User `{user}`");
+                else
+                {
+                    Logger.LogWarning($"SaveImageBytes Invalid Image `{artist}` By User `{user}`");
+                }
             }
             catch (Exception ex)
             {

@@ -91,7 +91,7 @@ namespace Roadie.Library.Engines
                     {
                         if (artistGenreTables != null)
                         {
-                            foreach (var artistGenreTable in artistGenreTables.Select(x => x.Genre?.Name).Distinct())
+                            foreach (var artistGenreTable in artistGenreTables.Where(x => x?.Genre?.Name != null).Select(x => x.Genre?.Name).Distinct())
                             {
                                 var genreName = artistGenreTable.ToAlphanumericName().ToTitleCase();
                                 var normalizedName = genreName.ToUpper();
@@ -597,9 +597,9 @@ namespace Roadie.Library.Engines
                 if (WikipediaArtistSearchEngine.IsEnabled)
                 {
                     var sw2 = Stopwatch.StartNew();
-                    var wikiName = result.Name;
+                    var wikiName = result?.Name;
                     // Help get better results for bands with proper nouns (e.g. "Poison" vs "Poison Band")
-                    if (!result.ArtistType.Equals("Person", StringComparison.OrdinalIgnoreCase))
+                    if (!(result?.ArtistType ?? string.Empty).Equals("Person", StringComparison.OrdinalIgnoreCase))
                     {
                         wikiName += " band";
                     }

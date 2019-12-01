@@ -2,7 +2,6 @@
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.MetaData.Audio;
-using models = Roadie.Library.Models;
 using Roadie.Library.SearchEngines.Imaging;
 using Roadie.Library.Utility;
 using SixLabors.ImageSharp;
@@ -14,23 +13,20 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using models = Roadie.Library.Models;
 
 namespace Roadie.Library.Imaging
 {
     public static class ImageHelper
     {
         public static string ArtistImageFilename = "artist.jpg";
-        public static string ArtistSecondaryImageFilename = "artist {0}.jpg";
-        public static int MaximumThumbnailByteSize = 50000;
-
-        // Replace with counter of image
+        public static string ArtistSecondaryImageFilename = "artist {0}.jpg"; // Replace with counter of image
         public static string ReleaseCoverFilename = "cover.jpg";
-
         public static string ReleaseSecondaryImageFilename = "release {0}.jpg"; // Replace with counter of image
 
         public static byte[] ConvertToJpegFormat(byte[] imageBytes)
         {
-            if (imageBytes == null)
+            if (imageBytes == null || !imageBytes.Any())
             {
                 return null;
             }
@@ -59,7 +55,10 @@ namespace Roadie.Library.Imaging
         /// </summary>
         public static byte[] ConvertToGifFormat(byte[] imageBytes)
         {
-            if (imageBytes == null) return null;
+            if (imageBytes == null || !imageBytes.Any())
+            {
+                return null;
+            }
             try
             {
                 using (var outStream = new MemoryStream())
@@ -159,6 +158,7 @@ namespace Roadie.Library.Imaging
             {
                 var dataString = imageUrl.Trim().Replace('-', '+')
                     .Replace("data:image/jpeg;base64,", "")
+                    .Replace("data:image/bmp;base64,", "")
                     .Replace("data:image/gif;base64,", "")
                     .Replace("data:image/png;base64,", "");
                 return Convert.FromBase64String(dataString);
@@ -224,7 +224,7 @@ namespace Roadie.Library.Imaging
         {
             if (fileinfo == null) return false;
             return Regex.IsMatch(fileinfo.Name,
-                @"((f[-_\s]*[0-9]*)|art|big[art]*|cover|cvr|folder|release|front[-_\s]*)\.(jpg|jpeg|png|bmp|gif)",
+                @"((f[-_\s]*[0-9]*)|00|art|big[art]*|cover|cvr|folder|release|front[-_\s]*)\.(jpg|jpeg|png|bmp|gif)",
                 RegexOptions.IgnoreCase);
         }
 
@@ -232,7 +232,7 @@ namespace Roadie.Library.Imaging
         {
             if (fileinfo == null) return false;
             return Regex.IsMatch(fileinfo.Name,
-                @"((img[\s-_]*[0-9]*[\s-_]*[0-9]*)|(book[let]*[#-_\s(]*[0-9]*-*[0-9]*(\))*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|sc[an]*(.)?[0-9]*|matrix(.)?[0-9]*|(cover[\s_-]*[0-9]+)|back|traycard|jewel case|disc|(.*)[in]*side(.*)|in([side|lay|let|site])*[0-9]*|cd(.)?[0-9]*|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)",
+                @"((img[\s-_]*[0-9]*[\s-_]*[0-9]*)|(book[let]*[#-_\s(]*[0-9]*-*[0-9]*(\))*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|sc[an]*(.)?[0-9]*|matrix(.)?[0-9]*|(cover[\s_-]*[0-9]+)|back|traycard|jewel case|disc|(.*)[in]*side(.*)|in([side|lay|let|site])*[0-9]*|digipack.?\[?\(?([0-9]*)\]?\)?|cd.?\[?\(?([0-9]*)\]?\)?|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)",
                 RegexOptions.IgnoreCase);
         }
 
@@ -296,26 +296,6 @@ namespace Roadie.Library.Imaging
                 Trace.WriteLine($"Error Resizing Image [{ex}]", "Warning");
             }
             return null;
-        }
-
-        /// <summary>
-        /// Convert to JPEG and Resize given image to be a thumbnail size, if larger than maximum thumbnail size no image is returned.
-        /// </summary>
-        public static byte[] ResizeToThumbnail(byte[] imageBytes, IRoadieSettings configuration)
-        {
-            if (!imageBytes?.Any() ?? false)
-            {
-                return imageBytes;
-            }
-            var width = configuration?.ThumbnailImageSize?.Width ?? 80;
-            var height = configuration?.ThumbnailImageSize?.Height ?? 80;
-            var result = ImageHelper.ResizeImage(ImageHelper.ConvertToJpegFormat(imageBytes), width, height, true)?.Item2;
-            if (result?.Length >= ImageHelper.MaximumThumbnailByteSize)
-            {
-                Trace.WriteLine($"Thumbnail larger than maximum size after resizing to [{configuration.ThumbnailImageSize.Width}x{configuration.ThumbnailImageSize.Height}] Thumbnail Size [{result.Length}]", "Warning");
-                result = new byte[0];
-            }
-            return result;
         }
 
         /// <summary>
@@ -493,7 +473,5 @@ namespace Roadie.Library.Imaging
                     $"{httpContext.ImageBaseUrl}/{type}/{id}/{configuration.ThumbnailImageSize.Width}/{configuration.ThumbnailImageSize.Height}");
             return new models.Image($"{httpContext.ImageBaseUrl}/{type}/{id}", caption, null);
         }
-
-
     }
 }
