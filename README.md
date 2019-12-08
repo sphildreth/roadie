@@ -19,7 +19,12 @@ Demo Site:
 * The demo site is running  [Roadie-VueJs](https://github.com/sphildreth/roadie-vuejs) frontend, with Roadie API running against a MariaDB server.
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+<a target="_blank" href="https://github.com/sphildreth/roadie/pulls">
+    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" />
+</a>
 [![Build Status](https://travis-ci.org/sphildreth/roadie.svg?branch=master)](https://travis-ci.org/sphildreth/roadie)
+
+
 
 Built on:
 ---------
