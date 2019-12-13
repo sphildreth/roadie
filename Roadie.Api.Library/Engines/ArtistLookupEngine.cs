@@ -176,7 +176,8 @@ namespace Roadie.Library.Engines
             }
             try
             {
-                var searchName = name.NormalizeName();
+
+                var searchName = name.NormalizeName().ToLower();
                 var searchSortName = !string.IsNullOrEmpty(sortName) ? sortName.NormalizeName().ToLower() : searchName;
                 var specialSearchName = name.ToAlphanumericName();
 
@@ -189,17 +190,19 @@ namespace Roadie.Library.Engines
                 var specialSearchNameEnd = $"|{specialSearchName}";
 
                 return (from a in DbContext.Artists
-                        where a.Name == searchName ||
-                              a.Name == specialSearchName ||
-                              a.SortName == searchName ||
-                              a.SortName == searchSortName ||
-                              a.SortName == specialSearchName ||
-                              a.AlternateNames.StartsWith(searchNameStart) ||
-                              a.AlternateNames.Contains(searchNameIn) ||
-                              a.AlternateNames.EndsWith(searchNameEnd) ||
-                              a.AlternateNames.StartsWith(specialSearchNameStart) ||
-                              a.AlternateNames.Contains(specialSearchNameIn) ||
-                              a.AlternateNames.EndsWith(specialSearchNameEnd)
+                        where a.Name.ToLower() == searchName ||
+                              a.Name.ToLower() == specialSearchName ||
+                              a.SortName.ToLower() == searchName ||
+                              a.SortName.ToLower() == searchSortName ||
+                              a.SortName.ToLower() == specialSearchName ||
+                              a.AlternateNames.ToLower().Equals(searchName) ||
+                              a.AlternateNames.ToLower().StartsWith(searchNameStart) ||
+                              a.AlternateNames.ToLower().Contains(searchNameIn) ||
+                              a.AlternateNames.ToLower().EndsWith(searchNameEnd) ||
+                              a.AlternateNames.ToLower().Equals(specialSearchName) ||
+                              a.AlternateNames.ToLower().StartsWith(specialSearchNameStart) ||
+                              a.AlternateNames.ToLower().Contains(specialSearchNameIn) ||
+                              a.AlternateNames.ToLower().EndsWith(specialSearchNameEnd)
                         select a
                     ).FirstOrDefault();
             }

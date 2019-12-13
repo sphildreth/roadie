@@ -85,13 +85,13 @@ namespace Roadie.Library.Engines
                     };
                 }
 
-                var searchName = labelName.NormalizeName();
+                var searchName = labelName.NormalizeName().ToLower();
                 var specialSearchName = labelName.ToAlphanumericName();
                 var label = (from l in DbContext.Labels
-                             where l.Name.Contains(searchName) ||
-                                   l.SortName.Contains(searchName) ||
-                                   l.AlternateNames.Contains(searchName) ||
-                                   l.AlternateNames.Contains(specialSearchName)
+                             where l.Name.ToLower().Contains(searchName) ||
+                                   l.SortName.ToLower().Contains(searchName) ||
+                                   l.AlternateNames.ToLower().Contains(searchName) ||
+                                   l.AlternateNames.ToLower().Contains(specialSearchName)
                              select l
                     ).FirstOrDefault();
                 sw.Stop();
