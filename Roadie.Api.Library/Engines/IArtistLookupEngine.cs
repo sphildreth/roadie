@@ -17,8 +17,10 @@ namespace Roadie.Library.Engines
         IArtistSearchEngine WikipediaArtistSearchEngine { get; }
 
         Task<OperationResult<Artist>> Add(Artist artist);
-
-        Artist DatabaseQueryForArtistName(string name, string sortName = null);
+        /// <summary>
+        /// There can be more than one Artist matching the given name with Alternate and Normalized Name matching
+        /// </summary>
+        Task<IEnumerable<Artist>> DatabaseQueryForArtistName(string name, string sortName = null);
 
         Task<OperationResult<Artist>> GetByName(AudioMetaData metaData, bool doFindIfNotInDatabase = false);
 

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -168,7 +169,7 @@ namespace Roadie.Library.Engines
             };
         }
 
-        public Artist DatabaseQueryForArtistName(string name, string sortName = null)
+        public async Task<IEnumerable<Artist>> DatabaseQueryForArtistName(string name, string sortName = null)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -189,7 +190,7 @@ namespace Roadie.Library.Engines
                 var specialSearchNameIn = $"|{specialSearchName}|";
                 var specialSearchNameEnd = $"|{specialSearchName}";
 
-                return (from a in DbContext.Artists
+                return await (from a in DbContext.Artists
                         where a.Name.ToLower() == searchName ||
                               a.Name.ToLower() == specialSearchName ||
                               a.SortName.ToLower() == searchName ||
@@ -204,7 +205,7 @@ namespace Roadie.Library.Engines
                               a.AlternateNames.ToLower().Contains(specialSearchNameIn) ||
                               a.AlternateNames.ToLower().EndsWith(specialSearchNameEnd)
                         select a
-                    ).FirstOrDefault();
+                    ).ToArrayAsync();
             }
             catch (Exception ex)
             {
@@ -235,7 +236,7 @@ namespace Roadie.Library.Engines
                     };
                 }
 
-                var artist = DatabaseQueryForArtistName(artistName);
+                var artist = (await DatabaseQueryForArtistName(artistName)).FirstOrDefault();
                 sw.Stop();
                 if (artist == null || !artist.IsValid)
                 {
@@ -281,7 +282,7 @@ namespace Roadie.Library.Engines
                                 {
                                     artist = artistSearch.Data;
                                     // See if Artist already exist with either Name or Sort Name
-                                    var alreadyExists = DatabaseQueryForArtistName(artistSearch.Data.Name, artistSearch.Data.SortNameValue);
+                                    var alreadyExists = (await DatabaseQueryForArtistName(artistSearch.Data.Name, artistSearch.Data.SortNameValue)).FirstOrDefault();
                                     if (alreadyExists == null || !alreadyExists.IsValid)
                                     {
                                         var addResult = await Add(artist);

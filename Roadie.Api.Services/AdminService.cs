@@ -785,43 +785,58 @@ namespace Roadie.Api.Services
                     var now = DateTime.UtcNow;
                     foreach (var csvRelease in par)
                     {
-                        data.Artist artist = null;
+                        IEnumerable<data.Artist> artistsMatchingName = Enumerable.Empty<data.Artist>();
                         data.Release release = null;
 
                         var isArtistNameDbKey = csvRelease.Artist.StartsWith(Roadie.Library.Data.Collection.DatabaseIdKey);
                         int? artistId = isArtistNameDbKey ? SafeParser.ToNumber<int?>(csvRelease.Artist.Replace(Roadie.Library.Data.Collection.DatabaseIdKey, "")) : null;
                         if(artistId.HasValue)
                         {
-                            artist = DbContext.Artists.FirstOrDefault(x => x.Id == artistId.Value);
+                            var artist = DbContext.Artists.FirstOrDefault(x => x.Id == artistId.Value);
+                            if (artist != null)
+                            {
+                                artistsMatchingName = new data.Artist[] { artist };
+                            }
                         }
                         else
                         {
-                            artist = ArtistLookupEngine.DatabaseQueryForArtistName(csvRelease.Artist);
-                        }
-                        if (artist == null)
-                        {
-                            await LogAndPublish($"CSV Position [{ csvRelease.Position }] Unable To Find Artist [{csvRelease.Artist}]", LogLevel.Warning);
-                            csvRelease.Status = Statuses.Missing;
-                            DbContext.CollectionMissings.Add(new data.CollectionMissing
+                            artistsMatchingName = await ArtistLookupEngine.DatabaseQueryForArtistName(csvRelease.Artist);
+                            if (artistsMatchingName == null || !artistsMatchingName.Any())
                             {
-                                CollectionId = collection.Id,
-                                Position = csvRelease.Position,
-                                Artist = csvRelease.Artist,
-                                Release = csvRelease.Release
-                            });
-                            continue;
+                                await LogAndPublish($"CSV Position [{ csvRelease.Position }] Unable To Find Artist [{csvRelease.Artist}]", LogLevel.Warning);
+                                csvRelease.Status = Statuses.Missing;
+                                DbContext.CollectionMissings.Add(new data.CollectionMissing
+                                {
+                                    CollectionId = collection.Id,
+                                    Position = csvRelease.Position,
+                                    Artist = csvRelease.Artist,
+                                    Release = csvRelease.Release
+                                });
+                                continue;
+                            }
+                            else if (artistsMatchingName.Count() > 1)
+                            {
+                                await LogAndPublish($"CSV Position [{ csvRelease.Position }] Found [{ artistsMatchingName.Count() }] Artists by [{csvRelease.Artist}]", LogLevel.Information);
+                            }
+                        }
+                        foreach (var artist in artistsMatchingName)
+                        {
+                            var isReleaseNameDbKey = csvRelease.Release.StartsWith(Roadie.Library.Data.Collection.DatabaseIdKey);
+                            int? releaseId = isReleaseNameDbKey ? SafeParser.ToNumber<int?>(csvRelease.Release.Replace(Roadie.Library.Data.Collection.DatabaseIdKey, "")) : null;
+                            if (releaseId.HasValue)
+                            {
+                                release = DbContext.Releases.FirstOrDefault(x => x.Id == releaseId.Value);
+                            }
+                            else
+                            {
+                                release = ReleaseLookupEngine.DatabaseQueryForReleaseTitle(artist, csvRelease.Release);
+                            }
+                            if (release != null)
+                            {
+                                break;
+                            }
                         }
 
-                        var isReleaseNameDbKey = csvRelease.Release.StartsWith(Roadie.Library.Data.Collection.DatabaseIdKey);
-                        int? releaseId = isReleaseNameDbKey ? SafeParser.ToNumber<int?>(csvRelease.Release.Replace(Roadie.Library.Data.Collection.DatabaseIdKey, "")) : null;
-                        if (releaseId.HasValue)
-                        {
-                            release = DbContext.Releases.FirstOrDefault(x => x.Id == releaseId.Value);
-                        }
-                        else
-                        {
-                            release = ReleaseLookupEngine.DatabaseQueryForReleaseTitle(artist, csvRelease.Release);
-                        }
                         if (release == null)
                         {
                             await LogAndPublish($"CSV Position [{ csvRelease.Position }] Unable To Find Release [{csvRelease.Release}], for Artist [{csvRelease.Artist}]", LogLevel.Warning);
