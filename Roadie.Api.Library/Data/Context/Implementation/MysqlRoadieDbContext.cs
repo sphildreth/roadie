@@ -164,11 +164,17 @@ namespace Roadie.Library.Data.Context.Implementation
                         FROM `track` t
                         # Rated filter
                         WHERE ((t.rating > 0 AND {3} = 1) OR {3} = 0)
-                        # Artist is not disliked
+                        # Artist and TrackArtist is not disliked
                         AND ((t.id NOT IN (select tt.id
                                             FROM `track` tt
                                             JOIN `releasemedia` rm on (tt.releaseMediaId = rm.id)
-                                            JOIN `userartist` ua on (rm.id = ua.artistId)
+                                            JOIN `release` r on (rm.releaseId = r.id)
+                                            JOIN `userartist` ua on (r.artistId = ua.artistId)
+                                            WHERE ua.userId = {1} AND ua.isDisliked = 1
+                                            UNION
+                                            select tt.id
+                                            FROM `track` tt
+                                            JOIN `userartist` ua on (tt.artistId = ua.artistId)
                                             WHERE ua.userId = {1} AND ua.isDisliked = 1))
                             # Release is not disliked
                             AND (t.id NOT IN (select tt.id
