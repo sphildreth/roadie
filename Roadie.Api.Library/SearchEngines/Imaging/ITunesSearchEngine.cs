@@ -169,34 +169,12 @@ namespace Roadie.Library.SearchEngines.Imaging
             };
 
             if (resultsCount > 0)
-                request.AddParameter(new Parameter
-                {
-                    Name = "limit",
-                    Value = resultsCount,
-                    Type = ParameterType.GetOrPost
-                });
-
-            request.AddParameter(new Parameter
             {
-                Name = "entity",
-                Value = entityType,
-                Type = ParameterType.GetOrPost
-            });
-
-            request.AddParameter(new Parameter
-            {
-                Name = "country",
-                Value = "us",
-                Type = ParameterType.GetOrPost
-            });
-
-            request.AddParameter(new Parameter
-            {
-                Name = "term",
-                Value = string.Format("'{0}'", query.Trim()),
-                Type = ParameterType.GetOrPost
-            });
-
+                request.AddParameter(new Parameter("limit", resultsCount, ParameterType.GetOrPost));
+            }
+            request.AddParameter(new Parameter("entity", entityType, ParameterType.GetOrPost));
+            request.AddParameter(new Parameter("country", "us", ParameterType.GetOrPost));
+            request.AddParameter(new Parameter("term", string.Format("'{0}'", query.Trim()), ParameterType.GetOrPost));
             return request;
         }
     }

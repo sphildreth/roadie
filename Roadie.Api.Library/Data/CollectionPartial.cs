@@ -7,6 +7,7 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 
 namespace Roadie.Library.Data
@@ -123,7 +124,7 @@ namespace Roadie.Library.Data
                 using (var sr = new StringReader(ListInCSV))
                 {
                     var index = 0;
-                    var configuration = new CsvHelper.Configuration.Configuration
+                    var configuration = new CsvHelper.Configuration.CsvConfiguration(new CultureInfo("en-US", false))
                     {
                         MissingFieldFound = null,
                         HasHeaderRecord = false

@@ -231,24 +231,9 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
                 Method = Method.GET,
                 RequestFormat = DataFormat.Json
             };
-            request.AddParameter(new Parameter
-            {
-                Name = "type",
-                Value = entityType,
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "q",
-                Value = string.Format("{0}", query.Trim()),
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "market",
-                Value = "US",
-                Type = ParameterType.GetOrPost
-            });
+            request.AddParameter(new Parameter("type", entityType, ParameterType.GetOrPost));
+            request.AddParameter(new Parameter("q", string.Format("{0}", query.Trim()), ParameterType.GetOrPost));
+            request.AddParameter(new Parameter("market", "US", ParameterType.GetOrPost));
             return request;
         }
     }

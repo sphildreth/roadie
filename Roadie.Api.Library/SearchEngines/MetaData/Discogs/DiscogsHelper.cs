@@ -328,19 +328,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 RequestFormat = DataFormat.Json
             };
             request.AddUrlSegment("id", artistId.ToString());
-            request.AddParameter(new Parameter
-            {
-                Name = "key",
-                Value = ApiKey.Key,
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "secret",
-                Value = ApiKey.KeySecret,
-                Type = ParameterType.GetOrPost
-            });
-
+            request.AddParameter(new Parameter("key", ApiKey.Key, ParameterType.GetOrPost));
+            request.AddParameter(new Parameter("secret", ApiKey.KeySecret, ParameterType.GetOrPost));
             return request;
         }
 
@@ -353,19 +342,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 RequestFormat = DataFormat.Json
             };
             request.AddUrlSegment("id", artistId.ToString());
-            request.AddParameter(new Parameter
-            {
-                Name = "key",
-                Value = ApiKey.Key,
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "secret",
-                Value = ApiKey.KeySecret,
-                Type = ParameterType.GetOrPost
-            });
-
+            request.AddParameter(new Parameter("key", ApiKey.Key, ParameterType.GetOrPost));
+            request.AddParameter(new Parameter("secret", ApiKey.KeySecret, ParameterType.GetOrPost));
             return request;
         }
 
@@ -378,19 +356,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 RequestFormat = DataFormat.Json
             };
             request.AddUrlSegment("id", releaseId.ToString());
-            request.AddParameter(new Parameter
-            {
-                Name = "key",
-                Value = ApiKey.Key,
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "secret",
-                Value = ApiKey.KeySecret,
-                Type = ParameterType.GetOrPost
-            });
-
+            request.AddParameter(new Parameter("key", ApiKey.Key, ParameterType.GetOrPost));
+            request.AddParameter(new Parameter("secret", ApiKey.KeySecret, ParameterType.GetOrPost));
             return request;
         }
 
@@ -404,52 +371,18 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             };
             if (resultsCount > 0)
             {
-                request.AddParameter(new Parameter
-                {
-                    Name = "page",
-                    Value = 1,
-                    Type = ParameterType.GetOrPost
-                });
-                request.AddParameter(new Parameter
-                {
-                    Name = "per_page",
-                    Value = resultsCount,
-                    Type = ParameterType.GetOrPost
-                });
+                request.AddParameter(new Parameter("page", 1, ParameterType.GetOrPost));
+                request.AddParameter(new Parameter("per_page", resultsCount, ParameterType.GetOrPost));
             }
 
-            request.AddParameter(new Parameter
-            {
-                Name = "type",
-                Value = entityType,
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "q",
-                Value = string.Format("'{0}'", query.Trim()),
-                Type = ParameterType.GetOrPost
-            });
+            request.AddParameter(new Parameter("type", entityType, ParameterType.GetOrPost));
+            request.AddParameter(new Parameter("q", string.Format("'{0}'", query.Trim()), ParameterType.GetOrPost));
             if (!string.IsNullOrEmpty(artist))
-                request.AddParameter(new Parameter
-                {
-                    Name = "artist",
-                    Value = string.Format("'{0}'", artist.Trim()),
-                    Type = ParameterType.GetOrPost
-                });
-            request.AddParameter(new Parameter
             {
-                Name = "key",
-                Value = ApiKey.Key,
-                Type = ParameterType.GetOrPost
-            });
-            request.AddParameter(new Parameter
-            {
-                Name = "secret",
-                Value = ApiKey.KeySecret,
-                Type = ParameterType.GetOrPost
-            });
-
+                request.AddParameter(new Parameter("artist", string.Format("'{0}'", artist.Trim()), ParameterType.GetOrPost));
+            }
+            request.AddParameter(new Parameter("key", ApiKey.Key, ParameterType.GetOrPost));
+            request.AddParameter(new Parameter("secret", ApiKey.KeySecret, ParameterType.GetOrPost));
             return request;
         }
     }

@@ -37,34 +37,10 @@ namespace Roadie.Library.SearchEngines.Imaging
 
             request.AddHeader("Ocp-Apim-Subscription-Key", ApiKey.Key);
 
-            request.AddParameter(new Parameter
-            {
-                Name = "count",
-                Value = resultsCount > 0 ? resultsCount : 10,
-                Type = ParameterType.GetOrPost
-            });
-
-            request.AddParameter(new Parameter
-            {
-                Name = "safeSearch",
-                Value = "Off",
-                Type = ParameterType.GetOrPost
-            });
-
-            request.AddParameter(new Parameter
-            {
-                Name = "aspect",
-                Value = "Square",
-                Type = ParameterType.GetOrPost
-            });
-
-            request.AddParameter(new Parameter
-            {
-                Name = "q",
-                Value = string.Format("'{0}'", query.Trim()),
-                Type = ParameterType.GetOrPost
-            });
-
+            request.AddParameter(new Parameter("count", resultsCount > 0 ? resultsCount : 10, ParameterType.GetOrPost));
+            request.AddParameter(new Parameter("safeSearch", "Off", ParameterType.GetOrPost));
+            request.AddParameter(new Parameter("aspect", "Square", ParameterType.GetOrPost));
+            request.AddParameter(new Parameter("q", string.Format("'{0}'", query.Trim()), ParameterType.GetOrPost));
             return request;
         }
 
@@ -72,7 +48,7 @@ namespace Roadie.Library.SearchEngines.Imaging
         {
             var request = BuildRequest(query, resultsCount);
 
-            var response = await _client.ExecuteTaskAsync<BingImageResult>(request);
+            var response = await _client.ExecuteAsync<BingImageResult>(request);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
                 throw new AuthenticationException("Api Key is not correct");
