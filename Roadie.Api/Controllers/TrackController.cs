@@ -36,22 +36,22 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await TrackService.ById(await CurrentUserModel(), id,
-                (inc ?? models.Track.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            Library.OperationResult<models.Track> result = await TrackService.ById(await CurrentUserModel().ConfigureAwait(false), id,
+                (inc ?? models.Track.DefaultIncludes).ToLower().Split(",")).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List([FromQuery] PagedRequest request, string inc, bool? doRandomize = false)
+        public async Task<IActionResult> List([FromQuery] PagedRequest request, bool? doRandomize = false)
         {
             try
             {
                 var result = await TrackService.List(request,
                     doRandomize: doRandomize,
-                    roadieUser: await CurrentUserModel());
+                    roadieUser: await CurrentUserModel().ConfigureAwait(false)).ConfigureAwait(false);
                 if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
                 return Ok(result);
             }
@@ -74,8 +74,8 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Update(models.Track track)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var result = await TrackService.UpdateTrack(await CurrentUserModel(), track);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            var result = await TrackService.UpdateTrack(await CurrentUserModel().ConfigureAwait(false), track).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false) return NotFound();
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)

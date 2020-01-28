@@ -39,24 +39,28 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var user = await CurrentUserModel();
+            var user = await CurrentUserModel().ConfigureAwait(false);
             var result =
-                await ArtistService.ById(user, id, (inc ?? models.Artist.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult) return NotFound();
+                await ArtistService.ById(user, id, (inc ?? models.Artist.DefaultIncludes).ToLower().Split(",")).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
 
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> List([FromQuery] PagedRequest request, string inc, bool? doRandomize = false)
+        public async Task<IActionResult> List([FromQuery] PagedRequest request, bool? doRandomize = false)
         {
             try
             {
-                var result = await ArtistService.List(await CurrentUserModel(),
+                PagedResult<models.ArtistList> result = await ArtistService.List(await CurrentUserModel().ConfigureAwait(false),
                     request,
                     doRandomize ?? false,
-                    false);
+                    false).ConfigureAwait(false);
                 if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
                 return Ok(result);
             }
@@ -78,9 +82,12 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> MergeArtists(Guid artistToMergeId, Guid artistToMergeIntoId)
         {
-            var result =
-                await ArtistService.MergeArtists(await UserManager.GetUserAsync(User), artistToMergeId, artistToMergeIntoId);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            var result = await ArtistService.MergeArtists(await UserManager.GetUserAsync(User).ConfigureAwait(false), artistToMergeId, artistToMergeIntoId).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -103,8 +110,8 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> SetArtistImageByUrl(Guid id, string imageUrl)
         {
             var result =
-                await ArtistService.SetReleaseImageByUrl(await UserManager.GetUserAsync(User), id, HttpUtility.UrlDecode(imageUrl));
-            if (result == null || result.IsNotFoundResult) return NotFound();
+                await ArtistService.SetReleaseImageByUrl(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, HttpUtility.UrlDecode(imageUrl)).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false) return NotFound();
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -130,8 +137,8 @@ namespace Roadie.Api.Controllers
             {
                 return BadRequest(ModelState);
             }
-            var result = await ArtistService.UpdateArtist(await UserManager.GetUserAsync(User), artist);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ArtistService.UpdateArtist(await UserManager.GetUserAsync(User).ConfigureAwait(false), artist).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -156,8 +163,12 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
         {
-            var result = await ArtistService.UploadArtistImage(await UserManager.GetUserAsync(User), id, file);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            var result = await ArtistService.UploadArtistImage(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, file).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)

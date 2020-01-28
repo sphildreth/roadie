@@ -42,9 +42,9 @@ namespace Roadie.Api.Controllers
         [HttpGet("release/m3u/{id}.{m3u?}")]
         public async Task<FileResult> M3uForRelease(Guid id)
         {
-            var user = await CurrentUserModel();
-            var release = await ReleaseService.ById(user, id, new string[1] { "tracks" });
-            if (release == null || release.IsNotFoundResult) Response.StatusCode = (int)HttpStatusCode.NotFound;
+            var user = await CurrentUserModel().ConfigureAwait(false);
+            var release = await ReleaseService.ById(user, id, new string[1] { "tracks" }).ConfigureAwait(false);
+            if (release?.IsNotFoundResult != false) Response.StatusCode = (int)HttpStatusCode.NotFound;
             var m3u = M3uHelper.M3uContentForTracks(release.Data.Medias.SelectMany(x => x.Tracks));
             return File(Encoding.Default.GetBytes(m3u), "audio/mpeg-url");
         }
@@ -52,11 +52,11 @@ namespace Roadie.Api.Controllers
         [HttpGet("track/m3u/{id}.{m3u?}")]
         public async Task<FileResult> M3uForTrack(Guid id)
         {
-            var user = await CurrentUserModel();
-            var track = await TrackService.ById(user, id, null);
-            if (track == null || track.IsNotFoundResult) Response.StatusCode = (int)HttpStatusCode.NotFound;
-            var release = await ReleaseService.ById(user, track.Data.Release.Id, new string[1] { "tracks" });
-            if (release == null || release.IsNotFoundResult) Response.StatusCode = (int)HttpStatusCode.NotFound;
+            var user = await CurrentUserModel().ConfigureAwait(false);
+            var track = await TrackService.ById(user, id, null).ConfigureAwait(false);
+            if (track?.IsNotFoundResult != false) Response.StatusCode = (int)HttpStatusCode.NotFound;
+            var release = await ReleaseService.ById(user, track.Data.Release.Id, new string[1] { "tracks" }).ConfigureAwait(false);
+            if (release?.IsNotFoundResult != false) Response.StatusCode = (int)HttpStatusCode.NotFound;
             var m3u = M3uHelper.M3uContentForTracks(
                 release.Data.Medias.SelectMany(x => x.Tracks).Where(x => x.Id == id));
             return File(Encoding.Default.GetBytes(m3u), "audio/mpeg-url");
@@ -71,13 +71,13 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Scrobble(Guid id, string startedPlaying, bool isRandom)
         {
-            var result = await PlayActivityService.Scrobble(await CurrentUserModel(), new ScrobbleInfo
+            var result = await PlayActivityService.Scrobble(await CurrentUserModel().ConfigureAwait(false), new ScrobbleInfo
             {
                 TrackId = id,
                 TimePlayed = SafeParser.ToDateTime(startedPlaying) ?? DateTime.UtcNow,
                 IsRandomizedScrobble = isRandom
-            });
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            }).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
@@ -95,7 +95,7 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.Unauthorized);
             }
-            return await base.StreamTrack(id, TrackService, PlayActivityService, UserModelForUser(user));
+            return await StreamTrack(id, TrackService, PlayActivityService, UserModelForUser(user)).ConfigureAwait(false);
         }
     }
 }

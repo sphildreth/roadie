@@ -33,8 +33,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> ArtistImage(Guid id, int? width, int? height)
         {
-            var result = await ImageService.ArtistImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ImageService.ArtistImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -50,8 +50,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> ArtistSecondaryImage(Guid id, int imageId, int? width, int? height)
         {
-            var result = await ImageService.ArtistSecondaryImage(id, imageId, width, height);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ImageService.ArtistSecondaryImage(id, imageId, width, height).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -67,8 +67,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> CollectionImage(Guid id, int? width, int? height)
         {
-            var result = await ImageService.CollectionImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ImageService.CollectionImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -84,8 +84,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> LabelImage(Guid id, int? width, int? height)
         {
-            var result = await ImageService.LabelImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ImageService.LabelImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -101,8 +101,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> GenreImage(Guid id, int? width, int? height)
         {
-            var result = await ImageService.GenreImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ImageService.GenreImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -118,8 +118,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> PlaylistImage(Guid id, int? width, int? height)
         {
-            var result = await ImageService.PlaylistImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ImageService.PlaylistImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -135,8 +135,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> ReleaseImage(Guid id, int? width, int? height)
         {
-            var result = await ImageService.ReleaseImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ImageService.ReleaseImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -152,8 +152,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> ReleaseSecondaryImage(Guid id, int imageId, int? width, int? height)
         {
-            var result = await ImageService.ReleaseSecondaryImage(id, imageId, width ?? RoadieSettings.MaximumImageSize.Width, height ?? RoadieSettings.MaximumImageSize.Height);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ImageService.ReleaseSecondaryImage(id, imageId, width ?? RoadieSettings.MaximumImageSize.Width, height ?? RoadieSettings.MaximumImageSize.Height).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -169,8 +169,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> SearchForArtistImage(string query, int? resultsCount)
         {
-            var result = await ImageService.Search(query, resultsCount ?? 10);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ImageService.Search(query, resultsCount ?? 10).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -186,8 +186,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> SearchForLabelImage(string query, int? resultsCount)
         {
-            var result = await ImageService.Search(query, resultsCount ?? 10);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ImageService.Search(query, resultsCount ?? 10).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -203,8 +203,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> SearchForGenreImage(string query, int? resultsCount)
         {
-            var result = await ImageService.Search(query, resultsCount ?? 10);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            var result = await ImageService.Search(query, resultsCount ?? 10).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
@@ -214,8 +214,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> SearchForReleaseCover(string query, int? resultsCount)
         {
-            var result = await ImageService.Search(query, resultsCount ?? 10);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            var result = await ImageService.Search(query, resultsCount ?? 10).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false) return NotFound();
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
@@ -225,8 +225,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> TrackImage(Guid id, int? width, int? height)
         {
-            var result = await ImageService.TrackImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ImageService.TrackImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -247,8 +247,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> UserImage(Guid id, int? width, int? height)
         {
-            var result = await ImageService.UserImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ImageService.UserImage(id, width ?? RoadieSettings.ThumbnailImageSize.Width, height ?? RoadieSettings.ThumbnailImageSize.Height).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }

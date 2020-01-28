@@ -30,7 +30,6 @@ namespace Roadie.Api.Controllers
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
-            ;
             ReleaseService = releaseService;
         }
 
@@ -39,8 +38,8 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await ReleaseService.ById(await CurrentUserModel(), id, (inc ?? Release.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult)
+            var result = await ReleaseService.ById(await CurrentUserModel().ConfigureAwait(false), id, (inc ?? Release.DefaultIncludes).ToLower().Split(",")).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -57,10 +56,10 @@ namespace Roadie.Api.Controllers
         {
             try
             {
-                var result = await ReleaseService.List(await CurrentUserModel(),
+                var result = await ReleaseService.List(await CurrentUserModel().ConfigureAwait(false),
                     request,
                     doRandomize ?? false,
-                    (inc ?? Release.DefaultListIncludes).ToLower().Split(","));
+                    (inc ?? Release.DefaultListIncludes).ToLower().Split(",")).ConfigureAwait(false);
                 if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
                 return Ok(result);
             }
@@ -82,8 +81,8 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> MergeReleases(Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia)
         {
-            var result = await ReleaseService.MergeReleases(await UserManager.GetUserAsync(User), releaseToMergeId, releaseToMergeIntoId, addAsMedia);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            var result = await ReleaseService.MergeReleases(await UserManager.GetUserAsync(User).ConfigureAwait(false), releaseToMergeId, releaseToMergeIntoId, addAsMedia).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false) return NotFound();
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -105,8 +104,8 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> SetReleaseImageByUrl(Guid id, string imageUrl)
         {
-            var result = await ReleaseService.SetReleaseImageByUrl(await UserManager.GetUserAsync(User), id, HttpUtility.UrlDecode(imageUrl));
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            var result = await ReleaseService.SetReleaseImageByUrl(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, HttpUtility.UrlDecode(imageUrl)).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false) return NotFound();
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -132,8 +131,8 @@ namespace Roadie.Api.Controllers
             {
                 return BadRequest(ModelState);
             }
-            var result = await ReleaseService.UpdateRelease(await UserManager.GetUserAsync(User), release);
-            if (result == null || result.IsNotFoundResult)
+            var result = await ReleaseService.UpdateRelease(await UserManager.GetUserAsync(User).ConfigureAwait(false), release).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -154,8 +153,8 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
         {
-            var result = await ReleaseService.UploadReleaseImage(await UserManager.GetUserAsync(User), id, file);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            var result = await ReleaseService.UploadReleaseImage(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, file).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false) return NotFound();
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)

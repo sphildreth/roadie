@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
@@ -29,7 +28,7 @@ namespace Roadie.Api.Controllers
         private IUserService UserService { get; }
 
         public UserController(IUserService userService, ILogger<UserController> logger, ICacheManager cacheManager,
-                            IConfiguration configuration, ITokenService tokenService, UserManager<Library.Identity.User> userManager,
+                              ITokenService tokenService, UserManager<Library.Identity.User> userManager,
             IHttpContext httpContext, IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
@@ -45,12 +44,9 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetAccountSettings(Guid id, string inc = null)
         {
-            var user = await CurrentUserModel();
-            var result = await CacheManager.GetAsync($"urn:user_edit_model_by_id:{id}", async () =>
-            {
-                return await UserService.ById(user, id, (inc ?? Library.Models.Users.User.DefaultIncludes).ToLower().Split(","), true);
-            }, ControllerCacheRegionUrn);
-            if (result == null || result.IsNotFoundResult)
+            var user = await CurrentUserModel().ConfigureAwait(false);
+            var result = await CacheManager.GetAsync($"urn:user_edit_model_by_id:{id}", async () => await UserService.ById(user, id, (inc ?? Library.Models.Users.User.DefaultIncludes).ToLower().Split(","), true).ConfigureAwait(false), ControllerCacheRegionUrn).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -73,13 +69,10 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var user = await CurrentUserModel();
+            var user = await CurrentUserModel().ConfigureAwait(false);
             var result = await CacheManager.GetAsync($"urn:user_model_by_id:{id}",
-                async () =>
-                {
-                    return await UserService.ById(user, id, (inc ?? Library.Models.Users.User.DefaultIncludes).ToLower().Split(","));
-                }, ControllerCacheRegionUrn);
-            if (result == null || result.IsNotFoundResult)
+                async () => await UserService.ById(user, id, (inc ?? Library.Models.Users.User.DefaultIncludes).ToLower().Split(",")).ConfigureAwait(false), ControllerCacheRegionUrn).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
             }
@@ -95,7 +88,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> IntegrationGrant(Guid userId, string iname, string token)
         {
-            var result = await UserService.UpdateIntegrationGrant(userId, iname, token);
+            var result = await UserService.UpdateIntegrationGrant(userId, iname, token).ConfigureAwait(false);
             if (!result.IsSuccess) return Content("Error while attempting to enable integration");
             return Content("Successfully enabled integration!");
         }
@@ -104,7 +97,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> List([FromQuery] PagedRequest request)
         {
-            var result = await UserService.List(request);
+            var result = await UserService.List(request).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
@@ -113,7 +106,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetArtistBookmark(Guid artistId, bool isBookmarked)
         {
-            var result = await UserService.SetArtistBookmark(artistId, await CurrentUserModel(), isBookmarked);
+            var result = await UserService.SetArtistBookmark(artistId, await CurrentUserModel().ConfigureAwait(false), isBookmarked).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -123,7 +116,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetArtistDisliked(Guid artistId, bool isDisliked)
         {
-            var result = await UserService.SetArtistDisliked(artistId, await CurrentUserModel(), isDisliked);
+            var result = await UserService.SetArtistDisliked(artistId, await CurrentUserModel().ConfigureAwait(false), isDisliked).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -133,7 +126,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetArtistFavorite(Guid artistId, bool isFavorite)
         {
-            var result = await UserService.SetArtistFavorite(artistId, await CurrentUserModel(), isFavorite);
+            var result = await UserService.SetArtistFavorite(artistId, await CurrentUserModel().ConfigureAwait(false), isFavorite).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -143,7 +136,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetArtistRating(Guid releaseId, short rating)
         {
-            var result = await UserService.SetArtistRating(releaseId, await CurrentUserModel(), rating);
+            var result = await UserService.SetArtistRating(releaseId, await CurrentUserModel().ConfigureAwait(false), rating).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -153,7 +146,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteAllBookmarks()
         {
-            var result = await UserService.DeleteAllBookmarks(await CurrentUserModel());
+            var result = await UserService.DeleteAllBookmarks(await CurrentUserModel().ConfigureAwait(false)).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -163,7 +156,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetCollectionBookmark(Guid collectionId, bool isBookmarked)
         {
-            var result = await UserService.SetCollectionBookmark(collectionId, await CurrentUserModel(), isBookmarked);
+            var result = await UserService.SetCollectionBookmark(collectionId, await CurrentUserModel().ConfigureAwait(false), isBookmarked).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -173,7 +166,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetLabelBookmark(Guid labelId, bool isBookmarked)
         {
-            var result = await UserService.SetLabelBookmark(labelId, await CurrentUserModel(), isBookmarked);
+            var result = await UserService.SetLabelBookmark(labelId, await CurrentUserModel().ConfigureAwait(false), isBookmarked).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -183,7 +176,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetPlaylistBookmark(Guid playlistId, bool isBookmarked)
         {
-            var result = await UserService.SetPlaylistBookmark(playlistId, await CurrentUserModel(), isBookmarked);
+            var result = await UserService.SetPlaylistBookmark(playlistId, await CurrentUserModel().ConfigureAwait(false), isBookmarked).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -193,7 +186,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetReleaseBookmark(Guid releaseId, bool isBookmarked)
         {
-            var result = await UserService.SetReleaseBookmark(releaseId, await CurrentUserModel(), isBookmarked);
+            var result = await UserService.SetReleaseBookmark(releaseId, await CurrentUserModel().ConfigureAwait(false), isBookmarked).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -203,7 +196,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetReleaseDisliked(Guid releaseId, bool isDisliked)
         {
-            var result = await UserService.SetReleaseDisliked(releaseId, await CurrentUserModel(), isDisliked);
+            var result = await UserService.SetReleaseDisliked(releaseId, await CurrentUserModel().ConfigureAwait(false), isDisliked).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -213,7 +206,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetReleaseFavorite(Guid releaseId, bool isFavorite)
         {
-            var result = await UserService.SetReleaseFavorite(releaseId, await CurrentUserModel(), isFavorite);
+            var result = await UserService.SetReleaseFavorite(releaseId, await CurrentUserModel().ConfigureAwait(false), isFavorite).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -223,7 +216,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetReleaseRating(Guid releaseId, short rating)
         {
-            var result = await UserService.SetReleaseRating(releaseId, await CurrentUserModel(), rating);
+            var result = await UserService.SetReleaseRating(releaseId, await CurrentUserModel().ConfigureAwait(false), rating).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -233,7 +226,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetTrackBookmark(Guid trackId, bool isBookmarked)
         {
-            var result = await UserService.SetTrackBookmark(trackId, await CurrentUserModel(), isBookmarked);
+            var result = await UserService.SetTrackBookmark(trackId, await CurrentUserModel().ConfigureAwait(false), isBookmarked).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -243,7 +236,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetTrackDisliked(Guid trackId, bool isDisliked)
         {
-            var result = await UserService.SetTrackDisliked(trackId, await CurrentUserModel(), isDisliked);
+            var result = await UserService.SetTrackDisliked(trackId, await CurrentUserModel().ConfigureAwait(false), isDisliked).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -253,7 +246,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetTrackFavorite(Guid trackId, bool isFavorite)
         {
-            var result = await UserService.SetTrackFavorite(trackId, await CurrentUserModel(), isFavorite);
+            var result = await UserService.SetTrackFavorite(trackId, await CurrentUserModel().ConfigureAwait(false), isFavorite).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -263,7 +256,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> SetTrackRating(Guid trackId, short rating)
         {
-            var result = await UserService.SetTrackRating(trackId, await CurrentUserModel(), rating);
+            var result = await UserService.SetTrackRating(trackId, await CurrentUserModel().ConfigureAwait(false), rating).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             return Ok(result);
@@ -277,9 +270,9 @@ namespace Roadie.Api.Controllers
             {
                 return BadRequest(ModelState);
             }
-            var user = await CurrentUserModel();
-            var result = await UserService.UpdateProfile(user, model);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            var user = await CurrentUserModel().ConfigureAwait(false);
+            var result = await UserService.UpdateProfile(user, model).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false) return NotFound();
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -293,8 +286,8 @@ namespace Roadie.Api.Controllers
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
-            var modelUser = await UserManager.FindByNameAsync(model.UserName);
-            var t = await TokenService.GenerateToken(modelUser, UserManager);
+            var modelUser = await UserManager.FindByNameAsync(model.UserName).ConfigureAwait(false);
+            var t = await TokenService.GenerateToken(modelUser, UserManager).ConfigureAwait(false);
             CacheManager.ClearRegion(ControllerCacheRegionUrn);
             var avatarUrl = $"{RoadieHttpContext.ImageBaseUrl}/user/{modelUser.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}";
             return Ok(new

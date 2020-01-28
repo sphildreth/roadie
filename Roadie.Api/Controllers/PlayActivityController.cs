@@ -35,7 +35,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> PlayActivity([FromQuery] PagedRequest request)
         {
-            var result = await PlayActivityService.List(request);
+            var result = await PlayActivityService.List(request).ConfigureAwait(false);
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
         }
@@ -47,7 +47,7 @@ namespace Roadie.Api.Controllers
             var user = UserManager.Users.FirstOrDefault(x => x.RoadieId == userId);
             if (user == null) return NotFound();
             var result = await PlayActivityService.List(request,
-                UserModelForUser(user));
+                UserModelForUser(user)).ConfigureAwait(false);
 
             if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
             return Ok(result);
