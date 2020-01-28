@@ -86,7 +86,7 @@ namespace Roadie.Library.MetaData.LastFm
             };
             var request = new RestRequest(Method.GET);
             var client = new RestClient(BuildUrl("auth.getSession", parameters));
-            var responseXML = await client.ExecuteTaskAsync<string>(request);
+            var responseXML = await client.ExecuteAsync<string>(request);
             var doc = new XmlDocument();
             doc.LoadXml(responseXML.Content);
             var sessionKey = doc.GetElementsByTagName("key")[0].InnerText;
@@ -205,7 +205,7 @@ namespace Roadie.Library.MetaData.LastFm
             {
                 var request = new RestRequest(Method.GET);
                 var client = new RestClient(string.Format("http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={0}&artist={1}&album={2}&format=xml", ApiKey.Key, artistName, query));
-                var responseData = await client.ExecuteTaskAsync<lfm>(request);
+                var responseData = await client.ExecuteAsync<lfm>(request);
 
                 ReleaseSearchResult result = null;
 

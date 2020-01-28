@@ -40,7 +40,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         UserAgent = WebHelper.UserAgent
                     };
 
-                    var response = await client.ExecuteTaskAsync<DiscogsResult>(request);
+                    var response = await client.ExecuteAsync<DiscogsResult>(request);
 
                     if (response.ResponseStatus == ResponseStatus.Error)
                     {
@@ -126,7 +126,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                     var client = new RestClient("https://api.discogs.com/database");
                     client.UserAgent = WebHelper.UserAgent;
 
-                    var response = await client.ExecuteTaskAsync<DiscogsResult>(request);
+                    var response = await client.ExecuteAsync<DiscogsResult>(request);
 
                     if (response.ResponseStatus == ResponseStatus.Error)
                     {
@@ -207,7 +207,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         Timeout = SafeParser.ToNumber<int>(Configuration.Integrations.DiscogsTimeout)
                     };
 
-                    var response = await client.ExecuteTaskAsync<DiscogsReleaseSearchResult>(request);
+                    var response = await client.ExecuteAsync<DiscogsReleaseSearchResult>(request);
                     if (response?.ResponseStatus == null || response.ResponseStatus == ResponseStatus.Error)
                     {
                         if (response.StatusCode == HttpStatusCode.Unauthorized)

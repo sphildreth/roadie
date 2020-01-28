@@ -10,7 +10,6 @@ using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
-using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.Models.Pagination;
@@ -49,30 +48,21 @@ namespace Roadie.Api.Services
         {
             UserManager = userManager;
             LastFmHelper = lastFmHelper;
-            ;
         }
 
-        public async Task<OperationResult<models.Users.User>> ById(models.Users.User user, Guid id, IEnumerable<string> includes, bool isAccountSettingsEdit = false)
+        public async Task<OperationResult<User>> ById(User user, Guid id, IEnumerable<string> includes, bool isAccountSettingsEdit = false)
         {
-            if (isAccountSettingsEdit)
+            if (isAccountSettingsEdit && user.UserId != id && !user.IsAdmin)
             {
-                if (user.UserId != id && !user.IsAdmin)
+                return new OperationResult<User>("Access Denied")
                 {
-                    var r = new OperationResult<models.Users.User>("Access Denied")
-                    {
-                        IsAccessDeniedResult = true
-                    };
-                    return r;
-                }
+                    IsAccessDeniedResult = true
+                };
             }
             var sw = Stopwatch.StartNew();
             sw.Start();
             var cacheKey = string.Format("urn:user_by_id_operation:{0}:{1}", id, isAccountSettingsEdit);
-            var result = await CacheManager.GetAsync(cacheKey, async () =>
-            {
-                var rr = await UserByIdAction(id, includes);
-                return rr;
-            }, Library.Identity.User.CacheRegionUrn(id));
+            var result = await CacheManager.GetAsync(cacheKey, async () => await UserByIdAction(id, includes).ConfigureAwait(false), Library.Identity.User.CacheRegionUrn(id)).ConfigureAwait(false);
             sw.Stop();
             if (result?.Data != null)
             {
@@ -83,7 +73,7 @@ namespace Roadie.Api.Services
                     result.Data.ConcurrencyStamp = null;
                 }
             }
-            return new OperationResult<models.Users.User>(result.Messages)
+            return new OperationResult<User>(result.Messages)
             {
                 Data = result?.Data,
                 Errors = result?.Errors,
@@ -93,7 +83,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<Library.Models.Pagination.PagedResult<UserList>> List(PagedRequest request)
+        public Task<models.Pagination.PagedResult<UserList>> List(PagedRequest request)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -103,7 +93,7 @@ namespace Roadie.Api.Services
                                              where ut.UserId == u.Id
                                              select ut.LastPlayed).Max()
                          where request.FilterValue.Length == 0 ||
-                               request.FilterValue.Length > 0 && u.UserName.Contains(request.FilterValue)
+                               (request.FilterValue.Length > 0 && u.UserName.Contains(request.FilterValue))
                          select new UserList
                          {
                              DatabaseId = u.Id,
@@ -132,7 +122,7 @@ namespace Roadie.Api.Services
                 : request.OrderValue();
             rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
 
-            if (rows.Any())
+            if (rows.Length > 0)
             {
                 foreach (var row in rows)
                 {
@@ -147,22 +137,22 @@ namespace Roadie.Api.Services
                                               .ToArray();
                     row.Statistics = new UserStatistics
                     {
-                        RatedArtists = userArtists.Where(x => x.Rating > 0).Count(),
-                        FavoritedArtists = userArtists.Where(x => x.IsFavorite ?? false).Count(),
-                        DislikedArtists = userArtists.Where(x => x.IsDisliked ?? false).Count(),
-                        RatedReleases = userReleases.Where(x => x.Rating > 0).Count(),
-                        FavoritedReleases = userReleases.Where(x => x.IsFavorite ?? false).Count(),
-                        DislikedReleases = userReleases.Where(x => x.IsDisliked ?? false).Count(),
-                        RatedTracks = userTracks.Where(x => x.Rating > 0).Count(),
+                        RatedArtists = userArtists.Count(x => x.Rating > 0),
+                        FavoritedArtists = userArtists.Count(x => x.IsFavorite ?? false),
+                        DislikedArtists = userArtists.Count(x => x.IsDisliked ?? false),
+                        RatedReleases = userReleases.Count(x => x.Rating > 0),
+                        FavoritedReleases = userReleases.Count(x => x.IsFavorite ?? false),
+                        DislikedReleases = userReleases.Count(x => x.IsDisliked ?? false),
+                        RatedTracks = userTracks.Count(x => x.Rating > 0),
                         PlayedTracks = userTracks.Where(x => x.PlayedCount.HasValue).Select(x => x.PlayedCount).Sum(),
-                        FavoritedTracks = userTracks.Where(x => x.IsFavorite ?? false).Count(),
-                        DislikedTracks = userTracks.Where(x => x.IsDisliked ?? false).Count()
+                        FavoritedTracks = userTracks.Count(x => x.IsFavorite ?? false),
+                        DislikedTracks = userTracks.Count(x => x.IsDisliked ?? false)
                     };
                 }
             }
 
             sw.Stop();
-            return Task.FromResult(new Library.Models.Pagination.PagedResult<UserList>
+            return Task.FromResult(new models.Pagination.PagedResult<UserList>
             {
                 TotalCount = rowCount,
                 CurrentPage = request.PageValue,
@@ -172,16 +162,16 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<bool>> DeleteAllBookmarks(models.Users.User roadieUser)
+        public async Task<OperationResult<bool>> DeleteAllBookmarks(User roadieUser)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
 
             DbContext.Bookmarks.RemoveRange(DbContext.Bookmarks.Where(x => x.UserId == user.Id));
-            await DbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
             CacheManager.ClearRegion(user.CacheRegion);
 
@@ -192,19 +182,20 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> SetArtistBookmark(Guid artistId, models.Users.User roadieUser, bool isBookmarked)
+        public async Task<OperationResult<bool>> SetArtistBookmark(Guid artistId, User roadieUser, bool isBookmarked)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
-            var artist = await GetArtist(artistId);
+            var artist = await GetArtist(artistId).ConfigureAwait(false);
             if (artist == null)
             {
                 return new OperationResult<bool>(true, $"Invalid Artist [{artistId}]");
             }
-            var result = await SetBookmark(user, BookmarkType.Artist, artist.Id, isBookmarked);
+
+            await SetBookmark(user, BookmarkType.Artist, artist.Id, isBookmarked).ConfigureAwait(false);
 
             CacheManager.ClearRegion(artist.CacheRegion);
 
@@ -215,49 +206,49 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> SetArtistDisliked(Guid artistId, models.Users.User roadieUser, bool isDisliked)
+        public async Task<OperationResult<bool>> SetArtistDisliked(Guid artistId, User roadieUser, bool isDisliked)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
-            return await ToggleArtistDisliked(artistId, user, isDisliked);
+            return await ToggleArtistDisliked(artistId, user, isDisliked).ConfigureAwait(false);
         }
 
-        public async Task<OperationResult<bool>> SetArtistFavorite(Guid artistId, models.Users.User roadieUser, bool isFavorite)
+        public async Task<OperationResult<bool>> SetArtistFavorite(Guid artistId, User roadieUser, bool isFavorite)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
-            return await ToggleArtistFavorite(artistId, user, isFavorite);
+            return await ToggleArtistFavorite(artistId, user, isFavorite).ConfigureAwait(false);
         }
 
-        public async Task<OperationResult<short>> SetArtistRating(Guid artistId, models.Users.User roadieUser, short rating)
+        public async Task<OperationResult<short>> SetArtistRating(Guid artistId, User roadieUser, short rating)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<short>(true, $"Invalid User [{roadieUser}]");
             }
-            return await SetArtistRating(artistId, user, rating);
+            return await SetArtistRating(artistId, user, rating).ConfigureAwait(false);
         }
 
-        public async Task<OperationResult<bool>> SetCollectionBookmark(Guid collectionId, models.Users.User roadieUser, bool isBookmarked)
+        public async Task<OperationResult<bool>> SetCollectionBookmark(Guid collectionId, User roadieUser, bool isBookmarked)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
-            var collection = await GetCollection(collectionId);
+            var collection = await GetCollection(collectionId).ConfigureAwait(false);
             if (collection == null)
             {
                 return new OperationResult<bool>(true, $"Invalid Collection [{collectionId}]");
             }
-            var result = await SetBookmark(user, BookmarkType.Collection, collection.Id, isBookmarked);
+            await SetBookmark(user, BookmarkType.Collection, collection.Id, isBookmarked).ConfigureAwait(false);
 
             CacheManager.ClearRegion(collection.CacheRegion);
 
@@ -268,19 +259,19 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> SetLabelBookmark(Guid labelId, models.Users.User roadieUser, bool isBookmarked)
+        public async Task<OperationResult<bool>> SetLabelBookmark(Guid labelId, User roadieUser, bool isBookmarked)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
-            var label = await GetLabel(labelId);
+            var label = await GetLabel(labelId).ConfigureAwait(false);
             if (label == null)
             {
                 return new OperationResult<bool>(true, $"Invalid Label [{labelId}]");
             }
-            var result = await SetBookmark(user, BookmarkType.Label, label.Id, isBookmarked);
+            await SetBookmark(user, BookmarkType.Label, label.Id, isBookmarked).ConfigureAwait(false);
 
             CacheManager.ClearRegion(label.CacheRegion);
 
@@ -291,20 +282,20 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> SetPlaylistBookmark(Guid playlistId, models.Users.User roadieUser,
+        public async Task<OperationResult<bool>> SetPlaylistBookmark(Guid playlistId, User roadieUser,
             bool isBookmarked)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
-            var playlist = await GetPlaylist(playlistId);
+            var playlist = await GetPlaylist(playlistId).ConfigureAwait(false);
             if (playlist == null)
             {
                 return new OperationResult<bool>(true, $"Invalid Playlist [{playlistId}]");
             }
-            await SetBookmark(user, BookmarkType.Playlist, playlist.Id, isBookmarked);
+            await SetBookmark(user, BookmarkType.Playlist, playlist.Id, isBookmarked).ConfigureAwait(false);
 
             CacheManager.ClearRegion(playlist.CacheRegion);
 
@@ -315,19 +306,19 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> SetReleaseBookmark(Guid releaseid, models.Users.User roadieUser, bool isBookmarked)
+        public async Task<OperationResult<bool>> SetReleaseBookmark(Guid releaseid, User roadieUser, bool isBookmarked)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
-            var release = await GetRelease(releaseid);
+            var release = await GetRelease(releaseid).ConfigureAwait(false);
             if (release == null)
             {
                 return new OperationResult<bool>(true, $"Invalid Release [{releaseid}]");
             }
-            await SetBookmark(user, BookmarkType.Release, release.Id, isBookmarked);
+            await SetBookmark(user, BookmarkType.Release, release.Id, isBookmarked).ConfigureAwait(false);
 
             CacheManager.ClearRegion(release.CacheRegion);
 
@@ -338,49 +329,49 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> SetReleaseDisliked(Guid releaseId, models.Users.User roadieUser, bool isDisliked)
+        public async Task<OperationResult<bool>> SetReleaseDisliked(Guid releaseId, User roadieUser, bool isDisliked)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
-            return await ToggleReleaseDisliked(releaseId, user, isDisliked);
+            return await ToggleReleaseDisliked(releaseId, user, isDisliked).ConfigureAwait(false);
         }
 
-        public async Task<OperationResult<bool>> SetReleaseFavorite(Guid releaseId, models.Users.User roadieUser, bool isFavorite)
+        public async Task<OperationResult<bool>> SetReleaseFavorite(Guid releaseId, User roadieUser, bool isFavorite)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
-            return await ToggleReleaseFavorite(releaseId, user, isFavorite);
+            return await ToggleReleaseFavorite(releaseId, user, isFavorite).ConfigureAwait(false);
         }
 
-        public async Task<OperationResult<short>> SetReleaseRating(Guid releaseId, models.Users.User roadieUser, short rating)
+        public async Task<OperationResult<short>> SetReleaseRating(Guid releaseId, User roadieUser, short rating)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<short>(true, $"Invalid User [{roadieUser}]");
             }
-            return await base.SetReleaseRating(releaseId, user, rating);
+            return await SetReleaseRating(releaseId, user, rating).ConfigureAwait(false);
         }
 
-        public async Task<OperationResult<bool>> SetTrackBookmark(Guid trackId, models.Users.User roadieUser, bool isBookmarked)
+        public async Task<OperationResult<bool>> SetTrackBookmark(Guid trackId, User roadieUser, bool isBookmarked)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
-            var track = await GetTrack(trackId);
+            var track = await GetTrack(trackId).ConfigureAwait(false);
             if (track == null)
             {
                 return new OperationResult<bool>(true, $"Invalid Track [{trackId}]");
             }
-            await SetBookmark(user, BookmarkType.Track, track.Id, isBookmarked);
+            await SetBookmark(user, BookmarkType.Track, track.Id, isBookmarked).ConfigureAwait(false);
 
             CacheManager.ClearRegion(track.CacheRegion);
 
@@ -391,31 +382,31 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> SetTrackDisliked(Guid trackId, models.Users.User roadieUser, bool isDisliked)
+        public async Task<OperationResult<bool>> SetTrackDisliked(Guid trackId, User roadieUser, bool isDisliked)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
-            return await ToggleTrackDisliked(trackId, user, isDisliked);
+            return await ToggleTrackDisliked(trackId, user, isDisliked).ConfigureAwait(false);
         }
 
-        public async Task<OperationResult<bool>> SetTrackFavorite(Guid trackId, models.Users.User roadieUser, bool isFavorite)
+        public async Task<OperationResult<bool>> SetTrackFavorite(Guid trackId, User roadieUser, bool isFavorite)
         {
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
             }
-            return await ToggleTrackFavorite(trackId, user, isFavorite);
+            return await ToggleTrackFavorite(trackId, user, isFavorite).ConfigureAwait(false);
         }
 
-        public async Task<OperationResult<short>> SetTrackRating(Guid trackId, models.Users.User roadieUser, short rating)
+        public async Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating)
         {
             var timings = new Dictionary<string, long>();
             var sw = Stopwatch.StartNew();
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             sw.Stop();
             timings.Add("GetUser", sw.ElapsedMilliseconds);
 
@@ -424,7 +415,7 @@ namespace Roadie.Api.Services
                 return new OperationResult<short>(true, $"Invalid User [{roadieUser}]");
             }
             sw.Start();
-            var result = await base.SetTrackRating(trackId, user, rating);
+            var result = await SetTrackRating(trackId, user, rating).ConfigureAwait(false);
             sw.Stop();
             timings.Add("SetTrackRating", sw.ElapsedMilliseconds);
 
@@ -434,19 +425,21 @@ namespace Roadie.Api.Services
             return result;
         }
 
-        public async Task<OperationResult<bool>> UpdateIntegrationGrant(Guid userId, string integrationName,
-            string token)
+        public async Task<OperationResult<bool>> UpdateIntegrationGrant(Guid userId, string integrationName, string token)
         {
             var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == userId);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"User Not Found [{userId}]");
             }
-            if (integrationName == "lastfm") return await UpdateLastFMSessionKey(user, token);
+            if (integrationName == "lastfm")
+            {
+                return await UpdateLastFMSessionKey(user, token).ConfigureAwait(false);
+            }
             throw new NotImplementedException();
         }
 
-        public async Task<OperationResult<bool>> UpdateProfile(models.Users.User userPerformingUpdate, models.Users.User userBeingUpdatedModel)
+        public async Task<OperationResult<bool>> UpdateProfile(User userPerformingUpdate, User userBeingUpdatedModel)
         {
             var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == userBeingUpdatedModel.UserId);
             if (user == null)
@@ -455,11 +448,10 @@ namespace Roadie.Api.Services
             }
             if (user.Id != userPerformingUpdate.Id && !userPerformingUpdate.IsAdmin)
             {
-                var r = new OperationResult<bool>("Access Denied")
+                return new OperationResult<bool>("Access Denied")
                 {
                     IsAccessDeniedResult = true
                 };
-                return r;
             }
             // Check concurrency stamp
             if (user.ConcurrencyStamp != userBeingUpdatedModel.ConcurrencyStamp)
@@ -509,12 +501,9 @@ namespace Roadie.Api.Services
             user.ConcurrencyStamp = Guid.NewGuid().ToString();
             user.DefaultRowsPerPage = userBeingUpdatedModel.DefaultRowsPerPage;
 
-            if (didChangeName)
+            if (didChangeName && File.Exists(oldPathToImage))
             {
-                if (File.Exists(oldPathToImage))
-                {
-                    File.Move(oldPathToImage, user.PathToImage(Configuration));
-                }
+                File.Move(oldPathToImage, user.PathToImage(Configuration));
             }
 
             if (!string.IsNullOrEmpty(userBeingUpdatedModel.AvatarData))
@@ -529,20 +518,24 @@ namespace Roadie.Api.Services
                 }
             }
 
-            await DbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
             if (!string.IsNullOrEmpty(userBeingUpdatedModel.Password) &&
                 !string.IsNullOrEmpty(userBeingUpdatedModel.PasswordConfirmation))
             {
                 if (userBeingUpdatedModel.Password != userBeingUpdatedModel.PasswordConfirmation)
+                {
                     return new OperationResult<bool>
                     {
                         Errors = new List<Exception> { new Exception("Password does not match confirmation") }
                     };
-                var resetToken = await UserManager.GeneratePasswordResetTokenAsync(user);
+                }
+
+                var resetToken = await UserManager.GeneratePasswordResetTokenAsync(user).ConfigureAwait(false);
                 var identityResult =
-                    await UserManager.ResetPasswordAsync(user, resetToken, userBeingUpdatedModel.Password);
+                    await UserManager.ResetPasswordAsync(user, resetToken, userBeingUpdatedModel.Password).ConfigureAwait(false);
                 if (!identityResult.Succeeded)
+                {
                     return new OperationResult<bool>
                     {
                         Errors = identityResult.Errors != null
@@ -550,6 +543,7 @@ namespace Roadie.Api.Services
                                 new Exception($"Code [{x.Code}], Description [{x.Description}]"))
                             : new List<Exception> { new Exception("Unable to reset password") }
                     };
+                }
             }
 
             CacheManager.ClearRegion(Library.Identity.User.CacheRegionUrn(user.RoadieId));
@@ -574,7 +568,7 @@ namespace Roadie.Api.Services
                 if (bookmark != null)
                 {
                     DbContext.Bookmarks.Remove(bookmark);
-                    await DbContext.SaveChangesAsync();
+                    await DbContext.SaveChangesAsync().ConfigureAwait(false);
                 }
             }
             else
@@ -589,8 +583,8 @@ namespace Roadie.Api.Services
                         BookmarkType = bookmarktype,
                         CreatedDate = DateTime.UtcNow,
                         Status = Statuses.Ok
-                    });
-                    await DbContext.SaveChangesAsync();
+                    }).ConfigureAwait(false);
+                    await DbContext.SaveChangesAsync().ConfigureAwait(false);
                 }
             }
 
@@ -605,19 +599,22 @@ namespace Roadie.Api.Services
 
         private async Task<OperationResult<bool>> UpdateLastFMSessionKey(Library.Identity.User user, string token)
         {
-            var lastFmSessionKeyResult = await LastFmHelper.GetSessionKeyForUserToken(token);
+            var lastFmSessionKeyResult = await LastFmHelper.GetSessionKeyForUserToken(token).ConfigureAwait(false);
             if (!lastFmSessionKeyResult.IsSuccess)
                 return new OperationResult<bool>(false, $"Unable to Get LastFM Session Key For Token [{token}]");
             // Check concurrency stamp
             if (user.ConcurrencyStamp != user.ConcurrencyStamp)
+            {
                 return new OperationResult<bool>
                 {
                     Errors = new List<Exception> { new Exception("User data is stale.") }
                 };
+            }
+
             user.LastFMSessionKey = lastFmSessionKeyResult.Data;
             user.LastUpdated = DateTime.UtcNow;
             user.ConcurrencyStamp = Guid.NewGuid().ToString();
-            await DbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
             CacheManager.ClearRegion(Library.Identity.User.CacheRegionUrn(user.RoadieId));
 
@@ -630,103 +627,100 @@ namespace Roadie.Api.Services
             };
         }
 
-        private async Task<OperationResult<models.Users.User>> UserByIdAction(Guid id, IEnumerable<string> includes)
+        private async Task<OperationResult<User>> UserByIdAction(Guid id, IEnumerable<string> includes)
         {
             var timings = new Dictionary<string, long>();
             var tsw = new Stopwatch();
 
             tsw.Restart();
-            var user = await GetUser(id);
+            var user = await GetUser(id).ConfigureAwait(false);
             tsw.Stop();
             timings.Add("getUser", tsw.ElapsedMilliseconds);
 
             if (user == null)
             {
-                return new OperationResult<models.Users.User>(true, string.Format("User Not Found [{0}]", id));
+                return new OperationResult<User>(true, string.Format("User Not Found [{0}]", id));
             }
             tsw.Restart();
-            var model = user.Adapt<models.Users.User>();
+            var model = user.Adapt<User>();
             model.MediumThumbnail = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "user", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
             model.IsAdmin = user.UserRoles?.Any(x => x.Role?.NormalizedName == "ADMIN") ?? false;
-            model.IsEditor = model.IsAdmin ? true : user.UserRoles?.Any(x => x.Role?.NormalizedName == "EDITOR") ?? false;
+            model.IsEditor = model.IsAdmin || (user.UserRoles?.Any(x => x.Role?.NormalizedName == "EDITOR") ?? false);
             tsw.Stop();
             timings.Add("adapt", tsw.ElapsedMilliseconds);
 
-            if (includes != null && includes.Any())
+            if (includes?.Any() == true && includes.Contains("stats"))
             {
-                if (includes.Contains("stats"))
-                {
-                    tsw.Restart();
-                    var userArtists = DbContext.UserArtists.Include(x => x.Artist).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserArtist[0];
-                    var userReleases = DbContext.UserReleases.Include(x => x.Release).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserRelease[0];
-                    var userTracks = DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserTrack[0];
+                tsw.Restart();
+                var userArtists = DbContext.UserArtists.Include(x => x.Artist).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserArtist[0];
+                var userReleases = DbContext.UserReleases.Include(x => x.Release).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserRelease[0];
+                var userTracks = DbContext.UserTracks.Include(x => x.Track).Where(x => x.UserId == user.Id).ToArray() ?? new data.UserTrack[0];
 
-                    var mostPlayedArtist = await DbContext.MostPlayedArtist(user.Id);
-                    var mostPlayedRelease = await DbContext.MostPlayedRelease(user.Id);
-                    var lastPlayedTrack = await GetTrack((await DbContext.MostPlayedTrack(user.Id))?.RoadieId ?? Guid.Empty);
-                    var mostPlayedTrack = await GetTrack((await DbContext.LastPlayedTrack(user.Id))?.RoadieId ?? Guid.Empty);
-                    model.Statistics = new UserStatistics
-                    {
-                        LastPlayedTrack = lastPlayedTrack == null
-                            ? null
-                            : models.TrackList.FromDataTrack(
-                                MakeTrackPlayUrl(user, HttpContext.BaseUrl, lastPlayedTrack.RoadieId),
-                                lastPlayedTrack,
-                                lastPlayedTrack.ReleaseMedia.MediaNumber,
-                                lastPlayedTrack.ReleaseMedia.Release,
-                                lastPlayedTrack.ReleaseMedia.Release.Artist,
-                                lastPlayedTrack.TrackArtist,
-                                HttpContext.BaseUrl,
-                                ImageHelper.MakeTrackThumbnailImage(Configuration, HttpContext, lastPlayedTrack.RoadieId),
-                                ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, lastPlayedTrack.ReleaseMedia.Release.RoadieId),
-                                ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, lastPlayedTrack.ReleaseMedia.Release.Artist.RoadieId),
-                                ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, lastPlayedTrack.TrackArtist == null
-                                    ? null
-                                    : (Guid?)lastPlayedTrack.TrackArtist.RoadieId)),
-                        MostPlayedArtist = mostPlayedArtist == null
-                            ? null
-                            : models.ArtistList.FromDataArtist(mostPlayedArtist,
-                                ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedArtist.RoadieId)),
-                        MostPlayedRelease = mostPlayedRelease == null
-                            ? null
-                            : ReleaseList.FromDataRelease(mostPlayedRelease,
-                                mostPlayedRelease.Artist,
-                                HttpContext.BaseUrl,
-                                ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedRelease.Artist.RoadieId),
-                                ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, mostPlayedRelease.RoadieId)),
-                        MostPlayedTrack = mostPlayedTrack == null
-                            ? null
-                            : models.TrackList.FromDataTrack(
-                                MakeTrackPlayUrl(user, HttpContext.BaseUrl, mostPlayedTrack.RoadieId),
-                                mostPlayedTrack,
-                                mostPlayedTrack.ReleaseMedia.MediaNumber,
-                                mostPlayedTrack.ReleaseMedia.Release,
-                                mostPlayedTrack.ReleaseMedia.Release.Artist,
-                                mostPlayedTrack.TrackArtist,
-                                HttpContext.BaseUrl,
-                                ImageHelper.MakeTrackThumbnailImage(Configuration, HttpContext, mostPlayedTrack.RoadieId),
-                                ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, mostPlayedTrack.ReleaseMedia.Release.RoadieId),
-                                ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedTrack.ReleaseMedia.Release.Artist.RoadieId),
-                                ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedTrack.TrackArtist == null
-                                    ? null
-                                    : (Guid?)mostPlayedTrack.TrackArtist.RoadieId)),
-                        RatedArtists = userArtists.Where(x => x.Rating > 0).Count(),
-                        FavoritedArtists = userArtists.Where(x => x.IsFavorite ?? false).Count(),
-                        DislikedArtists = userArtists.Where(x => x.IsDisliked ?? false).Count(),
-                        RatedReleases = userReleases.Where(x => x.Rating > 0).Count(),
-                        FavoritedReleases = userReleases.Where(x => x.IsFavorite ?? false).Count(),
-                        DislikedReleases = userReleases.Where(x => x.IsDisliked ?? false).Count(),
-                        RatedTracks = userTracks.Where(x => x.Rating > 0).Count(),
-                        PlayedTracks = userTracks.Where(x => x.PlayedCount.HasValue).Select(x => x.PlayedCount).Sum(),
-                        FavoritedTracks = userTracks.Where(x => x.IsFavorite ?? false).Count(),
-                        DislikedTracks = userTracks.Where(x => x.IsDisliked ?? false).Count()
-                    };
-                    tsw.Stop();
-                    timings.Add("stats", tsw.ElapsedMilliseconds);
-                }
+                var mostPlayedArtist = await DbContext.MostPlayedArtist(user.Id).ConfigureAwait(false);
+                var mostPlayedRelease = await DbContext.MostPlayedRelease(user.Id).ConfigureAwait(false);
+                var lastPlayedTrack = await GetTrack((await DbContext.MostPlayedTrack(user.Id).ConfigureAwait(false))?.RoadieId ?? Guid.Empty).ConfigureAwait(false);
+                var mostPlayedTrack = await GetTrack((await DbContext.LastPlayedTrack(user.Id).ConfigureAwait(false))?.RoadieId ?? Guid.Empty).ConfigureAwait(false);
+                model.Statistics = new UserStatistics
+                {
+                    LastPlayedTrack = lastPlayedTrack == null
+                        ? null
+                        : models.TrackList.FromDataTrack(
+                            MakeTrackPlayUrl(user, HttpContext.BaseUrl, lastPlayedTrack.RoadieId),
+                            lastPlayedTrack,
+                            lastPlayedTrack.ReleaseMedia.MediaNumber,
+                            lastPlayedTrack.ReleaseMedia.Release,
+                            lastPlayedTrack.ReleaseMedia.Release.Artist,
+                            lastPlayedTrack.TrackArtist,
+                            HttpContext.BaseUrl,
+                            ImageHelper.MakeTrackThumbnailImage(Configuration, HttpContext, lastPlayedTrack.RoadieId),
+                            ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, lastPlayedTrack.ReleaseMedia.Release.RoadieId),
+                            ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, lastPlayedTrack.ReleaseMedia.Release.Artist.RoadieId),
+                            ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, lastPlayedTrack.TrackArtist == null
+                                ? null
+                                : (Guid?)lastPlayedTrack.TrackArtist.RoadieId)),
+                    MostPlayedArtist = mostPlayedArtist == null
+                        ? null
+                        : models.ArtistList.FromDataArtist(mostPlayedArtist,
+                            ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedArtist.RoadieId)),
+                    MostPlayedRelease = mostPlayedRelease == null
+                        ? null
+                        : ReleaseList.FromDataRelease(mostPlayedRelease,
+                            mostPlayedRelease.Artist,
+                            HttpContext.BaseUrl,
+                            ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedRelease.Artist.RoadieId),
+                            ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, mostPlayedRelease.RoadieId)),
+                    MostPlayedTrack = mostPlayedTrack == null
+                        ? null
+                        : models.TrackList.FromDataTrack(
+                            MakeTrackPlayUrl(user, HttpContext.BaseUrl, mostPlayedTrack.RoadieId),
+                            mostPlayedTrack,
+                            mostPlayedTrack.ReleaseMedia.MediaNumber,
+                            mostPlayedTrack.ReleaseMedia.Release,
+                            mostPlayedTrack.ReleaseMedia.Release.Artist,
+                            mostPlayedTrack.TrackArtist,
+                            HttpContext.BaseUrl,
+                            ImageHelper.MakeTrackThumbnailImage(Configuration, HttpContext, mostPlayedTrack.RoadieId),
+                            ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, mostPlayedTrack.ReleaseMedia.Release.RoadieId),
+                            ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedTrack.ReleaseMedia.Release.Artist.RoadieId),
+                            ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedTrack.TrackArtist == null
+                                ? null
+                                : (Guid?)mostPlayedTrack.TrackArtist.RoadieId)),
+                    RatedArtists = userArtists.Count(x => x.Rating > 0),
+                    FavoritedArtists = userArtists.Count(x => x.IsFavorite ?? false),
+                    DislikedArtists = userArtists.Count(x => x.IsDisliked ?? false),
+                    RatedReleases = userReleases.Count(x => x.Rating > 0),
+                    FavoritedReleases = userReleases.Count(x => x.IsFavorite ?? false),
+                    DislikedReleases = userReleases.Count(x => x.IsDisliked ?? false),
+                    RatedTracks = userTracks.Count(x => x.Rating > 0),
+                    PlayedTracks = userTracks.Where(x => x.PlayedCount.HasValue).Select(x => x.PlayedCount).Sum(),
+                    FavoritedTracks = userTracks.Count(x => x.IsFavorite ?? false),
+                    DislikedTracks = userTracks.Count(x => x.IsDisliked ?? false)
+                };
+                tsw.Stop();
+                timings.Add("stats", tsw.ElapsedMilliseconds);
             }
             Logger.LogInformation($"ByIdAction: User `{ user }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
-            return new OperationResult<models.Users.User>
+            return new OperationResult<User>
             {
                 IsSuccess = true,
                 Data = model

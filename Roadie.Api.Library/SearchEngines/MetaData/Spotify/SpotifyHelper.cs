@@ -37,7 +37,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
                 var client = new RestClient("http://api.spotify.com/v1");
                 client.UserAgent = WebHelper.UserAgent;
 
-                var response = await client.ExecuteTaskAsync<SpotifyResult>(request);
+                var response = await client.ExecuteAsync<SpotifyResult>(request);
 
                 if (response.ResponseStatus == ResponseStatus.Error)
                 {
@@ -104,7 +104,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
                     }
 
                     var client = new RestClient(string.Format("http://api.spotify.com/v1/albums/{0}", spotifyAlbum.id));
-                    var albumResult = await client.ExecuteTaskAsync<AlbumResult>(request);
+                    var albumResult = await client.ExecuteAsync<AlbumResult>(request);
                     if (albumResult != null && albumResult.Data != null)
                     {
                         var sa = albumResult.Data;
@@ -213,7 +213,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
                 var client = new RestClient(string.Format(
                     "http://api.spotify.com/v1/artists/{0}/albums?offset=0&limit=25&album_type=album&market=US",
                     spotifyId));
-                var artistAlbumsResponse = await client.ExecuteTaskAsync<Albums>(request);
+                var artistAlbumsResponse = await client.ExecuteAsync<Albums>(request);
                 result = artistAlbumsResponse != null && artistAlbumsResponse.Data != null
                     ? artistAlbumsResponse.Data
                     : null;

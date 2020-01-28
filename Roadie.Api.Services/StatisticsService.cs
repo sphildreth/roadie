@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using data = Roadie.Library.Data;
 
 namespace Roadie.Api.Services
 {
@@ -209,9 +208,9 @@ namespace Roadie.Api.Services
                                  year = SafeParser.ToNumber<int>(x.Key),
                                  count = x.Count()
                              });
-            if (decadeInfos != null && decadeInfos.Any())
+            if (decadeInfos?.Any() == true)
             {
-                var decadeInterval = 10;
+                const int decadeInterval = 10;
                 var startingDecade = (decadeInfos.Min(x => x.year) / 10) * 10;
                 var endingDecade = (decadeInfos.Max(x => x.year) / 10) * 10;
                 for (int decade = startingDecade; decade <= endingDecade; decade += decadeInterval)
@@ -236,7 +235,5 @@ namespace Roadie.Api.Services
                 Data = result
             });
         }
-
-
     }
 }

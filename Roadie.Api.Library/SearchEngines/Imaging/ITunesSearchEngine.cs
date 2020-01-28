@@ -32,7 +32,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             try
             {
                 var request = BuildRequest(query, 1, "musicArtist");
-                var response = await _client.ExecuteTaskAsync<ITunesSearchResult>(request);
+                var response = await _client.ExecuteAsync<ITunesSearchResult>(request);
                 if (response.ResponseStatus == ResponseStatus.Error)
                 {
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -116,7 +116,7 @@ namespace Roadie.Library.SearchEngines.Imaging
         public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
         {
             var request = BuildRequest(query, 1, "album");
-            var response = await _client.ExecuteTaskAsync<ITunesSearchResult>(request);
+            var response = await _client.ExecuteAsync<ITunesSearchResult>(request);
             if (response.ResponseStatus == ResponseStatus.Error)
             {
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
