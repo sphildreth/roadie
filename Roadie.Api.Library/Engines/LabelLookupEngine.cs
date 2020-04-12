@@ -46,7 +46,7 @@ namespace Roadie.Library.Engines
                 var inserted = 0;
                 try
                 {
-                    inserted = await DbContext.SaveChangesAsync();
+                    inserted = await DbContext.SaveChangesAsync().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -95,7 +95,7 @@ namespace Roadie.Library.Engines
                              select l
                     ).FirstOrDefault();
                 sw.Stop();
-                if (label == null || !label.IsValid)
+                if (label?.IsValid != true)
                 {
                     Logger.LogTrace("LabelFactory: Label Not Found By Name [{0}]", labelName);
                     if (doFindIfNotInDatabase)
@@ -103,7 +103,7 @@ namespace Roadie.Library.Engines
                         OperationResult<Label> LabelSearch = null;
                         try
                         {
-                            LabelSearch = await PerformMetaDataProvidersLabelSearch(labelName);
+                            LabelSearch = await PerformMetaDataProvidersLabelSearch(labelName).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
@@ -113,7 +113,7 @@ namespace Roadie.Library.Engines
                         if (LabelSearch.IsSuccess)
                         {
                             label = LabelSearch.Data;
-                            var addResult = await Add(label);
+                            var addResult = await Add(label).ConfigureAwait(false);
                             if (!addResult.IsSuccess)
                             {
                                 sw.Stop();
@@ -160,7 +160,7 @@ namespace Roadie.Library.Engines
 
             if (DiscogsLabelSearchEngine.IsEnabled)
             {
-                var discogsResult = await DiscogsLabelSearchEngine.PerformLabelSearch(result.Name, 1);
+                var discogsResult = await DiscogsLabelSearchEngine.PerformLabelSearch(result.Name, 1).ConfigureAwait(false);
                 if (discogsResult.IsSuccess)
                 {
                     var d = discogsResult.Data.First();

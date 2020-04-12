@@ -45,7 +45,7 @@ namespace Roadie.Library.FilePlugins
             {
                 string destinationName = null;
 
-                var metaData = await AudioMetaDataHelper.GetInfo(fileInfo, doJustInfo);
+                var metaData = await AudioMetaDataHelper.GetInfo(fileInfo, doJustInfo).ConfigureAwait(false);
                 if (!metaData.IsValid)
                 {
                     var minWeight = MinWeightToDelete;
@@ -75,7 +75,7 @@ namespace Roadie.Library.FilePlugins
                 SimpleContract.Requires<ArgumentException>(year > 0, string.Format("Invalid Track Year [{0}]", year));
                 SimpleContract.Requires<ArgumentException>(trackNumber > 0, "Missing Track Number");
 
-                var artistFolder = await DetermineArtistFolder(metaData, doJustInfo);
+                var artistFolder = await DetermineArtistFolder(metaData, doJustInfo).ConfigureAwait(false);
                 if (string.IsNullOrEmpty(artistFolder))
                 {
                     Logger.LogWarning("Unable To Find ArtistFolder [{0}] For MetaData [{1}]", artistFolder,
@@ -83,7 +83,7 @@ namespace Roadie.Library.FilePlugins
                     return new OperationResult<bool>("Unable To Find Artist Folder");
                 }
 
-                var releaseFolder = await DetermineReleaseFolder(artistFolder, metaData, doJustInfo, submissionId);
+                var releaseFolder = await DetermineReleaseFolder(artistFolder, metaData, doJustInfo, submissionId).ConfigureAwait(false);
                 if (string.IsNullOrEmpty(releaseFolder))
                 {
                     Logger.LogWarning("Unable To Find ReleaseFolder For MetaData [{0}]", metaData.ToString());
@@ -107,9 +107,9 @@ namespace Roadie.Library.FilePlugins
                     var artistImages = new List<FileInfo>();
                     artistImages.AddRange(ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, ImageType.Artist));
                     artistImages.AddRange(ImageHelper.FindImageTypeInDirectory(fileInfo.Directory.Parent, ImageType.Artist));
-                    if (artistImages.Any())
+                    if (artistImages.Count > 0)
                     {
-                        var artistImage = artistImages.First();
+                        var artistImage = artistImages[0];
                         var artistImageFilename = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
                         if (artistImageFilename != artistImage.FullName)
                         {
@@ -132,7 +132,7 @@ namespace Roadie.Library.FilePlugins
                     artistImages.Clear();
                     artistImages.AddRange(ImageHelper.FindImageTypeInDirectory(fileInfo.Directory, ImageType.ArtistSecondary));
                     artistImages.AddRange(ImageHelper.FindImageTypeInDirectory(fileInfo.Directory.Parent, ImageType.Artist));
-                    if (artistImages.Any())
+                    if (artistImages.Count > 0)
                     {
                         var looper = 0;
                         foreach (var artistImage in artistImages)
@@ -230,7 +230,7 @@ namespace Roadie.Library.FilePlugins
                     var existing = new FileInfo(destinationName);
 
                     // If Exists determine which is better - if same do nothing
-                    var existingMetaData = await AudioMetaDataHelper.GetInfo(existing, doJustInfo);
+                    var existingMetaData = await AudioMetaDataHelper.GetInfo(existing, doJustInfo).ConfigureAwait(false);
 
                     var areSameFile = existing.FullName.Replace("\\", "").Replace("/", "")
                         .Equals(fileInfo.FullName.Replace("\\", "").Replace("/", ""),
@@ -261,6 +261,7 @@ namespace Roadie.Library.FilePlugins
                 {
                     Logger.LogTrace("Moving File To [{0}]", destinationName);
                     if (!doJustInfo)
+                    {
                         try
                         {
                             fileInfo.MoveTo(destinationName);
@@ -269,6 +270,7 @@ namespace Roadie.Library.FilePlugins
                         {
                             Logger.LogError(ex, "Error Moving File [{0}}", destinationName);
                         }
+                    }
                 }
 
                 result.AdditionalData.Add(PluginResultInfo.AdditionalDataKeyPluginResultInfo, new PluginResultInfo
@@ -297,7 +299,7 @@ namespace Roadie.Library.FilePlugins
         private async Task<string> DetermineArtistFolder(AudioMetaData metaData,
             bool doJustInfo)
         {
-            var artist = await ArtistLookupEngine.GetByName(metaData, !doJustInfo);
+            var artist = await ArtistLookupEngine.GetByName(metaData, !doJustInfo).ConfigureAwait(false);
             if (!artist.IsSuccess) return null;
             try
             {
@@ -314,13 +316,13 @@ namespace Roadie.Library.FilePlugins
         private async Task<string> DetermineReleaseFolder(string artistFolder, AudioMetaData metaData, bool doJustInfo,
             int? submissionId)
         {
-            var artist = await ArtistLookupEngine.GetByName(metaData, !doJustInfo);
+            var artist = await ArtistLookupEngine.GetByName(metaData, !doJustInfo).ConfigureAwait(false);
             if (!artist.IsSuccess)
             {
                 return null;
             }
             _artistId = artist.Data.RoadieId;
-            var release = await ReleaseLookupEngine.GetByName(artist.Data, metaData, !doJustInfo, submissionId: submissionId);
+            var release = await ReleaseLookupEngine.GetByName(artist.Data, metaData, !doJustInfo, submissionId: submissionId).ConfigureAwait(false);
             if (!release.IsSuccess)
             {
                 return null;

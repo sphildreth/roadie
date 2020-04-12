@@ -2,8 +2,6 @@
 using MimeMapping;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
-using Roadie.Library.Data;
-using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
 using Roadie.Library.Extensions;
@@ -20,8 +18,6 @@ namespace Roadie.Library.Processors
 {
     public sealed class FileProcessor : IFileProcessor
     {
-        private bool DoDeleteUnknowns => Configuration.Processing.DoDeleteUnknowns;
-
         private bool DoMoveUnknowns => Configuration.Processing.DoMoveUnknowns;
 
         public IHttpEncoder HttpEncoder { get; }
@@ -37,8 +33,6 @@ namespace Roadie.Library.Processors
         private ICacheManager CacheManager { get; }
 
         private IRoadieSettings Configuration { get; }
-
-        private IRoadieDbContext DbContext { get; }
 
         private ILogger Logger { get; }
 
@@ -60,12 +54,14 @@ namespace Roadie.Library.Processors
                             .SelectMany(s => s.GetTypes())
                             .Where(p => type.IsAssignableFrom(p));
                         foreach (var t in types)
+                        {
                             if (t.GetInterface("IFilePlugin") != null && !t.IsAbstract && !t.IsInterface)
                             {
                                 var plugin = Activator.CreateInstance(t, Configuration, HttpEncoder, CacheManager, Logger, ArtistLookupEngine,
                                     ReleaseLookupEngine, AudioMetaDataHelper) as IFilePlugin;
                                 plugins.Add(plugin);
                             }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -79,14 +75,12 @@ namespace Roadie.Library.Processors
             }
         }
 
-        public FileProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, 
-                IRoadieDbContext context, ICacheManager cacheManager, ILogger<FileProcessor> logger,
-                IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine,
-                IAudioMetaDataHelper audioMetaDataHelper)
+        public FileProcessor(IRoadieSettings configuration, IHttpEncoder httpEncoder, ICacheManager cacheManager,
+                             ILogger<FileProcessor> logger, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine,
+                             IAudioMetaDataHelper audioMetaDataHelper)
         {
             Configuration = configuration;
             HttpEncoder = httpEncoder;
-            DbContext = context;
             CacheManager = cacheManager;
             Logger = logger;
 
@@ -113,10 +107,7 @@ namespace Roadie.Library.Processors
             return r;
         }
 
-        public async Task<OperationResult<bool>> Process(string filename, bool doJustInfo = false)
-        {
-            return await Process(new FileInfo(filename), doJustInfo);
-        }
+        public async Task<OperationResult<bool>> Process(string filename, bool doJustInfo = false) => await Process(new FileInfo(filename), doJustInfo).ConfigureAwait(false);
 
         public async Task<OperationResult<bool>> Process(FileInfo fileInfo, bool doJustInfo = false)
         {
@@ -129,33 +120,34 @@ namespace Roadie.Library.Processors
 
                 OperationResult<bool> pluginResult = null;
                 foreach (var p in Plugins)
+                {
                     // See if there is a plugin
                     if (p.HandlesTypes.Contains(fileType))
                     {
-                        pluginResult = await p.Process(fileInfo, doJustInfo, SubmissionId);
+                        pluginResult = await p.Process(fileInfo, doJustInfo, SubmissionId).ConfigureAwait(false);
                         break;
                     }
+                }
 
                 if (!doJustInfo)
+                {
                     // If no plugin, or if plugin not successfull and toggle then move unknown file
-                    if ((pluginResult == null || !pluginResult.IsSuccess) && DoMoveUnknowns)
+                    if ((pluginResult?.IsSuccess != true) && DoMoveUnknowns)
                     {
                         var uf = UnknownFolder;
                         if (!string.IsNullOrEmpty(uf))
                         {
                             if (!Directory.Exists(uf)) Directory.CreateDirectory(uf);
-                            if (!fileInfo.DirectoryName.Equals(UnknownFolder))
-                                if (File.Exists(fileInfo.FullName))
-                                {
-                                    var df = Path.Combine(UnknownFolder,
-                                        string.Format("{0}~{1}~{2}", Guid.NewGuid(), fileInfo.Directory.Name,
-                                            fileInfo.Name));
-                                    Logger.LogDebug("Moving Unknown/Invalid File [{0}] -> [{1}] to UnknownFolder",
-                                        fileInfo.FullName, df);
-                                    fileInfo.MoveTo(df);
-                                }
+                            if (!fileInfo.DirectoryName.Equals(UnknownFolder) && File.Exists(fileInfo.FullName))
+                            {
+                                var df = Path.Combine(UnknownFolder,
+                                    string.Format("{0}~{1}~{2}", Guid.NewGuid(), fileInfo.Directory.Name, fileInfo.Name));
+                                Logger.LogDebug("Moving Unknown/Invalid File [{0}] -> [{1}] to UnknownFolder", fileInfo.FullName, df);
+                                fileInfo.MoveTo(df);
+                            }
                         }
                     }
+                }
 
                 result = pluginResult;
             }

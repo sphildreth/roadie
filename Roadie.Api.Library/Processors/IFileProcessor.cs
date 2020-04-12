@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using Roadie.Library.Encoding;
+using Roadie.Library.FilePlugins;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Roadie.Library.Encoding;
-using Roadie.Library.FilePlugins;
 
 namespace Roadie.Library.Processors
 {
@@ -13,6 +13,7 @@ namespace Roadie.Library.Processors
         int? SubmissionId { get; set; }
 
         Task<OperationResult<bool>> Process(FileInfo fileInfo, bool doJustInfo = false);
+
         Task<OperationResult<bool>> Process(string filename, bool doJustInfo = false);
     }
 }

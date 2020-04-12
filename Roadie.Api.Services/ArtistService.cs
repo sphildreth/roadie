@@ -272,12 +272,12 @@ namespace Roadie.Api.Services
                 randomArtistIds = randomArtistData.Select(x => x.Value).ToArray();
                 rowCount = await DbContext.Artists.CountAsync().ConfigureAwait(false);
             }
-            var result = (from a in DbContext.Artists
+            var result = from a in DbContext.Artists
                           where !onlyWithReleases || a.ReleaseCount > 0
                           where randomArtistIds == null || randomArtistIds.Contains(a.Id)
                           where request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId
                           where request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value
-                          where request.FilterValue == "" ||
+                         where string.IsNullOrEmpty(request.FilterValue) ||
                                 a.Name.Contains(request.FilterValue) ||
                                 a.SortName.Contains(request.FilterValue) ||
                                 a.RealName.Contains(request.FilterValue) ||
@@ -312,7 +312,7 @@ namespace Roadie.Api.Services
                               TrackCount = a.TrackCount,
                               SortName = a.SortName,
                               Status = a.Status
-                          });
+                          };
 
             ArtistList[] rows;
             rowCount ??= result.Count();

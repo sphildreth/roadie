@@ -69,7 +69,7 @@ namespace Roadie.Library.Engines
             try
             {
                 var artistGenreTables = artist.Genres;
-                var artistImages = artist.Images ?? new List<Library.Imaging.Image>();
+                var artistImages = artist.Images ?? new List<Image>();
                 var now = DateTime.UtcNow;
                 artist.AlternateNames = artist.AlternateNames.AddToDelimitedList(new[] { artist.Name.ToAlphanumericName() });
                 artist.Genres = null;
@@ -82,45 +82,41 @@ namespace Roadie.Library.Engines
                     };
                 }
                 var addArtistResult = DbContext.Artists.Add(artist);
-                var inserted = 0;
-                inserted = await DbContext.SaveChangesAsync();
+                var inserted = await DbContext.SaveChangesAsync().ConfigureAwait(false);
                 _addedArtistIds.Add(artist.Id);
                 if (artist.Id < 1 && addArtistResult.Entity.Id > 0) artist.Id = addArtistResult.Entity.Id;
                 if (inserted > 0 && artist.Id > 0)
                 {
                     if (artistGenreTables != null)
                     {
-                        if (artistGenreTables != null)
+                        foreach (var artistGenreTable in artistGenreTables.Where(x => x?.Genre?.Name != null).Select(x => x.Genre?.Name).Distinct())
                         {
-                            foreach (var artistGenreTable in artistGenreTables.Where(x => x?.Genre?.Name != null).Select(x => x.Genre?.Name).Distinct())
+                            var genreName = artistGenreTable.ToAlphanumericName().ToTitleCase();
+                            var normalizedName = genreName.ToUpper();
+                            if (string.IsNullOrEmpty(genreName)) continue;
+                            if (genreName.Length > 100)
                             {
-                                var genreName = artistGenreTable.ToAlphanumericName().ToTitleCase();
-                                var normalizedName = genreName.ToUpper();
-                                if (string.IsNullOrEmpty(genreName)) continue;
-                                if (genreName.Length > 100)
-                                {
-                                    var originalName = genreName;
-                                    genreName = genreName.Substring(0, 99);
-                                    Logger.LogWarning($"Genre Name Too long was [{originalName}] truncated to [{genreName}]");
-                                }
-                                var genre = DbContext.Genres.FirstOrDefault(x => x.NormalizedName == normalizedName);
-                                if (genre == null)
-                                {
-                                    genre = new Genre
-                                    {
-                                        Name = genreName,
-                                        NormalizedName = normalizedName
-                                    };
-                                    DbContext.Genres.Add(genre);
-                                    await DbContext.SaveChangesAsync();
-                                }
-                                DbContext.ArtistGenres.Add(new ArtistGenre
-                                {
-                                    ArtistId = artist.Id,
-                                    GenreId = genre.Id
-                                });
-                                await DbContext.SaveChangesAsync();
+                                var originalName = genreName;
+                                genreName = genreName.Substring(0, 99);
+                                Logger.LogWarning($"Genre Name Too long was [{originalName}] truncated to [{genreName}]");
                             }
+                            var genre = DbContext.Genres.FirstOrDefault(x => x.NormalizedName == normalizedName);
+                            if (genre == null)
+                            {
+                                genre = new Genre
+                                {
+                                    Name = genreName,
+                                    NormalizedName = normalizedName
+                                };
+                                DbContext.Genres.Add(genre);
+                                await DbContext.SaveChangesAsync().ConfigureAwait(false);
+                            }
+                            DbContext.ArtistGenres.Add(new ArtistGenre
+                            {
+                                ArtistId = artist.Id,
+                                GenreId = genre.Id
+                            });
+                            await DbContext.SaveChangesAsync().ConfigureAwait(false);
                         }
                     }
 
@@ -131,7 +127,7 @@ namespace Roadie.Library.Engines
                         string releaseImageFilename;
                         foreach (var artistImage in artistImages)
                         {
-                            if (artistImage?.Bytes == null || artistImage?.Bytes.Any() == false)
+                            if (!(artistImage?.Bytes.Length > 0))
                             {
                                 continue;
                             }
@@ -177,7 +173,6 @@ namespace Roadie.Library.Engines
             }
             try
             {
-
                 var searchName = name.NormalizeName().ToLower();
                 var searchSortName = !string.IsNullOrEmpty(sortName) ? sortName.NormalizeName().ToLower() : searchName;
                 var specialSearchName = name.ToAlphanumericName();
@@ -191,21 +186,21 @@ namespace Roadie.Library.Engines
                 var specialSearchNameEnd = $"|{specialSearchName}";
 
                 return await (from a in DbContext.Artists
-                        where a.Name.ToLower() == searchName ||
-                              a.Name.ToLower() == specialSearchName ||
-                              a.SortName.ToLower() == searchName ||
-                              a.SortName.ToLower() == searchSortName ||
-                              a.SortName.ToLower() == specialSearchName ||
-                              a.AlternateNames.ToLower().Equals(searchName) ||
-                              a.AlternateNames.ToLower().StartsWith(searchNameStart) ||
-                              a.AlternateNames.ToLower().Contains(searchNameIn) ||
-                              a.AlternateNames.ToLower().EndsWith(searchNameEnd) ||
-                              a.AlternateNames.ToLower().Equals(specialSearchName) ||
-                              a.AlternateNames.ToLower().StartsWith(specialSearchNameStart) ||
-                              a.AlternateNames.ToLower().Contains(specialSearchNameIn) ||
-                              a.AlternateNames.ToLower().EndsWith(specialSearchNameEnd)
-                        select a
-                    ).ToArrayAsync();
+                              where a.Name.ToLower() == searchName ||
+                                    a.Name.ToLower() == specialSearchName ||
+                                    a.SortName.ToLower() == searchName ||
+                                    a.SortName.ToLower() == searchSortName ||
+                                    a.SortName.ToLower() == specialSearchName ||
+                                    a.AlternateNames.ToLower().Equals(searchName) ||
+                                    a.AlternateNames.ToLower().StartsWith(searchNameStart) ||
+                                    a.AlternateNames.ToLower().Contains(searchNameIn) ||
+                                    a.AlternateNames.ToLower().EndsWith(searchNameEnd) ||
+                                    a.AlternateNames.ToLower().Equals(specialSearchName) ||
+                                    a.AlternateNames.ToLower().StartsWith(specialSearchNameStart) ||
+                                    a.AlternateNames.ToLower().Contains(specialSearchNameIn) ||
+                                    a.AlternateNames.ToLower().EndsWith(specialSearchNameEnd)
+                              select a
+                    ).ToArrayAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -236,9 +231,9 @@ namespace Roadie.Library.Engines
                     };
                 }
 
-                var artist = (await DatabaseQueryForArtistName(artistName)).FirstOrDefault();
+                var artist = (await DatabaseQueryForArtistName(artistName).ConfigureAwait(false)).FirstOrDefault();
                 sw.Stop();
-                if (artist == null || !artist.IsValid)
+                if (artist?.IsValid != true)
                 {
                     Logger.LogTrace("ArtistLookupEngine: Artist Not Found By Name [{0}]", artistName);
                     if (doFindIfNotInDatabase)
@@ -257,7 +252,7 @@ namespace Roadie.Library.Engines
                         if (!string.IsNullOrEmpty(releaseRoadieDataFilename) && File.Exists(releaseRoadieDataFilename))
                         {
                             artist = JsonConvert.DeserializeObject<Artist>(File.ReadAllText(releaseRoadieDataFilename));
-                            var addResult = await Add(artist);
+                            var addResult = await Add(artist).ConfigureAwait(false);
                             if (!addResult.IsSuccess)
                             {
                                 sw.Stop();
@@ -267,7 +262,8 @@ namespace Roadie.Library.Engines
                                     OperationTime = sw.ElapsedMilliseconds,
                                     Errors = addResult.Errors
                                 };
-                            } else
+                            }
+                            else
                             {
                                 File.Delete(releaseRoadieDataFilename);
                             }
@@ -277,20 +273,19 @@ namespace Roadie.Library.Engines
                         {
                             try
                             {
-                                artistSearch = await PerformMetaDataProvidersArtistSearch(metaData);
+                                artistSearch = await PerformMetaDataProvidersArtistSearch(metaData).ConfigureAwait(false);
                                 if (artistSearch.IsSuccess)
                                 {
                                     artist = artistSearch.Data;
                                     // See if Artist already exist with either Name or Sort Name
-                                    var alreadyExists = (await DatabaseQueryForArtistName(artistSearch.Data.Name, artistSearch.Data.SortNameValue)).FirstOrDefault();
-                                    if (alreadyExists == null || !alreadyExists.IsValid)
+                                    var alreadyExists = (await DatabaseQueryForArtistName(artistSearch.Data.Name, artistSearch.Data.SortNameValue).ConfigureAwait(false)).FirstOrDefault();
+                                    if (alreadyExists?.IsValid != true)
                                     {
-                                        var addResult = await Add(artist);
+                                        var addResult = await Add(artist).ConfigureAwait(false);
                                         if (!addResult.IsSuccess)
                                         {
                                             sw.Stop();
-                                            Logger.LogWarning("Unable To Add Artist For MetaData [{0}]",
-                                                metaData.ToString());
+                                            Logger.LogWarning("Unable To Add Artist For MetaData [{0}]", metaData.ToString());
                                             return new OperationResult<Artist>
                                             {
                                                 OperationTime = sw.ElapsedMilliseconds,
@@ -314,7 +309,10 @@ namespace Roadie.Library.Engines
                     }
                 }
 
-                if (artist != null && artist.IsValid) CacheManager.Add(cacheKey, artist);
+                if (artist?.IsValid == true)
+                {
+                    CacheManager.Add(cacheKey, artist);
+                }
                 return new OperationResult<Artist>
                 {
                     IsSuccess = artist != null,
@@ -351,7 +349,7 @@ namespace Roadie.Library.Engines
                 if (ITunesArtistSearchEngine.IsEnabled)
                 {
                     var sw2 = Stopwatch.StartNew();
-                    var iTunesResult = await ITunesArtistSearchEngine.PerformArtistSearch(artistName, 1);
+                    var iTunesResult = await ITunesArtistSearchEngine.PerformArtistSearch(artistName, 1).ConfigureAwait(false);
                     if (iTunesResult.IsSuccess)
                     {
                         var i = iTunesResult.Data.First();
@@ -408,7 +406,7 @@ namespace Roadie.Library.Engines
                 if (MusicBrainzArtistSearchEngine.IsEnabled)
                 {
                     var sw2 = Stopwatch.StartNew();
-                    var mbResult = await MusicBrainzArtistSearchEngine.PerformArtistSearch(result.Name, 1);
+                    var mbResult = await MusicBrainzArtistSearchEngine.PerformArtistSearch(result.Name, 1).ConfigureAwait(false);
                     if (mbResult.IsSuccess)
                     {
                         var mb = mbResult.Data.First();
@@ -447,6 +445,10 @@ namespace Roadie.Library.Engines
                             BioContext = mb.Bio,
                             Profile = mb.Profile,
                             MusicBrainzId = mb.MusicBrainzId,
+                            DiscogsId = mb.DiscogsId,
+                            SpotifyId = mb.SpotifyId,
+                            ITunesId = mb.iTunesId,
+                            AmgId = mb.AmgId,
                             BeginDate = mb.BeginDate,
                             Name = result.Name ?? mb.ArtistName,
                             SortName = result.SortName ?? mb.ArtistSortName,
@@ -469,7 +471,7 @@ namespace Roadie.Library.Engines
                 if (LastFmArtistSearchEngine.IsEnabled)
                 {
                     var sw2 = Stopwatch.StartNew();
-                    var lastFmResult = await LastFmArtistSearchEngine.PerformArtistSearch(result.Name, 1);
+                    var lastFmResult = await LastFmArtistSearchEngine.PerformArtistSearch(result.Name, 1).ConfigureAwait(false);
                     if (lastFmResult.IsSuccess)
                     {
                         var l = lastFmResult.Data.First();
@@ -482,7 +484,9 @@ namespace Roadie.Library.Engines
                         if (l.ArtistGenres != null) artistGenres.AddRange(l.ArtistGenres);
                         if (!string.IsNullOrEmpty(l.ArtistName) &&
                             !l.ArtistName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
+                        {
                             result.AlternateNames.AddToDelimitedList(new[] { l.ArtistName });
+                        }
                         result.CopyTo(new Artist
                         {
                             EndDate = l.EndDate,
@@ -511,7 +515,7 @@ namespace Roadie.Library.Engines
                 if (SpotifyArtistSearchEngine.IsEnabled)
                 {
                     var sw2 = Stopwatch.StartNew();
-                    var spotifyResult = await SpotifyArtistSearchEngine.PerformArtistSearch(result.Name, 1);
+                    var spotifyResult = await SpotifyArtistSearchEngine.PerformArtistSearch(result.Name, 1).ConfigureAwait(false);
                     if (spotifyResult.IsSuccess)
                     {
                         var s = spotifyResult.Data.First();
@@ -521,13 +525,16 @@ namespace Roadie.Library.Engines
                         if (s.ArtistGenres != null) artistGenres.AddRange(s.ArtistGenres);
                         if (!string.IsNullOrEmpty(s.ArtistName) &&
                             !s.ArtistName.Equals(result.Name, StringComparison.OrdinalIgnoreCase))
+                        {
                             result.AlternateNames.AddToDelimitedList(new[] { s.ArtistName });
+                        }
                         result.CopyTo(new Artist
                         {
                             EndDate = s.EndDate,
                             BioContext = s.Bio,
                             Profile = HttpEncoder.HtmlEncode(s.Profile),
                             MusicBrainzId = s.MusicBrainzId,
+                            SpotifyId = s.SpotifyId,
                             BeginDate = s.BeginDate,
                             Name = result.Name ?? s.ArtistName,
                             SortName = result.SortName ?? s.ArtistSortName,
@@ -550,7 +557,7 @@ namespace Roadie.Library.Engines
                 if (DiscogsArtistSearchEngine.IsEnabled)
                 {
                     var sw2 = Stopwatch.StartNew();
-                    var discogsResult = await DiscogsArtistSearchEngine.PerformArtistSearch(result.Name, 1);
+                    var discogsResult = await DiscogsArtistSearchEngine.PerformArtistSearch(result.Name, 1).ConfigureAwait(false);
                     if (discogsResult.IsSuccess)
                     {
                         var d = discogsResult?.Data?.FirstOrDefault();
@@ -607,7 +614,7 @@ namespace Roadie.Library.Engines
                     {
                         wikiName += " band";
                     }
-                    var wikipediaResult = await WikipediaArtistSearchEngine.PerformArtistSearch(wikiName, 1);
+                    var wikipediaResult = await WikipediaArtistSearchEngine.PerformArtistSearch(wikiName, 1).ConfigureAwait(false);
                     if (wikipediaResult?.Data != null)
                     {
                         if (wikipediaResult.IsSuccess)
@@ -647,7 +654,7 @@ namespace Roadie.Library.Engines
                 {
                     result.Tags = string.Join("|", result.Tags.ToListFromDelimited().Distinct().OrderBy(x => x));
                 }
-                if (artistGenres.Any())
+                if (artistGenres.Count > 0)
                 {
                     var sw2 = Stopwatch.StartNew();
                     var genreInfos = from ag in artistGenres
@@ -663,7 +670,7 @@ namespace Roadie.Library.Engines
                     {
                         var ag = new ArtistGenre
                         {
-                            Genre = genreInfo.existingGenre != null ? genreInfo.existingGenre : new Genre
+                            Genre = genreInfo.existingGenre ?? new Genre
                             {
                                 Name = genreInfo.newGenre,
                                 NormalizedName = genreInfo.newGenre.ToAlphanumericName()
@@ -678,16 +685,13 @@ namespace Roadie.Library.Engines
                     Logger.LogTrace($"PerformMetaDataProvidersArtistSearch: Artist Genre Processing Complete [{ sw2.ElapsedMilliseconds }]");
                 }
 
-                if (artistImageUrls.Any())
+                if (artistImageUrls.Count > 0)
                 {
                     var sw2 = Stopwatch.StartNew();
                     var imageBag = new ConcurrentBag<IImage>();
-                    var i = artistImageUrls.Select(async url =>
-                    {
-                        imageBag.Add(await WebHelper.GetImageFromUrlAsync(url));
-                    });
-                    await Task.WhenAll(i);
-                    result.Images = imageBag.Where(x => x != null && x.Bytes != null)
+                    var i = artistImageUrls.Select(async url => imageBag.Add(await WebHelper.GetImageFromUrlAsync(url).ConfigureAwait(false)));
+                    await Task.WhenAll(i).ConfigureAwait(false);
+                    result.Images = imageBag.Where(x => x?.Bytes != null)
                                             .GroupBy(x => x.Signature)
                                             .Select(x => x.First())
                                             .Take(Configuration.Processing.MaximumArtistImagesToAdd)
@@ -703,6 +707,7 @@ namespace Roadie.Library.Engines
 
             result.SortName = result.SortName.ToTitleCase();
             if (!string.IsNullOrEmpty(result.ArtistType))
+            {
                 switch (result.ArtistType.ToLower().Replace('-', ' '))
                 {
                     case "artist":
@@ -747,6 +752,7 @@ namespace Roadie.Library.Engines
                         result.ArtistType = "Other";
                         break;
                 }
+            }
 
             sw.Stop();
             return new OperationResult<Artist>

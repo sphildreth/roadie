@@ -88,7 +88,7 @@ namespace Roadie.Library.Engines
                 release.Genres = null;
                 release.LibraryStatus = LibraryStatus.Incomplete;
                 release.Status = Statuses.New;
-                var releaseImages = release.Images ?? new List<Library.Imaging.Image>();
+                var releaseImages = release.Images ?? new List<Image>();
                 if (!release.IsValid)
                 {
                     return new OperationResult<Release>
@@ -100,7 +100,7 @@ namespace Roadie.Library.Engines
                 var inserted = 0;
                 try
                 {
-                    inserted = await DbContext.SaveChangesAsync();
+                    inserted = await DbContext.SaveChangesAsync().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -132,14 +132,14 @@ namespace Roadie.Library.Engines
                                     NormalizedName = normalizedName
                                 };
                                 DbContext.Genres.Add(genre);
-                                await DbContext.SaveChangesAsync();
+                                await DbContext.SaveChangesAsync().ConfigureAwait(false);
                             }
                             DbContext.ReleaseGenres.Add(new ReleaseGenre
                             {
                                 ReleaseId = release.Id,
                                 GenreId = genre.Id
                             });
-                            await DbContext.SaveChangesAsync();
+                            await DbContext.SaveChangesAsync().ConfigureAwait(false);
                         }
                     }
 
@@ -152,7 +152,7 @@ namespace Roadie.Library.Engines
                         string releaseImageFilename;
                         foreach (var releaseImage in releaseImages)
                         {
-                            if(releaseImage?.Bytes == null || releaseImage?.Bytes.Any() == false)
+                            if (releaseImage?.Bytes == null || !(releaseImage?.Bytes.Length > 0))
                             {
                                 continue;
                             }
@@ -168,19 +168,20 @@ namespace Roadie.Library.Engines
                             while (File.Exists(releaseImageFilename))
                             {
                                 looper++;
-                                releaseImageFilename = Path.Combine(releaseFolder,string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                                releaseImageFilename = Path.Combine(releaseFolder, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
                             }
                             File.WriteAllBytes(releaseImageFilename, releaseImage.Bytes);
                             looper++;
                         }
                     }
 
-                    if (releaseLabels != null && releaseLabels.Any(x => x.Status == Statuses.New))
+                    if (releaseLabels?.Any(x => x.Status == Statuses.New) == true)
                     {
                         foreach (var neweleaseLabel in releaseLabels.Where(x => x.Status == Statuses.New))
                         {
-                            var labelFetch = await LabelLookupEngine.GetByName(neweleaseLabel.Label.Name, true);
+                            var labelFetch = await LabelLookupEngine.GetByName(neweleaseLabel.Label.Name, true).ConfigureAwait(false);
                             if (labelFetch.IsSuccess)
+                            {
                                 DbContext.ReleaseLabels.Add(new ReleaseLabel
                                 {
                                     CatalogNumber = neweleaseLabel.CatalogNumber,
@@ -189,11 +190,12 @@ namespace Roadie.Library.Engines
                                     ReleaseId = release.Id,
                                     LabelId = labelFetch.Data.Id
                                 });
+                            }
                         }
 
                         try
                         {
-                            await DbContext.SaveChangesAsync();
+                            await DbContext.SaveChangesAsync().ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
@@ -203,7 +205,7 @@ namespace Roadie.Library.Engines
 
                     if (doAddTracksInDatabase)
                     {
-                        if (releaseMedias != null && releaseMedias.Any(x => x.Status == Statuses.New))
+                        if (releaseMedias?.Any(x => x.Status == Statuses.New) == true)
                         {
                             foreach (var newReleaseMedia in releaseMedias.Where(x => x.Status == Statuses.New))
                             {
@@ -224,13 +226,13 @@ namespace Roadie.Library.Engines
                                     {
                                         if (!release.IsCastRecording)
                                         {
-                                            var trackArtistData = await ArtistLookupEngine.GetByName(new AudioMetaData { Artist = newTrack.TrackArtist.Name }, true);
+                                            var trackArtistData = await ArtistLookupEngine.GetByName(new AudioMetaData { Artist = newTrack.TrackArtist.Name }, true).ConfigureAwait(false);
                                             if (trackArtistData.IsSuccess)
                                             {
                                                 trackArtistId = trackArtistData.Data.Id;
                                             }
                                         }
-                                        else if (newTrack.TrackArtists != null && newTrack.TrackArtists.Any())
+                                        else if (newTrack.TrackArtists?.Any() == true)
                                         {
                                             partTitles = string.Join("/", newTrack.TrackArtists);
                                         }
@@ -265,7 +267,7 @@ namespace Roadie.Library.Engines
 
                             try
                             {
-                                await DbContext.SaveChangesAsync();
+                                await DbContext.SaveChangesAsync().ConfigureAwait(false);
                             }
                             catch (Exception ex)
                             {
@@ -361,7 +363,7 @@ namespace Roadie.Library.Engines
                 var release = DatabaseQueryForReleaseTitle(artist, metaData.Release);
 
                 sw.Stop();
-                if (release == null || !release.IsValid)
+                if (release?.IsValid != true)
                 {
                     Logger.LogTrace("ReleaseFactory: Release Not Found For Artist `{0}` MetaData [{1}]", artist.ToString(), metaData.ToString());
                     if (doFindIfNotInDatabase)
@@ -369,7 +371,7 @@ namespace Roadie.Library.Engines
                         var releaseSearch = new OperationResult<Release>();
                         try
                         {
-                            releaseSearch = await PerformMetaDataProvidersReleaseSearch(metaData, artist.ArtistFileFolder(Configuration), submissionId);
+                            releaseSearch = await PerformMetaDataProvidersReleaseSearch(metaData, artist.ArtistFileFolder(Configuration), submissionId).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
@@ -386,7 +388,7 @@ namespace Roadie.Library.Engines
                         {
                             release = releaseSearch.Data;
                             release.ArtistId = artist.Id;
-                            var addResult = await Add(release, doAddTracksInDatabase);
+                            var addResult = await Add(release, doAddTracksInDatabase).ConfigureAwait(false);
                             if (!addResult.IsSuccess)
                             {
                                 sw.Stop();
@@ -437,7 +439,7 @@ namespace Roadie.Library.Engines
             if (metaData.Genres != null) releaseGenres.AddRange(metaData.Genres);
             var releaseLabels = new List<ReleaseLabelSearchResult>();
             var releaseMedias = new List<ReleaseMediaSearchResult>();
-            var releaseImages = new List<Imaging.IImage>();
+            var releaseImages = new List<IImage>();
             var releaseImageUrls = new List<string>();
 
             var dontDoMetaDataProvidersSearchArtists = Configuration.DontDoMetaDataProvidersSearchArtists;
@@ -457,12 +459,15 @@ namespace Roadie.Library.Engines
                         {
                             var i = iTunesResult.Data.First();
                             if (i.AlternateNames != null)
+                            {
                                 result.AlternateNames = result.AlternateNames.AddToDelimitedList(i.AlternateNames);
+                            }
+
                             if (i.Tags != null) result.Tags = result.Tags.AddToDelimitedList(i.Tags);
                             if (i.Urls != null) result.URLs = result.URLs.AddToDelimitedList(i.Urls);
                             if (i.ImageUrls != null) releaseImageUrls.AddRange(i.ImageUrls);
                             if (i.ReleaseGenres != null) releaseGenres.AddRange(i.ReleaseGenres);
-                            if(!string.IsNullOrEmpty(i.ReleaseThumbnailUrl))
+                            if (!string.IsNullOrEmpty(i.ReleaseThumbnailUrl))
                             {
                                 releaseImages.Add(new Imaging.Image()
                                 {
@@ -497,7 +502,7 @@ namespace Roadie.Library.Engines
                     {
                         var sw2 = Stopwatch.StartNew();
                         Logger.LogTrace("MusicBrainzReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
-                        var mbResult = await MusicBrainzReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
+                        var mbResult = await MusicBrainzReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1).ConfigureAwait(false);
                         if (mbResult.IsSuccess)
                         {
                             var mb = mbResult.Data.First();
@@ -509,10 +514,13 @@ namespace Roadie.Library.Engines
                             if (mb.ReleaseGenres != null) releaseGenres.AddRange(mb.ReleaseGenres);
                             if (!string.IsNullOrEmpty(mb.ReleaseTitle) &&
                                 !mb.ReleaseTitle.Equals(result.Title, StringComparison.OrdinalIgnoreCase))
+                            {
                                 result.AlternateNames.AddToDelimitedList(new[] { mb.ReleaseTitle });
+                            }
+
                             if (!string.IsNullOrEmpty(mb.ReleaseThumbnailUrl))
                             {
-                                releaseImages.Add(new Imaging.Image()
+                                releaseImages.Add(new Image()
                                 {
                                     Bytes = WebHelper.BytesForImageUrl(mb.ReleaseThumbnailUrl)
                                 });
@@ -550,7 +558,7 @@ namespace Roadie.Library.Engines
                         var sw2 = Stopwatch.StartNew();
                         Logger.LogTrace("LastFmReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
                         var lastFmResult =
-                            await LastFmReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
+                            await LastFmReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1).ConfigureAwait(false);
                         if (lastFmResult.IsSuccess)
                         {
                             var l = lastFmResult.Data.First();
@@ -562,10 +570,13 @@ namespace Roadie.Library.Engines
                             if (l.ReleaseGenres != null) releaseGenres.AddRange(l.ReleaseGenres);
                             if (!string.IsNullOrEmpty(l.ReleaseTitle) &&
                                 !l.ReleaseTitle.Equals(result.Title, StringComparison.OrdinalIgnoreCase))
+                            {
                                 result.AlternateNames.AddToDelimitedList(new[] { l.ReleaseTitle });
+                            }
+
                             if (!string.IsNullOrEmpty(l.ReleaseThumbnailUrl))
                             {
-                                releaseImages.Add(new Imaging.Image()
+                                releaseImages.Add(new Image()
                                 {
                                     Bytes = WebHelper.BytesForImageUrl(l.ReleaseThumbnailUrl)
                                 });
@@ -601,7 +612,7 @@ namespace Roadie.Library.Engines
                     {
                         var sw2 = Stopwatch.StartNew();
                         Logger.LogTrace("SpotifyReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
-                        var spotifyResult = await SpotifyReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
+                        var spotifyResult = await SpotifyReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1).ConfigureAwait(false);
                         if (spotifyResult.IsSuccess)
                         {
                             var s = spotifyResult.Data.First();
@@ -611,10 +622,13 @@ namespace Roadie.Library.Engines
                             if (s.ReleaseGenres != null) releaseGenres.AddRange(s.ReleaseGenres);
                             if (!string.IsNullOrEmpty(s.ReleaseTitle) &&
                                 !s.ReleaseTitle.Equals(result.Title, StringComparison.OrdinalIgnoreCase))
+                            {
                                 result.AlternateNames.AddToDelimitedList(new[] { s.ReleaseTitle });
+                            }
+
                             if (!string.IsNullOrEmpty(s.ReleaseThumbnailUrl))
                             {
-                                releaseImages.Add(new Imaging.Image()
+                                releaseImages.Add(new Image()
                                 {
                                     Bytes = WebHelper.BytesForImageUrl(s.ReleaseThumbnailUrl)
                                 });
@@ -649,7 +663,7 @@ namespace Roadie.Library.Engines
                     {
                         var sw2 = Stopwatch.StartNew();
                         Logger.LogTrace("DiscogsReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
-                        var discogsResult = await DiscogsReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
+                        var discogsResult = await DiscogsReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1).ConfigureAwait(false);
                         if (discogsResult.IsSuccess)
                         {
                             var d = discogsResult.Data.First();
@@ -659,10 +673,13 @@ namespace Roadie.Library.Engines
                                 result.AlternateNames = result.AlternateNames.AddToDelimitedList(d.AlternateNames);
                             if (!string.IsNullOrEmpty(d.ReleaseTitle) &&
                                 !d.ReleaseTitle.Equals(result.Title, StringComparison.OrdinalIgnoreCase))
+                            {
                                 result.AlternateNames.AddToDelimitedList(new[] { d.ReleaseTitle });
+                            }
+
                             if (!string.IsNullOrEmpty(d.ReleaseThumbnailUrl))
                             {
-                                releaseImages.Add(new Imaging.Image()
+                                releaseImages.Add(new Image()
                                 {
                                     Bytes = WebHelper.BytesForImageUrl(d.ReleaseThumbnailUrl)
                                 });
@@ -711,7 +728,7 @@ namespace Roadie.Library.Engines
             {
                 result.Tags = string.Join("|", result.Tags.ToListFromDelimited().Distinct().OrderBy(x => x));
             }
-            if (releaseGenres.Any())
+            if (releaseGenres.Count > 0)
             {
                 var sw2 = Stopwatch.StartNew();
                 result.Genres = new List<ReleaseGenre>();
@@ -732,21 +749,18 @@ namespace Roadie.Library.Engines
                             });
                         }
                     }
-                };
+                }
                 sw2.Stop();
                 Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: Release Genre Processing Complete [{ sw2.ElapsedMilliseconds }]");
             }
 
-            if (releaseImageUrls.Any())
+            if (releaseImageUrls.Count > 0)
             {
                 var sw2 = Stopwatch.StartNew();
                 var imageBag = new ConcurrentBag<IImage>();
-                var i = releaseImageUrls.Select(async url =>
-                {
-                    imageBag.Add(await WebHelper.GetImageFromUrlAsync(url));
-                });
-                await Task.WhenAll(i);
-                releaseImages = imageBag.Where(x => x != null && x.Bytes != null)
+                var i = releaseImageUrls.Select(async url => imageBag.Add(await WebHelper.GetImageFromUrlAsync(url).ConfigureAwait(false)));
+                await Task.WhenAll(i).ConfigureAwait(false);
+                releaseImages = imageBag.Where(x => x?.Bytes != null)
                                         .GroupBy(x => x.Signature)
                                         .Select(x => x.First())
                                         .Take(Configuration.Processing.MaximumArtistImagesToAdd)
@@ -755,20 +769,20 @@ namespace Roadie.Library.Engines
                 Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: Image Url Processing Complete [{ sw2.ElapsedMilliseconds }]");
             }
 
-            if (metaData.Images != null && metaData.Images.Any())
+            if (metaData.Images?.Any() == true)
             {
-                foreach(var metadataImage in metaData.Images)
+                foreach (var metadataImage in metaData.Images)
                 {
-                    releaseImages.Add(new Imaging.Image()
+                    releaseImages.Add(new Image()
                     {
                         Bytes = metadataImage?.Data
                     });
                 }
             }
-            foreach(var releaseImage in releaseImages.Where(x => x.Bytes != null && string.IsNullOrEmpty(x.Signature)))
+            foreach (var releaseImage in releaseImages.Where(x => x.Bytes != null && string.IsNullOrEmpty(x.Signature)))
             {
                 releaseImage.Signature = releaseImage.GenerateSignature();
-                if(string.IsNullOrEmpty(releaseImage.Signature))
+                if (string.IsNullOrEmpty(releaseImage.Signature))
                 {
                     releaseImage.Bytes = null;
                 }
@@ -777,7 +791,7 @@ namespace Roadie.Library.Engines
                                          .GroupBy(x => x.Signature)
                                          .Select(x => x.First()).Take(Configuration.Processing.MaximumReleaseImagesToAdd)
                                          .ToList();
-            if (releaseLabels.Any())
+            if (releaseLabels.Count > 0)
             {
                 var sw2 = Stopwatch.StartNew();
                 result.Labels = releaseLabels.GroupBy(x => x.CatalogNumber).Select(x => x.First()).Select(x =>
@@ -803,7 +817,7 @@ namespace Roadie.Library.Engines
                 sw2.Stop();
                 Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: Release Labels Processing Complete [{ sw2.ElapsedMilliseconds }]");
             }
-            if (releaseMedias.Any())
+            if (releaseMedias.Count > 0)
             {
                 var sw2 = Stopwatch.StartNew();
                 var resultReleaseMedias = new List<ReleaseMedia>();
@@ -824,7 +838,7 @@ namespace Roadie.Library.Engines
                         .OrderBy(x => x.TrackNumber))
                     {
                         var foundTrack = true;
-                        var rmTrack = rmTracks.FirstOrDefault(x => x.TrackNumber == releaseTrack.TrackNumber.Value);
+                        var rmTrack = rmTracks.Find(x => x.TrackNumber == releaseTrack.TrackNumber.Value);
                         if (rmTrack == null)
                         {
                             Artist trackArtist = null;
@@ -856,11 +870,11 @@ namespace Roadie.Library.Engines
                             foundTrack = false;
                         }
 
-                        rmTrack.Duration = rmTrack.Duration ?? releaseTrack.Duration;
-                        rmTrack.MusicBrainzId = rmTrack.MusicBrainzId ?? releaseTrack.MusicBrainzId;
-                        rmTrack.SpotifyId = rmTrack.SpotifyId ?? releaseTrack.SpotifyId;
-                        rmTrack.AmgId = rmTrack.AmgId ?? releaseTrack.AmgId;
-                        rmTrack.Title = rmTrack.Title ?? releaseTrack.Title;
+                        rmTrack.Duration ??= releaseTrack.Duration;
+                        rmTrack.MusicBrainzId ??= releaseTrack.MusicBrainzId;
+                        rmTrack.SpotifyId ??= releaseTrack.SpotifyId;
+                        rmTrack.AmgId ??= releaseTrack.AmgId;
+                        rmTrack.Title ??= releaseTrack.Title;
                         rmTrack.Duration = releaseTrack.Duration;
                         rmTrack.Tags = rmTrack.Tags == null
                             ? releaseTrack.Tags.ToDelimitedList()
@@ -868,18 +882,18 @@ namespace Roadie.Library.Engines
                         rmTrack.AlternateNames = rmTrack.AlternateNames == null
                             ? releaseTrack.AlternateNames.ToDelimitedList()
                             : rmTrack.AlternateNames.AddToDelimitedList(releaseTrack.AlternateNames);
-                        rmTrack.ISRC = rmTrack.ISRC ?? releaseTrack.ISRC;
-                        rmTrack.LastFMId = rmTrack.LastFMId ?? releaseTrack.LastFMId;
+                        rmTrack.ISRC ??= releaseTrack.ISRC;
+                        rmTrack.LastFMId ??= releaseTrack.LastFMId;
                         if (!foundTrack) rmTracks.Add(rmTrack);
                     }
 
                     rm.Tracks = rmTracks;
-                    rm.TrackCount = (short)rmTracks.Count();
+                    rm.TrackCount = (short)rmTracks.Count;
                     resultReleaseMedias.Add(rm);
                 }
 
                 result.Medias = resultReleaseMedias;
-                result.TrackCount = (short)releaseMedias.SelectMany(x => x.Tracks).Count();
+                result.TrackCount = (short)releaseMedias.Sum(x => x.Tracks.Count);
                 sw2.Stop();
                 Logger.LogTrace($"PerformMetaDataProvidersReleaseSearch: Release Media Processing Complete [{ sw2.ElapsedMilliseconds }]");
             }
@@ -897,9 +911,9 @@ namespace Roadie.Library.Engines
                         // See if cover exist by filename
                         var imageFilesInFolder =
                             ImageHelper.ImageFilesInFolder(releaseFolder.FullName, SearchOption.AllDirectories);
-                        if (imageFilesInFolder != null && imageFilesInFolder.Any())
+                        if (imageFilesInFolder?.Any() == true)
                         {
-                            var imageCoverByReleaseName = imageFilesInFolder.FirstOrDefault(x =>
+                            var imageCoverByReleaseName = Array.Find(imageFilesInFolder, x =>
                                 x == result.Title || x == result.Title.ToFileNameFriendly());
                             if (imageCoverByReleaseName != null) coverFileName = imageCoverByReleaseName;
                         }

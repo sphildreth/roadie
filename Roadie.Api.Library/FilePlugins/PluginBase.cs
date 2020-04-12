@@ -24,7 +24,6 @@ namespace Roadie.Library.FilePlugins
 
         protected IHttpEncoder HttpEncoder { get; }
 
-
         protected ILogger Logger { get; }
 
         protected IReleaseLookupEngine ReleaseLookupEngine { get; }

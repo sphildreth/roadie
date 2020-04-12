@@ -510,7 +510,7 @@ namespace Roadie.Api.Services
                 rowCount = DbContext.Releases.Count();
             }
 
-            var result = (from r in DbContext.Releases
+            var result = from r in DbContext.Releases
                           join a in DbContext.Artists on r.ArtistId equals a.Id
                           where randomReleaseIds == null || randomReleaseIds.Contains(r.Id)
                           where request.FilterMinimumRating == null || r.Rating >= request.FilterMinimumRating.Value
@@ -522,7 +522,7 @@ namespace Roadie.Api.Services
                                 (r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear)
                           where request.FilterToYear == null ||
                                 (r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear)
-                          where request.FilterValue == "" ||
+                          where string.IsNullOrEmpty(request.FilterValue) ||
                                 r.Title.Contains(request.FilterValue) ||
                                 r.AlternateNames.Contains(request.FilterValue) ||
                                 r.AlternateNames.Contains(normalizedFilterValue)
@@ -559,7 +559,7 @@ namespace Roadie.Api.Services
                               Thumbnail = ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId),
                               TrackCount = r.TrackCount,
                               TrackPlayedCount = r.PlayedCount
-                          });
+                          };
 
             ReleaseList[] rows = null;
 

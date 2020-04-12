@@ -17,6 +17,7 @@ namespace Roadie.Library.Engines
         IArtistSearchEngine WikipediaArtistSearchEngine { get; }
 
         Task<OperationResult<Artist>> Add(Artist artist);
+
         /// <summary>
         /// There can be more than one Artist matching the given name with Alternate and Normalized Name matching
         /// </summary>

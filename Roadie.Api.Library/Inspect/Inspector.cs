@@ -171,7 +171,7 @@ namespace Roadie.Library.Inspect
 
             string scriptResult = null;
             // Run PreInspect script
-            if(!dontRunPreScripts)
+            if(dontRunPreScripts)
             {
                 Console.BackgroundColor = ConsoleColor.Blue;
                 Console.ForegroundColor = ConsoleColor.White;
