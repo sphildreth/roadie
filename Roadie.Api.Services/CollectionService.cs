@@ -193,12 +193,19 @@ namespace Roadie.Api.Services
                 collections = DbContext.Collections;
             }
 
+            var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue)
+                ? request.FilterValue.ToAlphanumericName()
+                : null;
+
             var result = from c in collections
                          let collectionCount = (from crc in DbContext.CollectionReleases
                                                 where crc.CollectionId == c.Id
                                                 select crc.Id).Count()
-                         where request.FilterValue.Length == 0 ||
-                               request.FilterValue.Length > 0 && c.Name.Contains(request.Filter)
+                         where string.IsNullOrEmpty(normalizedFilterValue) || (
+                                   c.Name.ToLower().Contains(normalizedFilterValue) ||
+                                   c.SortName.ToLower().Contains(normalizedFilterValue) ||
+                                   c.AlternateNames.ToLower().Contains(normalizedFilterValue)
+                               )
                          where request.FilterToStatusValue == Statuses.Ok || c.Status == request.FilterToStatusValue
                          select new CollectionList
                          {

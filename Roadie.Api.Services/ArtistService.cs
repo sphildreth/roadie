@@ -277,18 +277,16 @@ namespace Roadie.Api.Services
                           where randomArtistIds == null || randomArtistIds.Contains(a.Id)
                           where request.FilterToArtistId == null || a.RoadieId == request.FilterToArtistId
                           where request.FilterMinimumRating == null || a.Rating >= request.FilterMinimumRating.Value
-                         where string.IsNullOrEmpty(request.FilterValue) ||
-                                a.Name.Contains(request.FilterValue) ||
-                                a.SortName.Contains(request.FilterValue) ||
-                                a.RealName.Contains(request.FilterValue) ||
-                                a.AlternateNames.Contains(request.FilterValue) ||
+                         where string.IsNullOrEmpty(normalizedFilterValue) ||
+                                a.Name.ToLower().Contains(normalizedFilterValue) ||
+                                a.SortName.ToLower().Contains(normalizedFilterValue) ||
+                                a.RealName.ToLower().Contains(normalizedFilterValue) ||
                                 a.AlternateNames.Contains(normalizedFilterValue)
                           where !isEqualFilter ||
-                                a.Name.Equals(request.FilterValue) ||
-                                a.SortName.Equals(request.FilterValue) ||
-                                a.RealName.Equals(request.FilterValue) ||
-                                a.AlternateNames.Equals(request.FilterValue) ||
-                                a.AlternateNames.Equals(normalizedFilterValue)
+                                a.Name.ToLower().Equals(normalizedFilterValue) ||
+                                a.SortName.ToLower().Equals(normalizedFilterValue) ||
+                                a.RealName.ToLower().Equals(normalizedFilterValue) ||
+                                a.AlternateNames.ToLower().Equals(normalizedFilterValue)
                           where !request.FilterFavoriteOnly || favoriteArtistIds.Contains(a.Id)
                           where request.FilterToLabelId == null || labelArtistIds.Contains(a.Id)
                           where !isFilteredToGenre || genreArtistIds.Contains(a.Id)

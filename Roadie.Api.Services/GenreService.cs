@@ -107,6 +107,10 @@ namespace Roadie.Api.Services
                 rowCount = DbContext.Genres.Count();
             }
 
+            var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue)
+                ? request.FilterValue.ToAlphanumericName()
+                : null;
+
             var result = from g in DbContext.Genres
                          where randomGenreIds == null || randomGenreIds.Contains(g.Id)
                          let releaseCount = (from rg in DbContext.ReleaseGenres
@@ -115,7 +119,11 @@ namespace Roadie.Api.Services
                          let artistCount = (from rg in DbContext.ArtistGenres
                                             where rg.GenreId == g.Id
                                             select rg.Id).Count()
-                         where request.FilterValue.Length == 0 || g.Name.Contains(request.FilterValue)
+                         where string.IsNullOrEmpty(normalizedFilterValue) || (
+                                   g.Name.ToLower().Contains(normalizedFilterValue) ||
+                                   g.SortName.ToLower().Contains(normalizedFilterValue) ||
+                                   g.AlternateNames.ToLower().Contains(normalizedFilterValue)
+                               )
                          select new GenreList
                          {
                              DatabaseId = g.Id,

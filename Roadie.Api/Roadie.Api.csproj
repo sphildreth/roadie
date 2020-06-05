@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt-Core" Version="2.0.0" />
-    <PackageReference Include="Mapster" Version="5.3.1" />
+    <PackageReference Include="Mapster" Version="5.3.2" />
     <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.14.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.4" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.4" />
@@ -43,13 +43,13 @@
     <PackageReference Include="Serilog.AspNetCore" Version="3.2.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="2.1.3" />
     <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
-    <PackageReference Include="Serilog.Exceptions" Version="5.4.0" />
+    <PackageReference Include="Serilog.Exceptions" Version="5.5.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.1.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.LiteDB.NetStandard" Version="1.0.14" />
     <PackageReference Include="Serilog.Sinks.RollingFileAlternate" Version="2.0.9" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.5.1" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.1.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.6.0" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.1.2" />
   </ItemGroup>
 
   <ItemGroup>

@@ -212,7 +212,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanAllCollections()
         {
-            var result = await AdminService.ScanAllCollections(await UserManager.GetUserAsync(User));
+            var result = await AdminService.ScanAllCollections(await UserManager.GetUserAsync(User).ConfigureAwait(false)).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -260,7 +260,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanCollection(Guid id, bool doPurgeFirst = false)
         {
-            var result = await AdminService.ScanCollection(await UserManager.GetUserAsync(User), id, doPurgeFirst: doPurgeFirst);
+            var result = await AdminService.ScanCollection(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, doPurgeFirst: doPurgeFirst).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)

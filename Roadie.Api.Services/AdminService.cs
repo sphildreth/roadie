@@ -640,19 +640,19 @@ namespace Roadie.Api.Services
             Logger.LogInformation($"Administration startup tasks completed, elapsed time [{ sw.ElapsedMilliseconds }]");
         }
 
-        public async Task<OperationResult<bool>> ScanAllCollections(User user, bool isReadOnly = false,
-            bool doPurgeFirst = false)
+        public async Task<OperationResult<bool>> ScanAllCollections(User user, bool isReadOnly = false, bool doPurgeFirst = false)
         {
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
 
-            var collections = await DbContext.Collections.Where(x => x.IsLocked == false).ToArrayAsync();
+            var collections = await DbContext.Collections.Where(x => x.IsLocked == false).ToArrayAsync().ConfigureAwait(false);
             var updatedReleaseIds = new List<int>();
             foreach (var collection in collections)
+            {
                 try
                 {
-                    var result = await ScanCollection(user, collection.RoadieId, isReadOnly, doPurgeFirst, false);
+                    var result = await ScanCollection(user, collection.RoadieId, isReadOnly, doPurgeFirst, false).ConfigureAwait(false);
                     if (!result.IsSuccess)
                     {
                         errors.AddRange(result.Errors);
@@ -661,19 +661,20 @@ namespace Roadie.Api.Services
                 }
                 catch (Exception ex)
                 {
-                    await LogAndPublish(ex.ToString(), LogLevel.Error);
+                    await LogAndPublish(ex.ToString(), LogLevel.Error).ConfigureAwait(false);
                     errors.Add(ex);
                 }
+            }
 
             foreach (var updatedReleaseId in updatedReleaseIds.Distinct())
             {
-                await UpdateReleaseRank(updatedReleaseId);
+                await UpdateReleaseRank(updatedReleaseId).ConfigureAwait(false);
             }
             sw.Stop();
-            await LogAndPublish($"ScanAllCollections, By User `{user}`, Updated Release Count [{updatedReleaseIds.Distinct().Count()}], ElapsedTime [{sw.ElapsedMilliseconds}]", LogLevel.Warning);
+            await LogAndPublish($"ScanAllCollections, By User `{user}`, Updated Release Count [{updatedReleaseIds.Distinct().Count()}], ElapsedTime [{sw.ElapsedMilliseconds}]", LogLevel.Warning).ConfigureAwait(false);
             return new OperationResult<bool>
             {
-                IsSuccess = !errors.Any(),
+                IsSuccess = errors.Count == 0,
                 Data = true,
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
@@ -758,10 +759,10 @@ namespace Roadie.Api.Services
             var updatedReleaseIds = new List<int>();
             var result = new List<data.PositionArtistRelease>();
             var errors = new List<Exception>();
-            var collection = DbContext.Collections.FirstOrDefault(x => x.RoadieId == collectionId);
+            var collection = await DbContext.Collections.FirstOrDefaultAsync(x => x.RoadieId == collectionId).ConfigureAwait(false);
             if (collection == null)
             {
-                await LogAndPublish($"ScanCollection Unknown Collection [{collectionId}]", LogLevel.Warning);
+                await LogAndPublish($"ScanCollection Unknown Collection [{collectionId}]", LogLevel.Warning).ConfigureAwait(false);
                 return new OperationResult<bool>(true, $"Collection Not Found [{collectionId}]");
             }
 
@@ -769,15 +770,15 @@ namespace Roadie.Api.Services
             {
                 if (doPurgeFirst)
                 {
-                    await LogAndPublish($"ScanCollection Purging Collection [{collectionId}]", LogLevel.Warning);
-                    var crs = await DbContext.CollectionReleases.Where(x => x.CollectionId == collection.Id).ToArrayAsync();
+                    await LogAndPublish($"ScanCollection Purging Collection [{collectionId}]", LogLevel.Warning).ConfigureAwait(false);
+                    var crs = await DbContext.CollectionReleases.Where(x => x.CollectionId == collection.Id).ToArrayAsync().ConfigureAwait(false);
                     DbContext.CollectionReleases.RemoveRange(crs);
-                    await DbContext.SaveChangesAsync();
+                    await DbContext.SaveChangesAsync().ConfigureAwait(false);
                 }
 
                 var collectionMissingRecords = DbContext.CollectionMissings.Where(x => x.CollectionId == collection.Id);
                 DbContext.CollectionMissings.RemoveRange(collectionMissingRecords);
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
                 var par = collection.PositionArtistReleases();
                 if (par != null)
@@ -800,23 +801,23 @@ namespace Roadie.Api.Services
                         }
                         else
                         {
-                            artistsMatchingName = await ArtistLookupEngine.DatabaseQueryForArtistName(csvRelease.Artist);
+                            artistsMatchingName = await ArtistLookupEngine.DatabaseQueryForArtistName(csvRelease.Artist).ConfigureAwait(false);
                             if (artistsMatchingName == null || !artistsMatchingName.Any())
                             {
-                                await LogAndPublish($"CSV Position [{ csvRelease.Position }] Unable To Find Artist [{csvRelease.Artist}]", LogLevel.Warning);
+                                await LogAndPublish($"CSV Position [{ csvRelease.Position }] Unable To Find Artist [{csvRelease.Artist}]", LogLevel.Warning).ConfigureAwait(false);
                                 csvRelease.Status = Statuses.Missing;
-                                DbContext.CollectionMissings.Add(new data.CollectionMissing
+                                await DbContext.CollectionMissings.AddAsync(new data.CollectionMissing
                                 {
                                     CollectionId = collection.Id,
                                     Position = csvRelease.Position,
                                     Artist = csvRelease.Artist,
                                     Release = csvRelease.Release
-                                });
+                                }).ConfigureAwait(false);
                                 continue;
                             }
                             else if (artistsMatchingName.Count() > 1)
                             {
-                                await LogAndPublish($"CSV Position [{ csvRelease.Position }] Found [{ artistsMatchingName.Count() }] Artists by [{csvRelease.Artist}]", LogLevel.Information);
+                                await LogAndPublish($"CSV Position [{ csvRelease.Position }] Found [{ artistsMatchingName.Count() }] Artists by [{csvRelease.Artist}]", LogLevel.Information).ConfigureAwait(false);
                             }
                         }
                         foreach (var artist in artistsMatchingName)
@@ -825,11 +826,11 @@ namespace Roadie.Api.Services
                             int? releaseId = isReleaseNameDbKey ? SafeParser.ToNumber<int?>(csvRelease.Release.Replace(Roadie.Library.Data.Collection.DatabaseIdKey, "")) : null;
                             if (releaseId.HasValue)
                             {
-                                release = DbContext.Releases.FirstOrDefault(x => x.Id == releaseId.Value);
+                                release = await DbContext.Releases.FirstOrDefaultAsync(x => x.Id == releaseId.Value).ConfigureAwait(false);
                             }
                             else
                             {
-                                release = ReleaseLookupEngine.DatabaseQueryForReleaseTitle(artist, csvRelease.Release);
+                                release = await ReleaseLookupEngine.DatabaseQueryForReleaseTitle(artist, csvRelease.Release).ConfigureAwait(false);
                             }
                             if (release != null)
                             {
@@ -839,28 +840,29 @@ namespace Roadie.Api.Services
 
                         if (release == null)
                         {
-                            await LogAndPublish($"CSV Position [{ csvRelease.Position }] Unable To Find Release [{csvRelease.Release}], for Artist [{csvRelease.Artist}]", LogLevel.Warning);
+                            await LogAndPublish($"CSV Position [{ csvRelease.Position }] Unable To Find Release [{csvRelease.Release}], for Artist [{csvRelease.Artist}]", LogLevel.Warning).ConfigureAwait(false);
                             csvRelease.Status = Statuses.Missing;
-                            DbContext.CollectionMissings.Add(new data.CollectionMissing
+                            await DbContext.CollectionMissings.AddAsync(new data.CollectionMissing
                             {
                                 CollectionId = collection.Id,
                                 IsArtistFound = true,
                                 Position = csvRelease.Position,
                                 Artist = csvRelease.Artist,
                                 Release = csvRelease.Release
-                            });
+                            }).ConfigureAwait(false);
                             continue;
                         }
 
-                        var isInCollection = DbContext.CollectionReleases.FirstOrDefault(x =>
+                        var isInCollection = await DbContext.CollectionReleases.FirstOrDefaultAsync(x =>
                             x.CollectionId == collection.Id &&
                             x.ListNumber == csvRelease.Position &&
-                            x.ReleaseId == release.Id);
+                            x.ReleaseId == release.Id)
+                            .ConfigureAwait(false);
                         var updated = false;
                         // Found in Database but not in collection add to Collection
                         if (isInCollection == null)
                         {
-                            DbContext.CollectionReleases.Add(new data.CollectionRelease
+                            await DbContext.CollectionReleases.AddAsync(new data.CollectionRelease
                             {
                                 CollectionId = collection.Id,
                                 ReleaseId = release.Id,
@@ -884,7 +886,7 @@ namespace Roadie.Api.Services
                     }
 
                     collection.LastUpdated = now;
-                    await DbContext.SaveChangesAsync();
+                    await DbContext.SaveChangesAsync().ConfigureAwait(false);
                     var dto = new CollectionList
                     {
                         CollectionCount = collection.CollectionCount,
@@ -903,10 +905,10 @@ namespace Roadie.Api.Services
                         collection.Status = Statuses.Incomplete;
                     }
 
-                    var collectionReleasesToRemove = (from cr in DbContext.CollectionReleases
+                    var collectionReleasesToRemove = await (from cr in DbContext.CollectionReleases
                                                       where cr.CollectionId == collection.Id
                                                       where !releaseIdsInCollection.Contains(cr.ReleaseId)
-                                                      select cr).ToArray();
+                                                      select cr).ToArrayAsync().ConfigureAwait(false);
                     if (collectionReleasesToRemove.Any())
                     {
                         await LogAndPublish($"Removing [{collectionReleasesToRemove.Count()}] Stale Release Records from Collection.", LogLevel.Information);
@@ -918,7 +920,7 @@ namespace Roadie.Api.Services
                     {
                         foreach (var updatedReleaseId in updatedReleaseIds)
                         {
-                            await UpdateReleaseRank(updatedReleaseId);
+                            await UpdateReleaseRank(updatedReleaseId).ConfigureAwait(false);
                         }
                     }
                     CacheManager.ClearRegion(collection.CacheRegion);
@@ -1113,7 +1115,7 @@ namespace Roadie.Api.Services
                     break;
             }
 
-            await ScanActivityHub.Clients.All.SendAsync("SendSystemActivity", message);
+            await ScanActivityHub.Clients.All.SendAsync("SendSystemActivity", message).ConfigureAwait(false);
         }
 
         private async Task<OperationResult<bool>> ScanFolder(User user, DirectoryInfo d, bool isReadOnly, bool doDeleteFiles = true)

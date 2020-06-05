@@ -99,6 +99,38 @@ namespace Roadie.Library.Imaging
             return result;
         }
 
+        public static bool IsImageBetterQuality(string image1, string compareToImage)
+        {
+            if(string.IsNullOrEmpty(compareToImage))
+            {
+                return true;
+            }
+            try
+            {
+                if (string.IsNullOrEmpty(image1) || !File.Exists(image1))
+                {
+                    return File.Exists(compareToImage);
+                }
+                using (var imageComparing = SixLabors.ImageSharp.Image.Load(image1))
+                {
+                    using (var imageToCompare = SixLabors.ImageSharp.Image.Load(compareToImage))
+                    {
+                        // Generally a larger image is the preferred image
+                        var isBigger = imageToCompare.Height > imageComparing.Height && imageToCompare.Width > imageComparing.Width;
+                        if (isBigger)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Error IsImageBetterQuality Image Comparing [{ image1 }] to [{ compareToImage }], Error [{ ex }]", "Warning");
+            }
+            return false;
+        }
+
         public static IEnumerable<FileInfo> FindImageTypeInDirectory(DirectoryInfo directory, ImageType type, SearchOption folderSearchOptions = SearchOption.AllDirectories)
         {
             var result = new List<FileInfo>();

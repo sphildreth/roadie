@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
@@ -292,7 +293,7 @@ namespace Roadie.Library.Engines
             };
         }
 
-        public Release DatabaseQueryForReleaseTitle(Artist artist, string title, string sortTitle = null)
+        public async Task<Release> DatabaseQueryForReleaseTitle(Artist artist, string title, string sortTitle = null)
         {
             if (string.IsNullOrEmpty(title))
             {
@@ -312,7 +313,7 @@ namespace Roadie.Library.Engines
                 var specialSearchNameIn = $"|{specialSearchName}|";
                 var specialSearchNameEnd = $"|{specialSearchName}";
 
-                return (from a in DbContext.Releases
+                return await (from a in DbContext.Releases
                         where a.ArtistId == artist.Id
                         where a.Title.ToLower() == searchName ||
                               a.Title.ToLower() == specialSearchName ||
@@ -328,7 +329,7 @@ namespace Roadie.Library.Engines
                               a.AlternateNames.ToLower().Contains(specialSearchNameIn) ||
                               a.AlternateNames.ToLower().EndsWith(specialSearchNameEnd)
                         select a
-                    ).FirstOrDefault();
+                    ).FirstOrDefaultAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -360,7 +361,7 @@ namespace Roadie.Library.Engines
                     };
                 }
 
-                var release = DatabaseQueryForReleaseTitle(artist, metaData.Release);
+                var release = await DatabaseQueryForReleaseTitle(artist, metaData.Release).ConfigureAwait(false);
 
                 sw.Stop();
                 if (release?.IsValid != true)
@@ -741,7 +742,7 @@ namespace Roadie.Library.Engines
                         {
                             result.Genres.Add(new ReleaseGenre
                             {
-                                Genre = DbContext.Genres.Where(x => x.Name.ToLower() == g.ToLower()).FirstOrDefault() ?? new Genre
+                                Genre = DbContext.Genres.Where(x => string.Equals(x.Name, g, StringComparison.OrdinalIgnoreCase)).FirstOrDefault() ?? new Genre
                                 {
                                     Name = g,
                                     NormalizedName = g.ToAlphanumericName()

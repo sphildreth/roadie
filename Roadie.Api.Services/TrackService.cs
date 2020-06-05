@@ -341,8 +341,15 @@ namespace Roadie.Api.Services
                                   where filterToTrackIds == null || filterToTrackIds.Contains(t.RoadieId)
                                   where releaseId == null || r.RoadieId == releaseId
                                   where request.FilterMinimumRating == null || t.Rating >= request.FilterMinimumRating.Value
-                                  where string.IsNullOrEmpty(request.FilterValue) || (trackArtist != null && trackArtist.Name.Contains(request.FilterValue)) || t.Title.Contains(request.FilterValue) || t.AlternateNames.Contains(request.FilterValue) || t.AlternateNames.Contains(normalizedFilterValue) || t.PartTitles.Contains(request.FilterValue)
-                                  where !isEqualFilter || t.Title.Equals(request.FilterValue) || t.AlternateNames.Equals(request.FilterValue) || t.AlternateNames.Equals(normalizedFilterValue) || t.PartTitles.Equals(request.FilterValue)
+                                  where string.IsNullOrEmpty(normalizedFilterValue) || 
+                                        (trackArtist != null && trackArtist.Name.ToLower().Contains(normalizedFilterValue)) || 
+                                        t.Title.ToLower().Contains(normalizedFilterValue) || 
+                                        t.AlternateNames.Contains(normalizedFilterValue) || 
+                                        t.PartTitles.ToLower().Contains(normalizedFilterValue)
+                                  where !isEqualFilter || 
+                                         t.Title.ToLower().Equals(normalizedFilterValue) || 
+                                         t.AlternateNames.ToLower().Equals(normalizedFilterValue) || 
+                                         t.PartTitles.ToLower().Equals(request.FilterValue)
                                   where !request.FilterFavoriteOnly || favoriteTrackIds.Contains(t.Id)
                                   where request.FilterToPlaylistId == null || playlistTrackIds.Contains(t.Id)
                                   where !request.FilterTopPlayedOnly || topTrackids.Contains(t.Id)

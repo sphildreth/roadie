@@ -93,9 +93,8 @@ namespace Roadie.Api.Services
             }
             var artistByName = await CacheManager.GetAsync(data.Artist.CacheUrnByName(artistName), async () =>
             {
-               return await DbContext.Artists
-                   .FirstOrDefaultAsync(x => x.Name == artistName);
-            }, null);
+               return await DbContext.Artists.FirstOrDefaultAsync(x => x.Name == artistName).ConfigureAwait(false);
+            }, null).ConfigureAwait(false);
             if (artistByName == null)
             {
                 return null;
@@ -103,83 +102,80 @@ namespace Roadie.Api.Services
             return await GetArtist(artistByName.RoadieId);
         }
 
-        protected async Task<data.Artist> GetArtist(Guid id)
+        protected Task<data.Artist> GetArtist(Guid id)
         {
             if (id == Guid.Empty)
             {
-                return null;
+                return Task.FromResult<data.Artist>(null);
             }
-            return await CacheManager.GetAsync(data.Artist.CacheUrn(id), async () =>
+            return CacheManager.GetAsync(data.Artist.CacheUrn(id), () =>
             {
-                return await DbContext.Artists
+                return DbContext.Artists
                     .Include(x => x.Genres)
                     .Include("Genres.Genre")
                     .FirstOrDefaultAsync(x => x.RoadieId == id);
             }, data.Artist.CacheRegionUrn(id));
         }
 
-        protected async Task<data.Collection> GetCollection(Guid id)
+        protected Task<data.Collection> GetCollection(Guid id)
         {
             if (id == Guid.Empty)
             {
-                return null;
+                return Task.FromResult<data.Collection>(null);
             }
-            return await CacheManager.GetAsync(data.Collection.CacheUrn(id), async () =>
+            return CacheManager.GetAsync(data.Collection.CacheUrn(id), () =>
             {
-                return await DbContext.Collections
-                    .FirstOrDefaultAsync(x => x.RoadieId == id);
+                return DbContext.Collections.FirstOrDefaultAsync(x => x.RoadieId == id);
             }, data.Collection.CacheRegionUrn(id));
         }
 
-        protected async Task<data.Genre> GetGenre(Guid id)
+        protected Task<data.Genre> GetGenre(Guid id)
         {
             if (id == Guid.Empty)
             {
-                return null;
+                return Task.FromResult<data.Genre>(null);
             }
-            return await CacheManager.GetAsync(data.Genre.CacheUrn(id), async () =>
+            return CacheManager.GetAsync(data.Genre.CacheUrn(id), () =>
             {
-                return await DbContext.Genres
-                    .FirstOrDefaultAsync(x => x.RoadieId == id);
+                return DbContext.Genres.FirstOrDefaultAsync(x => x.RoadieId == id);
             }, data.Genre.CacheRegionUrn(id));
         }
 
-        protected async Task<data.Label> GetLabel(Guid id)
+        protected Task<data.Label> GetLabel(Guid id)
         {
             if (id == Guid.Empty)
             {
-                return null;
+                return Task.FromResult<data.Label>(null);
             }
-            return await CacheManager.GetAsync(data.Label.CacheUrn(id), async () =>
+            return CacheManager.GetAsync(data.Label.CacheUrn(id), () =>
             {
-                return await DbContext.Labels
-                    .FirstOrDefaultAsync(x => x.RoadieId == id);
+                return DbContext.Labels.FirstOrDefaultAsync(x => x.RoadieId == id);
             }, data.Label.CacheRegionUrn(id));
         }
 
-        protected async Task<data.Playlist> GetPlaylist(Guid id)
+        protected Task<data.Playlist> GetPlaylist(Guid id)
         {
             if (id == Guid.Empty)
             {
-                return null;
+                return Task.FromResult<data.Playlist>(null);
             }
-            return await CacheManager.Get(data.Playlist.CacheUrn(id), async () =>
+            return CacheManager.GetAsync(data.Playlist.CacheUrn(id), () =>
             {
-                return await DbContext.Playlists
-                    .Include(x => x.User)
-                    .FirstOrDefaultAsync(x => x.RoadieId == id);
+                return DbContext.Playlists
+                                .Include(x => x.User)
+                                .FirstOrDefaultAsync(x => x.RoadieId == id);
             }, data.Playlist.CacheRegionUrn(id));
         }
 
-        protected async Task<data.Release> GetRelease(Guid id)
+        protected Task<data.Release> GetRelease(Guid id)
         {
             if (id == Guid.Empty)
             {
-                return null;
+                return Task.FromResult<data.Release>(null);
             }
-            return await CacheManager.Get(data.Release.CacheUrn(id), async () =>
+            return CacheManager.GetAsync(data.Release.CacheUrn(id), () =>
             {
-                return await DbContext.Releases
+                return DbContext.Releases
                     .Include(x => x.Artist)
                     .Include(x => x.Genres)
                     .Include("Genres.Genre")
@@ -203,15 +199,15 @@ namespace Roadie.Api.Services
         }
 
         // Only read operations
-        protected async Task<data.Track> GetTrack(Guid id)
+        protected Task<data.Track> GetTrack(Guid id)
         {
             if(id == Guid.Empty)
             {
-                return null;
+                return Task.FromResult<data.Track>(null);
             }
-            return await CacheManager.GetAsync(data.Track.CacheUrn(id), async () =>
+            return CacheManager.GetAsync(data.Track.CacheUrn(id), () =>
             {
-                return await DbContext.Tracks
+                return DbContext.Tracks
                     .Include(x => x.ReleaseMedia)
                     .Include(x => x.ReleaseMedia.Release)
                     .Include(x => x.ReleaseMedia.Release.Artist)
@@ -226,19 +222,22 @@ namespace Roadie.Api.Services
             {
                 return null;
             }
-            var userByUsername = await CacheManager.GetAsync(User.CacheUrnByUsername(username), async () =>
+            var userByUsername = await CacheManager.GetAsync(User.CacheUrnByUsername(username), () =>
             {
-                return await DbContext.Users.FirstOrDefaultAsync(x => x.UserName == username);
+                return DbContext.Users.FirstOrDefaultAsync(x => x.UserName == username);
             }, null);
-            return await GetUser(userByUsername?.RoadieId);
+            return await GetUser(userByUsername?.RoadieId).ConfigureAwait(false);
         }
 
-        protected async Task<User> GetUser(Guid? id)
+        protected Task<User> GetUser(Guid? id)
         {
-            if (!id.HasValue) return null;
-            return await CacheManager.GetAsync(User.CacheUrn(id.Value), async () =>
+            if (!id.HasValue)
+            {
+                return Task.FromResult<User>(null);
+            }
+            return CacheManager.GetAsync(User.CacheUrn(id.Value), () =>
            {
-               return await DbContext.Users
+               return DbContext.Users
                    .Include(x => x.UserRoles)
                    .Include("UserRoles.Role")
                    .Include("UserRoles.Role.RoleClaims")
@@ -276,9 +275,9 @@ namespace Roadie.Api.Services
                 userArtist.LastUpdated = now;
             }
 
-            await DbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
-            var ratings = await DbContext.UserArtists.Where(x => x.ArtistId == artist.Id && x.Rating > 0).Select(x => x.Rating).ToListAsync();
+            var ratings = await DbContext.UserArtists.Where(x => x.ArtistId == artist.Id && x.Rating > 0).Select(x => x.Rating).ToListAsync().ConfigureAwait(false);
             if (ratings != null && ratings.Any())
             {
                 artist.Rating = (short)ratings.Average(x => (decimal)x);
@@ -288,12 +287,12 @@ namespace Roadie.Api.Services
                 artist.Rating = 0;
             }
             artist.LastUpdated = now;
-            await DbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
             await UpdateArtistRank(artist.Id);
             CacheManager.ClearRegion(user.CacheRegion);
             CacheManager.ClearRegion(artist.CacheRegion);
 
-            artist = await GetArtist(artistId);
+            artist = await GetArtist(artistId).ConfigureAwait(false);
 
             return new OperationResult<short>
             {
@@ -947,7 +946,7 @@ namespace Roadie.Api.Services
                                                       join t in DbContext.Tracks on ut.TrackId equals t.Id
                                                       join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                                       where rm.ReleaseId == releaseId
-                                                      select ut.Rating).Select(x => (decimal?)x).ToArrayAsync()).Average();
+                                                      select ut.Rating).Select(x => (decimal?)x).ToArrayAsync().ConfigureAwait(false)).Average();
 
                     var releaseUserRatingRank = release.Rating > 0 ? release.Rating / (decimal?)release.TrackCount : 0;
 
@@ -970,12 +969,12 @@ namespace Roadie.Api.Services
 
                     release.Rank = SafeParser.ToNumber<decimal>(releaseTrackAverage) + releaseUserRatingRank + releaseCollectionRank;
 
-                    await DbContext.SaveChangesAsync();
+                    await DbContext.SaveChangesAsync().ConfigureAwait(false);
                     CacheManager.ClearRegion(release.CacheRegion);
                     Logger.LogTrace("UpdateReleaseRank For Release `{0}`", release);
                     if (updateArtistRank)
                     {
-                        await UpdateArtistsRankForRelease(release);
+                        await UpdateArtistsRankForRelease(release).ConfigureAwait(false);
                     }
                 }
             }

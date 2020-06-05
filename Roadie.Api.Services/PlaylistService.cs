@@ -231,13 +231,19 @@ namespace Roadie.Api.Services
                                            select pl.Id
                                            ).ToArray();
             }
+            var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue)
+                ? request.FilterValue.ToAlphanumericName()
+                : null;
             var result = from pl in DbContext.Playlists
                          join u in DbContext.Users on pl.UserId equals u.Id
                          where request.FilterToPlaylistId == null || pl.RoadieId == request.FilterToPlaylistId
                          where request.FilterToArtistId == null || playlistWithArtistTrackIds.Contains(pl.Id)
                          where request.FilterToReleaseId == null || playlistReleaseTrackIds.Contains(pl.Id)
                          where roadieUser == null && pl.IsPublic || roadieUser != null && u.RoadieId == roadieUser.UserId || pl.IsPublic
-                         where request.FilterValue.Length == 0 || request.FilterValue.Length > 0 && pl.Name != null && pl.Name.Contains(request.FilterValue)
+                         where string.IsNullOrEmpty(normalizedFilterValue) || (
+                                   pl.Name.ToLower().Contains(normalizedFilterValue) ||
+                                   pl.AlternateNames.ToLower().Contains(normalizedFilterValue)
+                               )
                          select new PlaylistList
                          {
                              Playlist = new DataToken

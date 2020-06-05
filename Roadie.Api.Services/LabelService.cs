@@ -141,11 +141,10 @@ namespace Roadie.Api.Services
 
             var result = from l in DbContext.Labels
                          where randomLabelIds == null || randomLabelIds.Contains(l.Id)
-                         where request.FilterValue == "" || (
-                                   l.Name.Contains(request.FilterValue) ||
-                                   l.SortName.Contains(request.FilterValue) ||
-                                   l.AlternateNames.Contains(request.FilterValue) ||
-                                   l.AlternateNames.Contains(normalizedFilterValue)
+                         where string.IsNullOrEmpty(normalizedFilterValue) || (
+                                   l.Name.ToLower().Contains(normalizedFilterValue) ||
+                                   l.SortName.ToLower().Contains(normalizedFilterValue) ||
+                                   l.AlternateNames.ToLower().Contains(normalizedFilterValue)
                                )
                          select new LabelList
                          {

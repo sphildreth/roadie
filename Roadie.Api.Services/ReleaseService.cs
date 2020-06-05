@@ -291,41 +291,9 @@ namespace Roadie.Api.Services
                                                       select plt.PlayListId).ToListAsync().ConfigureAwait(false);
             if (doDeleteFiles)
             {
-                foreach (var track in releaseTracks)
-                {
-                    string trackPath = null;
-                    try
-                    {
-                        trackPath = track.PathToTrack(Configuration);
-                        if (File.Exists(trackPath))
-                        {
-                            File.Delete(trackPath);
-                            Logger.LogWarning("For Release [{0}], Deleted File [{1}]", release.Id, trackPath);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogError(ex, $"Error Deleting File [{trackPath}] For Track `{track}` Exception [{ex}]");
-                    }
-                }
-
-                // Delete all image files for Release
-                foreach (var file in ImageHelper.ImageFilesInFolder(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)), SearchOption.AllDirectories))
-                {
-                    try
-                    {
-                        File.Delete(file);
-                        Logger.LogWarning("For Release [{0}], Deleted File [{1}]", release.Id, file);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogError(ex, $"Error Deleting File [{file}] Exception [{ex}]");
-                    }
-                }
-
                 try
                 {
-                    FolderPathHelper.DeleteEmptyFoldersForArtist(Configuration, release.Artist);
+                    Directory.Delete(release.ReleaseFileFolder(release.Artist.ArtistFileFolder(Configuration)), true);
                 }
                 catch (Exception ex)
                 {
@@ -522,15 +490,13 @@ namespace Roadie.Api.Services
                                 (r.ReleaseDate != null && r.ReleaseDate.Value.Year <= request.FilterFromYear)
                           where request.FilterToYear == null ||
                                 (r.ReleaseDate != null && r.ReleaseDate.Value.Year >= request.FilterToYear)
-                          where string.IsNullOrEmpty(request.FilterValue) ||
-                                r.Title.Contains(request.FilterValue) ||
-                                r.AlternateNames.Contains(request.FilterValue) ||
-                                r.AlternateNames.Contains(normalizedFilterValue)
+                          where string.IsNullOrEmpty(normalizedFilterValue) ||
+                                r.Title.ToLower().Contains(normalizedFilterValue) ||
+                                r.AlternateNames.ToLower().Contains(normalizedFilterValue)
                           where !isEqualFilter ||
-                                r.Title.Equals(request.FilterValue) ||
-                                r.AlternateNames.Equals(request.FilterValue) ||
-                                r.AlternateNames.Equals(normalizedFilterValue)
-                          select new ReleaseList
+                                r.Title.ToLower().Equals(normalizedFilterValue) ||
+                                r.AlternateNames.ToLower().Contains(normalizedFilterValue)
+                         select new ReleaseList
                           {
                               DatabaseId = r.Id,
                               Id = r.RoadieId,
@@ -858,7 +824,6 @@ namespace Roadie.Api.Services
 
             try
             {
-                var mergedFilesToDelete = new List<string>();
                 var mergedTracksToMove = new List<data.Track>();
 
                 releaseToMergeInto.MediaCount ??= 0;
@@ -947,13 +912,6 @@ namespace Roadie.Api.Services
 
                                     existingTrack.AlternateNames = existingTrack.AlternateNames.AddToDelimitedList(mergeTrack.AlternateNames.ToListFromDelimited());
                                     existingTrack.LastUpdated = now;
-                                    var mergedTrackFileName = mergeTrack.PathToTrack(Configuration);
-                                    var trackFileName = existingTrack.PathToTrack(Configuration);
-                                    if (!trackFileName.Equals(mergedTrackFileName, StringComparison.Ordinal) &&
-                                        File.Exists(trackFileName))
-                                    {
-                                        mergedFilesToDelete.Add(mergedTrackFileName);
-                                    }
                                 }
                             }
                         }
@@ -979,6 +937,13 @@ namespace Roadie.Api.Services
                             track.Hash = HashHelper.CreateMD5(releaseToMergeInto.ArtistId + trackFile.LastWriteTimeUtc.GetHashCode().ToString() + audioMetaData.GetHashCode());
                             track.LastUpdated = now;
                             File.Move(oldTrackPath, newTrackPath);
+
+                            // If track has track image move into new folder
+                            var trackImageFileName = track.PathToTrackThumbnail(Configuration);
+                            if (File.Exists(trackImageFileName))
+                            {
+                                File.Move(trackImageFileName, newTrackPath);
+                            }
                         }
                     }
                 }
@@ -1060,29 +1025,60 @@ namespace Roadie.Api.Services
 
                 await Delete(user, releaseToMerge).ConfigureAwait(false);
 
-                // Delete any files flagged to be deleted (duplicate as track already exists on merged to release)
-                if (mergedFilesToDelete.Count > 0)
+                // Merge all release images
+                var releaseCoverFiles = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseToMergeFolder), ImageType.Release);
+                if (releaseCoverFiles.Any())
                 {
-                    foreach (var mergedFileToDelete in mergedFilesToDelete)
+                    foreach(var releaseCoverFile in releaseCoverFiles)
                     {
-                        try
+                        var imagePath = Path.Combine(releaseToMergeIntoDirectory.FullName, releaseCoverFile.Name);
+                        if(File.Exists(imagePath))
                         {
-                            if (File.Exists(mergedFileToDelete))
+                            if(ImageHelper.IsImageBetterQuality(releaseCoverFile.FullName, imagePath))
                             {
-                                File.Delete(mergedFileToDelete);
-                                Logger.LogWarning("x Deleted Merged File [{0}]", mergedFileToDelete);
+                                releaseCoverFile.MoveTo(imagePath, true);
                             }
                         }
-                        catch
+                        else
                         {
+                            releaseCoverFile.MoveTo(imagePath);
+                        }                     
+                    }
+                }
+                var secondaryReleaseCoverFiles = ImageHelper.FindImageTypeInDirectory(new DirectoryInfo(releaseToMergeFolder), ImageType.ReleaseSecondary);
+                if (secondaryReleaseCoverFiles.Any())
+                {
+                    foreach (var secondaryReleaseCoverFile in secondaryReleaseCoverFiles)
+                    {
+                        var imagePath = Path.Combine(releaseToMergeIntoDirectory.FullName, secondaryReleaseCoverFile.Name);
+                        if (File.Exists(imagePath))
+                        {
+                            if (ImageHelper.IsImageBetterQuality(secondaryReleaseCoverFile.FullName, imagePath))
+                            {
+                                secondaryReleaseCoverFile.MoveTo(imagePath, true);
+                            }
+                        }
+                        else
+                        {
+                            secondaryReleaseCoverFile.MoveTo(imagePath, true);
                         }
                     }
                 }
+
+                var releaseToMergeInfoDirectory = new DirectoryInfo(releaseToMergeFolder);
+                if(releaseToMergeInfoDirectory.Exists)
+                {
+                    releaseToMergeInfoDirectory.Delete(true);
+                    Logger.LogWarning("x Deleted Folder [{0}]", releaseToMergeInfoDirectory);
+                }            
 
                 // Clear cache regions for manipulated records
                 CacheManager.ClearRegion(releaseToMergeInto.CacheRegion);
                 if (releaseToMergeInto.Artist != null) CacheManager.ClearRegion(releaseToMergeInto.Artist.CacheRegion);
                 if (releaseToMerge.Artist != null) CacheManager.ClearRegion(releaseToMerge.Artist.CacheRegion);
+
+                // Rescan release
+                await ScanReleaseFolder(user, releaseToMergeInto.RoadieId, false, releaseToMergeInto).ConfigureAwait(false);
 
                 sw.Stop();
                 result = true;
