@@ -6,13 +6,13 @@ namespace Roadie.Api.Models
     public class RegisterModel : LoginModel
     {
         [Required]
-        [EmailAddress] 
+        [EmailAddress]
         public string Email { get; set; }
 
-        [Required]
-        [Compare("Password")]
-        public string PasswordConfirmation { get; set; }
-
         public Guid? InviteToken { get; set; }
+
+        [Required]
+        [Compare(nameof(Password))]
+        public string PasswordConfirmation { get; set; }
     }
 }

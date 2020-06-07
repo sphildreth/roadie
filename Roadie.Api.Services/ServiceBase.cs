@@ -99,91 +99,91 @@ namespace Roadie.Api.Services
             {
                 return null;
             }
-            return await GetArtist(artistByName.RoadieId);
+            return await GetArtist(artistByName.RoadieId).ConfigureAwait(false);
         }
 
-        protected Task<data.Artist> GetArtist(Guid id)
+        protected async Task<data.Artist> GetArtist(Guid id)
         {
             if (id == Guid.Empty)
             {
-                return Task.FromResult<data.Artist>(null);
+                return null;
             }
-            return CacheManager.GetAsync(data.Artist.CacheUrn(id), () =>
+            return await CacheManager.GetAsync(data.Artist.CacheUrn(id), async () =>
             {
-                return DbContext.Artists
+                return await DbContext.Artists
                     .Include(x => x.Genres)
                     .Include("Genres.Genre")
-                    .FirstOrDefaultAsync(x => x.RoadieId == id);
-            }, data.Artist.CacheRegionUrn(id));
+                    .FirstOrDefaultAsync(x => x.RoadieId == id).ConfigureAwait(false);
+            }, data.Artist.CacheRegionUrn(id)).ConfigureAwait(false);
         }
 
-        protected Task<data.Collection> GetCollection(Guid id)
+        protected async Task<data.Collection> GetCollection(Guid id)
         {
             if (id == Guid.Empty)
             {
-                return Task.FromResult<data.Collection>(null);
+                return null;
             }
-            return CacheManager.GetAsync(data.Collection.CacheUrn(id), () =>
+            return await CacheManager.GetAsync(data.Collection.CacheUrn(id), async () =>
             {
-                return DbContext.Collections.FirstOrDefaultAsync(x => x.RoadieId == id);
-            }, data.Collection.CacheRegionUrn(id));
+                return await DbContext.Collections.FirstOrDefaultAsync(x => x.RoadieId == id).ConfigureAwait(false);
+            }, data.Collection.CacheRegionUrn(id)).ConfigureAwait(false);
         }
 
-        protected Task<data.Genre> GetGenre(Guid id)
+        protected async Task<data.Genre> GetGenre(Guid id)
         {
             if (id == Guid.Empty)
             {
-                return Task.FromResult<data.Genre>(null);
+                return null;
             }
-            return CacheManager.GetAsync(data.Genre.CacheUrn(id), () =>
+            return await CacheManager.GetAsync(data.Genre.CacheUrn(id), async () =>
             {
-                return DbContext.Genres.FirstOrDefaultAsync(x => x.RoadieId == id);
-            }, data.Genre.CacheRegionUrn(id));
+                return await DbContext.Genres.FirstOrDefaultAsync(x => x.RoadieId == id).ConfigureAwait(false);
+            }, data.Genre.CacheRegionUrn(id)).ConfigureAwait(false);
         }
 
-        protected Task<data.Label> GetLabel(Guid id)
+        protected async Task<data.Label> GetLabel(Guid id)
         {
             if (id == Guid.Empty)
             {
-                return Task.FromResult<data.Label>(null);
+                return null;
             }
-            return CacheManager.GetAsync(data.Label.CacheUrn(id), () =>
+            return await CacheManager.GetAsync(data.Label.CacheUrn(id), async () =>
             {
-                return DbContext.Labels.FirstOrDefaultAsync(x => x.RoadieId == id);
-            }, data.Label.CacheRegionUrn(id));
+                return await DbContext.Labels.FirstOrDefaultAsync(x => x.RoadieId == id).ConfigureAwait(false);
+            }, data.Label.CacheRegionUrn(id)).ConfigureAwait(false);
         }
 
-        protected Task<data.Playlist> GetPlaylist(Guid id)
+        protected async Task<data.Playlist> GetPlaylist(Guid id)
         {
             if (id == Guid.Empty)
             {
-                return Task.FromResult<data.Playlist>(null);
+                return null;
             }
-            return CacheManager.GetAsync(data.Playlist.CacheUrn(id), () =>
+            return await CacheManager.GetAsync(data.Playlist.CacheUrn(id), async () =>
             {
-                return DbContext.Playlists
+                return await DbContext.Playlists
                                 .Include(x => x.User)
-                                .FirstOrDefaultAsync(x => x.RoadieId == id);
-            }, data.Playlist.CacheRegionUrn(id));
+                                .FirstOrDefaultAsync(x => x.RoadieId == id).ConfigureAwait(false);
+            }, data.Playlist.CacheRegionUrn(id)).ConfigureAwait(false);
         }
 
-        protected Task<data.Release> GetRelease(Guid id)
+        protected async Task<data.Release> GetRelease(Guid id)
         {
             if (id == Guid.Empty)
             {
-                return Task.FromResult<data.Release>(null);
+                return null;
             }
-            return CacheManager.GetAsync(data.Release.CacheUrn(id), () =>
+            return await CacheManager.GetAsync(data.Release.CacheUrn(id), async () =>
             {
-                return DbContext.Releases
+                return await DbContext.Releases
                     .Include(x => x.Artist)
                     .Include(x => x.Genres)
                     .Include("Genres.Genre")
                     .Include(x => x.Medias)
                     .Include("Medias.Tracks")
                     .Include("Medias.Tracks.TrackArtist")
-                    .FirstOrDefaultAsync(x => x.RoadieId == id);
-            }, data.Release.CacheRegionUrn(id));
+                    .FirstOrDefaultAsync(x => x.RoadieId == id).ConfigureAwait(false);
+            }, data.Release.CacheRegionUrn(id)).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -193,27 +193,27 @@ namespace Roadie.Api.Services
         {
             if (Guid.TryParse(id, out Guid trackId))
             {
-                return await GetTrack(trackId);
+                return await GetTrack(trackId).ConfigureAwait(false);
             }
             return null;
         }
 
         // Only read operations
-        protected Task<data.Track> GetTrack(Guid id)
+        protected async Task<data.Track> GetTrack(Guid id)
         {
             if(id == Guid.Empty)
             {
-                return Task.FromResult<data.Track>(null);
+                return null;
             }
-            return CacheManager.GetAsync(data.Track.CacheUrn(id), () =>
+            return await CacheManager.GetAsync(data.Track.CacheUrn(id), async () =>
             {
-                return DbContext.Tracks
+                return await DbContext.Tracks
                     .Include(x => x.ReleaseMedia)
                     .Include(x => x.ReleaseMedia.Release)
                     .Include(x => x.ReleaseMedia.Release.Artist)
                     .Include(x => x.TrackArtist)
-                    .FirstOrDefaultAsync(x => x.RoadieId == id);
-            }, data.Track.CacheRegionUrn(id));
+                    .FirstOrDefaultAsync(x => x.RoadieId == id).ConfigureAwait(false);
+            }, data.Track.CacheRegionUrn(id)).ConfigureAwait(false);
         }
 
         protected async Task<User> GetUser(string username)
@@ -225,40 +225,41 @@ namespace Roadie.Api.Services
             var userByUsername = await CacheManager.GetAsync(User.CacheUrnByUsername(username), () =>
             {
                 return DbContext.Users.FirstOrDefaultAsync(x => x.UserName == username);
-            }, null);
+            }, null).ConfigureAwait(false);
             return await GetUser(userByUsername?.RoadieId).ConfigureAwait(false);
         }
 
-        protected Task<User> GetUser(Guid? id)
+        protected async Task<User> GetUser(Guid? id)
         {
             if (!id.HasValue)
             {
-                return Task.FromResult<User>(null);
+                return null;
             }
-            return CacheManager.GetAsync(User.CacheUrn(id.Value), () =>
+            return await CacheManager.GetAsync(User.CacheUrn(id.Value), async () =>
            {
-               return DbContext.Users
+               return await DbContext.Users
                    .Include(x => x.UserRoles)
                    .Include("UserRoles.Role")
                    .Include("UserRoles.Role.RoleClaims")
                    .Include(x => x.UserClaims)
                    .Include(x => x.UserQues)
                    .Include("UserQues.Track")
-                   .FirstOrDefaultAsync(x => x.RoadieId == id);
-           }, User.CacheRegionUrn(id.Value));
+                   .FirstOrDefaultAsync(x => x.RoadieId == id).ConfigureAwait(false);
+           }, User.CacheRegionUrn(id.Value)).ConfigureAwait(false);
         }
 
         protected string MakeLastFmUrl(string artistName, string releaseTitle) => "http://www.last.fm/music/" + HttpEncoder.UrlEncode($"{artistName}/{releaseTitle}");
 
         protected async Task<OperationResult<short>> SetArtistRating(Guid artistId, User user, short rating)
         {
-            var artist = DbContext.Artists
+            var artist = await DbContext.Artists
                 .Include(x => x.Genres)
                 .Include("Genres.Genre")
-                .FirstOrDefault(x => x.RoadieId == artistId);
+                .FirstOrDefaultAsync(x => x.RoadieId == artistId)
+                .ConfigureAwait(false);
             if (artist == null) return new OperationResult<short>(true, $"Invalid Artist Id [{artistId}]");
             var now = DateTime.UtcNow;
-            var userArtist = DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == user.Id);
+            var userArtist = await DbContext.UserArtists.FirstOrDefaultAsync(x => x.ArtistId == artist.Id && x.UserId == user.Id).ConfigureAwait(false);
             if (userArtist == null)
             {
                 userArtist = new data.UserArtist
@@ -278,7 +279,7 @@ namespace Roadie.Api.Services
             await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
             var ratings = await DbContext.UserArtists.Where(x => x.ArtistId == artist.Id && x.Rating > 0).Select(x => x.Rating).ToListAsync().ConfigureAwait(false);
-            if (ratings != null && ratings.Any())
+            if (ratings != null && ratings.Count > 0)
             {
                 artist.Rating = (short)ratings.Average(x => (decimal)x);
             }
@@ -288,7 +289,7 @@ namespace Roadie.Api.Services
             }
             artist.LastUpdated = now;
             await DbContext.SaveChangesAsync().ConfigureAwait(false);
-            await UpdateArtistRank(artist.Id);
+            await UpdateArtistRank(artist.Id).ConfigureAwait(false);
             CacheManager.ClearRegion(user.CacheRegion);
             CacheManager.ClearRegion(artist.CacheRegion);
 
@@ -303,19 +304,19 @@ namespace Roadie.Api.Services
 
         protected async Task<OperationResult<short>> SetReleaseRating(Guid releaseId, User user, short rating)
         {
-            var release = DbContext.Releases
+            var release = await DbContext.Releases
                 .Include(x => x.Artist)
                 .Include(x => x.Genres)
                 .Include("Genres.Genre")
                 .Include(x => x.Medias)
                 .Include("Medias.Tracks")
                 .Include("Medias.Tracks.TrackArtist")
-                .FirstOrDefault(x => x.RoadieId == releaseId);
+                .FirstOrDefaultAsync(x => x.RoadieId == releaseId).ConfigureAwait(false);
             if (release == null)
             {
                 return new OperationResult<short>(true, $"Invalid Release Id [{releaseId}]");
             }
-            var userRelease = DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == user.Id);
+            var userRelease = await DbContext.UserReleases.FirstOrDefaultAsync(x => x.ReleaseId == release.Id && x.UserId == user.Id).ConfigureAwait(false);
             var now = DateTime.UtcNow;
             if (userRelease == null)
             {
@@ -325,7 +326,7 @@ namespace Roadie.Api.Services
                     UserId = user.Id,
                     ReleaseId = release.Id
                 };
-                DbContext.UserReleases.Add(userRelease);
+                await DbContext.UserReleases.AddAsync(userRelease).ConfigureAwait(false);
             }
             else
             {
@@ -333,10 +334,10 @@ namespace Roadie.Api.Services
                 userRelease.LastUpdated = now;
             }
 
-            await DbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
-            var ratings = await DbContext.UserReleases.Where(x => x.ReleaseId == release.Id && x.Rating > 0).Select(x => x.Rating).ToListAsync();
-            if (ratings != null && ratings.Any())
+            var ratings = await DbContext.UserReleases.Where(x => x.ReleaseId == release.Id && x.Rating > 0).Select(x => x.Rating).ToListAsync().ConfigureAwait(false);
+            if (ratings != null && ratings.Count > 0)
             {
                 release.Rating = (short)ratings.Average(x => (decimal)x);
             }
@@ -345,13 +346,13 @@ namespace Roadie.Api.Services
                 release.Rating = 0;
             }
             release.LastUpdated = now;
-            await DbContext.SaveChangesAsync();
-            await UpdateReleaseRank(release.Id);
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
+            await UpdateReleaseRank(release.Id).ConfigureAwait(false);
             CacheManager.ClearRegion(user.CacheRegion);
             CacheManager.ClearRegion(release.CacheRegion);
             CacheManager.ClearRegion(release.Artist.CacheRegion);
 
-            release = await GetRelease(releaseId);
+            release = await GetRelease(releaseId).ConfigureAwait(false);
 
             return new OperationResult<short>
             {
@@ -364,18 +365,19 @@ namespace Roadie.Api.Services
         {
             var sw = Stopwatch.StartNew();
 
-            var track = DbContext.Tracks
+            var track = await DbContext.Tracks
                 .Include(x => x.ReleaseMedia)
                 .Include(x => x.ReleaseMedia.Release)
                 .Include(x => x.ReleaseMedia.Release.Artist)
                 .Include(x => x.TrackArtist)
-                .FirstOrDefault(x => x.RoadieId == trackId);
+                .FirstOrDefaultAsync(x => x.RoadieId == trackId)
+                .ConfigureAwait(false);
             if (track == null)
             {
                 return new OperationResult<short>(true, $"Invalid Track Id [{trackId}]");
             }
             var now = DateTime.UtcNow;
-            var userTrack = DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == user.Id);
+            var userTrack = await DbContext.UserTracks.FirstOrDefaultAsync(x => x.TrackId == track.Id && x.UserId == user.Id).ConfigureAwait(false);
             if (userTrack == null)
             {
                 userTrack = new data.UserTrack
@@ -384,7 +386,7 @@ namespace Roadie.Api.Services
                     UserId = user.Id,
                     TrackId = track.Id
                 };
-                DbContext.UserTracks.Add(userTrack);
+                await DbContext.UserTracks.AddAsync(userTrack).ConfigureAwait(false);
             }
             else
             {
@@ -392,10 +394,10 @@ namespace Roadie.Api.Services
                 userTrack.LastUpdated = now;
             }
 
-            await DbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
-            var ratings = await DbContext.UserTracks.Where(x => x.TrackId == track.Id && x.Rating > 0).Select(x => x.Rating).ToListAsync();
-            if (ratings != null && ratings.Any())
+            var ratings = await DbContext.UserTracks.Where(x => x.TrackId == track.Id && x.Rating > 0).Select(x => x.Rating).ToListAsync().ConfigureAwait(false);
+            if (ratings != null && ratings.Count > 0)
             {
                 track.Rating = (short)ratings.Average(x => (double)x);
             }
@@ -404,8 +406,8 @@ namespace Roadie.Api.Services
                 track.Rating = 0;
             }
             track.LastUpdated = now;
-            await DbContext.SaveChangesAsync();
-            await UpdateReleaseRank(track.ReleaseMedia.Release.Id);
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
+            await UpdateReleaseRank(track.ReleaseMedia.Release.Id).ConfigureAwait(false);
 
             CacheManager.ClearRegion(user.CacheRegion);
             CacheManager.ClearRegion(track.CacheRegion);
@@ -430,12 +432,13 @@ namespace Roadie.Api.Services
             var result = false;
             try
             {
-                var artist = DbContext.Artists
+                var artist = await DbContext.Artists
                     .Include(x => x.Genres)
                     .Include("Genres.Genre")
-                    .FirstOrDefault(x => x.RoadieId == artistId);
+                    .FirstOrDefaultAsync(x => x.RoadieId == artistId)
+                    .ConfigureAwait(false);
                 if (artist == null) return new OperationResult<bool>(true, $"Invalid Artist Id [{artistId}]");
-                var userArtist = DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == user.Id);
+                var userArtist = await DbContext.UserArtists.FirstOrDefaultAsync(x => x.ArtistId == artist.Id && x.UserId == user.Id).ConfigureAwait(false);
                 if (userArtist == null)
                 {
                     userArtist = new data.UserArtist
@@ -444,7 +447,7 @@ namespace Roadie.Api.Services
                         UserId = user.Id,
                         ArtistId = artist.Id
                     };
-                    DbContext.UserArtists.Add(userArtist);
+                    await DbContext.UserArtists.AddAsync(userArtist).ConfigureAwait(false);
                 }
                 else
                 {
@@ -452,7 +455,7 @@ namespace Roadie.Api.Services
                     userArtist.LastUpdated = DateTime.UtcNow;
                 }
 
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
                 CacheManager.ClearRegion(user.CacheRegion);
                 CacheManager.ClearRegion(artist.CacheRegion);
@@ -474,12 +477,13 @@ namespace Roadie.Api.Services
             var result = false;
             try
             {
-                var artist = DbContext.Artists
+                var artist = await DbContext.Artists
                     .Include(x => x.Genres)
                     .Include("Genres.Genre")
-                    .FirstOrDefault(x => x.RoadieId == artistId);
+                    .FirstOrDefaultAsync(x => x.RoadieId == artistId)
+                    .ConfigureAwait(false); 
                 if (artist == null) return new OperationResult<bool>(true, $"Invalid Artist Id [{artistId}]");
-                var userArtist = DbContext.UserArtists.FirstOrDefault(x => x.ArtistId == artist.Id && x.UserId == user.Id);
+                var userArtist = await DbContext.UserArtists.FirstOrDefaultAsync(x => x.ArtistId == artist.Id && x.UserId == user.Id).ConfigureAwait(false);
                 if (userArtist == null)
                 {
                     userArtist = new data.UserArtist
@@ -488,7 +492,7 @@ namespace Roadie.Api.Services
                         UserId = user.Id,
                         ArtistId = artist.Id
                     };
-                    DbContext.UserArtists.Add(userArtist);
+                    await DbContext.UserArtists.AddAsync(userArtist).ConfigureAwait(false);
                 }
                 else
                 {
@@ -496,7 +500,7 @@ namespace Roadie.Api.Services
                     userArtist.LastUpdated = DateTime.UtcNow;
                 }
 
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
                 CacheManager.ClearRegion(user.CacheRegion);
                 CacheManager.ClearRegion(artist.CacheRegion);
@@ -518,19 +522,20 @@ namespace Roadie.Api.Services
             var result = false;
             try
             {
-                var release = DbContext.Releases
+                var release = await DbContext.Releases
                     .Include(x => x.Artist)
                     .Include(x => x.Genres)
                     .Include("Genres.Genre")
                     .Include(x => x.Medias)
                     .Include("Medias.Tracks")
                     .Include("Medias.Tracks.TrackArtist")
-                    .FirstOrDefault(x => x.RoadieId == releaseId);
+                    .FirstOrDefaultAsync(x => x.RoadieId == releaseId)
+                    .ConfigureAwait(false);
                 if (release == null)
                 {
                     return new OperationResult<bool>(true, $"Invalid Release Id [{releaseId}]");
                 }
-                var userRelease = DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == user.Id);
+                var userRelease = await DbContext.UserReleases.FirstOrDefaultAsync(x => x.ReleaseId == release.Id && x.UserId == user.Id).ConfigureAwait(false);
                 if (userRelease == null)
                 {
                     userRelease = new data.UserRelease
@@ -539,7 +544,7 @@ namespace Roadie.Api.Services
                         UserId = user.Id,
                         ReleaseId = release.Id
                     };
-                    DbContext.UserReleases.Add(userRelease);
+                    await DbContext.UserReleases.AddAsync(userRelease).ConfigureAwait(false);
                 }
                 else
                 {
@@ -547,7 +552,7 @@ namespace Roadie.Api.Services
                     userRelease.LastUpdated = DateTime.UtcNow;
                 }
 
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
                 CacheManager.ClearRegion(user.CacheRegion);
                 CacheManager.ClearRegion(release.CacheRegion);
@@ -582,7 +587,7 @@ namespace Roadie.Api.Services
                 {
                     return new OperationResult<bool>(true, $"Invalid Release Id [{releaseId}]");
                 }
-                var userRelease = DbContext.UserReleases.FirstOrDefault(x => x.ReleaseId == release.Id && x.UserId == user.Id);
+                var userRelease = await DbContext.UserReleases.FirstOrDefaultAsync(x => x.ReleaseId == release.Id && x.UserId == user.Id).ConfigureAwait(false);
                 if (userRelease == null)
                 {
                     userRelease = new data.UserRelease
@@ -591,7 +596,7 @@ namespace Roadie.Api.Services
                         UserId = user.Id,
                         ReleaseId = release.Id
                     };
-                    DbContext.UserReleases.Add(userRelease);
+                    await DbContext.UserReleases.AddAsync(userRelease).ConfigureAwait(false);
                 }
                 else
                 {
@@ -599,7 +604,7 @@ namespace Roadie.Api.Services
                     userRelease.LastUpdated = DateTime.UtcNow;
                 }
 
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
                 CacheManager.ClearRegion(user.CacheRegion);
                 CacheManager.ClearRegion(release.CacheRegion);
@@ -622,17 +627,18 @@ namespace Roadie.Api.Services
             var result = false;
             try
             {
-                var track = DbContext.Tracks
+                var track = await DbContext.Tracks
                     .Include(x => x.ReleaseMedia)
                     .Include(x => x.ReleaseMedia.Release)
                     .Include(x => x.ReleaseMedia.Release.Artist)
                     .Include(x => x.TrackArtist)
-                    .FirstOrDefault(x => x.RoadieId == trackId);
+                    .FirstOrDefaultAsync(x => x.RoadieId == trackId)
+                    .ConfigureAwait(false);
                 if (track == null)
                 {
                     return new OperationResult<bool>(true, $"Invalid Track Id [{trackId}]");
                 }
-                var userTrack = DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == user.Id);
+                var userTrack = await DbContext.UserTracks.FirstOrDefaultAsync(x => x.TrackId == track.Id && x.UserId == user.Id).ConfigureAwait(false);
                 if (userTrack == null)
                 {
                     userTrack = new data.UserTrack
@@ -641,7 +647,7 @@ namespace Roadie.Api.Services
                         UserId = user.Id,
                         TrackId = track.Id
                     };
-                    DbContext.UserTracks.Add(userTrack);
+                    await DbContext.UserTracks.AddAsync(userTrack).ConfigureAwait(false);
                 }
                 else
                 {
@@ -649,7 +655,7 @@ namespace Roadie.Api.Services
                     userTrack.LastUpdated = DateTime.UtcNow;
                 }
 
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
                 CacheManager.ClearRegion(user.CacheRegion);
                 CacheManager.ClearRegion(track.CacheRegion);
@@ -673,17 +679,18 @@ namespace Roadie.Api.Services
             var result = false;
             try
             {
-                var track = DbContext.Tracks
+                var track = await DbContext.Tracks
                     .Include(x => x.ReleaseMedia)
                     .Include(x => x.ReleaseMedia.Release)
                     .Include(x => x.ReleaseMedia.Release.Artist)
                     .Include(x => x.TrackArtist)
-                    .FirstOrDefault(x => x.RoadieId == trackId);
+                    .FirstOrDefaultAsync(x => x.RoadieId == trackId)
+                    .ConfigureAwait(false);
                 if (track == null)
                 {
                     return new OperationResult<bool>(true, $"Invalid Track Id [{trackId}]");
                 }
-                var userTrack = DbContext.UserTracks.FirstOrDefault(x => x.TrackId == track.Id && x.UserId == user.Id);
+                var userTrack = await DbContext.UserTracks.FirstOrDefaultAsync(x => x.TrackId == track.Id && x.UserId == user.Id).ConfigureAwait(false);
                 if (userTrack == null)
                 {
                     userTrack = new data.UserTrack
@@ -692,7 +699,7 @@ namespace Roadie.Api.Services
                         UserId = user.Id,
                         TrackId = track.Id
                     };
-                    DbContext.UserTracks.Add(userTrack);
+                    await DbContext.UserTracks.AddAsync(userTrack).ConfigureAwait(false);
                 }
                 else
                 {
@@ -700,7 +707,7 @@ namespace Roadie.Api.Services
                     userTrack.LastUpdated = DateTime.UtcNow;
                 }
 
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
                 CacheManager.ClearRegion(user.CacheRegion);
                 CacheManager.ClearRegion(track.CacheRegion);
@@ -724,18 +731,18 @@ namespace Roadie.Api.Services
 
         protected async Task UpdateArtistCounts(int artistId, DateTime now)
         {
-            var artist = DbContext.Artists.FirstOrDefault(x => x.Id == artistId);
+            var artist = await DbContext.Artists.FirstOrDefaultAsync(x => x.Id == artistId).ConfigureAwait(false);
             if (artist != null)
             {
-                artist.ReleaseCount = await DbContext.Releases.Where(x => x.ArtistId == artistId).CountAsync();
+                artist.ReleaseCount = await DbContext.Releases.Where(x => x.ArtistId == artistId).CountAsync().ConfigureAwait(false);
                 artist.TrackCount = await (from r in DbContext.Releases
                                            join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                            join tr in DbContext.Tracks on rm.Id equals tr.ReleaseMediaId
                                            where tr.ArtistId == artistId || r.ArtistId == artistId
-                                           select tr).CountAsync();
+                                           select tr).CountAsync().ConfigureAwait(false);
 
                 artist.LastUpdated = now;
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
                 CacheManager.ClearRegion(artist.CacheRegion);
             }
         }
@@ -750,10 +757,10 @@ namespace Roadie.Api.Services
                                      join tr in DbContext.Tracks on rm.Id equals tr.ReleaseMediaId
                                      join plt in DbContext.PlaylistTracks on tr.Id equals plt.TrackId
                                      where r.ArtistId == artistId
-                                     select plt.PlayListId).ToListAsync();
+                                     select plt.PlayListId).ToListAsync().ConfigureAwait(false);
             foreach (var playlistId in playlistIds.Distinct())
             {
-                await UpdatePlaylistCounts(playlistId, now);
+                await UpdatePlaylistCounts(playlistId, now).ConfigureAwait(false);
             }
         }
 
@@ -768,10 +775,10 @@ namespace Roadie.Api.Services
                                      join tr in DbContext.Tracks on rm.Id equals tr.ReleaseMediaId
                                      join plt in DbContext.PlaylistTracks on tr.Id equals plt.TrackId
                                      where r.Id == releaseId
-                                     select plt.PlayListId).ToListAsync();
-            foreach(var playlistId in playlistIds.Distinct())
+                                     select plt.PlayListId).ToListAsync().ConfigureAwait(false);
+            foreach (var playlistId in playlistIds.Distinct())
             {
-                await UpdatePlaylistCounts(playlistId, now);
+                await UpdatePlaylistCounts(playlistId, now).ConfigureAwait(false);
             }
         }
 
@@ -786,11 +793,11 @@ namespace Roadie.Api.Services
                                         join tr in DbContext.Tracks on rm.Id equals tr.ReleaseMediaId
                                         where r.Id == releaseId
                                         where tr.ArtistId != null
-                                        select tr.ArtistId.Value).ToListAsync();
+                                        select tr.ArtistId.Value).ToListAsync().ConfigureAwait(false);
             trackArtistIds.Add(DbContext.Releases.FirstOrDefault(x => x.Id == releaseId).ArtistId);
             foreach (var artistId in trackArtistIds.Distinct())
             {
-                await UpdateArtistCounts(artistId, now);
+                await UpdateArtistCounts(artistId, now).ConfigureAwait(false);
             }
         }
 
@@ -802,15 +809,15 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var artist = DbContext.Artists.FirstOrDefault(x => x.Id == artistId);
+                var artist = await DbContext.Artists.FirstOrDefaultAsync(x => x.Id == artistId).ConfigureAwait(false);
                 if (artist != null)
                 {
                     if (updateReleaseRanks)
                     {
-                        var artistReleaseIds = await DbContext.Releases.Where(x => x.ArtistId == artistId).Select(x => x.Id).ToArrayAsync();
+                        var artistReleaseIds = await DbContext.Releases.Where(x => x.ArtistId == artistId).Select(x => x.Id).ToArrayAsync().ConfigureAwait(false);
                         foreach (var artistReleaseId in artistReleaseIds)
                         {
-                            await UpdateReleaseRank(artistReleaseId, false);
+                            await UpdateReleaseRank(artistReleaseId, false).ConfigureAwait(false);
                         }
                     }
 
@@ -818,20 +825,20 @@ namespace Roadie.Api.Services
                                                      join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                                      join ut in DbContext.UserTracks on t.Id equals ut.TrackId
                                                      where t.ArtistId == artist.Id
-                                                     select ut.Rating).Select(x => (decimal?)x).ToArrayAsync()).Average();
+                                                     select ut.Rating).Select(x => (decimal?)x).ToArrayAsync().ConfigureAwait(false)).Average();
 
                     var artistReleaseRatingRating = (await (from r in DbContext.Releases
                                                             join ur in DbContext.UserReleases on r.Id equals ur.ReleaseId
                                                             where r.ArtistId == artist.Id
-                                                            select ur.Rating).Select(x => (decimal?)x).ToArrayAsync()).Average();
+                                                            select ur.Rating).Select(x => (decimal?)x).ToArrayAsync().ConfigureAwait(false)).Average();
 
                     var artistReleaseRankSum = (await (from r in DbContext.Releases
                                                        where r.ArtistId == artist.Id
-                                                       select r.Rank).ToArrayAsync()).Sum(x => x) ?? 0;
+                                                       select r.Rank).ToArrayAsync().ConfigureAwait(false)).Sum(x => x) ?? 0;
 
                     artist.Rank = SafeParser.ToNumber<decimal>(artistTrackAverage + artistReleaseRatingRating) + artistReleaseRankSum + artist.Rating;
 
-                    await DbContext.SaveChangesAsync();
+                    await DbContext.SaveChangesAsync().ConfigureAwait(false);
                     CacheManager.ClearRegion(artist.CacheRegion);
                     Logger.LogTrace("UpdatedArtistRank For Artist `{0}`", artist);
                 }
@@ -858,74 +865,74 @@ namespace Roadie.Api.Services
                                                     join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                                     where rm.ReleaseId == release.Id
                                                     where t.ArtistId.HasValue
-                                                    select t.ArtistId.Value).ToArrayAsync();
+                                                    select t.ArtistId.Value).ToArrayAsync().ConfigureAwait(false);
                 artistsForRelease.AddRange(trackArtistsForRelease);
                 foreach (var artistId in artistsForRelease.Distinct())
                 {
-                    await UpdateArtistRank(artistId);
+                    await UpdateArtistRank(artistId).ConfigureAwait(false);
                 }
             }
         }
 
         protected async Task UpdateLabelCounts(int labelId, DateTime now)
         {
-            var label = DbContext.Labels.FirstOrDefault(x => x.Id == labelId);
+            var label = await DbContext.Labels.FirstOrDefaultAsync(x => x.Id == labelId).ConfigureAwait(false);
             if (label != null)
             {
-                label.ReleaseCount = await DbContext.ReleaseLabels.Where(x => x.LabelId == label.Id).CountAsync();
+                label.ReleaseCount = await DbContext.ReleaseLabels.Where(x => x.LabelId == label.Id).CountAsync().ConfigureAwait(false);
                 label.ArtistCount = await (from r in DbContext.Releases
                                            join rl in DbContext.ReleaseLabels on r.Id equals rl.ReleaseId
                                            join a in DbContext.Artists on r.ArtistId equals a.Id
                                            where rl.LabelId == label.Id
                                            group a by a.Id
-                                     into artists
-                                           select artists).Select(x => x.Key).CountAsync();
+                                           into artists
+                                           select artists).Select(x => x.Key).CountAsync().ConfigureAwait(false);
                 label.TrackCount = await (from r in DbContext.Releases
                                           join rl in DbContext.ReleaseLabels on r.Id equals rl.ReleaseId
                                           join rm in DbContext.ReleaseMedias on r.Id equals rm.ReleaseId
                                           join t in DbContext.Tracks on rm.Id equals t.ReleaseMediaId
                                           where rl.LabelId == label.Id
-                                          select t).CountAsync();
+                                          select t).CountAsync().ConfigureAwait(false);
                 label.LastUpdated = now;
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
                 CacheManager.ClearRegion(label.CacheRegion);
             }
         }
 
         protected async Task UpdatePlaylistCounts(int playlistId, DateTime now)
         {
-            var playlist = DbContext.Playlists.FirstOrDefault(x => x.Id == playlistId);
+            var playlist = await DbContext.Playlists.FirstOrDefaultAsync(x => x.Id == playlistId).ConfigureAwait(false);
             if (playlist != null)
             {
                 var playlistTracks = await DbContext.PlaylistTracks
                                                     .Include(x => x.Track)
                                                     .Include("Track.ReleaseMedia")
-                                                    .Where(x => x.PlayListId == playlist.Id).ToArrayAsync();
-                playlist.TrackCount = (short)playlistTracks.Count();
+                                                    .Where(x => x.PlayListId == playlist.Id).ToArrayAsync().ConfigureAwait(false);
+                playlist.TrackCount = (short)playlistTracks.Length;
                 playlist.Duration = playlistTracks.Sum(x => x.Track.Duration);
                 playlist.ReleaseCount = (short)playlistTracks.Select(x => x.Track.ReleaseMedia.ReleaseId).Distinct().Count();
                 playlist.LastUpdated = now;
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
                 CacheManager.ClearRegion(playlist.CacheRegion);
             }
         }
 
         protected async Task UpdateReleaseCounts(int releaseId, DateTime now)
         {
-            var release = DbContext.Releases.FirstOrDefault(x => x.Id == releaseId);
+            var release = await DbContext.Releases.FirstOrDefaultAsync(x => x.Id == releaseId).ConfigureAwait(false);
             if (release != null)
             {
                 release.PlayedCount = await (from t in DbContext.Tracks
                                              join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                              where rm.ReleaseId == releaseId
                                              where t.PlayedCount.HasValue
-                                             select t).SumAsync(x => x.PlayedCount);
+                                             select t).SumAsync(x => x.PlayedCount).ConfigureAwait(false);
                 release.Duration = await (from t in DbContext.Tracks
                                           join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
                                           where rm.ReleaseId == releaseId
-                                          select t).SumAsync(x => x.Duration);
+                                          select t).SumAsync(x => x.Duration).ConfigureAwait(false);
                 release.LastUpdated = now;
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
                 CacheManager.ClearRegion(release.CacheRegion);
             }
         }
@@ -939,7 +946,7 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var release = DbContext.Releases.FirstOrDefault(x => x.Id == releaseId);
+                var release = await DbContext.Releases.FirstOrDefaultAsync(x => x.Id == releaseId).ConfigureAwait(false);
                 if (release != null)
                 {
                     var releaseTrackAverage = (await (from ut in DbContext.UserTracks

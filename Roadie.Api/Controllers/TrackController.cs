@@ -23,8 +23,12 @@ namespace Roadie.Api.Controllers
     {
         private ITrackService TrackService { get; }
 
-        public TrackController(ITrackService trackService, ILogger<TrackController> logger, ICacheManager cacheManager,
-                    UserManager<User> userManager, IRoadieSettings roadieSettings)
+        public TrackController(
+            ITrackService trackService,
+            ILogger<TrackController> logger,
+            ICacheManager cacheManager,
+            UserManager<User> userManager,
+            IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -36,10 +40,18 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            Library.OperationResult<models.Track> result = await TrackService.ById(await CurrentUserModel().ConfigureAwait(false), id,
+            Library.OperationResult<models.Track> result = await TrackService.ByIdAsyncAsync(await CurrentUserModel().ConfigureAwait(false), id,
                 (inc ?? models.Track.DefaultIncludes).ToLower().Split(",")).ConfigureAwait(false);
-            if (result?.IsNotFoundResult != false) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            if (result?.IsNotFoundResult != false)
+            {
+                return NotFound();
+            }
+
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+
             return Ok(result);
         }
 
@@ -49,10 +61,14 @@ namespace Roadie.Api.Controllers
         {
             try
             {
-                var result = await TrackService.List(request,
+                var result = await TrackService.ListAsync(request,
                     doRandomize: doRandomize,
                     roadieUser: await CurrentUserModel().ConfigureAwait(false)).ConfigureAwait(false);
-                if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+                if (!result.IsSuccess)
+                {
+                    return StatusCode((int)HttpStatusCode.InternalServerError);
+                }
+
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -73,9 +89,17 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> Update(models.Track track)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-            var result = await TrackService.UpdateTrack(await CurrentUserModel().ConfigureAwait(false), track).ConfigureAwait(false);
-            if (result?.IsNotFoundResult != false) return NotFound();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await TrackService.UpdateTrackAsync(await CurrentUserModel().ConfigureAwait(false), track).ConfigureAwait(false);
+            if (result?.IsNotFoundResult != false)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)

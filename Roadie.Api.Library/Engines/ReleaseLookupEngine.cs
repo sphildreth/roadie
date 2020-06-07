@@ -455,7 +455,7 @@ namespace Roadie.Library.Engines
                     {
                         var sw2 = Stopwatch.StartNew();
                         Logger.LogTrace("ITunesReleaseSearchEngine Release Search for ArtistName [{0}], ReleaseTitle [{1}]", metaData.Artist, result.Title);
-                        var iTunesResult = await ITunesReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1);
+                        var iTunesResult = await ITunesReleaseSearchEngine.PerformReleaseSearch(metaData.Artist, result.Title, 1).ConfigureAwait(false);
                         if (iTunesResult.IsSuccess)
                         {
                             var i = iTunesResult.Data.First();

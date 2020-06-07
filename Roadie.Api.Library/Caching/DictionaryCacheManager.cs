@@ -113,7 +113,7 @@ namespace Roadie.Library.Caching
             var r = Get<TOut>(key, region);
             if (r == null)
             {
-                r = await getItem();
+                r = await getItem().ConfigureAwait(false);
                 Add(key, r, region);
                 Logger.LogTrace($"-+> Cache Miss for Key [{key}], Region [{region}]");
             }

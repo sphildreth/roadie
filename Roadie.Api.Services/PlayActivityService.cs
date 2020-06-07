@@ -19,7 +19,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
-using data = Roadie.Library.Data;
 
 namespace Roadie.Api.Services
 {
@@ -29,8 +28,15 @@ namespace Roadie.Api.Services
 
         protected IScrobbleHandler ScrobblerHandler { get; }
 
-        public PlayActivityService(IRoadieSettings configuration, IHttpEncoder httpEncoder,IHttpContext httpContext,
-                                   IRoadieDbContext dbContext, ICacheManager cacheManager,ILogger<PlayActivityService> logger,
+        public PlayActivityService(IRoadieSettings configuration, IRoadieDbContext dbContext, ICacheManager cacheManager,
+                                   ILogger logger, ScrobbleHandler scrobbleHandler)
+            : base(configuration, null, dbContext, cacheManager, logger, null)
+        {
+            ScrobblerHandler = scrobbleHandler;
+        }
+
+        public PlayActivityService(IRoadieSettings configuration, IHttpEncoder httpEncoder, IHttpContext httpContext,
+                                   IRoadieDbContext dbContext, ICacheManager cacheManager, ILogger<PlayActivityService> logger,
                                    IScrobbleHandler scrobbleHandler, IHubContext<PlayActivityHub> playActivityHub)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
@@ -38,14 +44,84 @@ namespace Roadie.Api.Services
             ScrobblerHandler = scrobbleHandler;
         }
 
-        public PlayActivityService(IRoadieSettings configuration, IRoadieDbContext dbContext, ICacheManager cacheManager, 
-                                   ILogger logger, ScrobbleHandler scrobbleHandler)
-            : base(configuration, null, dbContext, cacheManager, logger, null)
+        private async Task PublishPlayActivity(User roadieUser, ScrobbleInfo scrobble, bool isNowPlaying)
         {
-            ScrobblerHandler = scrobbleHandler;
+            // Only broadcast if the user is not public and played duration is more than half of duration
+            if (roadieUser?.IsPrivate != true &&
+                scrobble.ElapsedTimeOfTrackPlayed.TotalSeconds > scrobble.TrackDuration.TotalSeconds / 2)
+            {
+                var sw = Stopwatch.StartNew();
+                var track = await DbContext.Tracks
+                    .Include(x => x.ReleaseMedia)
+                    .Include(x => x.ReleaseMedia.Release)
+                    .Include(x => x.ReleaseMedia.Release.Artist)
+                    .Include(x => x.TrackArtist)
+                    .FirstOrDefaultAsync(x => x.RoadieId == scrobble.TrackId)
+                    .ConfigureAwait(false);
+                var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == roadieUser.UserId);
+                var userTrack =
+                    DbContext.UserTracks.FirstOrDefault(x => x.UserId == roadieUser.Id && x.TrackId == track.Id);
+                var pl = new PlayActivityList
+                {
+                    Artist = new DataToken
+                    {
+                        Text = track.ReleaseMedia.Release.Artist.Name,
+                        Value = track.ReleaseMedia.Release.Artist.RoadieId.ToString()
+                    },
+                    TrackArtist = track.TrackArtist == null
+                        ? null
+                        : new DataToken
+                        {
+                            Text = track.TrackArtist.Name,
+                            Value = track.TrackArtist.RoadieId.ToString()
+                        },
+                    Release = new DataToken
+                    {
+                        Text = track.ReleaseMedia.Release.Title,
+                        Value = track.ReleaseMedia.Release.RoadieId.ToString()
+                    },
+                    Track = TrackList.FromDataTrack(null,
+                        track,
+                        track.ReleaseMedia.MediaNumber,
+                        track.ReleaseMedia.Release,
+                        track.ReleaseMedia.Release.Artist,
+                        track.TrackArtist,
+                        HttpContext.BaseUrl,
+                        ImageHelper.MakeTrackThumbnailImage(Configuration, HttpContext, track.RoadieId),
+                        ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId),
+                        ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.Artist.RoadieId),
+                        ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, track.TrackArtist == null
+                            ? null
+                            : (Guid?)track.TrackArtist.RoadieId)),
+                    User = new DataToken
+                    {
+                        Text = roadieUser.UserName,
+                        Value = roadieUser.UserId.ToString()
+                    },
+                    ArtistThumbnail = ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, track.TrackArtist != null
+                        ? track.TrackArtist.RoadieId
+                        : track.ReleaseMedia.Release.Artist.RoadieId),
+                    PlayedDateDateTime = scrobble.TimePlayed,
+                    IsNowPlaying = isNowPlaying,
+                    Rating = track.Rating,
+                    ReleasePlayUrl = $"{HttpContext.BaseUrl}/play/release/{track.ReleaseMedia.Release.RoadieId}",
+                    ReleaseThumbnail = ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId),
+                    TrackPlayUrl = $"{HttpContext.BaseUrl}/play/track/{track.RoadieId}.mp3",
+                    UserRating = userTrack?.Rating,
+                    UserThumbnail = ImageHelper.MakeUserThumbnailImage(Configuration, HttpContext, roadieUser.UserId)
+                };
+                try
+                {
+                    await PlayActivityHub.Clients.All.SendAsync("SendActivityAsync", pl).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex);
+                }
+            }
         }
 
-        public Task<Library.Models.Pagination.PagedResult<PlayActivityList>> List(PagedRequest request,User roadieUser = null, DateTime? newerThan = null)
+        public async Task<Library.Models.Pagination.PagedResult<PlayActivityList>> ListAsync(PagedRequest request, User roadieUser = null, DateTime? newerThan = null)
         {
             try
             {
@@ -119,118 +195,46 @@ namespace Roadie.Api.Services
                     ? request.OrderValue(new Dictionary<string, string> { { "PlayedDateDateTime", "DESC" } })
                     : request.OrderValue();
                 var rowCount = result.Count();
-                var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
+                var rows = await result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArrayAsync().ConfigureAwait(false); 
                 sw.Stop();
-                return Task.FromResult(new Library.Models.Pagination.PagedResult<PlayActivityList>
+                return new Library.Models.Pagination.PagedResult<PlayActivityList>
                 {
                     TotalCount = rowCount,
                     CurrentPage = request.PageValue,
                     TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                     OperationTime = sw.ElapsedMilliseconds,
                     Rows = rows
-                });
+                };
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex);
             }
 
-            return Task.FromResult(new Library.Models.Pagination.PagedResult<PlayActivityList>());
+            return new Library.Models.Pagination.PagedResult<PlayActivityList>();
         }
 
-        public async Task<OperationResult<bool>> NowPlaying(User roadieUser, ScrobbleInfo scrobble)
+        public async Task<OperationResult<bool>> NowPlayingAsync(User roadieUser, ScrobbleInfo scrobble)
         {
-            var scrobbleResult = await ScrobblerHandler.NowPlaying(roadieUser, scrobble);
-            if (!scrobbleResult.IsSuccess) return scrobbleResult;
-            await PublishPlayActivity(roadieUser, scrobble, true);
-            return scrobbleResult;
-        }
-
-        public async Task<OperationResult<bool>> Scrobble(User roadieUser, ScrobbleInfo scrobble)
-        {
-            var scrobbleResult = await ScrobblerHandler.Scrobble(roadieUser, scrobble);
+            var scrobbleResult = await ScrobblerHandler.NowPlaying(roadieUser, scrobble).ConfigureAwait(false);
             if (!scrobbleResult.IsSuccess)
             {
                 return scrobbleResult;
             }
-            await PublishPlayActivity(roadieUser, scrobble, false);
+
+            await PublishPlayActivity(roadieUser, scrobble, true).ConfigureAwait(false);
             return scrobbleResult;
         }
 
-        private async Task PublishPlayActivity(User roadieUser, ScrobbleInfo scrobble, bool isNowPlaying)
+        public async Task<OperationResult<bool>> ScrobbleAsync(User roadieUser, ScrobbleInfo scrobble)
         {
-            // Only broadcast if the user is not public and played duration is more than half of duration
-            if (roadieUser?.IsPrivate != true && 
-                scrobble.ElapsedTimeOfTrackPlayed.TotalSeconds > scrobble.TrackDuration.TotalSeconds / 2)
+            var scrobbleResult = await ScrobblerHandler.Scrobble(roadieUser, scrobble).ConfigureAwait(false);
+            if (!scrobbleResult.IsSuccess)
             {
-                var sw = Stopwatch.StartNew();
-                var track = DbContext.Tracks
-                    .Include(x => x.ReleaseMedia)
-                    .Include(x => x.ReleaseMedia.Release)
-                    .Include(x => x.ReleaseMedia.Release.Artist)
-                    .Include(x => x.TrackArtist)
-                    .FirstOrDefault(x => x.RoadieId == scrobble.TrackId);
-                var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == roadieUser.UserId);
-                var userTrack =
-                    DbContext.UserTracks.FirstOrDefault(x => x.UserId == roadieUser.Id && x.TrackId == track.Id);
-                var pl = new PlayActivityList
-                {
-                    Artist = new DataToken
-                    {
-                        Text = track.ReleaseMedia.Release.Artist.Name,
-                        Value = track.ReleaseMedia.Release.Artist.RoadieId.ToString()
-                    },
-                    TrackArtist = track.TrackArtist == null
-                        ? null
-                        : new DataToken
-                        {
-                            Text = track.TrackArtist.Name,
-                            Value = track.TrackArtist.RoadieId.ToString()
-                        },
-                    Release = new DataToken
-                    {
-                        Text = track.ReleaseMedia.Release.Title,
-                        Value = track.ReleaseMedia.Release.RoadieId.ToString()
-                    },
-                    Track = TrackList.FromDataTrack(null,
-                        track,
-                        track.ReleaseMedia.MediaNumber,
-                        track.ReleaseMedia.Release,
-                        track.ReleaseMedia.Release.Artist,
-                        track.TrackArtist,
-                        HttpContext.BaseUrl,
-                        ImageHelper.MakeTrackThumbnailImage(Configuration, HttpContext, track.RoadieId),
-                        ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId),
-                        ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.Artist.RoadieId),
-                        ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, track.TrackArtist == null
-                            ? null
-                            : (Guid?)track.TrackArtist.RoadieId)),
-                    User = new DataToken
-                    {
-                        Text = roadieUser.UserName,
-                        Value = roadieUser.UserId.ToString()
-                    },
-                    ArtistThumbnail = ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, track.TrackArtist != null
-                        ? track.TrackArtist.RoadieId
-                        : track.ReleaseMedia.Release.Artist.RoadieId),
-                    PlayedDateDateTime = scrobble.TimePlayed,
-                    IsNowPlaying = isNowPlaying,
-                    Rating = track.Rating,
-                    ReleasePlayUrl = $"{HttpContext.BaseUrl}/play/release/{track.ReleaseMedia.Release.RoadieId}",
-                    ReleaseThumbnail = ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId),
-                    TrackPlayUrl = $"{HttpContext.BaseUrl}/play/track/{track.RoadieId}.mp3",
-                    UserRating = userTrack?.Rating,
-                    UserThumbnail = ImageHelper.MakeUserThumbnailImage(Configuration, HttpContext, roadieUser.UserId)
-                };
-                try
-                {
-                    await PlayActivityHub.Clients.All.SendAsync("SendActivity", pl);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(ex);
-                }
+                return scrobbleResult;
             }
+            await PublishPlayActivity(roadieUser, scrobble, false).ConfigureAwait(false);
+            return scrobbleResult;
         }
     }
 }

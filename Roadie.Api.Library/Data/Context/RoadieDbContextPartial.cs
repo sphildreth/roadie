@@ -6,15 +6,15 @@ namespace Roadie.Library.Data.Context
 {
     public abstract partial class RoadieDbContext : DbContext, IRoadieDbContext
     {
-        public abstract Task<SortedDictionary<int, int>> RandomArtistIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false);
+        public abstract Task<SortedDictionary<int, int>> RandomArtistIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false);
 
-        public abstract Task<SortedDictionary<int, int>> RandomGenreIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false);
+        public abstract Task<SortedDictionary<int, int>> RandomGenreIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false);
 
-        public abstract Task<SortedDictionary<int, int>> RandomLabelIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false);
+        public abstract Task<SortedDictionary<int, int>> RandomLabelIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false);
 
-        public abstract Task<SortedDictionary<int, int>> RandomReleaseIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false);
+        public abstract Task<SortedDictionary<int, int>> RandomReleaseIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false);
 
-        public abstract Task<SortedDictionary<int, int>> RandomTrackIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false);
+        public abstract Task<SortedDictionary<int, int>> RandomTrackIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false);
 
         public abstract Task<Artist> MostPlayedArtist(int userId);
 

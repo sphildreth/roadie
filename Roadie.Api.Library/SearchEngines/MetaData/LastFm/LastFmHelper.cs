@@ -86,7 +86,7 @@ namespace Roadie.Library.MetaData.LastFm
             };
             var request = new RestRequest(Method.GET);
             var client = new RestClient(BuildUrl("auth.getSession", parameters));
-            var responseXML = await client.ExecuteAsync<string>(request);
+            var responseXML = await client.ExecuteAsync<string>(request).ConfigureAwait(false);
             var doc = new XmlDocument();
             doc.LoadXml(responseXML.Content);
             var sessionKey = doc.GetElementsByTagName("key")[0].InnerText;
@@ -139,7 +139,7 @@ namespace Roadie.Library.MetaData.LastFm
                     var xp = GetResponseAsXml(request);
                     Logger.LogTrace($"LastFmHelper: RoadieUser `{roadieUser}` NowPlaying `{scrobble}` LastFmResult [{xp.InnerXml}]");
                     result = true;
-                });
+                }).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -153,7 +153,7 @@ namespace Roadie.Library.MetaData.LastFm
             };
         }
 
-        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
+        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearchAsync(string query, int resultsCount)
         {
             try
             {
@@ -163,7 +163,7 @@ namespace Roadie.Library.MetaData.LastFm
                     Logger.LogTrace("LastFmHelper:PerformArtistSearch:{0}", query);
                     var auth = new LastAuth(ApiKey.Key, ApiKey.KeySecret);
                     var albumApi = new ArtistApi(auth);
-                    var response = await albumApi.GetInfoAsync(query);
+                    var response = await albumApi.GetInfoAsync(query).ConfigureAwait(false);
                     if (!response.Success)
                     {
                         return null;
@@ -183,7 +183,7 @@ namespace Roadie.Library.MetaData.LastFm
                         result.Urls = new[] { lastFmArtist.Url.ToString() };
                     }
                     return result;
-                }, "uri:metadata");
+                }, "uri:metadata").ConfigureAwait(false);
                 return new OperationResult<IEnumerable<ArtistSearchResult>>
                 {
                     IsSuccess = data != null,
@@ -205,7 +205,7 @@ namespace Roadie.Library.MetaData.LastFm
             {
                 var request = new RestRequest(Method.GET);
                 var client = new RestClient(string.Format("http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={0}&artist={1}&album={2}&format=xml", ApiKey.Key, artistName, query));
-                var responseData = await client.ExecuteAsync<lfm>(request);
+                var responseData = await client.ExecuteAsync<lfm>(request).ConfigureAwait(false);
 
                 ReleaseSearchResult result = null;
 
@@ -246,7 +246,7 @@ namespace Roadie.Library.MetaData.LastFm
                     }
                 }
                 return result;
-            }, "uri:metadata");
+            }, "uri:metadata").ConfigureAwait(false);
             return new OperationResult<IEnumerable<ReleaseSearchResult>>
             {
                 IsSuccess = data != null,
@@ -269,7 +269,7 @@ namespace Roadie.Library.MetaData.LastFm
                 // If less than half of duration then create a NowPlaying
                 if (scrobble.ElapsedTimeOfTrackPlayed.TotalMinutes < 4 ||
                     scrobble.ElapsedTimeOfTrackPlayed.TotalSeconds < scrobble.TrackDuration.TotalSeconds / 2)
-                    return await NowPlaying(roadieUser, scrobble);
+                    return await NowPlaying(roadieUser, scrobble).ConfigureAwait(false);
 
                 var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == roadieUser.UserId);
 
@@ -319,7 +319,7 @@ namespace Roadie.Library.MetaData.LastFm
             };
         }
 
-        public async Task<IEnumerable<AudioMetaData>> TracksForRelease(string artist, string Release)
+        public async Task<IEnumerable<AudioMetaData>> TracksForReleaseAsync(string artist, string Release)
         {
             if (string.IsNullOrEmpty(artist) || string.IsNullOrEmpty(Release)) return null;
             var result = new List<AudioMetaData>();
@@ -333,7 +333,7 @@ namespace Roadie.Library.MetaData.LastFm
                     {
                         var auth = new LastAuth(ApiKey.Key, ApiKey.KeySecret);
                         var albumApi = new AlbumApi(auth); // this is an unauthenticated call to the API
-                        var response = await albumApi.GetInfoAsync(artist, Release);
+                        var response = await albumApi.GetInfoAsync(artist, Release).ConfigureAwait(false);
                         releaseInfo = response.Content;
                         if (releaseInfo != null) CacheManager.Add(responseCacheKey, releaseInfo);
                     }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data.Context;
@@ -10,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using data = Roadie.Library.Data;
 
 namespace Roadie.Library.Scrobble
 {
@@ -30,6 +30,18 @@ namespace Roadie.Library.Scrobble
         private ILogger Logger { get; }
 
         private IEnumerable<IScrobblerIntegration> Scrobblers { get; }
+
+        public ScrobbleHandler(IRoadieSettings configuration, ILogger logger, IRoadieDbContext dbContext, ICacheManager cacheManager, RoadieScrobbler roadieScrobbler)
+        {
+            Logger = logger;
+            Configuration = configuration;
+            DbContext = dbContext;
+            var scrobblers = new List<IScrobblerIntegration>
+            {
+                roadieScrobbler
+            };
+            Scrobblers = scrobblers;
+        }
 
         public ScrobbleHandler(IRoadieSettings configuration, ILogger<ScrobbleHandler> logger, IRoadieDbContext dbContext,
                                ICacheManager cacheManager, IHttpEncoder httpEncoder, IHttpContext httpContext,
@@ -51,16 +63,28 @@ namespace Roadie.Library.Scrobble
             Scrobblers = scrobblers;
         }
 
-        public ScrobbleHandler(IRoadieSettings configuration, ILogger logger, IRoadieDbContext dbContext, ICacheManager cacheManager, RoadieScrobbler roadieScrobbler)
+        private async Task<ScrobbleInfo> GetScrobbleInfoDetailsAsync(ScrobbleInfo scrobble)
         {
-            Logger = logger;
-            Configuration = configuration;
-            DbContext = dbContext;
-            var scrobblers = new List<IScrobblerIntegration>
-            {
-                roadieScrobbler
-            };
-            Scrobblers = scrobblers;
+            var scrobbleInfo = await (from t in DbContext.Tracks
+                                      join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                      join r in DbContext.Releases on rm.ReleaseId equals r.Id
+                                      join a in DbContext.Artists on r.ArtistId equals a.Id
+                                      where t.RoadieId == scrobble.TrackId
+                                      select new
+                                      {
+                                          ArtistName = a.Name,
+                                          ReleaseTitle = r.Title,
+                                          TrackTitle = t.Title,
+                                          t.TrackNumber,
+                                          t.Duration
+                                      }).FirstOrDefaultAsync().ConfigureAwait(false);
+
+            scrobble.ArtistName = scrobbleInfo.ArtistName;
+            scrobble.ReleaseTitle = scrobbleInfo.ReleaseTitle;
+            scrobble.TrackTitle = scrobbleInfo.TrackTitle;
+            scrobble.TrackNumber = scrobbleInfo.TrackNumber.ToString();
+            scrobble.TrackDuration = TimeSpan.FromMilliseconds(scrobbleInfo.Duration ?? 0);
+            return scrobble;
         }
 
         /// <summary>
@@ -68,8 +92,11 @@ namespace Roadie.Library.Scrobble
         /// </summary>
         public async Task<OperationResult<bool>> NowPlaying(User user, ScrobbleInfo scrobble)
         {
-            var s = GetScrobbleInfoDetails(scrobble);
-            foreach (var scrobbler in Scrobblers) await Task.Run(async () => await scrobbler.NowPlaying(user, s));
+            var s = await GetScrobbleInfoDetailsAsync(scrobble).ConfigureAwait(false);
+            foreach (var scrobbler in Scrobblers)
+            {
+                await scrobbler.NowPlaying(user, s).ConfigureAwait(false);
+            }
             return new OperationResult<bool>
             {
                 Data = true,
@@ -82,40 +109,16 @@ namespace Roadie.Library.Scrobble
         /// </summary>
         public async Task<OperationResult<bool>> Scrobble(User user, ScrobbleInfo scrobble)
         {
-            var s = GetScrobbleInfoDetails(scrobble);
+            var s = await GetScrobbleInfoDetailsAsync(scrobble).ConfigureAwait(false);
             foreach (var scrobbler in Scrobblers)
             {
-                await Task.Run(async () => await scrobbler.Scrobble(user, s));
+                await scrobbler.Scrobble(user, s).ConfigureAwait(false);
             }
             return new OperationResult<bool>
             {
                 Data = true,
                 IsSuccess = true
             };
-        }
-
-        private ScrobbleInfo GetScrobbleInfoDetails(ScrobbleInfo scrobble)
-        {
-            var scrobbleInfo = (from t in DbContext.Tracks
-                                join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                join r in DbContext.Releases on rm.ReleaseId equals r.Id
-                                join a in DbContext.Artists on r.ArtistId equals a.Id
-                                where t.RoadieId == scrobble.TrackId
-                                select new
-                                {
-                                    ArtistName = a.Name,
-                                    ReleaseTitle = r.Title,
-                                    TrackTitle = t.Title,
-                                    t.TrackNumber,
-                                    t.Duration
-                                }).FirstOrDefault();
-
-            scrobble.ArtistName = scrobbleInfo.ArtistName;
-            scrobble.ReleaseTitle = scrobbleInfo.ReleaseTitle;
-            scrobble.TrackTitle = scrobbleInfo.TrackTitle;
-            scrobble.TrackNumber = scrobbleInfo.TrackNumber.ToString();
-            scrobble.TrackDuration = TimeSpan.FromMilliseconds(scrobbleInfo.Duration ?? 0);
-            return scrobble;
         }
     }
 }

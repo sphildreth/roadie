@@ -10,6 +10,6 @@ namespace Roadie.Library.MetaData.LastFm
     {
         Task<OperationResult<string>> GetSessionKeyForUserToken(string token);
 
-        Task<IEnumerable<AudioMetaData>> TracksForRelease(string artist, string Release);
+        Task<IEnumerable<AudioMetaData>> TracksForReleaseAsync(string artist, string Release);
     }
 }

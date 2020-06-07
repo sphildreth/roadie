@@ -16,21 +16,21 @@ namespace Roadie.Library.Data.Context.Implementation
         {
         }
 
-        public override async Task<Artist> LastPlayedArtist(int userId)
+        public override Task<Artist> LastPlayedArtist(int userId)
         {
-            return await (from ut in UserTracks
-                          join t in Tracks on ut.TrackId equals t.Id
-                          join rm in ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                          join r in Releases on rm.ReleaseId equals r.Id
-                          join a in Artists on r.ArtistId equals a.Id
-                          where ut.UserId == userId
-                          orderby ut.LastPlayed descending
-                          select a).FirstOrDefaultAsync();
+            return (from ut in UserTracks
+                    join t in Tracks on ut.TrackId equals t.Id
+                    join rm in ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                    join r in Releases on rm.ReleaseId equals r.Id
+                    join a in Artists on r.ArtistId equals a.Id
+                    where ut.UserId == userId
+                    orderby ut.LastPlayed descending
+                    select a).FirstOrDefaultAsync();
         }
 
-        public override async Task<Release> LastPlayedRelease(int userId)
+        public override Task<Release> LastPlayedRelease(int userId)
         {
-            return await (from ut in UserTracks
+            return (from ut in UserTracks
                           join t in Tracks on ut.TrackId equals t.Id
                           join rm in ReleaseMedias on t.ReleaseMediaId equals rm.Id
                           join r in Releases on rm.ReleaseId equals r.Id
@@ -39,9 +39,9 @@ namespace Roadie.Library.Data.Context.Implementation
                           select r).FirstOrDefaultAsync();
         }
 
-        public override async Task<Track> LastPlayedTrack(int userId)
+        public override Task<Track> LastPlayedTrack(int userId)
         {
-            return await (from ut in UserTracks
+            return (from ut in UserTracks
                           join t in Tracks on ut.TrackId equals t.Id
                           where ut.UserId == userId
                           orderby ut.LastPlayed descending
@@ -50,7 +50,7 @@ namespace Roadie.Library.Data.Context.Implementation
 
         public override async Task<Artist> MostPlayedArtist(int userId)
         {
-            var mostPlayedTrack = await MostPlayedTrack(userId);
+            var mostPlayedTrack = await MostPlayedTrack(userId).ConfigureAwait(false);
             if (mostPlayedTrack != null)
             {
                 return await (from t in Tracks
@@ -58,35 +58,35 @@ namespace Roadie.Library.Data.Context.Implementation
                               join r in Releases on rm.ReleaseId equals r.Id
                               join a in Artists on r.ArtistId equals a.Id
                               where t.Id == mostPlayedTrack.Id
-                              select a).FirstOrDefaultAsync();
+                              select a).FirstOrDefaultAsync().ConfigureAwait(false);
             }
             return null;
         }
 
         public override async Task<Release> MostPlayedRelease(int userId)
         {
-            var mostPlayedTrack = await MostPlayedTrack(userId);
+            var mostPlayedTrack = await MostPlayedTrack(userId).ConfigureAwait(false);
             if (mostPlayedTrack != null)
             {
                 return await (from t in Tracks
                               join rm in ReleaseMedias on t.ReleaseMediaId equals rm.Id
                               join r in Releases on rm.ReleaseId equals r.Id
                               where t.Id == mostPlayedTrack.Id
-                              select r).FirstOrDefaultAsync();
+                              select r).FirstOrDefaultAsync().ConfigureAwait(false);
             }
             return null;
         }
 
-        public override async Task<Track> MostPlayedTrack(int userId)
+        public override Task<Track> MostPlayedTrack(int userId)
         {
-            return await (from ut in UserTracks
+            return (from ut in UserTracks
                           join t in Tracks on ut.TrackId equals t.Id
                           where ut.UserId == userId
                           orderby ut.PlayedCount descending
                           select t).FirstOrDefaultAsync();
         }
 
-        public override async Task<SortedDictionary<int, int>> RandomArtistIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
+        public override async Task<SortedDictionary<int, int>> RandomArtistIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
         {
             List<Artist> randomArtists = null;
             if (doOnlyFavorites)
@@ -98,7 +98,7 @@ namespace Roadie.Library.Data.Context.Implementation
                                        select a
                                        ).OrderBy(x => Guid.NewGuid())
                                         .Take(randomLimit)
-                                        .ToListAsync();
+                                        .ToListAsync().ConfigureAwait(false);
             }
             else if (doOnlyRated)
             {
@@ -109,7 +109,7 @@ namespace Roadie.Library.Data.Context.Implementation
                                        select a
                                        ).OrderBy(x => Guid.NewGuid())
                                         .Take(randomLimit)
-                                        .ToListAsync();
+                                        .ToListAsync().ConfigureAwait(false);
             }
             else
             {
@@ -120,29 +120,29 @@ namespace Roadie.Library.Data.Context.Implementation
                                        select a)
                                        .OrderBy(x => Guid.NewGuid())
                                        .Take(randomLimit)
-                                       .ToListAsync();
+                                       .ToListAsync().ConfigureAwait(false);
             }
             var dict = randomArtists.Select((x, i) => new { key = i, value = x.Id }).Take(randomLimit).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);
         }
 
-        public override async Task<SortedDictionary<int, int>> RandomGenreIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
+        public override async Task<SortedDictionary<int, int>> RandomGenreIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
         {
             var randomGenres = await Genres.OrderBy(x => Guid.NewGuid())
                                            .Take(randomLimit)
-                                           .ToListAsync();
+                                           .ToListAsync().ConfigureAwait(false);
             var dict = randomGenres.Select((x, i) => new { key = i, value = x.Id }).Take(randomLimit).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);
         }
 
-        public override async Task<SortedDictionary<int, int>> RandomLabelIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
+        public override async Task<SortedDictionary<int, int>> RandomLabelIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
         {
-            var randomLabels = await Labels.OrderBy(x => Guid.NewGuid()).Take(randomLimit).ToListAsync();
+            var randomLabels = await Labels.OrderBy(x => Guid.NewGuid()).Take(randomLimit).ToListAsync().ConfigureAwait(false);
             var dict = randomLabels.Select((x, i) => new { key = i, value = x.Id }).Take(randomLimit).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);
         }
 
-        public override async Task<SortedDictionary<int, int>> RandomReleaseIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
+        public override async Task<SortedDictionary<int, int>> RandomReleaseIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
         {
             List<Release> randomReleases = null;
             if (doOnlyFavorites)
@@ -154,7 +154,7 @@ namespace Roadie.Library.Data.Context.Implementation
                                         select r
                                        ).OrderBy(x => Guid.NewGuid())
                                         .Take(randomLimit)
-                                        .ToListAsync();
+                                        .ToListAsync().ConfigureAwait(false);
             }
             else if (doOnlyRated)
             {
@@ -165,7 +165,7 @@ namespace Roadie.Library.Data.Context.Implementation
                                         select r
                                        ).OrderBy(x => Guid.NewGuid())
                                         .Take(randomLimit)
-                                        .ToListAsync();
+                                        .ToListAsync().ConfigureAwait(false);
             }
             else
             {
@@ -176,13 +176,13 @@ namespace Roadie.Library.Data.Context.Implementation
                                         select r)
                                        .OrderBy(x => Guid.NewGuid())
                                        .Take(randomLimit)
-                                       .ToListAsync();
+                                       .ToListAsync().ConfigureAwait(false);
             }
             var dict = randomReleases.Select((x, i) => new { key = i, value = x.Id }).Take(randomLimit).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);
         }
 
-        public override async Task<SortedDictionary<int, int>> RandomTrackIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
+        public override async Task<SortedDictionary<int, int>> RandomTrackIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
         {
             List<Track> randomTracks = null;
             if (doOnlyFavorites)
@@ -194,7 +194,7 @@ namespace Roadie.Library.Data.Context.Implementation
                                       select t
                                        ).OrderBy(x => Guid.NewGuid())
                                         .Take(randomLimit)
-                                        .ToListAsync();
+                                        .ToListAsync().ConfigureAwait(false);
             }
             else if (doOnlyRated)
             {
@@ -205,7 +205,7 @@ namespace Roadie.Library.Data.Context.Implementation
                                       select t
                                        ).OrderBy(x => Guid.NewGuid())
                                         .Take(randomLimit)
-                                        .ToListAsync();
+                                        .ToListAsync().ConfigureAwait(false);
             }
             else
             {
@@ -216,7 +216,7 @@ namespace Roadie.Library.Data.Context.Implementation
                                       select t)
                                      .OrderBy(x => Guid.NewGuid())
                                      .Take(randomLimit)
-                                     .ToListAsync();
+                                     .ToListAsync().ConfigureAwait(false);
             }
             var dict = randomTracks.Select((x, i) => new { key = i, value = x.Id }).Take(randomLimit).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);

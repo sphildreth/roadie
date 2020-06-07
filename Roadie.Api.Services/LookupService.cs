@@ -34,7 +34,7 @@ namespace Roadie.Api.Services
         {
         }
 
-        public Task<OperationResult<IEnumerable<DataToken>>> ArtistTypes()
+        public Task<OperationResult<IEnumerable<DataToken>>> ArtistTypesAsync()
         {
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
@@ -45,7 +45,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        public Task<OperationResult<IEnumerable<DataToken>>> BandStatus()
+        public Task<OperationResult<IEnumerable<DataToken>>> BandStatusAsync()
         {
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
@@ -56,7 +56,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        public Task<OperationResult<IEnumerable<DataToken>>> BookmarkTypes()
+        public Task<OperationResult<IEnumerable<DataToken>>> BookmarkTypesAsync()
         {
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
@@ -67,7 +67,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        public Task<OperationResult<IEnumerable<DataToken>>> CollectionTypes()
+        public Task<OperationResult<IEnumerable<DataToken>>> CollectionTypesAsync()
         {
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
@@ -78,7 +78,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        public Task<OperationResult<IEnumerable<DataToken>>> LibraryStatus()
+        public Task<OperationResult<IEnumerable<DataToken>>> LibraryStatusAsync()
         {
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
@@ -89,7 +89,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        public Task<OperationResult<IEnumerable<DataToken>>> QueMessageTypes()
+        public Task<OperationResult<IEnumerable<DataToken>>> QueMessageTypesAsync()
         {
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
@@ -100,7 +100,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        public Task<OperationResult<IEnumerable<DataToken>>> ReleaseTypes()
+        public Task<OperationResult<IEnumerable<DataToken>>> ReleaseTypesAsync()
         {
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
@@ -111,7 +111,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        public Task<OperationResult<IEnumerable<DataToken>>> RequestStatus()
+        public Task<OperationResult<IEnumerable<DataToken>>> RequestStatusAsync()
         {
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>
@@ -122,17 +122,17 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<IEnumerable<DataToken>>> CreditCategories()
+        public async Task<OperationResult<IEnumerable<DataToken>>> CreditCategoriesAsync()
         {
             var sw = Stopwatch.StartNew();
             var data = await CacheManager.GetAsync(CreditCategoriesCacheKey, async () =>
             {
-                return (await DbContext.CreditCategory.ToListAsync()).Select(x => new DataToken
+                return (await DbContext.CreditCategory.ToListAsync().ConfigureAwait(false)).Select(x => new DataToken
                 {
                     Value = x.RoadieId.ToString(),
                     Text = x.Name
                 }).ToArray();
-            }, CacheManagerBase.SystemCacheRegionUrn);
+            }, CacheManagerBase.SystemCacheRegionUrn).ConfigureAwait(false);
             return new OperationResult<IEnumerable<DataToken>>
             {
                 Data = data,
@@ -141,7 +141,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<OperationResult<IEnumerable<DataToken>>> Status()
+        public Task<OperationResult<IEnumerable<DataToken>>> StatusAsync()
         {
             var sw = Stopwatch.StartNew();
             return Task.FromResult(new OperationResult<IEnumerable<DataToken>>

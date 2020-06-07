@@ -50,7 +50,7 @@ namespace Roadie.Library.SearchEngines.Imaging
 
         public abstract RestRequest BuildRequest(string query, int resultsCount);
 
-        public virtual Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount)
+        public virtual Task<IEnumerable<ImageSearchResult>> PerformImageSearchAsync(string query, int resultsCount)
         {
             throw new NotImplementedException();
         }

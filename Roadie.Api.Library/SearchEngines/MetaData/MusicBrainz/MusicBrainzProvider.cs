@@ -23,14 +23,14 @@ namespace Roadie.Library.MetaData.MusicBrainz
             Repository = new MusicBrainzRepository(configuration, logger);
         }
 
-        public async Task<IEnumerable<AudioMetaData>> MusicBrainzReleaseTracks(string artistName, string releaseTitle)
+        public async Task<IEnumerable<AudioMetaData>> MusicBrainzReleaseTracksAsync(string artistName, string releaseTitle)
         {
             try
             {
                 if (string.IsNullOrEmpty(artistName) && string.IsNullOrEmpty(releaseTitle)) return null;
                 // Find the Artist
                 var artistCacheKey = string.Format("uri:musicbrainz:artist:{0}", artistName);
-                var artistSearch = await PerformArtistSearch(artistName, 1);
+                var artistSearch = await PerformArtistSearchAsync(artistName, 1).ConfigureAwait(false);
                 if (!artistSearch.IsSuccess) return null;
                 var artist = artistSearch.Data.First();
 
@@ -56,8 +56,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
                     }
 
                     // Now get The Release Details
-                    release = await MusicBrainzRequestHelper.GetAsync<Release>(
-                        MusicBrainzRequestHelper.CreateLookupUrl("release", ReleaseResult.MusicBrainzId, "recordings"));
+                    release = await MusicBrainzRequestHelper.GetAsync<Release>(MusicBrainzRequestHelper.CreateLookupUrl("release", ReleaseResult.MusicBrainzId, "recordings")).ConfigureAwait(false);
                     if (release == null) return null;
                     CacheManager.Add(ReleaseCacheKey, release);
                 }
@@ -113,12 +112,12 @@ namespace Roadie.Library.MetaData.MusicBrainz
             return null;
         }
 
-        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
+        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearchAsync(string query, int resultsCount)
         {
             ArtistSearchResult result = null;
 
             Logger.LogTrace("MusicBrainzProvider:PerformArtistSearch:{0}", query);
-            var a = await Repository.ArtistByName(query, resultsCount);
+            var a = await Repository.ArtistByNameAsync(query, resultsCount).ConfigureAwait(false);
             if (a != null)
             {
                 var imageUrls = a.relations?.Where(x => x.type.Equals("image", StringComparison.OrdinalIgnoreCase)).Select(x => x.url.resource).Distinct().ToArray();
@@ -174,7 +173,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
             ReleaseSearchResult result = null;
             try
             {
-                var releaseInfosForArtist = await ReleasesForArtist(artistName);
+                var releaseInfosForArtist = await ReleasesForArtistAsync(artistName).ConfigureAwait(false);
                 if (releaseInfosForArtist != null)
                 {
                     var r = releaseInfosForArtist.FirstOrDefault(x => x.title.Equals(query, StringComparison.OrdinalIgnoreCase));
@@ -208,7 +207,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
                             ReleaseGenres = r.releasegroup?.genres?.Select(x => x.name).Distinct().ToArray(),
                             ReleaseType = r.releasegroup?.primarytype
                         };
-                        var coverUrls = await CoverArtForMusicBrainzReleaseById(r.id);
+                        var coverUrls = await CoverArtForMusicBrainzReleaseByIdAsync(r.id).ConfigureAwait(false);
                         if (coverUrls != null)
                         {
                             var frontCover = coverUrls.images.FirstOrDefault(i => i.front);
@@ -296,16 +295,13 @@ namespace Roadie.Library.MetaData.MusicBrainz
             };
         }
 
-        private async Task<CoverArtArchivesResult> CoverArtForMusicBrainzReleaseById(string musicBrainzId)
-        {
-            return await MusicBrainzRequestHelper.GetAsync<CoverArtArchivesResult>(MusicBrainzRequestHelper.CreateCoverArtReleaseUrl(musicBrainzId));
-        }
+        private Task<CoverArtArchivesResult> CoverArtForMusicBrainzReleaseByIdAsync(string musicBrainzId) => MusicBrainzRequestHelper.GetAsync<CoverArtArchivesResult>(MusicBrainzRequestHelper.CreateCoverArtReleaseUrl(musicBrainzId));
 
-        private async Task<IEnumerable<Release>> ReleasesForArtist(string artist, string artistMusicBrainzId = null)
+        private async Task<IEnumerable<Release>> ReleasesForArtistAsync(string artist, string artistMusicBrainzId = null)
         {
             if (string.IsNullOrEmpty(artistMusicBrainzId))
             {
-                var artistSearch = await PerformArtistSearch(artist, 1);
+                var artistSearch = await PerformArtistSearchAsync(artist, 1).ConfigureAwait(false);
                 if (artistSearch == null || !artistSearch.IsSuccess)
                 {
                     return null;
@@ -317,7 +313,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
                 }
                 artistMusicBrainzId = mbArtist.MusicBrainzId;
             }
-            return await Repository.ReleasesForArtist(artistMusicBrainzId);
+            return await Repository.ReleasesForArtist(artistMusicBrainzId).ConfigureAwait(false);
         }
     }
 }

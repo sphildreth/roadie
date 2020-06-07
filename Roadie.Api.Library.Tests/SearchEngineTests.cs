@@ -6,10 +6,8 @@ using Roadie.Library.MetaData.MusicBrainz;
 using Roadie.Library.Processors;
 using Roadie.Library.SearchEngines.MetaData.Discogs;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -50,7 +48,7 @@ namespace Roadie.Library.Tests
         [Fact]
         public async Task DiscogsHelperReleaseSearch()
         {
-            if(!Configuration.Integrations.DiscogsProviderEnabled)
+            if (!Configuration.Integrations.DiscogsProviderEnabled)
             {
                 return;
             }
@@ -62,7 +60,7 @@ namespace Roadie.Library.Tests
             var artistName = "With The Dead";
             var title = "Love From With The Dead";
 
-            var result = await engine.PerformReleaseSearch(artistName, title, 1);
+            var result = await engine.PerformReleaseSearch(artistName, title, 1).ConfigureAwait(false);
             Assert.NotNull(result);
             Assert.NotEmpty(result.Data);
 
@@ -84,10 +82,9 @@ namespace Roadie.Library.Tests
 
             var sw = Stopwatch.StartNew();
 
-            var result = await mb.PerformArtistSearch(artistName, 1);
+            var result = await mb.PerformArtistSearchAsync(artistName, 1).ConfigureAwait(false);
 
             sw.Stop();
-            var elapsedTime = sw.ElapsedMilliseconds;
 
             Assert.NotNull(result);
             Assert.NotNull(result.Data);
@@ -113,10 +110,9 @@ namespace Roadie.Library.Tests
             var title = "Piano Man";
             var sw = Stopwatch.StartNew();
 
-            var result = await mb.PerformReleaseSearch(artistName, title, 1);
+            var result = await mb.PerformReleaseSearch(artistName, title, 1).ConfigureAwait(false);
 
             sw.Stop();
-            var elapsedTime = sw.ElapsedMilliseconds;
 
             Assert.NotNull(result);
             Assert.NotNull(result.Data);

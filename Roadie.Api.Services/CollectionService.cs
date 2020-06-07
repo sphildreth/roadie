@@ -43,307 +43,7 @@ namespace Roadie.Api.Services
             BookmarkService = bookmarkService;
         }
 
-        /// <summary>
-        ///     Get blank Collection to add
-        /// </summary>
-        /// <param name="roadieUser"></param>
-        /// <returns></returns>
-        public OperationResult<Collection> Add(User roadieUser)
-        {
-            var sw = Stopwatch.StartNew();
-            sw.Start();
-
-            var id = Guid.Empty;
-            var collection = new data.Collection
-            {
-                Status = Statuses.New
-            };
-            var result = collection.Adapt<Collection>();
-            result.Id = id;
-            result.Thumbnail = ImageHelper.MakeNewImage(HttpContext,"collection");
-            result.MediumThumbnail = ImageHelper.MakeNewImage(HttpContext,"collection");
-            result.Maintainer = new DataToken
-            {
-                Value = roadieUser.UserId.ToString(),
-                Text = roadieUser.UserName
-            };
-            sw.Stop();
-
-            return new OperationResult<Collection>
-            {
-                Data = result,
-                IsSuccess = true,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-        }
-
-        public async Task<OperationResult<Collection>> ById(User roadieUser, Guid id,  IEnumerable<string> includes = null)
-        {
-            var sw = Stopwatch.StartNew();
-            sw.Start();
-
-            var cacheKey = string.Format("urn:collection_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
-            var result = await CacheManager.GetAsync(cacheKey, async () =>
-            {
-                return await CollectionByIdAction(id, includes);
-            }, data.Artist.CacheRegionUrn(id));
-            sw.Stop();
-            if (result?.Data != null && roadieUser != null)
-            {
-                var userBookmarkResult = await BookmarkService.List(roadieUser, new PagedRequest(), false, BookmarkType.Collection);
-                if (userBookmarkResult.IsSuccess)
-                {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x?.Bookmark?.Value == result?.Data?.Id?.ToString()) != null;
-                }
-                if (result.Data.Comments.Any())
-                {
-                    var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
-                    var userCommentReactions = (from cr in DbContext.CommentReactions
-                                                where commentIds.Contains(cr.CommentId)
-                                                where cr.UserId == roadieUser.Id
-                                                select cr).ToArray();
-                    foreach (var comment in result.Data.Comments)
-                    {
-                        var userCommentReaction =
-                            userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
-                        comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
-                        comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
-                    }
-                }
-            }
-
-            return new OperationResult<Collection>(result.Messages)
-            {
-                Data = result?.Data,
-                IsNotFoundResult = result?.IsNotFoundResult ?? false,
-                Errors = result?.Errors,
-                IsSuccess = result?.IsSuccess ?? false,
-                OperationTime = sw.ElapsedMilliseconds
-            };
-        }
-
-        public async Task<OperationResult<bool>> DeleteCollection(User user, Guid id)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-            var collection = DbContext.Collections.FirstOrDefault(x => x.RoadieId == id);
-            if (collection == null) return new OperationResult<bool>(true, $"Collection Not Found [{id}]");
-            if (!user.IsEditor)
-            {
-                Logger.LogWarning($"DeleteCollection: Access Denied: `{collection}`, By User `{user}`");
-                var r = new OperationResult<bool>("Access Denied");
-                r.IsAccessDeniedResult = true;
-                return r;
-            }
-
-            try
-            {
-                DbContext.Collections.Remove(collection);
-                await DbContext.SaveChangesAsync();
-                await BookmarkService.RemoveAllBookmarksForItem(BookmarkType.Collection, collection.Id);
-                var collectionImageFilename = collection.PathToImage(Configuration);
-                if (File.Exists(collectionImageFilename))
-                {
-                    File.Delete(collectionImageFilename);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex);
-                errors.Add(ex);
-            }
-
-            sw.Stop();
-            Logger.LogWarning($"DeleteCollection `{collection}`, By User `{user}`");
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data = true,
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-        public Task<Library.Models.Pagination.PagedResult<CollectionList>> List(User roadieUser, PagedRequest request,
-            bool? doRandomize = false, Guid? releaseId = null, Guid? artistId = null)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            IQueryable<data.Collection> collections = null;
-            if (artistId.HasValue)
-            {
-                collections = (from cr in DbContext.CollectionReleases
-                               join c in DbContext.Collections on cr.CollectionId equals c.Id
-                               join r in DbContext.Releases on cr.ReleaseId equals r.Id
-                               join a in DbContext.Artists on r.ArtistId equals a.Id
-                               where a.RoadieId == artistId
-                               select c).Distinct();
-            }
-            else if (releaseId.HasValue)
-            {
-                collections = (from cr in DbContext.CollectionReleases
-                               join c in DbContext.Collections on cr.CollectionId equals c.Id
-                               join r in DbContext.Releases on cr.ReleaseId equals r.Id
-                               where r.RoadieId == releaseId
-                               select c).Distinct();
-            }
-            else
-            {
-                collections = DbContext.Collections;
-            }
-
-            var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue)
-                ? request.FilterValue.ToAlphanumericName()
-                : null;
-
-            var result = from c in collections
-                         let collectionCount = (from crc in DbContext.CollectionReleases
-                                                where crc.CollectionId == c.Id
-                                                select crc.Id).Count()
-                         where string.IsNullOrEmpty(normalizedFilterValue) || (
-                                   c.Name.ToLower().Contains(normalizedFilterValue) ||
-                                   c.SortName.ToLower().Contains(normalizedFilterValue) ||
-                                   c.AlternateNames.ToLower().Contains(normalizedFilterValue)
-                               )
-                         where request.FilterToStatusValue == Statuses.Ok || c.Status == request.FilterToStatusValue
-                         select new CollectionList
-                         {
-                             DatabaseId = c.Id,
-                             Collection = new DataToken
-                             {
-                                 Text = c.Name,
-                                 Value = c.RoadieId.ToString()
-                             },
-                             Id = c.RoadieId,
-                             CollectionCount = c.CollectionCount,
-                             CollectionType = (c.CollectionType ?? CollectionType.Unknown).ToString(),
-                             CollectionFoundCount = collectionCount,
-                             CreatedDate = c.CreatedDate,
-                             IsLocked = c.IsLocked,
-                             LastUpdated = c.LastUpdated,
-                             Thumbnail = ImageHelper.MakeCollectionThumbnailImage(Configuration, HttpContext, c.RoadieId)
-                         };
-
-            var sortBy = string.IsNullOrEmpty(request.Sort)
-                ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } })
-                : request.OrderValue();
-            var rowCount = result.Count();
-            var rows = result
-                       .OrderBy(sortBy)
-                       .Skip(request.SkipValue)
-                       .Take(request.LimitValue)
-                       .ToArray();
-            if (request.FilterToStatusValue == Statuses.Incomplete)
-            {
-                rows = rows.OrderByDescending(x => x.PercentComplete).ThenBy(x => x.SortName).ToArray();
-            }
-            sw.Stop();
-            return Task.FromResult(new Library.Models.Pagination.PagedResult<CollectionList>
-            {
-                TotalCount = rowCount,
-                CurrentPage = request.PageValue,
-                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
-                OperationTime = sw.ElapsedMilliseconds,
-                Rows = rows
-            });
-        }
-
-        /// <summary>
-        ///     Updates (or Adds) Collection
-        /// </summary>
-        public async Task<OperationResult<bool>> UpdateCollection(User user, Collection model)
-        {
-            var isNew = model.Id == Guid.Empty;
-            var now = DateTime.UtcNow;
-
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-
-            var collection = new data.Collection();
-
-            if (!isNew)
-            {
-                collection = DbContext.Collections.FirstOrDefault(x => x.RoadieId == model.Id);
-                if (collection == null)
-                {
-                    return new OperationResult<bool>(true, string.Format("Collection Not Found [{0}]", model.Id));
-                }
-                // If collection is being renamed, see if collection already exists with new model supplied name
-                var collectionName = collection.SortNameValue;
-                var collectionModelName = model.SortNameValue;
-                if (collectionName.ToAlphanumericName() != collectionModelName.ToAlphanumericName())
-                {
-                    var existingCollection = DbContext.Collections.FirstOrDefault(x => x.Name == model.Name || x.SortName == model.SortName);
-                    if (existingCollection != null)
-                    {
-                        return new OperationResult<bool>($"Collection already exists `{ collection }` with name [{ collectionModelName }].");
-                    }
-                }
-            }
-            collection.IsLocked = model.IsLocked;
-            var oldPathToImage = collection.PathToImage(Configuration);
-            var didChangeName = collection.Name != model.Name && !isNew;
-            collection.Name = model.Name;
-            collection.SortName = model.SortName;
-            collection.Edition = model.Edition;
-            collection.ListInCSVFormat = model.ListInCSVFormat;
-            collection.ListInCSV = model.ListInCSV;
-            collection.Description = model.Description;
-            collection.URLs = model.URLs;
-            collection.Status = SafeParser.ToEnum<Statuses>(model.Status);
-            collection.CollectionType = SafeParser.ToEnum<CollectionType>(model.CollectionType);
-            collection.Tags = model.TagsList.ToDelimitedList();
-            collection.URLs = model.URLsList.ToDelimitedList();
-            collection.AlternateNames = model.AlternateNamesList.ToDelimitedList();
-            collection.CollectionCount = model.CollectionCount;
-
-            if (model.Maintainer?.Value != null)
-            {
-                var maintainer = DbContext.Users.FirstOrDefault(x => x.RoadieId == SafeParser.ToGuid(model.Maintainer.Value));
-                if (maintainer != null)
-                {
-                    collection.MaintainerId = maintainer.Id;
-                }
-            }
-
-            if (isNew)
-            {
-                await DbContext.Collections.AddAsync(collection);
-                await DbContext.SaveChangesAsync();                
-            }
-
-            if (didChangeName)
-            {
-                if (File.Exists(oldPathToImage))
-                {
-                    File.Move(oldPathToImage, collection.PathToImage(Configuration));
-                }
-            }
-
-            var collectionImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
-            if (collectionImage != null)
-            {
-                // Save unaltered collection image
-                File.WriteAllBytes(collection.PathToImage(Configuration, true), ImageHelper.ConvertToJpegFormat(collectionImage));
-            }
-
-            collection.LastUpdated = now;
-            await DbContext.SaveChangesAsync();
-
-            CacheManager.ClearRegion(collection.CacheRegion);
-            Logger.LogInformation($"UpdateCollection `{collection}` By User `{user}`");
-            return new OperationResult<bool>
-            {
-                IsSuccess = !errors.Any(),
-                Data = !errors.Any(),
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-        private async Task<OperationResult<Collection>> CollectionByIdAction(Guid id, IEnumerable<string> includes = null)
+        private async Task<OperationResult<Collection>> CollectionByIdActionAsync(Guid id, IEnumerable<string> includes = null)
         {
             var timings = new Dictionary<string, long>();
             var tsw = new Stopwatch();
@@ -352,13 +52,13 @@ namespace Roadie.Api.Services
             sw.Start();
 
             tsw.Restart();
-            var collection = await GetCollection(id);
+            var collection = await GetCollection(id).ConfigureAwait(false);
             tsw.Stop();
             timings.Add("getCollection", tsw.ElapsedMilliseconds);
 
             if (collection == null)
             {
-                return new OperationResult<Collection>(true, string.Format("Collection Not Found [{0}]", id));
+                return new OperationResult<Collection>(true, $"Collection Not Found [{id}]");
             }
             var result = collection.Adapt<Collection>();
             var maintainer = DbContext.Users.FirstOrDefault(x => x.Id == collection.MaintainerId);
@@ -472,6 +172,310 @@ namespace Roadie.Api.Services
                 Data = result,
                 IsSuccess = result != null,
                 OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        /// <summary>
+        ///     Get blank Collection to add
+        /// </summary>
+        /// <param name="roadieUser"></param>
+        /// <returns></returns>
+        public OperationResult<Collection> Add(User roadieUser)
+        {
+            var sw = Stopwatch.StartNew();
+            sw.Start();
+
+            var id = Guid.Empty;
+            var collection = new data.Collection
+            {
+                Status = Statuses.New
+            };
+            var result = collection.Adapt<Collection>();
+            result.Id = id;
+            result.Thumbnail = ImageHelper.MakeNewImage(HttpContext, "collection");
+            result.MediumThumbnail = ImageHelper.MakeNewImage(HttpContext, "collection");
+            result.Maintainer = new DataToken
+            {
+                Value = roadieUser.UserId.ToString(),
+                Text = roadieUser.UserName
+            };
+            sw.Stop();
+
+            return new OperationResult<Collection>
+            {
+                Data = result,
+                IsSuccess = true,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<OperationResult<Collection>> ByIdAsync(User roadieUser, Guid id, IEnumerable<string> includes = null)
+        {
+            var sw = Stopwatch.StartNew();
+            sw.Start();
+
+            var cacheKey = $"urn:collection_by_id_operation:{id}:{(includes == null ? "0" : string.Join("|", includes))}";
+            var result = await CacheManager.GetAsync(cacheKey, async () =>
+            {
+                return await CollectionByIdActionAsync(id, includes).ConfigureAwait(false);
+            }, data.Artist.CacheRegionUrn(id)).ConfigureAwait(false);
+            sw.Stop();
+            if (result?.Data != null && roadieUser != null)
+            {
+                var userBookmarkResult = await BookmarkService.ListAsync(roadieUser, new PagedRequest(), false, BookmarkType.Collection).ConfigureAwait(false);
+                if (userBookmarkResult.IsSuccess)
+                {
+                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x?.Bookmark?.Value == result?.Data?.Id?.ToString()) != null;
+                }
+                if (result.Data.Comments.Any())
+                {
+                    var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
+                    var userCommentReactions = (from cr in DbContext.CommentReactions
+                                                where commentIds.Contains(cr.CommentId)
+                                                where cr.UserId == roadieUser.Id
+                                                select cr).ToArray();
+                    foreach (var comment in result.Data.Comments)
+                    {
+                        var userCommentReaction =
+                            userCommentReactions.FirstOrDefault(x => x.CommentId == comment.DatabaseId);
+                        comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
+                        comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
+                    }
+                }
+            }
+
+            return new OperationResult<Collection>(result.Messages)
+            {
+                Data = result?.Data,
+                IsNotFoundResult = result?.IsNotFoundResult ?? false,
+                Errors = result?.Errors,
+                IsSuccess = result?.IsSuccess ?? false,
+                OperationTime = sw.ElapsedMilliseconds
+            };
+        }
+
+        public async Task<OperationResult<bool>> DeleteCollectionAsync(User user, Guid id)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var collection = DbContext.Collections.FirstOrDefault(x => x.RoadieId == id);
+            if (collection == null)
+            {
+                return new OperationResult<bool>(true, $"Collection Not Found [{id}]");
+            }
+
+            if (!user.IsEditor)
+            {
+                Logger.LogWarning($"DeleteCollection: Access Denied: `{collection}`, By User `{user}`");
+                var r = new OperationResult<bool>("Access Denied");
+                r.IsAccessDeniedResult = true;
+                return r;
+            }
+
+            try
+            {
+                DbContext.Collections.Remove(collection);
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
+                await BookmarkService.RemoveAllBookmarksForItemAsync(BookmarkType.Collection, collection.Id).ConfigureAwait(false);
+                var collectionImageFilename = collection.PathToImage(Configuration);
+                if (File.Exists(collectionImageFilename))
+                {
+                    File.Delete(collectionImageFilename);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+                errors.Add(ex);
+            }
+
+            sw.Stop();
+            Logger.LogWarning($"DeleteCollection `{collection}`, By User `{user}`");
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public Task<Library.Models.Pagination.PagedResult<CollectionList>> ListAsync(User roadieUser, PagedRequest request,
+            bool? doRandomize = false, Guid? releaseId = null, Guid? artistId = null)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            IQueryable<data.Collection> collections = null;
+            if (artistId.HasValue)
+            {
+                collections = (from cr in DbContext.CollectionReleases
+                               join c in DbContext.Collections on cr.CollectionId equals c.Id
+                               join r in DbContext.Releases on cr.ReleaseId equals r.Id
+                               join a in DbContext.Artists on r.ArtistId equals a.Id
+                               where a.RoadieId == artistId
+                               select c).Distinct();
+            }
+            else if (releaseId.HasValue)
+            {
+                collections = (from cr in DbContext.CollectionReleases
+                               join c in DbContext.Collections on cr.CollectionId equals c.Id
+                               join r in DbContext.Releases on cr.ReleaseId equals r.Id
+                               where r.RoadieId == releaseId
+                               select c).Distinct();
+            }
+            else
+            {
+                collections = DbContext.Collections;
+            }
+
+            var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue)
+                ? request.FilterValue.ToAlphanumericName()
+                : null;
+
+            var result = from c in collections
+                         let collectionCount = (from crc in DbContext.CollectionReleases
+                                                where crc.CollectionId == c.Id
+                                                select crc.Id).Count()
+                         where string.IsNullOrEmpty(normalizedFilterValue) || (
+                                   c.Name.ToLower().Contains(normalizedFilterValue) ||
+                                   c.SortName.ToLower().Contains(normalizedFilterValue) ||
+                                   c.AlternateNames.ToLower().Contains(normalizedFilterValue)
+                               )
+                         where request.FilterToStatusValue == Statuses.Ok || c.Status == request.FilterToStatusValue
+                         select new CollectionList
+                         {
+                             DatabaseId = c.Id,
+                             Collection = new DataToken
+                             {
+                                 Text = c.Name,
+                                 Value = c.RoadieId.ToString()
+                             },
+                             Id = c.RoadieId,
+                             CollectionCount = c.CollectionCount,
+                             CollectionType = (c.CollectionType ?? CollectionType.Unknown).ToString(),
+                             CollectionFoundCount = collectionCount,
+                             CreatedDate = c.CreatedDate,
+                             IsLocked = c.IsLocked,
+                             LastUpdated = c.LastUpdated,
+                             Thumbnail = ImageHelper.MakeCollectionThumbnailImage(Configuration, HttpContext, c.RoadieId)
+                         };
+
+            var sortBy = string.IsNullOrEmpty(request.Sort)
+                ? request.OrderValue(new Dictionary<string, string> { { "Collection.Text", "ASC" } })
+                : request.OrderValue();
+            var rowCount = result.Count();
+            var rows = result
+                       .OrderBy(sortBy)
+                       .Skip(request.SkipValue)
+                       .Take(request.LimitValue)
+                       .ToArray();
+            if (request.FilterToStatusValue == Statuses.Incomplete)
+            {
+                rows = rows.OrderByDescending(x => x.PercentComplete).ThenBy(x => x.SortName).ToArray();
+            }
+            sw.Stop();
+            return Task.FromResult(new Library.Models.Pagination.PagedResult<CollectionList>
+            {
+                TotalCount = rowCount,
+                CurrentPage = request.PageValue,
+                TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
+                OperationTime = sw.ElapsedMilliseconds,
+                Rows = rows
+            });
+        }
+
+        /// <summary>
+        ///     Updates (or Adds) Collection
+        /// </summary>
+        public async Task<OperationResult<bool>> UpdateCollectionAsync(User user, Collection model)
+        {
+            var isNew = model.Id == Guid.Empty;
+            var now = DateTime.UtcNow;
+
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+
+            var collection = new data.Collection();
+
+            if (!isNew)
+            {
+                collection = DbContext.Collections.FirstOrDefault(x => x.RoadieId == model.Id);
+                if (collection == null)
+                {
+                    return new OperationResult<bool>(true, $"Collection Not Found [{model.Id}]");
+                }
+                // If collection is being renamed, see if collection already exists with new model supplied name
+                var collectionName = collection.SortNameValue;
+                var collectionModelName = model.SortNameValue;
+                if (collectionName.ToAlphanumericName() != collectionModelName.ToAlphanumericName())
+                {
+                    var existingCollection = DbContext.Collections.FirstOrDefault(x => x.Name == model.Name || x.SortName == model.SortName);
+                    if (existingCollection != null)
+                    {
+                        return new OperationResult<bool>($"Collection already exists `{ collection }` with name [{ collectionModelName }].");
+                    }
+                }
+            }
+            collection.IsLocked = model.IsLocked;
+            var oldPathToImage = collection.PathToImage(Configuration);
+            var didChangeName = collection.Name != model.Name && !isNew;
+            collection.Name = model.Name;
+            collection.SortName = model.SortName;
+            collection.Edition = model.Edition;
+            collection.ListInCSVFormat = model.ListInCSVFormat;
+            collection.ListInCSV = model.ListInCSV;
+            collection.Description = model.Description;
+            collection.URLs = model.URLs;
+            collection.Status = SafeParser.ToEnum<Statuses>(model.Status);
+            collection.CollectionType = SafeParser.ToEnum<CollectionType>(model.CollectionType);
+            collection.Tags = model.TagsList.ToDelimitedList();
+            collection.URLs = model.URLsList.ToDelimitedList();
+            collection.AlternateNames = model.AlternateNamesList.ToDelimitedList();
+            collection.CollectionCount = model.CollectionCount;
+
+            if (model.Maintainer?.Value != null)
+            {
+                var maintainer = await DbContext.Users.FirstOrDefaultAsync(x => x.RoadieId == SafeParser.ToGuid(model.Maintainer.Value)).ConfigureAwait(false);
+                if (maintainer != null)
+                {
+                    collection.MaintainerId = maintainer.Id;
+                }
+            }
+
+            if (isNew)
+            {
+                await DbContext.Collections.AddAsync(collection).ConfigureAwait(false);
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
+            }
+
+            if (didChangeName)
+            {
+                if (File.Exists(oldPathToImage))
+                {
+                    File.Move(oldPathToImage, collection.PathToImage(Configuration));
+                }
+            }
+
+            var collectionImage = ImageHelper.ImageDataFromUrl(model.NewThumbnailData);
+            if (collectionImage != null)
+            {
+                // Save unaltered collection image
+                File.WriteAllBytes(collection.PathToImage(Configuration, true), ImageHelper.ConvertToJpegFormat(collectionImage));
+            }
+
+            collection.LastUpdated = now;
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
+
+            CacheManager.ClearRegion(collection.CacheRegion);
+            Logger.LogInformation($"UpdateCollection `{collection}` By User `{user}`");
+            return new OperationResult<bool>
+            {
+                IsSuccess = !errors.Any(),
+                Data = !errors.Any(),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
             };
         }
     }

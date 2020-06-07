@@ -20,13 +20,21 @@ namespace Roadie.Api.Controllers
     {
         private IStatisticsService StatisticsService { get; }
 
-        public StatsController(IStatisticsService statisticsService, ILogger<StatsController> logger, ICacheManager cacheManager,
-                    UserManager<User> userManager, IRoadieSettings roadieSettings)
+        public StatsController(
+            IStatisticsService statisticsService,
+            ILogger<StatsController> logger,
+            ICacheManager cacheManager,
+            UserManager<User> userManager,
+            IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
             StatisticsService = statisticsService;
         }
+
+        [HttpGet("artistsByDate")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ArtistsByDate() => Ok(await StatisticsService.ArtistsByDateAsync().ConfigureAwait(false));
 
         [HttpGet("info")]
         [ProducesResponseType(200)]
@@ -39,12 +47,14 @@ namespace Roadie.Api.Controllers
             var messages = new List<string>
             {
                 "▜ Memory Information: ",
-                string.Format("My process used working set {0:n3} K of working set and CPU {1:n} msec",
-                mem / 1024.0, cpu.TotalMilliseconds)
+                $"My process used working set {mem / 1024.0:n3} K of working set and CPU {cpu.TotalMilliseconds:n} msec"
             };
             foreach (var aProc in Process.GetProcesses())
+            {
                 messages.Add(string.Format("Proc {0,30}  CPU {1,-20:n} msec", aProc.ProcessName,
-                    cpu.TotalMilliseconds));
+                   cpu.TotalMilliseconds));
+            }
+
             messages.Add("▟ Memory Information: ");
 
             return Ok(messages);
@@ -52,31 +62,27 @@ namespace Roadie.Api.Controllers
 
         [HttpGet("library")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> Library() => Ok(await StatisticsService.LibraryStatistics());
+        public async Task<IActionResult> Library() => Ok(await StatisticsService.LibraryStatisticsAsync().ConfigureAwait(false));
 
         [HttpGet("ping")]
         [ProducesResponseType(200)]
         [AllowAnonymous]
         public IActionResult Ping() => Ok("pong");
 
-        [HttpGet("artistsByDate")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> ArtistsByDate() => Ok(await StatisticsService.ArtistsByDate());
-
         [HttpGet("releasesByDate")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> ReleasesByDate() => Ok(await StatisticsService.ReleasesByDate());
+        public async Task<IActionResult> ReleasesByDate() => Ok(await StatisticsService.ReleasesByDateAsync().ConfigureAwait(false));
 
         [HttpGet("releasesByDecade")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> ReleasesByDecade() => Ok(await StatisticsService.ReleasesByDecade());
+        public async Task<IActionResult> ReleasesByDecade() => Ok(await StatisticsService.ReleasesByDecadeAsync().ConfigureAwait(false));
 
         [HttpGet("songsPlayedByDate")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> SongsPlayedByDate() => Ok(await StatisticsService.SongsPlayedByDate());
+        public async Task<IActionResult> SongsPlayedByDate() => Ok(await StatisticsService.SongsPlayedByDateAsync().ConfigureAwait(false));
 
         [HttpGet("songsPlayedByUser")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> SongsPlayedByUser() => Ok(await StatisticsService.SongsPlayedByUser());
+        public async Task<IActionResult> SongsPlayedByUser() => Ok(await StatisticsService.SongsPlayedByUserAsync().ConfigureAwait(false));
     }
 }

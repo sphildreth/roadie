@@ -390,7 +390,7 @@ namespace Roadie.Dlna.Services
 
         private byte[] ReleaseCoverArt(Guid releaseId)
         {
-            var imageResult = AsyncHelper.RunSync(() => ImageService.ReleaseImage(releaseId, 320, 320));
+            var imageResult = AsyncHelper.RunSync(() => ImageService.ReleaseImageAsync(releaseId, 320, 320));
             return imageResult.Data?.Bytes;
         }
 
@@ -578,11 +578,11 @@ namespace Roadie.Dlna.Services
 
         private async Task<byte[]> TrackBytesAndMarkPlayed(int releaseId, data.Track track, string trackToken)
         {
-            var results = await TrackService.TrackStreamInfo(track.RoadieId, 0, SafeParser.ToNumber<long>(track.FileSize), null).ConfigureAwait(false);
+            var results = await TrackService.TrackStreamInfoAsync(track.RoadieId, 0, SafeParser.ToNumber<long>(track.FileSize), null).ConfigureAwait(false);
             // Some DLNA clients call for the track file several times for each play
             if (ShouldMakeScrobble(trackToken))
             {
-                await PlayActivityService.Scrobble(null, new Library.Scrobble.ScrobbleInfo
+                await PlayActivityService.ScrobbleAsync(null, new Library.Scrobble.ScrobbleInfo
                 {
                     TrackId = track.RoadieId,
                     TimePlayed = DateTime.UtcNow

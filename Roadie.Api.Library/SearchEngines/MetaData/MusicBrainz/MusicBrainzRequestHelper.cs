@@ -55,7 +55,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
                     using (var webClient = new WebClient())
                     {
                         webClient.Headers.Add("user-agent", WebHelper.UserAgent);
-                        result = JsonConvert.DeserializeObject<T>(await webClient.DownloadStringTaskAsync(new Uri(url)));
+                        result = JsonConvert.DeserializeObject<T>(await webClient.DownloadStringTaskAsync(new Uri(url)).ConfigureAwait(false));
                     }
                 }
                 catch (WebException ex)

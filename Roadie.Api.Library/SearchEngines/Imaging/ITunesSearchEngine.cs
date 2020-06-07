@@ -25,14 +25,14 @@ namespace Roadie.Library.SearchEngines.Imaging
 
         public override bool IsEnabled => Configuration.Integrations.ITunesProviderEnabled;
 
-        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
+        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearchAsync(string query, int resultsCount)
         {
             ArtistSearchResult data = null;
 
             try
             {
                 var request = BuildRequest(query, 1, "musicArtist");
-                var response = await _client.ExecuteAsync<ITunesSearchResult>(request);
+                var response = await _client.ExecuteAsync<ITunesSearchResult>(request).ConfigureAwait(false);
                 if (response.ResponseStatus == ResponseStatus.Error)
                 {
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -79,7 +79,7 @@ namespace Roadie.Library.SearchEngines.Imaging
 
 #pragma warning disable CS1998
 
-        public override async Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount)
+        public override async Task<IEnumerable<ImageSearchResult>> PerformImageSearchAsync(string query, int resultsCount)
         {
             var request = BuildRequest(query, resultsCount);
             ImageSearchResult[] result = null;
@@ -116,7 +116,7 @@ namespace Roadie.Library.SearchEngines.Imaging
         public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
         {
             var request = BuildRequest(query, 1, "album");
-            var response = await _client.ExecuteAsync<ITunesSearchResult>(request);
+            var response = await _client.ExecuteAsync<ITunesSearchResult>(request).ConfigureAwait(false);
             if (response.ResponseStatus == ResponseStatus.Error)
             {
                 if (response.StatusCode == HttpStatusCode.Unauthorized)

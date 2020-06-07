@@ -23,9 +23,12 @@ namespace Roadie.Api.Controllers
     {
         private ICommentService CommentService { get; }
 
-        public CommentController(ILogger<CommentController> logger, ICacheManager cacheManager,
-                    UserManager<User> userManager,
-            IRoadieSettings roadieSettings, ICommentService commentService)
+        public CommentController(
+            ILogger<CommentController> logger,
+            ICacheManager cacheManager,
+            UserManager<User> userManager,
+            IRoadieSettings roadieSettings,
+            ICommentService commentService)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -37,9 +40,17 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> AddNewArtistComment(Guid id, models.Comment model)
         {
-            if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
-            var result = await CommentService.AddNewArtistComment(await CurrentUserModel(), id, model.Cmt);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (string.IsNullOrEmpty(model.Cmt))
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
+            }
+
+            var result = await CommentService.AddNewArtistCommentAsync(await CurrentUserModel().ConfigureAwait(false), id, model.Cmt).ConfigureAwait(false);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -60,9 +71,17 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> AddNewCollectionComment(Guid id, models.Comment model)
         {
-            if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
-            var result = await CommentService.AddNewCollectionComment(await CurrentUserModel(), id, model.Cmt);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (string.IsNullOrEmpty(model.Cmt))
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
+            }
+
+            var result = await CommentService.AddNewCollectionCommentAsync(await CurrentUserModel().ConfigureAwait(false), id, model.Cmt).ConfigureAwait(false);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -83,9 +102,17 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> AddNewGenreComment(Guid id, models.Comment model)
         {
-            if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
-            var result = await CommentService.AddNewGenreComment(await CurrentUserModel(), id, model.Cmt);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (string.IsNullOrEmpty(model.Cmt))
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
+            }
+
+            var result = await CommentService.AddNewGenreCommentAsync(await CurrentUserModel().ConfigureAwait(false), id, model.Cmt).ConfigureAwait(false);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -106,9 +133,17 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> AddNewLabelComment(Guid id, models.Comment model)
         {
-            if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
-            var result = await CommentService.AddNewLabelComment(await CurrentUserModel(), id, model.Cmt);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (string.IsNullOrEmpty(model.Cmt))
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
+            }
+
+            var result = await CommentService.AddNewLabelCommentAsync(await CurrentUserModel().ConfigureAwait(false), id, model.Cmt).ConfigureAwait(false);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -129,9 +164,17 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> AddNewPlaylistComment(Guid id, models.Comment model)
         {
-            if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
-            var result = await CommentService.AddNewPlaylistComment(await CurrentUserModel(), id, model.Cmt);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (string.IsNullOrEmpty(model.Cmt))
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
+            }
+
+            var result = await CommentService.AddNewPlaylistCommentAsync(await CurrentUserModel().ConfigureAwait(false), id, model.Cmt).ConfigureAwait(false);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -152,9 +195,17 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> AddNewReleaseComment(Guid id, models.Comment model)
         {
-            if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
-            var result = await CommentService.AddNewReleaseComment(await CurrentUserModel(), id, model.Cmt);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (string.IsNullOrEmpty(model.Cmt))
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
+            }
+
+            var result = await CommentService.AddNewReleaseCommentAsync(await CurrentUserModel().ConfigureAwait(false), id, model.Cmt).ConfigureAwait(false);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -175,9 +226,17 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> AddNewTrackComment(Guid id, models.Comment model)
         {
-            if (string.IsNullOrEmpty(model.Cmt)) return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
-            var result = await CommentService.AddNewTrackComment(await CurrentUserModel(), id, model.Cmt);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            if (string.IsNullOrEmpty(model.Cmt))
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest, "Invalid Comment");
+            }
+
+            var result = await CommentService.AddNewTrackCommentAsync(await CurrentUserModel().ConfigureAwait(false), id, model.Cmt).ConfigureAwait(false);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -198,8 +257,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> DeleteComment(Guid id)
         {
-            var result = await CommentService.DeleteComment(await CurrentUserModel(), id);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            var result = await CommentService.DeleteCommentAsync(await CurrentUserModel().ConfigureAwait(false), id).ConfigureAwait(false);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -220,8 +283,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> SetCommentReaction(Guid id, CommentReaction reaction)
         {
-            var result = await CommentService.SetCommentReaction(await CurrentUserModel(), id, reaction);
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            var result = await CommentService.SetCommentReactionAsync(await CurrentUserModel().ConfigureAwait(false), id, reaction).ConfigureAwait(false);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)

@@ -37,7 +37,7 @@ namespace Roadie.Library.Scrobble
             {
                 Data = true,
                 IsSuccess = true
-            });
+            }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -59,12 +59,13 @@ namespace Roadie.Library.Scrobble
                     };
                 }
                 var sw = Stopwatch.StartNew();
-                var track = DbContext.Tracks
+                var track = await DbContext.Tracks
                     .Include(x => x.ReleaseMedia)
                     .Include(x => x.ReleaseMedia.Release)
                     .Include(x => x.ReleaseMedia.Release.Artist)
                     .Include(x => x.TrackArtist)
-                    .FirstOrDefault(x => x.RoadieId == scrobble.TrackId);
+                    .FirstOrDefaultAsync(x => x.RoadieId == scrobble.TrackId)
+                    .ConfigureAwait(false);
                 if (track == null)
                 {
                     return new OperationResult<bool>($"Scrobble: Unable To Find Track [{scrobble.TrackId}]");
@@ -80,8 +81,8 @@ namespace Roadie.Library.Scrobble
                 {
                     if (roadieUser != null)
                     {
-                        var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == roadieUser.UserId);
-                        userTrack = DbContext.UserTracks.FirstOrDefault(x => x.UserId == user.Id && x.TrackId == track.Id);
+                        var user = await DbContext.Users.FirstOrDefaultAsync(x => x.RoadieId == roadieUser.UserId).ConfigureAwait(false);
+                        userTrack = await DbContext.UserTracks.FirstOrDefaultAsync(x => x.UserId == user.Id && x.TrackId == track.Id).ConfigureAwait(false);
                         if (userTrack == null)
                         {
                             userTrack = new data.UserTrack(now)
@@ -89,7 +90,7 @@ namespace Roadie.Library.Scrobble
                                 UserId = user.Id,
                                 TrackId = track.Id
                             };
-                            DbContext.UserTracks.Add(userTrack);
+                            await DbContext.UserTracks.AddAsync(userTrack).ConfigureAwait(false);
                         }
 
                         userTrack.LastPlayed = now;
@@ -101,20 +102,21 @@ namespace Roadie.Library.Scrobble
                     track.PlayedCount = (track.PlayedCount ?? 0) + 1;
                     track.LastPlayed = now;
 
-                    var release = DbContext.Releases
+                    var release = await DbContext.Releases
                                            .Include(x => x.Artist)
-                                           .FirstOrDefault(x => x.RoadieId == track.ReleaseMedia.Release.RoadieId);
+                                           .FirstOrDefaultAsync(x => x.RoadieId == track.ReleaseMedia.Release.RoadieId)
+                                           .ConfigureAwait(false);
                     release.LastPlayed = now;
                     release.PlayedCount = (release.PlayedCount ?? 0) + 1;
 
-                    var artist = DbContext.Artists.FirstOrDefault(x => x.RoadieId == release.Artist.RoadieId);
+                    var artist = await DbContext.Artists.FirstOrDefaultAsync(x => x.RoadieId == release.Artist.RoadieId).ConfigureAwait(false);
                     artist.LastPlayed = now;
                     artist.PlayedCount = (artist.PlayedCount ?? 0) + 1;
 
                     data.Artist trackArtist = null;
                     if (track.ArtistId.HasValue)
                     {
-                        trackArtist = DbContext.Artists.FirstOrDefault(x => x.Id == track.ArtistId);
+                        trackArtist = await DbContext.Artists.FirstOrDefaultAsync(x => x.Id == track.ArtistId).ConfigureAwait(false);
                         if (trackArtist != null)
                         {
                             trackArtist.LastPlayed = now;
@@ -127,7 +129,7 @@ namespace Roadie.Library.Scrobble
                         }
                     }
 
-                    await DbContext.SaveChangesAsync();
+                    await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
                     CacheManager.ClearRegion(track.CacheRegion);
                     CacheManager.ClearRegion(track.ReleaseMedia.Release.CacheRegion);

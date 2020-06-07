@@ -22,7 +22,7 @@ namespace Roadie.Library.Data.Context.Implementation
             }
         }
 
-        public override async Task<SortedDictionary<int, int>> RandomArtistIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
+        public override async Task<SortedDictionary<int, int>> RandomArtistIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
         {
             // TODO Rating?
             var sql = @"SELECT a.id
@@ -32,34 +32,34 @@ namespace Roadie.Library.Data.Context.Implementation
                         AND {2} = 1)
                         order by random()
                         LIMIT 0, {0}";
-            var ids = await Artists.FromSqlRaw(sql, randomLimit, userId, doOnlyFavorites ? "1" : "0").Select(x => x.Id).ToListAsync();
+            var ids = await Artists.FromSqlRaw(sql, randomLimit, userId, doOnlyFavorites ? "1" : "0").Select(x => x.Id).ToListAsync().ConfigureAwait(false);
             var dict = ids.Select((id, i) => new { key = i, value = id }).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);
         }
 
-        public override async Task<SortedDictionary<int, int>> RandomGenreIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
+        public override async Task<SortedDictionary<int, int>> RandomGenreIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
         {
             var sql = @"SELECT g.id
                         FROM genre g
                         order by random()
                         LIMIT 0, {0}";
-            var ids = await Genres.FromSqlRaw(sql, randomLimit).Select(x => x.Id).ToListAsync();
+            var ids = await Genres.FromSqlRaw(sql, randomLimit).Select(x => x.Id).ToListAsync().ConfigureAwait(false);
             var dict = ids.Select((id, i) => new { key = i, value = id }).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);
         }
 
-        public override async Task<SortedDictionary<int, int>> RandomLabelIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
+        public override async Task<SortedDictionary<int, int>> RandomLabelIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
         {
             var sql = @"SELECT l.id
                         FROM label l
                         order by random()
                         LIMIT 0, {0}";
-            var ids = await Labels.FromSqlRaw(sql, randomLimit).Select(x => x.Id).ToListAsync();
+            var ids = await Labels.FromSqlRaw(sql, randomLimit).Select(x => x.Id).ToListAsync().ConfigureAwait(false);
             var dict = ids.Select((id, i) => new { key = i, value = id }).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);
         }
 
-        public override async Task<SortedDictionary<int, int>> RandomReleaseIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
+        public override async Task<SortedDictionary<int, int>> RandomReleaseIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
         {
             // TODO Rating?
             var sql = @"SELECT r.id
@@ -69,12 +69,12 @@ namespace Roadie.Library.Data.Context.Implementation
                             AND {2} = 1)
                         order by random()
                         LIMIT 0, {0}";
-            var ids = await Releases.FromSqlRaw(sql, randomLimit, userId, doOnlyFavorites ? "1" : "0").Select(x => x.Id).ToListAsync();
+            var ids = await Releases.FromSqlRaw(sql, randomLimit, userId, doOnlyFavorites ? "1" : "0").Select(x => x.Id).ToListAsync().ConfigureAwait(false);
             var dict = ids.Select((id, i) => new { key = i, value = id }).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);
         }
 
-        public override async Task<SortedDictionary<int, int>> RandomTrackIds(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
+        public override async Task<SortedDictionary<int, int>> RandomTrackIdsAsync(int userId, int randomLimit, bool doOnlyFavorites = false, bool doOnlyRated = false)
         {
             // When using the regular 'FromSqlRaw' with parameters SQLite returns no records.
 
@@ -103,7 +103,7 @@ namespace Roadie.Library.Data.Context.Implementation
                                      WHERE ut.userId = {userId} AND ut.isFavorite = 1) AND {df} = 1) OR {df} = 0)
                         order by random()
                         LIMIT 0, {randomLimit}";
-            var ids = await Tracks.FromSqlRaw(sql, randomLimit).Select(x => x.Id).ToListAsync();
+            var ids = await Tracks.FromSqlRaw(sql, randomLimit).Select(x => x.Id).ToListAsync().ConfigureAwait(false);
             var dict = ids.Select((id, i) => new { key = i, value = id }).ToDictionary(x => x.key, x => x.value);
             return new SortedDictionary<int, int>(dict);
         }

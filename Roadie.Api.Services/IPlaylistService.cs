@@ -11,20 +11,20 @@ namespace Roadie.Api.Services
 {
     public interface IPlaylistService
     {
-        Task<OperationResult<PlaylistList>> AddNewPlaylist(User user, Playlist model);
+        Task<OperationResult<PlaylistList>> AddNewPlaylistAsync(User user, Playlist model);
 
-        Task<OperationResult<bool>> AddTracksToPlaylist(data.Playlist playlist, IEnumerable<Guid> trackIds);
+        Task<OperationResult<bool>> AddTracksToPlaylistAsync(data.Playlist playlist, IEnumerable<Guid> trackIds);
 
-        Task<OperationResult<Playlist>> ById(User roadieUser, Guid id, IEnumerable<string> includes = null);
+        Task<OperationResult<Playlist>> ByIdAsync(User roadieUser, Guid id, IEnumerable<string> includes = null);
 
-        Task<OperationResult<bool>> DeletePlaylist(User user, Guid id);
+        Task<OperationResult<bool>> DeletePlaylistAsync(User user, Guid id);
 
-        Task<PagedResult<PlaylistList>> List(PagedRequest request, User roadieUser = null);
+        Task<PagedResult<PlaylistList>> ListAsync(PagedRequest request, User roadieUser = null);
 
-        Task<OperationResult<bool>> ReorderPlaylist(data.Playlist playlist);
+        Task<OperationResult<bool>> ReorderPlaylistAsync(data.Playlist playlist);
 
-        Task<OperationResult<bool>> UpdatePlaylist(User user, Playlist label);
+        Task<OperationResult<bool>> UpdatePlaylistAsync(User user, Playlist label);
 
-        Task<OperationResult<bool>> UpdatePlaylistTracks(User user, PlaylistTrackModifyRequest request);
+        Task<OperationResult<bool>> UpdatePlaylistTracksAsync(User user, PlaylistTrackModifyRequest request);
     }
 }

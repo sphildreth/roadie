@@ -26,7 +26,39 @@ namespace Roadie.Api.Services
         {
         }
 
-        public Task<OperationResult<LibraryStats>> LibraryStatistics()
+        public Task<OperationResult<IEnumerable<DateAndCount>>> ArtistsByDateAsync()
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var result = new List<DateAndCount>();
+            var dateInfos = (from r in DbContext.Artists
+                             orderby r.CreatedDate
+                             select r.CreatedDate)
+                             .ToArray()
+                             .GroupBy(x => x.ToString("yyyy-MM-dd"))
+                             .Select(x => new
+                             {
+                                 date = x.Key,
+                                 count = x.Count()
+                             });
+            foreach (var dateInfo in dateInfos)
+            {
+                result.Add(new DateAndCount
+                {
+                    Date = dateInfo.date,
+                    Count = dateInfo.count
+                });
+            }
+            sw.Stop();
+            return Task.FromResult(new OperationResult<IEnumerable<DateAndCount>>
+            {
+                OperationTime = sw.ElapsedMilliseconds,
+                IsSuccess = result != null,
+                Data = result
+            });
+        }
+
+        public Task<OperationResult<LibraryStats>> LibraryStatisticsAsync()
         {
             LibraryStats result = null;
             var sw = new Stopwatch();
@@ -65,39 +97,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        public Task<OperationResult<IEnumerable<DateAndCount>>> ArtistsByDate()
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var result = new List<DateAndCount>();
-            var dateInfos = (from r in DbContext.Artists
-                             orderby r.CreatedDate
-                             select r.CreatedDate)
-                             .ToArray()
-                             .GroupBy(x => x.ToString("yyyy-MM-dd"))
-                             .Select(x => new
-                             {
-                                 date = x.Key,
-                                 count = x.Count()
-                             });
-            foreach (var dateInfo in dateInfos)
-            {
-                result.Add(new DateAndCount
-                {
-                    Date = dateInfo.date,
-                    Count = dateInfo.count
-                });
-            }
-            sw.Stop();
-            return Task.FromResult(new OperationResult<IEnumerable<DateAndCount>>
-            {
-                OperationTime = sw.ElapsedMilliseconds,
-                IsSuccess = result != null,
-                Data = result
-            });
-        }
-
-        public Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDate()
+        public Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDateAsync()
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -129,28 +129,39 @@ namespace Roadie.Api.Services
             });
         }
 
-        public Task<OperationResult<IEnumerable<DateAndCount>>> SongsPlayedByUser()
+        public Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDecadeAsync()
         {
             var sw = new Stopwatch();
             sw.Start();
             var result = new List<DateAndCount>();
-            var dateInfos = (from r in DbContext.UserTracks
-                             join u in DbContext.Users on r.UserId equals u.Id
-                             select new { u.UserName, r.PlayedCount })
+            var decadeInfos = (from r in DbContext.Releases
+                               orderby r.ReleaseDate
+                               select r.ReleaseDate ?? r.CreatedDate)
                              .ToArray()
-                             .GroupBy(x => x.UserName)
+                             .GroupBy(x => x.ToString("yyyy"))
                              .Select(x => new
                              {
-                                 username = x.Key,
+                                 year = SafeParser.ToNumber<int>(x.Key),
                                  count = x.Count()
                              });
-            foreach (var dateInfo in dateInfos)
+            if (decadeInfos?.Any() == true)
             {
-                result.Add(new DateAndCount
+                const int decadeInterval = 10;
+                var startingDecade = (decadeInfos.Min(x => x.year) / 10) * 10;
+                var endingDecade = (decadeInfos.Max(x => x.year) / 10) * 10;
+                for (int decade = startingDecade; decade <= endingDecade; decade += decadeInterval)
                 {
-                    Date = dateInfo.username,
-                    Count = dateInfo.count
-                });
+                    var endOfDecade = decade + 9;
+                    var count = decadeInfos.Where(x => x.year >= decade && x.year <= endOfDecade).Sum(x => x.count);
+                    if (count > 0)
+                    {
+                        result.Add(new DateAndCount
+                        {
+                            Date = decade.ToString(),
+                            Count = count
+                        });
+                    }
+                }
             }
             sw.Stop();
             return Task.FromResult(new OperationResult<IEnumerable<DateAndCount>>
@@ -161,7 +172,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        public Task<OperationResult<IEnumerable<DateAndCount>>> SongsPlayedByDate()
+        public Task<OperationResult<IEnumerable<DateAndCount>>> SongsPlayedByDateAsync()
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -193,39 +204,28 @@ namespace Roadie.Api.Services
             });
         }
 
-        public Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDecade()
+        public Task<OperationResult<IEnumerable<DateAndCount>>> SongsPlayedByUserAsync()
         {
             var sw = new Stopwatch();
             sw.Start();
             var result = new List<DateAndCount>();
-            var decadeInfos = (from r in DbContext.Releases
-                             orderby r.ReleaseDate
-                             select r.ReleaseDate ?? r.CreatedDate)
+            var dateInfos = (from r in DbContext.UserTracks
+                             join u in DbContext.Users on r.UserId equals u.Id
+                             select new { u.UserName, r.PlayedCount })
                              .ToArray()
-                             .GroupBy(x => x.ToString("yyyy"))
+                             .GroupBy(x => x.UserName)
                              .Select(x => new
                              {
-                                 year = SafeParser.ToNumber<int>(x.Key),
+                                 username = x.Key,
                                  count = x.Count()
                              });
-            if (decadeInfos?.Any() == true)
+            foreach (var dateInfo in dateInfos)
             {
-                const int decadeInterval = 10;
-                var startingDecade = (decadeInfos.Min(x => x.year) / 10) * 10;
-                var endingDecade = (decadeInfos.Max(x => x.year) / 10) * 10;
-                for (int decade = startingDecade; decade <= endingDecade; decade += decadeInterval)
+                result.Add(new DateAndCount
                 {
-                    var endOfDecade = decade + 9;
-                    var count = decadeInfos.Where(x => x.year >= decade && x.year <= endOfDecade).Sum(x => x.count);
-                    if (count > 0)
-                    {
-                        result.Add(new DateAndCount
-                        {
-                            Date = decade.ToString(),
-                            Count = count
-                        });
-                    }
-                }
+                    Date = dateInfo.username,
+                    Count = dateInfo.count
+                });
             }
             sw.Stop();
             return Task.FromResult(new OperationResult<IEnumerable<DateAndCount>>

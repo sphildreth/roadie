@@ -14,10 +14,17 @@ namespace Roadie.Api.Services
         public HttpContext(IRoadieSettings configuration, IUrlHelper urlHelper)
         {
             var scheme = urlHelper.ActionContext.HttpContext.Request.Scheme;
-            if (configuration.UseSSLBehindProxy) scheme = "https";
+            if (configuration.UseSSLBehindProxy)
+            {
+                scheme = "https";
+            }
+
             var host = urlHelper.ActionContext.HttpContext.Request.Host;
             if (!string.IsNullOrEmpty(configuration.BehindProxyHost))
+            {
                 host = new HostString(configuration.BehindProxyHost);
+            }
+
             BaseUrl = $"{scheme}://{host}";
             ImageBaseUrl = $"{BaseUrl}/images";
         }

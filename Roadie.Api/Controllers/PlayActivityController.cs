@@ -22,9 +22,12 @@ namespace Roadie.Api.Controllers
     {
         private IPlayActivityService PlayActivityService { get; }
 
-        public PlayActivityController(IPlayActivityService playActivityService, ILogger<PlayActivityController> logger,
-                    ICacheManager cacheManager,
-            UserManager<User> userManager, IRoadieSettings roadieSettings)
+        public PlayActivityController(
+            IPlayActivityService playActivityService,
+            ILogger<PlayActivityController> logger,
+            ICacheManager cacheManager,
+            UserManager<User> userManager,
+            IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -35,8 +38,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> PlayActivity([FromQuery] PagedRequest request)
         {
-            var result = await PlayActivityService.List(request).ConfigureAwait(false);
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            var result = await PlayActivityService.ListAsync(request).ConfigureAwait(false);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+
             return Ok(result);
         }
 
@@ -45,11 +52,19 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> PlayActivity([FromQuery] PagedRequest request, Guid userId)
         {
             var user = UserManager.Users.FirstOrDefault(x => x.RoadieId == userId);
-            if (user == null) return NotFound();
-            var result = await PlayActivityService.List(request,
-                UserModelForUser(user)).ConfigureAwait(false);
+            if (user == null)
+            {
+                return NotFound();
+            }
 
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            var result = await PlayActivityService.ListAsync(request,
+               UserModelForUser(user)).ConfigureAwait(false);
+
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+
             return Ok(result);
         }
     }

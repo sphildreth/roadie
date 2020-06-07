@@ -6,7 +6,11 @@ namespace Roadie.Api.ModelBinding
     {
         public IModelBinder GetBinder(ModelBinderProviderContext context)
         {
-            if (context.Metadata.ModelType == typeof(SubsonicRequest)) return new SubsonicRequestBinder();
+            if (context.Metadata.ModelType == typeof(SubsonicRequest))
+            {
+                return new SubsonicRequestBinder();
+            }
+
             return null;
         }
     }

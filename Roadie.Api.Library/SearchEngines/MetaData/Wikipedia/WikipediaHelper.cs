@@ -21,7 +21,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
             HttpEncoder = httpEncoder;
         }
 
-        public Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
+        public Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearchAsync(string query, int resultsCount)
         {
             if(string.IsNullOrEmpty(query) || resultsCount == 0)
             {

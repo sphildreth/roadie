@@ -37,10 +37,15 @@ namespace Roadie.Api.Controllers
 
         private ITrackService TrackService { get; }
 
-        public SubsonicController(ISubsonicService subsonicService, ITrackService trackService,
-                                                    IReleaseService releaseService,
-            IPlayActivityService playActivityService, ILogger<SubsonicController> logger, ICacheManager cacheManager,
-            UserManager<Library.Identity.User> userManager, IRoadieSettings roadieSettings)
+        public SubsonicController(
+            ISubsonicService subsonicService,
+            ITrackService trackService,
+            IReleaseService releaseService,
+            IPlayActivityService playActivityService,
+            ILogger<SubsonicController> logger,
+            ICacheManager cacheManager,
+            UserManager<Library.Identity.User> userManager,
+            IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -50,14 +55,29 @@ namespace Roadie.Api.Controllers
             PlayActivityService = playActivityService;
         }
 
+        private async Task<IActionResult> AuthenticateUser(SubsonicRequest request)
+        {
+            var appUser = await SubsonicService.AuthenticateAsync(request).ConfigureAwait(false);
+            if (!(appUser?.IsSuccess ?? false) || (appUser?.IsNotFoundResult ?? false))
+            {
+                return BuildResponse(request, appUser.Adapt<SubsonicOperationResult<Response>>());
+            }
+            SubsonicUser = UserModelForUser(appUser.Data.SubsonicUser);
+            return null;
+        }
+
         [HttpGet("addChatMessage.view")]
         [HttpPost("addChatMessage.view")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> AddChatMessage(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.AddChatMessage(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.AddChatMessageAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result);
         }
 
@@ -67,8 +87,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> CreateBookmark(SubsonicRequest request, int position, string comment)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.CreateBookmark(request, SubsonicUser, position, comment).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.CreateBookmarkAsync(request, SubsonicUser, position, comment).ConfigureAwait(false);
             return BuildResponse(request, result);
         }
 
@@ -79,8 +103,12 @@ namespace Roadie.Api.Controllers
             string[] songId)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.CreatePlaylist(request, SubsonicUser, name, songId, playlistId).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.CreatePlaylistAsync(request, SubsonicUser, name, songId, playlistId).ConfigureAwait(false);
             return BuildResponse(request, result, "playlist");
         }
 
@@ -90,8 +118,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> DeleteBookmark(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.DeleteBookmark(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.DeleteBookmarkAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result);
         }
 
@@ -101,8 +133,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> DeletePlaylist(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.DeletePlaylist(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.DeletePlaylistAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result);
         }
 
@@ -112,15 +148,26 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Download(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return Unauthorized();
+            if (authResult != null)
+            {
+                return Unauthorized();
+            }
+
             var trackId = request.TrackId;
             if (trackId != null)
+            {
                 return await StreamTrack(trackId.Value, TrackService, PlayActivityService, SubsonicUser).ConfigureAwait(false);
+            }
+
             var releaseId = request.ReleaseId;
             if (releaseId != null)
             {
-                var releaseZip = await ReleaseService.ReleaseZipped(SubsonicUser, releaseId.Value).ConfigureAwait(false);
-                if (!releaseZip.IsSuccess) return NotFound("Unknown Release id");
+                var releaseZip = await ReleaseService.ReleaseZippedAsync(SubsonicUser, releaseId.Value).ConfigureAwait(false);
+                if (!releaseZip.IsSuccess)
+                {
+                    return NotFound("Unknown Release id");
+                }
+
                 return File(releaseZip.Data, "application/zip", (string)releaseZip.AdditionalData["ZipFileName"]);
             }
 
@@ -133,8 +180,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetAlbum(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetAlbum(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetAlbumAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result, "album");
         }
 
@@ -144,8 +195,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetAlbumInfo(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetAlbumInfo(request, SubsonicUser, AlbumInfoVersion.One).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetAlbumInfoAsync(request, SubsonicUser, AlbumInfoVersion.One).ConfigureAwait(false);
             return BuildResponse(request, result, "albumInfo");
         }
 
@@ -155,8 +210,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetAlbumInfo2(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetAlbumInfo(request, SubsonicUser, AlbumInfoVersion.Two).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetAlbumInfoAsync(request, SubsonicUser, AlbumInfoVersion.Two).ConfigureAwait(false);
             return BuildResponse(request, result, "albumInfo");
         }
 
@@ -166,8 +225,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetAlbumList(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetAlbumList(request, SubsonicUser, AlbumListVersions.One).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetAlbumListAsync(request, SubsonicUser, AlbumListVersions.One).ConfigureAwait(false);
             return BuildResponse(request, result, "albumList");
         }
 
@@ -177,8 +240,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetAlbumList2(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetAlbumList(request, SubsonicUser, AlbumListVersions.Two).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetAlbumListAsync(request, SubsonicUser, AlbumListVersions.Two).ConfigureAwait(false);
             return BuildResponse(request, result, "albumList");
         }
 
@@ -188,8 +255,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetArtist(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetArtist(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetArtistAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result, "artist");
         }
 
@@ -199,9 +270,13 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetArtistInfo(SubsonicRequest request, int? count, bool? includeNotPresent)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
             var result =
-                await SubsonicService.GetArtistInfo(request, count, includeNotPresent ?? false, ArtistInfoVersion.One).ConfigureAwait(false);
+               await SubsonicService.GetArtistInfoAsync(request, count, includeNotPresent ?? false, ArtistInfoVersion.One).ConfigureAwait(false);
             return BuildResponse(request, result, "artistInfo");
         }
 
@@ -211,9 +286,13 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetArtistInfo2(SubsonicRequest request, int? count, bool? includeNotPresent)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
             var result =
-                await SubsonicService.GetArtistInfo(request, count, includeNotPresent ?? false, ArtistInfoVersion.Two).ConfigureAwait(false);
+               await SubsonicService.GetArtistInfoAsync(request, count, includeNotPresent ?? false, ArtistInfoVersion.Two).ConfigureAwait(false);
             return BuildResponse(request, result, "artistInfo2");
         }
 
@@ -223,8 +302,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetArtists(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetArtists(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetArtistsAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result, "artists");
         }
 
@@ -244,8 +327,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetBookmarks(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetBookmarks(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetBookmarksAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result, "bookmarks");
         }
 
@@ -255,8 +342,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetChatMessages(SubsonicRequest request, long? since)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetChatMessages(request, SubsonicUser, since).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetChatMessagesAsync(request, SubsonicUser, since).ConfigureAwait(false);
             return BuildResponse(request, result, "chatMessages");
         }
 
@@ -265,7 +356,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetCoverArt(SubsonicRequest request, int? size)
         {
-            var result = await SubsonicService.GetCoverArt(request, size).ConfigureAwait(false);
+            var result = await SubsonicService.GetCoverArtAsync(request, size).ConfigureAwait(false);
             if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
@@ -289,7 +380,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetGenres(SubsonicRequest request)
         {
-            var result = await SubsonicService.GetGenres(request).ConfigureAwait(false);
+            var result = await SubsonicService.GetGenresAsync(request).ConfigureAwait(false);
             return BuildResponse(request, result, "genres");
         }
 
@@ -299,8 +390,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetIndexes(SubsonicRequest request, long? ifModifiedSince = null)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetIndexes(request, SubsonicUser, ifModifiedSince).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetIndexesAsync(request, SubsonicUser, ifModifiedSince).ConfigureAwait(false);
             return BuildResponse(request, result, "indexes");
         }
 
@@ -328,8 +423,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetMusicDirectory(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetMusicDirectory(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetMusicDirectoryAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result, "directory");
         }
 
@@ -338,7 +437,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetMusicFolders(SubsonicRequest request)
         {
-            var result = await SubsonicService.GetMusicFolders(request).ConfigureAwait(false);
+            var result = await SubsonicService.GetMusicFoldersAsync(request).ConfigureAwait(false);
             return BuildResponse(request, result, "musicFolders");
         }
 
@@ -348,8 +447,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetNowPlaying(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetNowPlaying(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetNowPlayingAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result, "nowPlaying");
         }
 
@@ -359,8 +462,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetPlaylist(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetPlaylist(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetPlaylistAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result, "playlist");
         }
 
@@ -370,8 +477,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetPlaylists(SubsonicRequest request, string username)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetPlaylists(request, SubsonicUser, username).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetPlaylistsAsync(request, SubsonicUser, username).ConfigureAwait(false);
             return BuildResponse(request, result, "playlists");
         }
 
@@ -381,9 +492,17 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetPlayQueue(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetPlayQueue(request, SubsonicUser).ConfigureAwait(false);
-            if (result.IsEmptyResponse) return BuildResponse(request, result);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetPlayQueueAsync(request, SubsonicUser).ConfigureAwait(false);
+            if (result.IsEmptyResponse)
+            {
+                return BuildResponse(request, result);
+            }
+
             return BuildResponse(request, result, "playQueue");
         }
 
@@ -393,8 +512,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetPodcasts(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetPodcasts(request).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetPodcastsAsync(request).ConfigureAwait(false);
             return BuildResponse(request, result, "podcasts");
         }
 
@@ -404,8 +527,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetRandomSongs(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetRandomSongs(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetRandomSongsAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result, "randomSongs");
         }
 
@@ -415,8 +542,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetSimilarSongs(SubsonicRequest request, int? count = 50)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetSimliarSongs(request, SubsonicUser, SimilarSongsVersion.One, count).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetSimliarSongsAsync(request, SubsonicUser, SimilarSongsVersion.One, count).ConfigureAwait(false);
             return BuildResponse(request, result, "similarSongs");
         }
 
@@ -426,8 +557,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetSimilarSongs2(SubsonicRequest request, int? count = 50)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetSimliarSongs(request, SubsonicUser, SimilarSongsVersion.Two, count).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetSimliarSongsAsync(request, SubsonicUser, SimilarSongsVersion.Two, count).ConfigureAwait(false);
             return BuildResponse(request, result, "similarSongs2");
         }
 
@@ -437,8 +572,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetSong(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetSong(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetSongAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result, "song");
         }
 
@@ -448,8 +587,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetSongsByGenre(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetSongsByGenre(request, SubsonicUser).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetSongsByGenreAsync(request, SubsonicUser).ConfigureAwait(false);
             return BuildResponse(request, result, "songsByGenre");
         }
 
@@ -459,8 +602,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetStarred(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetStarred(request, SubsonicUser, StarredVersion.One).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetStarredAsync(request, SubsonicUser, StarredVersion.One).ConfigureAwait(false);
             return BuildResponse(request, result, "starred");
         }
 
@@ -470,8 +617,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetStarred2(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetStarred(request, SubsonicUser, StarredVersion.Two).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetStarredAsync(request, SubsonicUser, StarredVersion.Two).ConfigureAwait(false);
             return BuildResponse(request, result, "starred");
         }
 
@@ -481,8 +632,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetTopSongs(SubsonicRequest request, int? count = 50)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetTopSongs(request, SubsonicUser, count).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetTopSongsAsync(request, SubsonicUser, count).ConfigureAwait(false);
             return BuildResponse(request, result, "topSongs");
         }
 
@@ -492,8 +647,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> GetUser(SubsonicRequest request, string username)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.GetUser(request, username ?? request.u).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.GetUserAsync(request, username ?? request.u).ConfigureAwait(false);
             return BuildResponse(request, result, "user");
         }
 
@@ -512,7 +671,11 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Ping(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
             if (request.IsJSONRequest)
             {
                 var result = SubsonicService.Ping(request);
@@ -531,8 +694,12 @@ namespace Roadie.Api.Controllers
             long? position)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.SavePlayQueue(request, SubsonicUser, current, position).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.SavePlayQueueAsync(request, SubsonicUser, current, position).ConfigureAwait(false);
             return BuildResponse(request, result);
         }
 
@@ -544,11 +711,15 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Scrobble(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
             var timePlayed = string.IsNullOrEmpty(request.time)
-                ? DateTime.UtcNow.AddDays(-1)
-                : SafeParser.ToNumber<long>(request.time).FromUnixTime();
-            var scrobblerResponse = await PlayActivityService.Scrobble(SubsonicUser, new ScrobbleInfo
+               ? DateTime.UtcNow.AddDays(-1)
+               : SafeParser.ToNumber<long>(request.time).FromUnixTime();
+            var scrobblerResponse = await PlayActivityService.ScrobbleAsync(SubsonicUser, new ScrobbleInfo
             {
                 TrackId = request.TrackId.Value,
                 TimePlayed = timePlayed
@@ -569,8 +740,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Search(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.Search(request, SubsonicUser, SearchVersion.One).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.SearchAsync(request, SubsonicUser, SearchVersion.One).ConfigureAwait(false);
             return BuildResponse(request, result, "searchResult");
         }
 
@@ -580,8 +755,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Search2(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.Search(request, SubsonicUser, SearchVersion.Two).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.SearchAsync(request, SubsonicUser, SearchVersion.Two).ConfigureAwait(false);
             return BuildResponse(request, result, "searchResult2");
         }
 
@@ -591,8 +770,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Search3(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.Search(request, SubsonicUser, SearchVersion.Three).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.SearchAsync(request, SubsonicUser, SearchVersion.Three).ConfigureAwait(false);
             return BuildResponse(request, result, "searchResult3");
         }
 
@@ -602,8 +785,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> SetRating(SubsonicRequest request, short rating)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.SetRating(request, SubsonicUser, rating).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.SetRatingAsync(request, SubsonicUser, rating).ConfigureAwait(false);
             return BuildResponse(request, result);
         }
 
@@ -613,8 +800,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Star(SubsonicRequest request, [FromQuery] string[] albumId, [FromQuery] string[] artistId)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.ToggleStar(request, SubsonicUser, true, albumId, artistId).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.ToggleStarAsync(request, SubsonicUser, true, albumId, artistId).ConfigureAwait(false);
             return BuildResponse(request, result);
         }
 
@@ -624,9 +815,17 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> StreamTrack(SubsonicRequest request)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return Unauthorized();
+            if (authResult != null)
+            {
+                return Unauthorized();
+            }
+
             var trackId = request.TrackId;
-            if (trackId == null) return NotFound("Invalid TrackId");
+            if (trackId == null)
+            {
+                return NotFound("Invalid TrackId");
+            }
+
             return await StreamTrack(trackId.Value, TrackService, PlayActivityService, SubsonicUser).ConfigureAwait(false);
         }
 
@@ -636,8 +835,12 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> UnStar(SubsonicRequest request, [FromQuery] string[] albumId, [FromQuery] string[] artistId)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.ToggleStar(request, SubsonicUser, false, albumId, artistId).ConfigureAwait(false);
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
+            var result = await SubsonicService.ToggleStarAsync(request, SubsonicUser, false, albumId, artistId).ConfigureAwait(false);
             return BuildResponse(request, result);
         }
 
@@ -649,21 +852,14 @@ namespace Roadie.Api.Controllers
             [FromQuery] string[] songIdToAdd, [FromQuery] int[] songIndexToRemove)
         {
             var authResult = await AuthenticateUser(request).ConfigureAwait(false);
-            if (authResult != null) return authResult;
-            var result = await SubsonicService.UpdatePlaylist(request, SubsonicUser, playlistId, name, comment, @public,
-                songIdToAdd, songIndexToRemove).ConfigureAwait(false);
-            return BuildResponse(request, result);
-        }
-
-        private async Task<IActionResult> AuthenticateUser(SubsonicRequest request)
-        {
-            var appUser = await SubsonicService.Authenticate(request).ConfigureAwait(false);
-            if (!(appUser?.IsSuccess ?? false) || (appUser?.IsNotFoundResult ?? false))
+            if (authResult != null)
             {
-                return BuildResponse(request, appUser.Adapt<SubsonicOperationResult<Response>>());
+                return authResult;
             }
-            SubsonicUser = UserModelForUser(appUser.Data.SubsonicUser);
-            return null;
+
+            var result = await SubsonicService.UpdatePlaylistAsync(request, SubsonicUser, playlistId, name, comment, @public,
+               songIdToAdd, songIndexToRemove).ConfigureAwait(false);
+            return BuildResponse(request, result);
         }
 
         #region Response Builder Methods
@@ -681,12 +877,18 @@ namespace Roadie.Api.Controllers
                     foreach (var form in formCollection)
                     {
                         if (!formDictionary.ContainsKey(form.Key))
+                        {
                             formDictionary[form.Key] = form.Value.FirstOrDefault();
+                        }
                     }
                 }
             }
 
-            if (response?.ErrorCode.HasValue ?? false) return SendError(request, response);
+            if (response?.ErrorCode.HasValue ?? false)
+            {
+                return SendError(request, response);
+            }
+
             if (request.IsJSONRequest)
             {
                 Response.ContentType = "application/json";
@@ -695,20 +897,16 @@ namespace Roadie.Api.Controllers
                 string jsonResult = null;
                 if (responseType == null)
                 {
-                    jsonResult = "{ \"subsonic-response\": { \"status\":\"" + status + "\", \"version\": \"" + version +
-                                 "\" }}";
+                    jsonResult = $"{{ \"subsonic-response\": {{ \"status\":\"{status}\", \"version\": \"{version}\" }}}}";
                 }
                 else
                 {
-                    jsonResult = "{ \"subsonic-response\": { \"status\":\"" + status + "\", \"version\": \"" + version +
-                                 "\", \"" + responseType + "\":" + (response?.Data != null
-                                     ? JsonConvert.SerializeObject(response.Data.Item)
-                                     : string.Empty) + "}}";
+                    jsonResult = $"{{ \"subsonic-response\": {{ \"status\":\"{status}\", \"version\": \"{version}\", \"{responseType}\":{((response?.Data != null ? JsonConvert.SerializeObject(response.Data.Item) : string.Empty))}}}}}";
                 }
 
                 if ((request?.f ?? string.Empty).Equals("jsonp", StringComparison.OrdinalIgnoreCase))
                 {
-                    jsonResult = request.callback + "(" + jsonResult + ");";
+                    jsonResult = $"{request.callback}({jsonResult});";
                 }
 
                 return Content(jsonResult);
@@ -726,9 +924,7 @@ namespace Roadie.Api.Controllers
             if (request.IsJSONRequest)
             {
                 Response.ContentType = "application/json";
-                return Content("{ \"subsonic-response\": { \"status\":\"failed\", \"version\": \"" + version +
-                               "\", \"error\":{\"code\":\"" + errorCode + "\",\"message\":\"" + errorDescription +
-                               "\"}}}");
+                return Content($"{{ \"subsonic-response\": {{ \"status\":\"failed\", \"version\": \"{version}\", \"error\":{{\"code\":\"{errorCode}\",\"message\":\"{errorDescription}\"}}}}}}");
             }
 
             Response.ContentType = "application/xml";

@@ -18,7 +18,7 @@ namespace Roadie.Api.Services
 
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            if(string.IsNullOrEmpty(Configuration.SmtpHost))
+            if (string.IsNullOrEmpty(Configuration.SmtpHost))
             {
                 Trace.WriteLine("Email Server (Configuration.SmtpHost) Not Configured", "Warning");
                 return;
@@ -37,7 +37,7 @@ namespace Roadie.Api.Services
                     mail.IsBodyHtml = true;
                     mail.Body = htmlMessage;
                     ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-                    await client.SendMailAsync(mail);
+                    await client.SendMailAsync(mail).ConfigureAwait(false);
                 }
             }
         }

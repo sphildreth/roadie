@@ -1,12 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Roadie.Library.Configuration;
-using Roadie.Library.Data;
-using Roadie.Library.Data.Context;
-using Roadie.Library.FilePlugins;
-using Roadie.Library.Imaging;
+﻿using Roadie.Library.Imaging;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -38,6 +31,9 @@ namespace Roadie.Library.Tests
         [InlineData("logo.png")]
         [InlineData("Logo.Jpg")]
         [InlineData("logo.gif")]
+        [InlineData("band_logo.gif")]
+        [InlineData("134logo.gif")]
+        [InlineData("Dream_Theater_Logo.gif")]
         [InlineData("artist_logo.jpg")]
         [InlineData("Artist_logo.jpg")]
         [InlineData("ARTIST_LOGO.JPG")]
@@ -61,7 +57,7 @@ namespace Roadie.Library.Tests
         [InlineData("cover.png")]
         [InlineData("Cover.Jpg")]
         [InlineData("Cover.JPG")]
-        [InlineData("Cover.PNG")] 
+        [InlineData("Cover.PNG")]
         [InlineData("CvR.Jpg")]
         [InlineData("Release.JPG")]
         [InlineData("folder.JPG")]
@@ -79,7 +75,7 @@ namespace Roadie.Library.Tests
         [InlineData("f.jpg")]
         [InlineData("F1.jpg")]
         [InlineData("F 1.jpg")]
-        [InlineData("F-1.jpg")] 
+        [InlineData("F-1.jpg")]
         [InlineData("front_.jpg")]
         [InlineData("BIG.JPg")]
         [InlineData("bigart.JPg")]
@@ -185,9 +181,9 @@ namespace Roadie.Library.Tests
 
         [InlineData("Booklet-1.jpg")]
         [InlineData("Booklet-10.jpg")]
-        [InlineData("Booklet_1.jpg")] 
-        [InlineData("Booklet 3.jpg")] 
-        [InlineData("Digipack (01).jpg")] 
+        [InlineData("Booklet_1.jpg")]
+        [InlineData("Booklet 3.jpg")]
+        [InlineData("Digipack (01).jpg")]
         [InlineData("Eagles - Long Road Out Of Eden - Booklet-6.jpg")]
         [InlineData("Long Road Out Of Eden - Booklet-6.jpg")]
         [InlineData("Long Road Out Of Eden Booklet-6.jpg")]
@@ -204,10 +200,10 @@ namespace Roadie.Library.Tests
         [InlineData("Back.jpg")]
         [InlineData("BAcK.JPg")]
         [InlineData("Cd.jpg")]
-        [InlineData("CD.JPG")] 
+        [InlineData("CD.JPG")]
         [InlineData("Cd1.jpg")]
         [InlineData("CD (01).jpg")]
-        [InlineData("CD (02).jpg")] 
+        [InlineData("CD (02).jpg")]
         [InlineData("CD-1.jpg")]
         [InlineData("CD 1.jpg")]
         [InlineData("CD_1.jpg")]
@@ -242,16 +238,16 @@ namespace Roadie.Library.Tests
         [InlineData("release 3.jpg")]
         [InlineData("release 10.jpg")]
         [InlineData("Dixieland-Label-Side 1.JPG")]
-        [InlineData("Dixieland-Label-Side 2.JPG")] 
+        [InlineData("Dixieland-Label-Side 2.JPG")]
         [InlineData("Hearing Is Believing-Inside 1.jpg")]
-        [InlineData("Booklet (2-3).jpg")] 
-        [InlineData("Booklet (14-15).jpg")] 
-        [InlineData("Booklet#2.jpg")] 
-        [InlineData("traycard.png")] 
+        [InlineData("Booklet (2-3).jpg")]
+        [InlineData("Booklet (14-15).jpg")]
+        [InlineData("Booklet#2.jpg")]
+        [InlineData("traycard.png")]
         [InlineData("Jewel Case.jpg")]
         [InlineData("Matrix-1.jpg")]
         [InlineData("Matrix 1.jpg")]
-        [InlineData("IMG_20160921_0004.jpg")] 
+        [InlineData("IMG_20160921_0004.jpg")]
         public void TestShouldBeReleaseSecondaryImages(string input)
         {
             Assert.True(ImageHelper.IsReleaseSecondaryImage(new FileInfo(input)));
@@ -292,7 +288,7 @@ namespace Roadie.Library.Tests
         public void GetReleaseImageInFolder()
         {
             var folder = new DirectoryInfo(@"C:\roadie_dev_root\image_tests");
-            if(!folder.Exists)
+            if (!folder.Exists)
             {
                 Assert.True(true);
                 return;
@@ -318,6 +314,6 @@ namespace Roadie.Library.Tests
             Assert.Single(artist);
             Assert.Equal("artist.jpg", artist.First().Name);
         }
- 
+
     }
 }

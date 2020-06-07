@@ -18,37 +18,30 @@ namespace Roadie.Library.Tests
             return config;
         }
 
-        private readonly IRoadieSettings _settings = null;
+        private readonly IRoadieSettings _settings;
 
         private readonly IConfiguration _configuration;
-        private IConfiguration Configuration
-        {
-            get
-            {
-                return this._configuration;
-            }
-        }
 
         private IRoadieSettings Settings
         {
             get
             {
-                return this._settings;
+                return _settings;
             }
         }
 
         public ConfigurationTests()
         {
-            this._configuration = InitConfiguration();
-            this._settings = new RoadieSettings();
-            this._configuration.GetSection("RoadieSettings").Bind(this._settings);
+            _configuration = InitConfiguration();
+            _settings = new RoadieSettings();
+            _configuration.GetSection("RoadieSettings").Bind(_settings);
         }
 
         [Fact]
         public void LoadRootLevelConfiguration()
         {
             var inboundFolder = @"C:\roadie_dev_root\inbound";
-            var configInboundFolder = this.Settings.InboundFolder;
+            var configInboundFolder = Settings.InboundFolder;
             Assert.Equal(inboundFolder, configInboundFolder);
         }
 

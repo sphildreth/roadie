@@ -26,24 +26,23 @@ namespace Roadie.Library.Imaging
 
         public static byte[] ConvertToJpegFormat(byte[] imageBytes)
         {
-            if (imageBytes == null || !imageBytes.Any())
+            if(imageBytes?.Any() != true)
             {
                 return null;
             }
 
             try
             {
-                using (var outStream = new MemoryStream())
+                using(var outStream = new MemoryStream())
                 {
                     IImageFormat imageFormat = null;
-                    using (var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
+                    using(var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
                     {
                         image.SaveAsJpeg(outStream);
                     }
                     return outStream.ToArray();
                 }
-            }
-            catch (Exception ex)
+            } catch(Exception ex)
             {
                 Trace.WriteLine($"Error Converting Image to Jpg [{ ex.Message }]", "Warning");
             }
@@ -55,44 +54,48 @@ namespace Roadie.Library.Imaging
         /// </summary>
         public static byte[] ConvertToGifFormat(byte[] imageBytes)
         {
-            if (imageBytes == null || !imageBytes.Any())
+            if(imageBytes?.Any() != true)
             {
                 return null;
             }
             try
             {
-                using (var outStream = new MemoryStream())
+                using(var outStream = new MemoryStream())
                 {
                     IImageFormat imageFormat = null;
-                    using (var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
+                    using(var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
                     {
                         image.SaveAsGif(outStream);
                     }
                     return outStream.ToArray();
                 }
-            }
-            catch (Exception ex)
+            } catch(Exception ex)
             {
                 Trace.WriteLine($"Error Converting Image to Gif [{ ex.Message }]", "Warning");
             }
             return null;
         }
 
-        public static IEnumerable<FileInfo> FindImagesByName(DirectoryInfo directory, string name, SearchOption folderSearchOptions = SearchOption.AllDirectories)
+        public static IEnumerable<FileInfo> FindImagesByName(DirectoryInfo directory,
+                                                             string name,
+                                                             SearchOption folderSearchOptions = SearchOption.AllDirectories)
         {
             var result = new List<FileInfo>();
-            if (directory == null || !directory.Exists || string.IsNullOrEmpty(name)) return result;
+            if(directory?.Exists != true || string.IsNullOrEmpty(name))
+                return result;
             var imageFilesInFolder = ImageFilesInFolder(directory.FullName, folderSearchOptions);
-            if (imageFilesInFolder == null || !imageFilesInFolder.Any()) return result;
-            if (imageFilesInFolder.Any())
+            if(imageFilesInFolder?.Any() != true)
+                return result;
+            if(imageFilesInFolder.Length > 0)
             {
                 name = name.ToAlphanumericName();
-                foreach (var imageFileInFolder in imageFilesInFolder)
+                foreach(var imageFileInFolder in imageFilesInFolder)
                 {
                     var image = new FileInfo(imageFileInFolder);
                     var filenameWithoutExtension = Path.GetFileName(imageFileInFolder).ToAlphanumericName();
                     var imageName = image.Name.ToAlphanumericName();
-                    if (imageName.Equals(name) || filenameWithoutExtension.Equals(name)) result.Add(image);
+                    if(imageName.Equals(name) || filenameWithoutExtension.Equals(name))
+                        result.Add(image);
                 }
             }
 
@@ -107,77 +110,102 @@ namespace Roadie.Library.Imaging
             }
             try
             {
-                if (string.IsNullOrEmpty(image1) || !File.Exists(image1))
+                if(string.IsNullOrEmpty(image1) || !File.Exists(image1))
                 {
                     return File.Exists(compareToImage);
                 }
-                using (var imageComparing = SixLabors.ImageSharp.Image.Load(image1))
+                using(var imageComparing = SixLabors.ImageSharp.Image.Load(image1))
                 {
-                    using (var imageToCompare = SixLabors.ImageSharp.Image.Load(compareToImage))
+                    using(var imageToCompare = SixLabors.ImageSharp.Image.Load(compareToImage))
                     {
                         // Generally a larger image is the preferred image
-                        var isBigger = imageToCompare.Height > imageComparing.Height && imageToCompare.Width > imageComparing.Width;
-                        if (isBigger)
+                        var isBigger = imageToCompare.Height > imageComparing.Height &&
+                            imageToCompare.Width > imageComparing.Width;
+                        if(isBigger)
                         {
                             return true;
                         }
                     }
                 }
-            }
-            catch (Exception ex)
+            } catch(Exception ex)
             {
-                Trace.WriteLine($"Error IsImageBetterQuality Image Comparing [{ image1 }] to [{ compareToImage }], Error [{ ex }]", "Warning");
+                Trace.WriteLine($"Error IsImageBetterQuality Image Comparing [{ image1 }] to [{ compareToImage }], Error [{ ex }]",
+                                "Warning");
             }
             return false;
         }
 
-        public static IEnumerable<FileInfo> FindImageTypeInDirectory(DirectoryInfo directory, ImageType type, SearchOption folderSearchOptions = SearchOption.AllDirectories)
+        public static IEnumerable<FileInfo> FindImageTypeInDirectory(DirectoryInfo directory,
+                                                                     ImageType type,
+                                                                     SearchOption folderSearchOptions = SearchOption.AllDirectories)
         {
             var result = new List<FileInfo>();
-            if (directory == null || !directory.Exists) return result;
+            if (directory?.Exists != true)
+            {
+                return result;
+            }
             var imageFilesInFolder = ImageFilesInFolder(directory.FullName, folderSearchOptions);
-            if (imageFilesInFolder == null || !imageFilesInFolder.Any()) return result;
-            foreach (var imageFile in imageFilesInFolder)
+            if (imageFilesInFolder?.Any() != true)
+            {
+                return result;
+            }
+            foreach(var imageFile in imageFilesInFolder)
             {
                 var image = new FileInfo(imageFile);
-                switch (type)
+                switch(type)
                 {
                     case ImageType.Artist:
-                        if (IsArtistImage(image)) result.Add(image);
+                        if (IsArtistImage(image))
+                        {
+                            result.Add(image);
+                        }
                         break;
 
                     case ImageType.ArtistSecondary:
-                        if (IsArtistSecondaryImage(image)) result.Add(image);
+                        if (IsArtistSecondaryImage(image))
+                        {
+                            result.Add(image);
+                        }
                         break;
 
                     case ImageType.Release:
-                        if (IsReleaseImage(image)) result.Add(image);
+                        if (IsReleaseImage(image))
+                        {
+                            result.Add(image);
+                        }
                         break;
 
                     case ImageType.ReleaseSecondary:
-                        if (IsReleaseSecondaryImage(image)) result.Add(image);
+                        if (IsReleaseSecondaryImage(image))
+                        {
+                            result.Add(image);
+                        }
                         break;
 
                     case ImageType.Label:
-                        if (IsLabelImage(image)) result.Add(image);
+                        if (IsLabelImage(image))
+                        {
+                            result.Add(image);
+                        }
                         break;
                 }
             }
-
             return result.OrderBy(x => x.Name);
         }
 
-        public static string[] GetFiles(string path, string[] patterns = null, SearchOption options = SearchOption.TopDirectoryOnly)
+        public static string[] GetFiles(string path,
+                                        string[] patterns = null,
+                                        SearchOption options = SearchOption.TopDirectoryOnly)
         {
-            if (!Directory.Exists(path))
+            if(!Directory.Exists(path))
             {
                 return new string[0];
             }
-            if (patterns == null || patterns.Length == 0)
+            if(patterns == null || patterns.Length == 0)
             {
                 return Directory.GetFiles(path, "*", options);
             }
-            if (patterns.Length == 1)
+            if(patterns.Length == 1)
             {
                 return Directory.GetFiles(path, patterns[0], options);
             }
@@ -186,9 +214,10 @@ namespace Roadie.Library.Imaging
 
         public static byte[] ImageDataFromUrl(string imageUrl)
         {
-            if (!string.IsNullOrEmpty(imageUrl) && !imageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            if(!string.IsNullOrEmpty(imageUrl) && !imageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
             {
-                var dataString = imageUrl.Trim().Replace('-', '+')
+                var dataString = imageUrl.Trim()
+                    .Replace('-', '+')
                     .Replace("data:image/jpeg;base64,", "")
                     .Replace("data:image/bmp;base64,", "")
                     .Replace("data:image/gif;base64,", "")
@@ -200,27 +229,22 @@ namespace Roadie.Library.Imaging
         }
 
         public static string[] ImageExtensions()
-        {
-            return new string[6] { "*.bmp", "*.jpeg", "*.jpe", "*.jpg", "*.png", "*.gif" };
-        }
+        { return new string[6] { "*.bmp", "*.jpeg", "*.jpe", "*.jpg", "*.png", "*.gif" }; }
 
         public static string[] ImageFilesInFolder(string folder, SearchOption searchOption)
-        {
-            return GetFiles(folder, ImageExtensions(), searchOption);
-        }
+        { return GetFiles(folder, ImageExtensions(), searchOption); }
 
         public static string[] ImageMimeTypes()
-        {
-            return new string[4] { "image/bmp", "image/jpeg", "image/png", "image/gif" };
-        }
+        { return new string[4] { "image/bmp", "image/jpeg", "image/png", "image/gif" }; }
 
         public static ImageSearchResult ImageSearchResultForImageUrl(string imageUrl)
         {
-            if (!WebHelper.IsStringUrl(imageUrl)) return null;
+            if(!WebHelper.IsStringUrl(imageUrl))
+                return null;
             var result = new ImageSearchResult();
             var imageBytes = WebHelper.BytesForImageUrl(imageUrl);
             IImageFormat imageFormat = null;
-            using (var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
+            using(var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
             {
                 result.Height = image.Height.ToString();
                 result.Width = image.Width.ToString();
@@ -232,43 +256,54 @@ namespace Roadie.Library.Imaging
 
         public static bool IsArtistImage(FileInfo fileinfo)
         {
-            if (fileinfo == null) return false;
-            return Regex.IsMatch(fileinfo.Name, @"(band|artist|group|photo)\.(jpg|jpeg|png|bmp|gif)",
-                RegexOptions.IgnoreCase);
+            if(fileinfo == null)
+                return false;
+            return Regex.IsMatch(fileinfo.Name,
+                                 @"(band|artist|group|photo)\.(jpg|jpeg|png|bmp|gif)",
+                                 RegexOptions.IgnoreCase);
         }
 
         public static bool IsArtistSecondaryImage(FileInfo fileinfo)
         {
-            if (fileinfo == null) return false;
+            if(fileinfo == null)
+                return false;
             return Regex.IsMatch(fileinfo.Name,
-                @"(artist_logo|logo|photo[-_\s]*[0-9]+|(artist[\s_-]+[0-9]+)|(band[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)",
-                RegexOptions.IgnoreCase);
+                                 @"(artist_logo|logo|photo[-_\s]*[0-9]+|(artist[\s_-]+[0-9]+)|(band[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)",
+                                 RegexOptions.IgnoreCase);
         }
 
         public static bool IsLabelImage(FileInfo fileinfo)
         {
-            if (fileinfo == null) return false;
-            return Regex.IsMatch(fileinfo.Name, @"(label|recordlabel|record_label)\.(jpg|jpeg|png|bmp|gif)",
-                RegexOptions.IgnoreCase);
+            if(fileinfo == null)
+                return false;
+            return Regex.IsMatch(fileinfo.Name,
+                                 @"(label|recordlabel|record_label)\.(jpg|jpeg|png|bmp|gif)",
+                                 RegexOptions.IgnoreCase);
         }
 
         public static bool IsReleaseImage(FileInfo fileinfo, string releaseName = null)
         {
-            if (fileinfo == null) return false;
+            if(fileinfo == null)
+                return false;
             return Regex.IsMatch(fileinfo.Name,
-                @"((f[-_\s]*[0-9]*)|00|art|big[art]*|cover|cvr|folder|release|front[-_\s]*)\.(jpg|jpeg|png|bmp|gif)",
-                RegexOptions.IgnoreCase);
+                                 @"((f[-_\s]*[0-9]*)|00|art|big[art]*|cover|cvr|folder|release|front[-_\s]*)\.(jpg|jpeg|png|bmp|gif)",
+                                 RegexOptions.IgnoreCase);
         }
 
         public static bool IsReleaseSecondaryImage(FileInfo fileinfo)
         {
-            if (fileinfo == null) return false;
+            if(fileinfo == null)
+                return false;
             return Regex.IsMatch(fileinfo.Name,
-                @"((img[\s-_]*[0-9]*[\s-_]*[0-9]*)|(book[let]*[#-_\s(]*[0-9]*-*[0-9]*(\))*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|sc[an]*(.)?[0-9]*|matrix(.)?[0-9]*|(cover[\s_-]*[0-9]+)|back|traycard|jewel case|disc|(.*)[in]*side(.*)|in([side|lay|let|site])*[0-9]*|digipack.?\[?\(?([0-9]*)\]?\)?|cd.?\[?\(?([0-9]*)\]?\)?|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)",
-                RegexOptions.IgnoreCase);
+                                 @"((img[\s-_]*[0-9]*[\s-_]*[0-9]*)|(book[let]*[#-_\s(]*[0-9]*-*[0-9]*(\))*)|(encartes[-_\s]*[(]*[0-9]*[)]*)|sc[an]*(.)?[0-9]*|matrix(.)?[0-9]*|(cover[\s_-]*[0-9]+)|back|traycard|jewel case|disc|(.*)[in]*side(.*)|in([side|lay|let|site])*[0-9]*|digipack.?\[?\(?([0-9]*)\]?\)?|cd.?\[?\(?([0-9]*)\]?\)?|(release[\s_-]+[0-9]+))\.(jpg|jpeg|png|bmp|gif)",
+                                 RegexOptions.IgnoreCase);
         }
 
-        public static byte[] ResizeImage(byte[] imageBytes, int width, int height) => ImageHelper.ResizeImage(imageBytes, width, height, false).Item2;
+        public static byte[] ResizeImage(byte[] imageBytes, int width, int height) => ImageHelper.ResizeImage(imageBytes,
+                                                                                                              width,
+                                                                                                              height,
+                                                                                                              false)
+            .Item2;
 
         /// <summary>
         /// Resize a given image to given dimensions if needed
@@ -278,38 +313,39 @@ namespace Roadie.Library.Imaging
         /// <param name="height">Resize to height</param>
         /// <param name="forceResize">Force resize</param>
         /// <returns>Tuple with bool for did resize and byte array of image</returns>
-        public static Tuple<bool, byte[]> ResizeImage(byte[] imageBytes, int width, int height, bool? forceResize = false)
+        public static Tuple<bool, byte[]> ResizeImage(byte[] imageBytes,
+                                                      int width,
+                                                      int height,
+                                                      bool? forceResize = false)
         {
-            if (imageBytes == null)
+            if(imageBytes == null)
             {
                 return null;
             }
             try
             {
-                using (var outStream = new MemoryStream())
+                using(var outStream = new MemoryStream())
                 {
                     var resized = false;
                     IImageFormat imageFormat = null;
-                    using (var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
+                    using(var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
                     {
                         var doForce = forceResize ?? false;
-                        if (doForce || image.Width > width || image.Height > height)
+                        if(doForce || image.Width > width || image.Height > height)
                         {
                             int newWidth, newHeight;
-                            if (doForce)
+                            if(doForce)
                             {
                                 newWidth = width;
                                 newHeight = height;
-                            }
-                            else
+                            } else
                             {
                                 float aspect = image.Width / (float)image.Height;
-                                if (aspect < 1)
+                                if(aspect < 1)
                                 {
                                     newWidth = (int)(width * aspect);
                                     newHeight = (int)(newWidth / aspect);
-                                }
-                                else
+                                } else
                                 {
                                     newHeight = (int)(height / aspect);
                                     newWidth = (int)(newHeight * aspect);
@@ -322,8 +358,7 @@ namespace Roadie.Library.Imaging
                     }
                     return new Tuple<bool, byte[]>(resized, outStream.ToArray());
                 }
-            }
-            catch (Exception ex)
+            } catch(Exception ex)
             {
                 Trace.WriteLine($"Error Resizing Image [{ex}]", "Warning");
             }
@@ -331,12 +366,13 @@ namespace Roadie.Library.Imaging
         }
 
         /// <summary>
-        ///     Get image data from all sources for either fileanme or MetaData
+        /// Get image data from all sources for either fileanme or MetaData
         /// </summary>
         /// <param name="filename">Name of the File (ie a CUE file)</param>
         /// <param name="metaData">Populated MetaData</param>
-        /// <returns></returns>
-        public static AudioMetaDataImage GetPictureForMetaData(IRoadieSettings configuration, string filename, AudioMetaData metaData)
+        public static AudioMetaDataImage GetPictureForMetaData(IRoadieSettings configuration,
+                                                               string filename,
+                                                               AudioMetaData metaData)
         {
             SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(filename), "Invalid Filename");
             SimpleContract.Requires<ArgumentException>(metaData != null, "Invalid MetaData");
@@ -345,7 +381,7 @@ namespace Roadie.Library.Imaging
         }
 
         /// <summary>
-        ///     Does image exist with the same filename
+        /// Does image exist with the same filename
         /// </summary>
         /// <param name="filename">Name of the File (ie a CUE file)</param>
         /// <returns>Null if not found else populated image</returns>
@@ -353,7 +389,7 @@ namespace Roadie.Library.Imaging
         {
             AudioMetaDataImage imageMetaData = null;
 
-            if (string.IsNullOrEmpty(filename))
+            if(string.IsNullOrEmpty(filename))
             {
                 return imageMetaData;
             }
@@ -361,9 +397,9 @@ namespace Roadie.Library.Imaging
             {
                 var fileInfo = new FileInfo(filename);
                 var ReleaseCover = Path.ChangeExtension(filename, "jpg");
-                if (File.Exists(ReleaseCover))
+                if(File.Exists(ReleaseCover))
                 {
-                    using (var processor = new ImageProcessor(configuration))
+                    using(var processor = new ImageProcessor(configuration))
                     {
                         imageMetaData = new AudioMetaDataImage
                         {
@@ -372,24 +408,23 @@ namespace Roadie.Library.Imaging
                             MimeType = Library.Processors.FileProcessor.DetermineFileType(fileInfo)
                         };
                     }
-                }
-                else
+                } else
                 {
                     // Is there a picture in filename folder (for the Release)
                     var pictures = fileInfo.Directory.GetFiles("*.jpg");
                     var tagImages = new List<AudioMetaDataImage>();
-                    if (pictures != null && pictures.Any())
+                    if(pictures?.Any() == true)
                     {
-                        FileInfo picture = null;
                         // See if there is a "cover" or "front" jpg file if so use it
-                        picture = pictures.FirstOrDefault(x =>
-                            x.Name.Equals("cover", StringComparison.OrdinalIgnoreCase));
-                        if (picture == null)
-                            picture = pictures.FirstOrDefault(x =>
-                                x.Name.Equals("front", StringComparison.OrdinalIgnoreCase));
-                        if (picture == null) picture = pictures.First();
-                        if (picture != null)
-                            using (var processor = new ImageProcessor(configuration))
+                        FileInfo picture = Array.Find(pictures,
+                                                      x => x.Name.Equals("cover", StringComparison.OrdinalIgnoreCase));
+                        if(picture == null)
+                            picture = Array.Find(pictures,
+                                                 x => x.Name.Equals("front", StringComparison.OrdinalIgnoreCase));
+                        if(picture == null)
+                            picture = pictures[0];
+                        if(picture != null)
+                            using(var processor = new ImageProcessor(configuration))
                             {
                                 imageMetaData = new AudioMetaDataImage
                                 {
@@ -400,11 +435,9 @@ namespace Roadie.Library.Imaging
                             }
                     }
                 }
-            }
-            catch (FileNotFoundException)
+            } catch(FileNotFoundException)
             {
-            }
-            catch (Exception ex)
+            } catch(Exception ex)
             {
                 Trace.WriteLine(ex, ex.Serialize());
             }
@@ -412,97 +445,138 @@ namespace Roadie.Library.Imaging
             return imageMetaData;
         }
 
-        public static models.Image MakeThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string type, int? width = null, int? height = null, bool includeCachebuster = false)
+        public static models.Image MakeThumbnailImage(IRoadieSettings configuration,
+                                                      IHttpContext httpContext,
+                                                      Guid id,
+                                                      string type,
+                                                      int? width = null,
+                                                      int? height = null,
+                                                      bool includeCachebuster = false)
         {
-            return MakeImage(configuration, httpContext, id, type, width ?? configuration.ThumbnailImageSize.Width, height ?? configuration.ThumbnailImageSize.Height, null, includeCachebuster);
+            return MakeImage(configuration,
+                             httpContext,
+                             id,
+                             type,
+                             width ?? configuration.ThumbnailImageSize.Width,
+                             height ?? configuration.ThumbnailImageSize.Height,
+                             null,
+                             includeCachebuster);
         }
 
         public static models.Image MakeNewImage(IHttpContext httpContext, string type)
-        {
-            return new models.Image($"{httpContext.ImageBaseUrl}/{type}.jpg", null, null);
-        }
+        { return new models.Image($"{httpContext.ImageBaseUrl}/{type}.jpg", null, null); }
 
-        public static models.Image MakePlaylistThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
-        {
-            return MakeThumbnailImage(configuration, httpContext, id, "playlist");
-        }
+        public static models.Image MakePlaylistThumbnailImage(IRoadieSettings configuration,
+                                                              IHttpContext httpContext,
+                                                              Guid id)
+        { return MakeThumbnailImage(configuration, httpContext, id, "playlist"); }
 
-        public static models.Image MakeReleaseThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
-        {
-            return MakeThumbnailImage(configuration, httpContext, id, "release");
-        }
+        public static models.Image MakeReleaseThumbnailImage(IRoadieSettings configuration,
+                                                             IHttpContext httpContext,
+                                                             Guid id)
+        { return MakeThumbnailImage(configuration, httpContext, id, "release"); }
 
-        public static models.Image MakeTrackThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
-        {
-            return MakeThumbnailImage(configuration, httpContext, id, "track");
-        }
+        public static models.Image MakeTrackThumbnailImage(IRoadieSettings configuration,
+                                                           IHttpContext httpContext,
+                                                           Guid id)
+        { return MakeThumbnailImage(configuration, httpContext, id, "track"); }
 
-        public static models.Image MakeUserThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
-        {
-            return MakeThumbnailImage(configuration, httpContext, id, "user");
-        }
+        public static models.Image MakeUserThumbnailImage(IRoadieSettings configuration,
+                                                          IHttpContext httpContext,
+                                                          Guid id)
+        { return MakeThumbnailImage(configuration, httpContext, id, "user"); }
 
-        public static models.Image MakeLabelThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
-        {
-            return MakeThumbnailImage(configuration, httpContext, id, "label");
-        }
+        public static models.Image MakeLabelThumbnailImage(IRoadieSettings configuration,
+                                                           IHttpContext httpContext,
+                                                           Guid id)
+        { return MakeThumbnailImage(configuration, httpContext, id, "label"); }
 
-        public static models.Image MakeArtistThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid? id)
+        public static models.Image MakeArtistThumbnailImage(IRoadieSettings configuration,
+                                                            IHttpContext httpContext,
+                                                            Guid? id)
         {
-            if (!id.HasValue) return null;
+            if(!id.HasValue)
+                return null;
             return MakeThumbnailImage(configuration, httpContext, id.Value, "artist");
         }
 
-        public static models.Image MakeCollectionThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
+        public static models.Image MakeCollectionThumbnailImage(IRoadieSettings configuration,
+                                                                IHttpContext httpContext,
+                                                                Guid id)
+        { return MakeThumbnailImage(configuration, httpContext, id, "collection"); }
+
+        public static models.Image MakeFullsizeImage(IRoadieSettings configuration,
+                                                     IHttpContext httpContext,
+                                                     Guid id,
+                                                     string caption = null)
         {
-            return MakeThumbnailImage(configuration, httpContext, id, "collection");
+            return new models.Image($"{httpContext.ImageBaseUrl}/{id}",
+                                    caption,
+                                    $"{httpContext.ImageBaseUrl}/{id}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
         }
 
-        public static models.Image MakeFullsizeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string caption = null)
+        public static models.Image MakeFullsizeSecondaryImage(IRoadieSettings configuration,
+                                                              IHttpContext httpContext,
+                                                              Guid id,
+                                                              ImageType type,
+                                                              int imageId,
+                                                              string caption = null)
         {
-            return new models.Image($"{httpContext.ImageBaseUrl}/{id}", caption,
-                $"{httpContext.ImageBaseUrl}/{id}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
-        }
-
-        public static models.Image MakeFullsizeSecondaryImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, ImageType type, int imageId, string caption = null)
-        {
-            if (type == ImageType.ArtistSecondary)
+            if(type == ImageType.ArtistSecondary)
             {
-                return new models.Image($"{httpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}", caption, $"{httpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
+                return new models.Image($"{httpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}",
+                                        caption,
+                                        $"{httpContext.ImageBaseUrl}/artist-secondary/{id}/{imageId}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
             }
-            return new models.Image($"{httpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}", caption, $"{httpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
+            return new models.Image($"{httpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}",
+                                    caption,
+                                    $"{httpContext.ImageBaseUrl}/release-secondary/{id}/{imageId}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
         }
 
-        public static models.Image MakeGenreThumbnailImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id)
-        {
-            return MakeThumbnailImage(configuration, httpContext, id, "genre");
-        }
+        public static models.Image MakeGenreThumbnailImage(IRoadieSettings configuration,
+                                                           IHttpContext httpContext,
+                                                           Guid id)
+        { return MakeThumbnailImage(configuration, httpContext, id, "genre"); }
 
         public static models.Image MakeUnknownImage(IHttpContext httpContext, string unknownType = "unknown")
-        {
-            return new models.Image($"{httpContext.ImageBaseUrl}/{ unknownType }.jpg");
-        }
+        { return new models.Image($"{httpContext.ImageBaseUrl}/{ unknownType }.jpg"); }
 
-        public static models.Image MakeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, int width = 200, int height = 200, string caption = null, bool includeCachebuster = false)
+        public static models.Image MakeImage(IRoadieSettings configuration,
+                                             IHttpContext httpContext,
+                                             Guid id,
+                                             int width = 200,
+                                             int height = 200,
+                                             string caption = null,
+                                             bool includeCachebuster = false)
         {
             return new models.Image($"{httpContext.ImageBaseUrl}/{id}/{width}/{height}/{(includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty)}",
-                caption,
-                $"{httpContext.ImageBaseUrl}/{id}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
+                                    caption,
+                                    $"{httpContext.ImageBaseUrl}/{id}/{configuration.SmallImageSize.Width}/{configuration.SmallImageSize.Height}");
         }
 
-        public static models.Image MakeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string type, IImageSize imageSize)
-        {
-            return MakeImage(configuration, httpContext, id, type, imageSize.Width, imageSize.Height);
-        }
+        public static models.Image MakeImage(IRoadieSettings configuration,
+                                             IHttpContext httpContext,
+                                             Guid id,
+                                             string type,
+                                             IImageSize imageSize)
+        { return MakeImage(configuration, httpContext, id, type, imageSize.Width, imageSize.Height); }
 
-        public static models.Image MakeImage(IRoadieSettings configuration, IHttpContext httpContext, Guid id, string type, int? width, int? height, string caption = null, bool includeCachebuster = false)
+        public static models.Image MakeImage(IRoadieSettings configuration,
+                                             IHttpContext httpContext,
+                                             Guid id,
+                                             string type,
+                                             int? width,
+                                             int? height,
+                                             string caption = null,
+                                             bool includeCachebuster = false)
         {
-            if (width.HasValue && height.HasValue && (width.Value != configuration.ThumbnailImageSize.Width ||
-                                                      height.Value != configuration.ThumbnailImageSize.Height))
-                return new models.Image(
-                    $"{httpContext.ImageBaseUrl}/{type}/{id}/{width}/{height}/{(includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty)}",
-                    caption,
-                    $"{httpContext.ImageBaseUrl}/{type}/{id}/{configuration.ThumbnailImageSize.Width}/{configuration.ThumbnailImageSize.Height}");
+            if(width.HasValue &&
+                height.HasValue &&
+                (width.Value != configuration.ThumbnailImageSize.Width ||
+                    height.Value != configuration.ThumbnailImageSize.Height))
+                return new models.Image($"{httpContext.ImageBaseUrl}/{type}/{id}/{width}/{height}/{(includeCachebuster ? DateTime.UtcNow.Ticks.ToString() : string.Empty)}",
+                                        caption,
+                                        $"{httpContext.ImageBaseUrl}/{type}/{id}/{configuration.ThumbnailImageSize.Width}/{configuration.ThumbnailImageSize.Height}");
             return new models.Image($"{httpContext.ImageBaseUrl}/{type}/{id}", caption, null);
         }
     }

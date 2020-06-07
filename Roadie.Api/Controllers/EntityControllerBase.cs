@@ -22,8 +22,6 @@ namespace Roadie.Api.Controllers
     {
         public const string ControllerCacheRegionUrn = "urn:controller_cache";
 
-        private models.User _currentUser;
-
         protected ICacheManager CacheManager { get; }
 
         protected ILogger Logger { get; set; }
@@ -32,8 +30,12 @@ namespace Roadie.Api.Controllers
 
         protected UserManager<User> UserManager { get; }
 
-        public EntityControllerBase(ICacheManager cacheManager, IRoadieSettings roadieSettings,
-                                            UserManager<User> userManager)
+        private models.User _currentUser;
+
+        protected EntityControllerBase(
+            ICacheManager cacheManager,
+            IRoadieSettings roadieSettings,
+            UserManager<User> userManager)
         {
             CacheManager = cacheManager;
             RoadieSettings = roadieSettings;
@@ -48,8 +50,8 @@ namespace Roadie.Api.Controllers
                 {
                     _currentUser = await CacheManager.GetAsync($"urn:controller_user:{User.Identity.Name}", async () =>
                     {
-                        return UserModelForUser(await UserManager.GetUserAsync(User));
-                    }, ControllerCacheRegionUrn);
+                        return UserModelForUser(await UserManager.GetUserAsync(User).ConfigureAwait(false));
+                    }, ControllerCacheRegionUrn).ConfigureAwait(false);
                 }
             }
             if (_currentUser == null)
@@ -67,7 +69,7 @@ namespace Roadie.Api.Controllers
             var tsw = new Stopwatch();
 
             tsw.Restart();
-            var user = currentUser ?? await CurrentUserModel();
+            var user = currentUser ?? await CurrentUserModel().ConfigureAwait(false); ;
             var track = trackService.StreamCheckAndInfo(user, id);
             if (track == null || (track?.IsNotFoundResult ?? false))
             {
@@ -86,18 +88,23 @@ namespace Roadie.Api.Controllers
             timings.Add("TrackService.StreamCheckAndInfo", tsw.ElapsedMilliseconds);
             tsw.Restart();
 
-            var info = await trackService.TrackStreamInfo(id,
+            var info = await trackService.TrackStreamInfoAsync(id,
                 TrackService.DetermineByteStartFromHeaders(Request.Headers),
                 TrackService.DetermineByteEndFromHeaders(Request.Headers, track.Data.FileSize),
-                user);
+                user).ConfigureAwait(false); 
             if (!info?.IsSuccess ?? false || info?.Data == null)
             {
                 if (info?.Errors != null && (info?.Errors.Any() ?? false))
+                {
                     Logger.LogCritical(
-                        $"StreamTrack: TrackStreamInfo Invalid For TrackId [{id}] OperationResult Errors [{string.Join('|', info?.Errors ?? new Exception[0])}], For User [{currentUser}]");
+                       $"StreamTrack: TrackStreamInfo Invalid For TrackId [{id}] OperationResult Errors [{string.Join('|', info?.Errors ?? new Exception[0])}], For User [{currentUser}]");
+                }
                 else
+                {
                     Logger.LogCritical(
-                        $"StreamTrack: TrackStreamInfo Invalid For TrackId [{id}] OperationResult Messages [{string.Join('|', info?.Messages ?? new string[0])}], For User [{currentUser}]");
+                       $"StreamTrack: TrackStreamInfo Invalid For TrackId [{id}] OperationResult Messages [{string.Join('|', info?.Messages ?? new string[0])}], For User [{currentUser}]");
+                }
+
                 return NotFound("Unknown TrackId");
             }
 
@@ -129,7 +136,7 @@ namespace Roadie.Api.Controllers
             }
             Response.Headers.Add("Expires", info.Data.Expires);
 
-            await Response.Body.WriteAsync(info.Data.Bytes, 0, info.Data.Bytes.Length);
+            await Response.Body.WriteAsync(info.Data.Bytes, 0, info.Data.Bytes.Length).ConfigureAwait(false);
 
             var scrobble = new ScrobbleInfo
             {
@@ -137,7 +144,7 @@ namespace Roadie.Api.Controllers
                 TimePlayed = DateTime.UtcNow,
                 TrackId = id
             };
-            await playActivityService.NowPlaying(user, scrobble);
+            await playActivityService.NowPlayingAsync(user, scrobble).ConfigureAwait(false); 
             sw.Stop();
             Logger.LogTrace($"StreamTrack ElapsedTime [{sw.ElapsedMilliseconds}], Timings [{JsonConvert.SerializeObject(timings)}], StreamInfo `{info?.Data}`");
             return new EmptyResult();
@@ -145,7 +152,11 @@ namespace Roadie.Api.Controllers
 
         protected models.User UserModelForUser(User user)
         {
-            if (user == null) return null;
+            if (user == null)
+            {
+                return null;
+            }
+
             var result = user.Adapt<models.User>();
             result.IsAdmin = User.IsInRole("Admin");
             result.IsEditor = User.IsInRole("Editor") || result.IsAdmin;

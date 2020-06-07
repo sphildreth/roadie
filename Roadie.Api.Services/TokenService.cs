@@ -20,11 +20,11 @@ namespace Roadie.Api.Services
             _configuration = configuration;
         }
 
-        public async Task<string> GenerateToken(User user, UserManager<User> userManager)
+        public async Task<string> GenerateTokenAsync(User user, UserManager<User> userManager)
         {
             var utcNow = DateTime.UtcNow;
 
-            var roles = await userManager.GetRolesAsync(user);
+            var roles = await userManager.GetRolesAsync(user).ConfigureAwait(false);
             var userRoles = roles.Select(r => new Claim(ClaimTypes.Role, r)).ToArray();
 
             var tokenHandler = new JwtSecurityTokenHandler();

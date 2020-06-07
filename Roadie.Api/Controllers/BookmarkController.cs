@@ -21,8 +21,12 @@ namespace Roadie.Api.Controllers
     {
         private IBookmarkService BookmarkService { get; }
 
-        public BookmarkController(IBookmarkService bookmarkService, ILogger<BookmarkController> logger, ICacheManager cacheManager,
-                    UserManager<User> userManager, IRoadieSettings roadieSettings)
+        public BookmarkController(
+            IBookmarkService bookmarkService,
+            ILogger<BookmarkController> logger,
+            ICacheManager cacheManager,
+            UserManager<User> userManager,
+            IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -35,9 +39,12 @@ namespace Roadie.Api.Controllers
         {
             try
             {
-                var result = await BookmarkService.List(await CurrentUserModel(),
-                    request);
-                if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+                var result = await BookmarkService.ListAsync(await CurrentUserModel().ConfigureAwait(false), request).ConfigureAwait(false);
+                if (!result.IsSuccess)
+                {
+                    return StatusCode((int)HttpStatusCode.InternalServerError);
+                }
+
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)

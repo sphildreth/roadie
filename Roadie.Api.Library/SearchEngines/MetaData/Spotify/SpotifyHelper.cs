@@ -23,7 +23,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
         {
         }
 
-        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query,
+        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearchAsync(string query,
             int resultsCount)
         {
             ArtistSearchResult data = null;
@@ -37,7 +37,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
                 var client = new RestClient("http://api.spotify.com/v1");
                 client.UserAgent = WebHelper.UserAgent;
 
-                var response = await client.ExecuteAsync<SpotifyResult>(request);
+                var response = await client.ExecuteAsync<SpotifyResult>(request).ConfigureAwait(false);
 
                 if (response.ResponseStatus == ResponseStatus.Error)
                 {
@@ -79,7 +79,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
         public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName,
             string query, int resultsCount)
         {
-            var artistResult = await PerformArtistSearch(artistName, resultsCount);
+            var artistResult = await PerformArtistSearchAsync(artistName, resultsCount).ConfigureAwait(false);
             if (!artistResult.IsSuccess) return new OperationResult<IEnumerable<ReleaseSearchResult>>();
             try
             {
@@ -88,7 +88,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
 
                 ReleaseSearchResult result = null;
 
-                var response = await AlbumsForArtist(artistResult.Data.First().SpotifyId);
+                var response = await AlbumsForArtistAsync(artistResult.Data.First().SpotifyId).ConfigureAwait(false);
                 if (response != null && response.items != null)
                 {
                     string foundByAlternateName = null;
@@ -104,7 +104,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
                     }
 
                     var client = new RestClient(string.Format("http://api.spotify.com/v1/albums/{0}", spotifyAlbum.id));
-                    var albumResult = await client.ExecuteAsync<AlbumResult>(request);
+                    var albumResult = await client.ExecuteAsync<AlbumResult>(request).ConfigureAwait(false);
                     if (albumResult != null && albumResult.Data != null)
                     {
                         var sa = albumResult.Data;
@@ -203,7 +203,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             return new OperationResult<IEnumerable<ReleaseSearchResult>>();
         }
 
-        private async Task<Albums> AlbumsForArtist(string spotifyId)
+        private async Task<Albums> AlbumsForArtistAsync(string spotifyId)
         {
             var cacheKey = string.Format("uri:spotify:AlbumsForArtist:{0}", spotifyId);
             var result = CacheManager.Get<Albums>(cacheKey);
@@ -213,7 +213,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
                 var client = new RestClient(string.Format(
                     "http://api.spotify.com/v1/artists/{0}/albums?offset=0&limit=25&album_type=album&market=US",
                     spotifyId));
-                var artistAlbumsResponse = await client.ExecuteAsync<Albums>(request);
+                var artistAlbumsResponse = await client.ExecuteAsync<Albums>(request).ConfigureAwait(false);
                 result = artistAlbumsResponse != null && artistAlbumsResponse.Data != null
                     ? artistAlbumsResponse.Data
                     : null;

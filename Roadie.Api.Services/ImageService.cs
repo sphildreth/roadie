@@ -23,11 +23,19 @@ namespace Roadie.Api.Services
 {
     public class ImageService : ServiceBase, IImageService
     {
-        public string Referrer { get; set; }
-        public string RequestIp { get; set; }
         private IDefaultNotFoundImages DefaultNotFoundImages { get; }
 
         private IImageSearchManager ImageSearchManager { get; }
+
+        public string Referrer { get; set; }
+        public string RequestIp { get; set; }
+
+        public ImageService(IRoadieSettings configuration, IRoadieDbContext dbContext, ICacheManager cacheManager,
+                            ILogger logger, DefaultNotFoundImages defaultNotFoundImages)
+            : base(configuration, null, dbContext, cacheManager, logger, null)
+        {
+            DefaultNotFoundImages = defaultNotFoundImages;
+        }
 
         public ImageService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
@@ -43,149 +51,6 @@ namespace Roadie.Api.Services
             ImageSearchManager = imageSearchManager;
         }
 
-        public ImageService(IRoadieSettings configuration, IRoadieDbContext dbContext, ICacheManager cacheManager,
-                            ILogger logger, DefaultNotFoundImages defaultNotFoundImages)
-            : base(configuration, null, dbContext, cacheManager, logger, null)
-        {
-            DefaultNotFoundImages = defaultNotFoundImages;
-        }
-
-        public async Task<FileOperationResult<IImage>> ArtistImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await GetImageFileOperation("ArtistImage",
-                data.Artist.CacheRegionUrn(id),
-                id,
-                width,
-                height,
-                async () => { return await ArtistImageAction(id, etag); },
-                etag);
-        }
-
-        public async Task<FileOperationResult<IImage>> ArtistSecondaryImage(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await GetImageFileOperation($"ArtistSecondaryThumbnail.{imageId}",
-                data.Artist.CacheRegionUrn(id),
-                id,
-                width,
-                height,
-                async () => { return await ArtistSecondaryImageAction(id, imageId, etag); },
-                etag);
-        }
-
-        public async Task<FileOperationResult<IImage>> CollectionImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await GetImageFileOperation("CollectionThumbnail",
-                data.Collection.CacheRegionUrn(id),
-                id,
-                width,
-                height,
-                async () => { return await CollectionImageAction(id, etag); },
-                etag);
-        }
-
-        public async Task<FileOperationResult<IImage>> GenreImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await GetImageFileOperation("GenreThumbnail",
-                data.Genre.CacheRegionUrn(id),
-                id,
-                width,
-                height,
-                async () => await GenreImageAction(id, etag),
-                etag);
-        }
-
-        public async Task<FileOperationResult<IImage>> LabelImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await GetImageFileOperation("LabelThumbnail",
-                data.Label.CacheRegionUrn(id),
-                id,
-                width,
-                height,
-                async () => await LabelImageAction(id, etag),
-                etag);
-        }
-
-        public async Task<FileOperationResult<IImage>> PlaylistImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await GetImageFileOperation("PlaylistThumbnail",
-                data.Playlist.CacheRegionUrn(id),
-                id,
-                width,
-                height,
-                async () => await PlaylistImageAction(id, etag),
-                etag);
-        }
-
-        public async Task<FileOperationResult<IImage>> ReleaseImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await GetImageFileOperation("ReleaseThumbnail",
-                data.Release.CacheRegionUrn(id),
-                id,
-                width,
-                height,
-                async () => await ReleaseImageAction(id, etag),
-                etag);
-        }
-
-        public async Task<FileOperationResult<IImage>> ReleaseSecondaryImage(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await GetImageFileOperation($"ReleaseSecondaryThumbnail-{imageId}",
-                data.Release.CacheRegionUrn(id),
-                id,
-                width,
-                height,
-                async () => { return await ReleaseSecondaryImageAction(id, imageId, etag); },
-                etag);
-        }
-
-        public async Task<OperationResult<IEnumerable<ImageSearchResult>>> Search(string query, int resultsCount = 10)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-            IEnumerable<ImageSearchResult> searchResults = null;
-            try
-            {
-                searchResults = await ImageSearchManager.ImageSearch(query);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex);
-                errors.Add(ex);
-            }
-
-            sw.Stop();
-            return new OperationResult<IEnumerable<ImageSearchResult>>
-            {
-                Data = searchResults,
-                IsSuccess = !errors.Any(),
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
-        }
-
-        public async Task<FileOperationResult<IImage>> TrackImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await GetImageFileOperation("TrackThumbnail",
-                data.Track.CacheRegionUrn(id),
-                id,
-                width,
-                height,
-                async () => await TrackImageAction(id, width, height, etag),
-                etag);
-        }
-
-        public async Task<FileOperationResult<IImage>> UserImage(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
-        {
-            return await GetImageFileOperation("UserById",
-                User.CacheRegionUrn(id),
-                id,
-                width,
-                height,
-                async () => await UserImageAction(id, etag),
-                etag);
-        }
-
         /// <summary>
         /// Get image for an artist, see if the artist has an image in their folder and use that else use Artist.Thumbnail, is also not found use Artist DefaultNotFound image.
         /// </summary>
@@ -193,10 +58,10 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var artist = await GetArtist(id);
+                var artist = await GetArtist(id).ConfigureAwait(false);
                 if (artist == null)
                 {
-                    return new FileOperationResult<IImage>(true, string.Format("Artist Not Found [{0}]", id));
+                    return new FileOperationResult<IImage>(true, $"Artist Not Found [{id}]");
                 }
                 byte[] imageBytes = null;
                 string artistFolder = null;
@@ -226,7 +91,7 @@ namespace Roadie.Api.Services
                 {
                     Bytes = imageBytes,
                 };
-                if (imageBytes == null || !imageBytes.Any())
+                if (imageBytes?.Any() != true)
                 {
                     image = DefaultNotFoundImages.Artist;
                 }
@@ -244,10 +109,10 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var artist = await GetArtist(id);
+                var artist = await GetArtist(id).ConfigureAwait(false);
                 if (artist == null)
                 {
-                    return new FileOperationResult<IImage>(true, string.Format("Release Not Found [{0}]", id));
+                    return new FileOperationResult<IImage>(true, $"Release Not Found [{id}]");
                 }
                 byte[] imageBytes = null;
                 string artistFolder = null;
@@ -265,7 +130,9 @@ namespace Roadie.Api.Services
                             .FindImageTypeInDirectory(new DirectoryInfo(artistFolder), ImageType.ArtistSecondary)
                             .ToArray();
                         if (artistSecondaryImages.Length >= imageId && artistSecondaryImages[imageId] != null)
+                        {
                             imageBytes = File.ReadAllBytes(artistSecondaryImages[imageId].FullName);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -292,10 +159,10 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var collection = await GetCollection(id);
+                var collection = await GetCollection(id).ConfigureAwait(false);
                 if (collection == null)
                 {
-                    return new FileOperationResult<IImage>(true, string.Format("Collection Not Found [{0}]", id));
+                    return new FileOperationResult<IImage>(true, $"Collection Not Found [{id}]");
                 }
                 IImage image = new Library.Imaging.Image(id)
                 {
@@ -313,7 +180,7 @@ namespace Roadie.Api.Services
                 {
                     Logger.LogError(ex, $"Error Reading Image File [{collectionImageFilename}]");
                 }
-                if (image.Bytes == null || !image.Bytes.Any())
+                if (image.Bytes?.Any() != true)
                 {
                     image = DefaultNotFoundImages.Collection;
                 }
@@ -336,7 +203,7 @@ namespace Roadie.Api.Services
             }
             if (image?.Bytes?.Any() != true)
             {
-                return new FileOperationResult<IImage>(string.Format("ImageById Not Set [{0}]", id));
+                return new FileOperationResult<IImage>($"ImageById Not Set [{id}]");
             }
             return new FileOperationResult<IImage>(image?.Bytes?.Any() ?? false
                 ? OperationMessages.OkMessage
@@ -354,10 +221,10 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var genre = await GetGenre(id);
+                var genre = await GetGenre(id).ConfigureAwait(false);
                 if (genre == null)
                 {
-                    return new FileOperationResult<IImage>(true, string.Format("Genre Not Found [{0}]", id));
+                    return new FileOperationResult<IImage>(true, $"Genre Not Found [{id}]");
                 }
                 IImage image = new Library.Imaging.Image(id)
                 {
@@ -375,7 +242,7 @@ namespace Roadie.Api.Services
                 {
                     Logger.LogError(ex, $"Error Reading Image File [{genreImageFilename}]");
                 }
-                if (image.Bytes == null || !image.Bytes.Any())
+                if (image.Bytes?.Any() != true)
                 {
                     image = DefaultNotFoundImages.Genre;
                 }
@@ -395,7 +262,7 @@ namespace Roadie.Api.Services
             {
                 var sw = Stopwatch.StartNew();
                 var sizeHash = (width ?? 0) + (height ?? 0);
-                var result = await CacheManager.GetAsync($"urn:{type}_by_id_operation:{id}:{sizeHash}", action, regionUrn);
+                var result = await CacheManager.GetAsync($"urn:{type}_by_id_operation:{id}:{sizeHash}", action, regionUrn).ConfigureAwait(false);
                 if (!result.IsSuccess)
                 {
                     return new FileOperationResult<IImage>(result.IsNotFoundResult, result.Messages);
@@ -450,10 +317,10 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var label = await GetLabel(id);
+                var label = await GetLabel(id).ConfigureAwait(false);
                 if (label == null)
                 {
-                    return new FileOperationResult<IImage>(true, string.Format("Label Not Found [{0}]", id));
+                    return new FileOperationResult<IImage>(true, $"Label Not Found [{id}]");
                 }
                 IImage image = new Library.Imaging.Image(id)
                 {
@@ -471,7 +338,7 @@ namespace Roadie.Api.Services
                 {
                     Logger.LogError(ex, $"Error Reading Image File [{labelImageFilename}]");
                 }
-                if (image.Bytes == null || !image.Bytes.Any())
+                if (image.Bytes?.Any() != true)
                 {
                     image = DefaultNotFoundImages.Label;
                 }
@@ -489,10 +356,10 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var playlist = await GetPlaylist(id);
+                var playlist = await GetPlaylist(id).ConfigureAwait(false);
                 if (playlist == null)
                 {
-                    return new FileOperationResult<IImage>(true, string.Format("Playlist Not Found [{0}]", id));
+                    return new FileOperationResult<IImage>(true, $"Playlist Not Found [{id}]");
                 }
                 IImage image = new Library.Imaging.Image(id)
                 {
@@ -510,7 +377,7 @@ namespace Roadie.Api.Services
                 {
                     Logger.LogError(ex, $"Error Reading Image File [{playlistImageFilename}]");
                 }
-                if (image.Bytes == null || !image.Bytes.Any())
+                if (image.Bytes?.Any() != true)
                 {
                     image = DefaultNotFoundImages.Playlist;
                 }
@@ -531,10 +398,10 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var release = await GetRelease(id);
+                var release = await GetRelease(id).ConfigureAwait(false);
                 if (release == null)
                 {
-                    return new FileOperationResult<IImage>(true, string.Format("Release Not Found [{0}]", id));
+                    return new FileOperationResult<IImage>(true, $"Release Not Found [{id}]");
                 }
                 byte[] imageBytes = null;
                 string artistFolder = null;
@@ -591,10 +458,10 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var release = await GetRelease(id);
+                var release = await GetRelease(id).ConfigureAwait(false);
                 if (release == null)
                 {
-                    return new FileOperationResult<IImage>(true, string.Format("Release Not Found [{0}]", id));
+                    return new FileOperationResult<IImage>(true, $"Release Not Found [{id}]");
                 }
                 byte[] imageBytes = null;
                 string artistFolder = null;
@@ -620,7 +487,9 @@ namespace Roadie.Api.Services
                                 .FindImageTypeInDirectory(new DirectoryInfo(releaseFolder), ImageType.ReleaseSecondary)
                                 .ToArray();
                             if (releaseSecondaryImages.Length >= imageId && releaseSecondaryImages[imageId] != null)
+                            {
                                 imageBytes = File.ReadAllBytes(releaseSecondaryImages[imageId].FullName);
+                            }
                         }
                     }
                 }
@@ -649,10 +518,10 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var track = await GetTrack(id);
+                var track = await GetTrack(id).ConfigureAwait(false);
                 if (track == null)
                 {
-                    return new FileOperationResult<IImage>(true, string.Format("Track Not Found [{0}]", id));
+                    return new FileOperationResult<IImage>(true, $"Track Not Found [{id}]");
                 }
                 IImage image = new Library.Imaging.Image(id)
                 {
@@ -663,10 +532,10 @@ namespace Roadie.Api.Services
                 {
                     image.Bytes = File.ReadAllBytes(trackImageFileName);
                 }
-                if (image.Bytes == null || !image.Bytes.Any())
+                if (image.Bytes?.Any() != true)
                 {
                     // If no track image is found then return image for release
-                    return await ReleaseImage(track.ReleaseMedia.Release.RoadieId, width, height, etag);
+                    return await ReleaseImageAsync(track.ReleaseMedia.Release.RoadieId, width, height, etag).ConfigureAwait(false);
                 }
                 return GenerateFileOperationResult(id, image, etag);
             }
@@ -682,10 +551,10 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var user = await GetUser(id);
+                var user = await GetUser(id).ConfigureAwait(false);
                 if (user == null)
                 {
-                    return new FileOperationResult<IImage>(true, string.Format("User Not Found [{0}]", id));
+                    return new FileOperationResult<IImage>(true, $"User Not Found [{id}]");
                 }
                 IImage image = new Library.Imaging.Image(id)
                 {
@@ -703,7 +572,7 @@ namespace Roadie.Api.Services
                 {
                     Logger.LogError(ex, $"Error Reading Image File [{userImageFilename}]");
                 }
-                if (image.Bytes == null || !image.Bytes.Any())
+                if (image.Bytes?.Any() != true)
                 {
                     image = DefaultNotFoundImages.User;
                 }
@@ -715,6 +584,142 @@ namespace Roadie.Api.Services
             }
 
             return new FileOperationResult<IImage>(OperationMessages.ErrorOccured);
+        }
+
+        public Task<FileOperationResult<IImage>> ArtistImageAsync(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return GetImageFileOperation(nameof(ArtistImageAsync),
+                data.Artist.CacheRegionUrn(id),
+                id,
+                width,
+                height,
+                async () => { return await ArtistImageAction(id, etag).ConfigureAwait(false); },
+                etag);
+        }
+
+        public Task<FileOperationResult<IImage>> ArtistSecondaryImageAsync(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return GetImageFileOperation($"ArtistSecondaryThumbnail.{imageId}",
+                data.Artist.CacheRegionUrn(id),
+                id,
+                width,
+                height,
+                async () => { return await ArtistSecondaryImageAction(id, imageId, etag).ConfigureAwait(false); },
+                etag);
+        }
+
+        public Task<FileOperationResult<IImage>> CollectionImageAsync(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return GetImageFileOperation("CollectionThumbnail",
+                data.Collection.CacheRegionUrn(id),
+                id,
+                width,
+                height,
+                async () => { return await CollectionImageAction(id, etag).ConfigureAwait(false); },
+                etag);
+        }
+
+        public Task<FileOperationResult<IImage>> GenreImageAsync(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return GetImageFileOperation("GenreThumbnail",
+                data.Genre.CacheRegionUrn(id),
+                id,
+                width,
+                height,
+                async () => await GenreImageAction(id, etag).ConfigureAwait(false),
+                etag);
+        }
+
+        public Task<FileOperationResult<IImage>> LabelImageAsync(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return GetImageFileOperation("LabelThumbnail",
+                data.Label.CacheRegionUrn(id),
+                id,
+                width,
+                height,
+                async () => await LabelImageAction(id, etag).ConfigureAwait(false),
+                etag);
+        }
+
+        public Task<FileOperationResult<IImage>> PlaylistImageAsync(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return GetImageFileOperation("PlaylistThumbnail",
+                data.Playlist.CacheRegionUrn(id),
+                id,
+                width,
+                height,
+                async () => await PlaylistImageAction(id, etag).ConfigureAwait(false),
+                etag);
+        }
+
+        public Task<FileOperationResult<IImage>> ReleaseImageAsync(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return GetImageFileOperation("ReleaseThumbnail",
+                data.Release.CacheRegionUrn(id),
+                id,
+                width,
+                height,
+                async () => await ReleaseImageAction(id, etag).ConfigureAwait(false),
+                etag);
+        }
+
+        public Task<FileOperationResult<IImage>> ReleaseSecondaryImageAsync(Guid id, int imageId, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return GetImageFileOperation($"ReleaseSecondaryThumbnail-{imageId}",
+                data.Release.CacheRegionUrn(id),
+                id,
+                width,
+                height,
+                async () => { return await ReleaseSecondaryImageAction(id, imageId, etag).ConfigureAwait(false); },
+                etag);
+        }
+
+        public async Task<OperationResult<IEnumerable<ImageSearchResult>>> SearchAsync(string query, int resultsCount = 10)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            IEnumerable<ImageSearchResult> searchResults = null;
+            try
+            {
+                searchResults = await ImageSearchManager.ImageSearch(query).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+                errors.Add(ex);
+            }
+
+            sw.Stop();
+            return new OperationResult<IEnumerable<ImageSearchResult>>
+            {
+                Data = searchResults,
+                IsSuccess = errors.Count == 0,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public Task<FileOperationResult<IImage>> TrackImageAsync(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return GetImageFileOperation("TrackThumbnail",
+                data.Track.CacheRegionUrn(id),
+                id,
+                width,
+                height,
+                async () => await TrackImageAction(id, width, height, etag).ConfigureAwait(false),
+                etag);
+        }
+
+        public Task<FileOperationResult<IImage>> UserImageAsync(Guid id, int? width, int? height, EntityTagHeaderValue etag = null)
+        {
+            return GetImageFileOperation("UserById",
+                User.CacheRegionUrn(id),
+                id,
+                width,
+                height,
+                async () => await UserImageAction(id, etag).ConfigureAwait(false),
+                etag);
         }
     }
 }

@@ -10,6 +10,6 @@ namespace Roadie.Library.SearchEngines.Imaging
 
         RestRequest BuildRequest(string query, int resultsCount);
 
-        Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount);
+        Task<IEnumerable<ImageSearchResult>> PerformImageSearchAsync(string query, int resultsCount);
     }
 }

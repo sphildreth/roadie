@@ -25,8 +25,12 @@ namespace Roadie.Api.Controllers
     {
         private IGenreService GenreService { get; }
 
-        public GenreController(IGenreService genreService, ILogger<GenreController> logger, ICacheManager cacheManager,
-                    UserManager<User> userManager, IRoadieSettings roadieSettings)
+        public GenreController(
+            IGenreService genreService,
+            ILogger<GenreController> logger,
+            ICacheManager cacheManager,
+            UserManager<User> userManager,
+            IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -38,9 +42,17 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await GenreService.ById(await CurrentUserModel(), id, (inc ?? models.Genre.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult) return NotFound();
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            var result = await GenreService.ByIdAsync(await CurrentUserModel().ConfigureAwait(false), id, (inc ?? models.Genre.DefaultIncludes).ToLower().Split(",")).ConfigureAwait(false);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+
             return Ok(result);
         }
 
@@ -50,10 +62,14 @@ namespace Roadie.Api.Controllers
         {
             try
             {
-                var result = await GenreService.List(await CurrentUserModel(),
+                var result = await GenreService.ListAsync(await CurrentUserModel().ConfigureAwait(false),
                     request,
-                    doRandomize);
-                if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+                    doRandomize).ConfigureAwait(false);
+                if (!result.IsSuccess)
+                {
+                    return StatusCode((int)HttpStatusCode.InternalServerError);
+                }
+
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -74,34 +90,11 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> SetGenreImageByUrl(Guid id, string imageUrl)
         {
-            var result = await GenreService.SetGenreImageByUrl(await CurrentUserModel(), id, HttpUtility.UrlDecode(imageUrl));
+            var result = await GenreService.SetGenreImageByUrlAsync(await CurrentUserModel().ConfigureAwait(false), id, HttpUtility.UrlDecode(imageUrl)).ConfigureAwait(false);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
             }
-            if (!result.IsSuccess)
-            {
-                if (result.IsAccessDeniedResult)
-                {
-                    return StatusCode((int)HttpStatusCode.Forbidden);
-                }
-                if (result.Messages?.Any() ?? false)
-                {
-                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
-                }
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
-        [HttpPost("uploadImage/{id}")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
-        [Authorize(Policy = "Editor")]
-        public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
-        {
-            var result = await GenreService.UploadGenreImage(await CurrentUserModel(), id, file);
-            if (result == null || result.IsNotFoundResult) return NotFound();
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -127,13 +120,40 @@ namespace Roadie.Api.Controllers
             {
                 return BadRequest(ModelState);
             }
-            var result = await GenreService.UpdateGenre(await CurrentUserModel(), genre);
+            var result = await GenreService.UpdateGenreAsync(await CurrentUserModel().ConfigureAwait(false), genre).ConfigureAwait(false);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
             }
             if (!result.IsSuccess)
             {
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("uploadImage/{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [Authorize(Policy = "Editor")]
+        public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
+        {
+            var result = await GenreService.UploadGenreImageAsync(await CurrentUserModel().ConfigureAwait(false), id, file).ConfigureAwait(false);
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+
+            if (!result.IsSuccess)
+            {
+                if (result.IsAccessDeniedResult)
+                {
+                    return StatusCode((int)HttpStatusCode.Forbidden);
+                }
                 if (result.Messages?.Any() ?? false)
                 {
                     return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);

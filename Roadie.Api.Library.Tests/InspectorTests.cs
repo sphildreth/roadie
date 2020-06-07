@@ -23,7 +23,7 @@ namespace Roadie.Library.Tests
         {
             get
             {
-                return this.MessageLogger as ILogger;
+                return MessageLogger as ILogger;
             }
         }
 
@@ -35,8 +35,8 @@ namespace Roadie.Library.Tests
 
         public InspectorTests()
         {
-            this.MessageLogger = new EventMessageLogger<ID3TagsHelperTests>();
-            this.MessageLogger.Messages += MessageLoggerMessages;
+            MessageLogger = new EventMessageLogger<ID3TagsHelperTests>();
+            MessageLogger.Messages += MessageLoggerMessages;
 
             var settings = new configuration.RoadieSettings();
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
@@ -44,11 +44,11 @@ namespace Roadie.Library.Tests
             IConfiguration configuration = configurationBuilder.Build();
             configuration.GetSection("RoadieSettings").Bind(settings);
             settings.ConnectionString = configuration.GetConnectionString("RoadieDatabaseConnection");
-            this.Configuration = settings;
-            this.CacheManager = new DictionaryCacheManager(this.Logger, new CachePolicy(TimeSpan.FromHours(4)));
+            Configuration = settings;
+            CacheManager = new DictionaryCacheManager(Logger, new CachePolicy(TimeSpan.FromHours(4)));
             var tagHelperLooper = new EventMessageLogger<ID3TagsHelper>();
             tagHelperLooper.Messages += MessageLoggerMessages;
-            this.TagsHelper = new ID3TagsHelper(this.Configuration, this.CacheManager, tagHelperLooper);
+            TagsHelper = new ID3TagsHelper(Configuration, CacheManager, tagHelperLooper);
         }
 
         private void MessageLoggerMessages(object sender, EventMessage e)

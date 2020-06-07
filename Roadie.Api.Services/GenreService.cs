@@ -9,11 +9,9 @@ using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
-using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
-using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
@@ -38,15 +36,109 @@ namespace Roadie.Api.Services
         {
         }
 
-        public async Task<OperationResult<Genre>> ById(Library.Models.Users.User roadieUser, Guid id, IEnumerable<string> includes = null)
+        private Task<OperationResult<Genre>> GenreByIdAction(Guid id, IEnumerable<string> includes = null)
+        {
+            var timings = new Dictionary<string, long>();
+            var tsw = new Stopwatch();
+
+            var sw = Stopwatch.StartNew();
+            sw.Start();
+
+            var genre = DbContext.Genres.FirstOrDefault(x => x.RoadieId == id);
+            if (genre == null)
+            {
+                return Task.FromResult(new OperationResult<Genre>(true, $"Genre Not Found [{id}]"));
+            }
+            tsw.Stop();
+            timings.Add("getGenre", tsw.ElapsedMilliseconds);
+
+            tsw.Restart();
+            var result = genre.Adapt<Genre>();
+            result.AlternateNames = genre.AlternateNames;
+            result.Tags = genre.Tags;
+            result.Thumbnail = ImageHelper.MakeGenreThumbnailImage(Configuration, HttpContext, genre.RoadieId);
+            result.MediumThumbnail = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
+            tsw.Stop();
+            timings.Add("adapt", tsw.ElapsedMilliseconds);
+            if (includes != null && includes.Any())
+            {
+                if (includes.Contains("stats"))
+                {
+                    tsw.Restart();
+                    var releaseCount = (from rg in DbContext.ReleaseGenres
+                                        where rg.GenreId == genre.Id
+                                        select rg.Id).Count();
+                    var artistCount = (from rg in DbContext.ArtistGenres
+                                       where rg.GenreId == genre.Id
+                                       select rg.Id).Count();
+                    result.Statistics = new Library.Models.Statistics.ReleaseGroupingStatistics
+                    {
+                        ArtistCount = artistCount,
+                        ReleaseCount = releaseCount
+                    };
+                    tsw.Stop();
+                    timings.Add("stats", tsw.ElapsedMilliseconds);
+                }
+            }
+            sw.Stop();
+            Logger.LogInformation($"ByIdAction: Genre `{ genre }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
+            return Task.FromResult(new OperationResult<Genre>
+            {
+                Data = result,
+                IsSuccess = result != null,
+                OperationTime = sw.ElapsedMilliseconds
+            });
+        }
+
+        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(Library.Models.Users.User user, Guid id, byte[] imageBytes)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var errors = new List<Exception>();
+            var genre = await DbContext.Genres.FirstOrDefaultAsync(x => x.RoadieId == id).ConfigureAwait(false);
+            if (genre == null)
+            {
+                return new OperationResult<Library.Models.Image>(true, $"Genre Not Found [{id}]");
+            }
+            try
+            {
+                var now = DateTime.UtcNow;
+                if (imageBytes != null)
+                {
+                    // Save unaltered genre image
+                    File.WriteAllBytes(genre.PathToImage(Configuration, true), ImageHelper.ConvertToJpegFormat(imageBytes));
+                }
+                genre.LastUpdated = now;
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
+                CacheManager.ClearRegion(genre.CacheRegion);
+                Logger.LogInformation($"UploadGenreImage `{genre}` By User `{user}`");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+                errors.Add(ex);
+            }
+
+            sw.Stop();
+
+            return new OperationResult<Library.Models.Image>
+            {
+                IsSuccess = !errors.Any(),
+                Data = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<Genre>> ByIdAsync(Library.Models.Users.User roadieUser, Guid id, IEnumerable<string> includes = null)
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
-            var cacheKey = string.Format("urn:genre_by_id_operation:{0}:{1}", id, includes == null ? "0" : string.Join("|", includes));
+            var cacheKey = $"urn:genre_by_id_operation:{id}:{(includes == null ? "0" : string.Join("|", includes))}";
             var result = await CacheManager.GetAsync(cacheKey, async () =>
             {
-                return await GenreByIdAction(id, includes);
-            }, data.Genre.CacheRegionUrn(id));
+                return await GenreByIdAction(id, includes).ConfigureAwait(false);
+            }, data.Genre.CacheRegionUrn(id)).ConfigureAwait(false);
             sw.Stop();
             return new OperationResult<Genre>(result.Messages)
             {
@@ -58,14 +150,18 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<bool>> Delete(Library.Identity.User user, Guid id)
+        public async Task<OperationResult<bool>> DeleteAsync(Library.Identity.User user, Guid id)
         {
             var sw = new Stopwatch();
             sw.Start();
-            var genre = DbContext.Genres.FirstOrDefault(x => x.RoadieId == id);
-            if (genre == null) return new OperationResult<bool>(true, string.Format("Genre Not Found [{0}]", id));
+            var genre = await DbContext.Genres.FirstOrDefaultAsync(x => x.RoadieId == id).ConfigureAwait(false);
+            if (genre == null)
+            {
+                return new OperationResult<bool>(true, $"Genre Not Found [{id}]");
+            }
+
             DbContext.Genres.Remove(genre);
-            await DbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
             var genreImageFilename = genre.PathToImage(Configuration);
             if (File.Exists(genreImageFilename))
@@ -84,7 +180,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<GenreList>> List(Library.Models.Users.User roadieUser, PagedRequest request, bool? doRandomize = false)
+        public async Task<Library.Models.Pagination.PagedResult<GenreList>> ListAsync(Library.Models.Users.User roadieUser, PagedRequest request, bool? doRandomize = false)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -102,7 +198,7 @@ namespace Roadie.Api.Services
             if (doRandomize ?? false)
             {
                 var randomLimit = request.Limit ?? roadieUser?.RandomReleaseLimit ?? request.LimitValue;
-                randomGenreData = await DbContext.RandomGenreIds(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly);
+                randomGenreData = await DbContext.RandomGenreIdsAsync(roadieUser?.Id ?? -1, randomLimit, request.FilterFavoriteOnly, request.FilterRatedOnly).ConfigureAwait(false);
                 randomGenreIds = randomGenreData.Select(x => x.Value).ToArray();
                 rowCount = DbContext.Genres.Count();
             }
@@ -169,20 +265,17 @@ namespace Roadie.Api.Services
             });
         }
 
-        public async Task<OperationResult<Library.Models.Image>> SetGenreImageByUrl(Library.Models.Users.User user, Guid id, string imageUrl)
-        {
-            return await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
-        }
+        public Task<OperationResult<Library.Models.Image>> SetGenreImageByUrlAsync(Library.Models.Users.User user, Guid id, string imageUrl) => SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
 
-        public async Task<OperationResult<bool>> UpdateGenre(Library.Models.Users.User user, Genre model)
+        public async Task<OperationResult<bool>> UpdateGenreAsync(Library.Models.Users.User user, Genre model)
         {
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
-            var genre = DbContext.Genres.FirstOrDefault(x => x.RoadieId == model.Id);
+            var genre = await DbContext.Genres.FirstOrDefaultAsync(x => x.RoadieId == model.Id).ConfigureAwait(false);
             if (genre == null)
             {
-                return new OperationResult<bool>(true, string.Format("Genre Not Found [{0}]", model.Id));
+                return new OperationResult<bool>(true, $"Genre Not Found [{model.Id}]");
             }
             // If genre is being renamed, see if genre already exists with new model supplied name
             var genreName = genre.SortNameValue;
@@ -229,7 +322,7 @@ namespace Roadie.Api.Services
                     File.WriteAllBytes(genre.PathToImage(Configuration), ImageHelper.ConvertToJpegFormat(genreImage));
                 }
                 genre.LastUpdated = now;
-                await DbContext.SaveChangesAsync();
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
                 CacheManager.ClearRegion(genre.CacheRegion);
                 Logger.LogInformation($"UpdateGenre `{genre}` By User `{user}`");
@@ -244,14 +337,14 @@ namespace Roadie.Api.Services
 
             return new OperationResult<bool>
             {
-                IsSuccess = !errors.Any(),
-                Data = !errors.Any(),
+                IsSuccess = errors.Count == 0,
+                Data = errors.Count == 0,
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };
         }
 
-        public async Task<OperationResult<Library.Models.Image>> UploadGenreImage(Library.Models.Users.User user, Guid id, IFormFile file)
+        public async Task<OperationResult<Library.Models.Image>> UploadGenreImageAsync(Library.Models.Users.User user, Guid id, IFormFile file)
         {
             var bytes = new byte[0];
             using (var ms = new MemoryStream())
@@ -259,102 +352,7 @@ namespace Roadie.Api.Services
                 file.CopyTo(ms);
                 bytes = ms.ToArray();
             }
-
-            return await SaveImageBytes(user, id, bytes);
-        }
-
-        private Task<OperationResult<Genre>> GenreByIdAction(Guid id, IEnumerable<string> includes = null)
-        {
-            var timings = new Dictionary<string, long>();
-            var tsw = new Stopwatch();
-
-            var sw = Stopwatch.StartNew();
-            sw.Start();
-
-            var genre = DbContext.Genres.FirstOrDefault(x => x.RoadieId == id);
-            if (genre == null)
-            {
-                return Task.FromResult(new OperationResult<Genre>(true, string.Format("Genre Not Found [{0}]", id)));
-            }
-            tsw.Stop();
-            timings.Add("getGenre", tsw.ElapsedMilliseconds);
-
-            tsw.Restart();
-            var result = genre.Adapt<Genre>();
-            result.AlternateNames = genre.AlternateNames;
-            result.Tags = genre.Tags;
-            result.Thumbnail = ImageHelper.MakeGenreThumbnailImage(Configuration, HttpContext, genre.RoadieId);
-            result.MediumThumbnail = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height);
-            tsw.Stop();
-            timings.Add("adapt", tsw.ElapsedMilliseconds);
-            if (includes != null && includes.Any())
-            {
-                if (includes.Contains("stats"))
-                {
-                    tsw.Restart();
-                    var releaseCount = (from rg in DbContext.ReleaseGenres
-                                        where rg.GenreId == genre.Id
-                                        select rg.Id).Count();
-                    var artistCount = (from rg in DbContext.ArtistGenres
-                                       where rg.GenreId == genre.Id
-                                       select rg.Id).Count();
-                    result.Statistics = new Library.Models.Statistics.ReleaseGroupingStatistics
-                    {
-                        ArtistCount = artistCount,
-                        ReleaseCount = releaseCount
-                    };
-                    tsw.Stop();
-                    timings.Add("stats", tsw.ElapsedMilliseconds);
-                }
-            }
-            sw.Stop();
-            Logger.LogInformation($"ByIdAction: Genre `{ genre }`: includes [{includes.ToCSV()}], timings: [{ timings.ToTimings() }]");
-            return Task.FromResult(new OperationResult<Genre>
-            {
-                Data = result,
-                IsSuccess = result != null,
-                OperationTime = sw.ElapsedMilliseconds
-            });
-        }
-
-        private async Task<OperationResult<Library.Models.Image>> SaveImageBytes(Library.Models.Users.User user, Guid id, byte[] imageBytes)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            var errors = new List<Exception>();
-            var genre = DbContext.Genres.FirstOrDefault(x => x.RoadieId == id);
-            if (genre == null)
-            {
-                return new OperationResult<Library.Models.Image>(true, string.Format("Genre Not Found [{0}]", id));
-            }
-            try
-            {
-                var now = DateTime.UtcNow;
-                if (imageBytes != null)
-                {
-                    // Save unaltered genre image
-                    File.WriteAllBytes(genre.PathToImage(Configuration, true), ImageHelper.ConvertToJpegFormat(imageBytes));
-                }
-                genre.LastUpdated = now;
-                await DbContext.SaveChangesAsync();
-                CacheManager.ClearRegion(genre.CacheRegion);
-                Logger.LogInformation($"UploadGenreImage `{genre}` By User `{user}`");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex);
-                errors.Add(ex);
-            }
-
-            sw.Stop();
-
-            return new OperationResult<Library.Models.Image>
-            {
-                IsSuccess = !errors.Any(),
-                Data = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "genre", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height, true),
-                OperationTime = sw.ElapsedMilliseconds,
-                Errors = errors
-            };
+            return await SaveImageBytes(user, id, bytes).ConfigureAwait(false);
         }
     }
 }

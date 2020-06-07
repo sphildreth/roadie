@@ -21,7 +21,7 @@ namespace Roadie.Library.Tests
         {
             get
             {
-                return this.MessageLogger as ILogger;
+                return MessageLogger as ILogger;
             }
         }
 
@@ -32,8 +32,8 @@ namespace Roadie.Library.Tests
 
         public ID3TagsHelperTests()
         {
-            this.MessageLogger = new EventMessageLogger<ID3TagsHelperTests>();
-            this.MessageLogger.Messages += MessageLoggerMessages;
+            MessageLogger = new EventMessageLogger<ID3TagsHelperTests>();
+            MessageLogger.Messages += MessageLoggerMessages;
 
             var settings = new RoadieSettings();
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
@@ -41,11 +41,11 @@ namespace Roadie.Library.Tests
             IConfiguration configuration = configurationBuilder.Build();
             configuration.GetSection("RoadieSettings").Bind(settings);
             settings.ConnectionString = configuration.GetConnectionString("RoadieDatabaseConnection");
-            this.Configuration = settings;
-            this.CacheManager = new DictionaryCacheManager(this.Logger, new CachePolicy(TimeSpan.FromHours(4)));
+            Configuration = settings;
+            CacheManager = new DictionaryCacheManager(Logger, new CachePolicy(TimeSpan.FromHours(4)));
             var tagHelperLooper = new EventMessageLogger<ID3TagsHelper>();
             tagHelperLooper.Messages += MessageLoggerMessages;
-            this.TagsHelper = new ID3TagsHelper(this.Configuration, this.CacheManager, tagHelperLooper);
+            TagsHelper = new ID3TagsHelper(Configuration, CacheManager, tagHelperLooper);
         }
 
         private void MessageLoggerMessages(object sender, EventMessage e)
@@ -384,7 +384,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"C:\roadie_dev_root\mp3_tests\01 O.P.D. (Obsessive Personality Disorder).mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName, true);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName, true);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -410,7 +410,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"C:\roadie_dev_root\library\Dream Theater\[2016] The Astonishing\01 2285 Entr acte.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -436,7 +436,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"E:\Roadie_Test_Files\13-anna_kendrick-true_colors-a57e270d\01-justin_timberlake-hair_up-ef53c026.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -473,7 +473,7 @@ namespace Roadie.Library.Tests
                 var folderFiles = Directory.GetFiles(folderName, "*.mp3", SearchOption.AllDirectories);
                 foreach(var file in folderFiles)
                 {
-                    var tagLib = this.TagsHelper.MetaDataForFile(file);
+                    var tagLib = TagsHelper.MetaDataForFile(file);
                     Assert.True(tagLib.IsSuccess);
                     var metaData = tagLib.Data;
                     Assert.NotNull(metaData.Artist);
@@ -493,7 +493,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"E:\Roadie_Test_Files\01 01 Angel Of Death.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -519,7 +519,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"E:\Roadie_Test_Files\06 You'Re Sensational.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -545,7 +545,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"M:\inbound\MEGAPACK ---METAL-DEATH-BLACK---\ebony_tears-evil_as_hell-2001-ss\01-deviation-ss.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -571,7 +571,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"M:\unknown\2eec19bd-3575-4b7f-84dd-db2a0ec3e2f3~[2009] Dolly - Disc 1 Of 4~06 Nobody But You (Previously Unissued).mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -598,7 +598,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"M:\library_old\Perverse\[2014] Champion Dub\01 Champion Dub (Original Mix).mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -625,7 +625,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"C:\roadie_dev_root\inbound\Dreadful Fate - Vengeance (2018)\01-dreadful_fate-vengeance.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -653,7 +653,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"M:\library\Blind Melon\[1992] Blind Melon\01. Blind Melon - Soak The Sin.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -680,7 +680,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"E:\Roadie_Test_Files\Test.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -714,14 +714,14 @@ namespace Roadie.Library.Tests
                 short trackNumber = 15;
                 var numberOfTracks = 25;
 
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 metaData.TrackNumber = trackNumber;
                 metaData.TotalTrackNumbers = numberOfTracks;
-                this.TagsHelper.WriteTags(metaData, file.FullName);
+                TagsHelper.WriteTags(metaData, file.FullName);
 
-                var tagLibAfterWrite = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLibAfterWrite = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 Assert.Equal(metaData.Artist, tagLibAfterWrite.Data.Artist);
                 Assert.Equal(metaData.Release, tagLibAfterWrite.Data.Release);
@@ -745,7 +745,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"M:\library\Denver, John\[1972] Aerie\10 Readjustment Blues.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.True(metaData.IsValid);
@@ -772,7 +772,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"E:\Roadie_Test_Files\01. What's Yesterday.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -799,7 +799,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"M:\library\Ac Dc\[1975] T.N.T\01 It'S A Long Way To The Top (If You Wanna Rock 'N' Roll).mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -825,7 +825,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"E:\Roadie_Test_Files\01 Martian.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -851,7 +851,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"C:\roadie_dev_root\inbound\[2016] Invention Of Knowledge\01 Invention.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -877,7 +877,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"C:\roadie_dev_root\1985 - Sacred Heart\Dio - Sacred Heart (1).mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -903,7 +903,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"C:\roadie_dev_root\Grift\2017 Arvet\01 - Flyktfast.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);
@@ -929,7 +929,7 @@ namespace Roadie.Library.Tests
             var file = new FileInfo(@"C:\roadie_dev_root\Distorted Harmony -  A Way Out - 2018\kWlZr0N_o72dwo0_CD001_0001.mp3");
             if (file.Exists)
             {
-                var tagLib = this.TagsHelper.MetaDataForFile(file.FullName);
+                var tagLib = TagsHelper.MetaDataForFile(file.FullName);
                 Assert.True(tagLib.IsSuccess);
                 var metaData = tagLib.Data;
                 Assert.NotNull(metaData.Artist);

@@ -349,7 +349,7 @@ namespace Roadie.Library.Engines
                 if (ITunesArtistSearchEngine.IsEnabled)
                 {
                     var sw2 = Stopwatch.StartNew();
-                    var iTunesResult = await ITunesArtistSearchEngine.PerformArtistSearch(artistName, 1).ConfigureAwait(false);
+                    var iTunesResult = await ITunesArtistSearchEngine.PerformArtistSearchAsync(artistName, 1).ConfigureAwait(false);
                     if (iTunesResult.IsSuccess)
                     {
                         var i = iTunesResult.Data.First();
@@ -406,7 +406,7 @@ namespace Roadie.Library.Engines
                 if (MusicBrainzArtistSearchEngine.IsEnabled)
                 {
                     var sw2 = Stopwatch.StartNew();
-                    var mbResult = await MusicBrainzArtistSearchEngine.PerformArtistSearch(result.Name, 1).ConfigureAwait(false);
+                    var mbResult = await MusicBrainzArtistSearchEngine.PerformArtistSearchAsync(result.Name, 1).ConfigureAwait(false);
                     if (mbResult.IsSuccess)
                     {
                         var mb = mbResult.Data.First();
@@ -471,7 +471,7 @@ namespace Roadie.Library.Engines
                 if (LastFmArtistSearchEngine.IsEnabled)
                 {
                     var sw2 = Stopwatch.StartNew();
-                    var lastFmResult = await LastFmArtistSearchEngine.PerformArtistSearch(result.Name, 1).ConfigureAwait(false);
+                    var lastFmResult = await LastFmArtistSearchEngine.PerformArtistSearchAsync(result.Name, 1).ConfigureAwait(false);
                     if (lastFmResult.IsSuccess)
                     {
                         var l = lastFmResult.Data.First();
@@ -515,7 +515,7 @@ namespace Roadie.Library.Engines
                 if (SpotifyArtistSearchEngine.IsEnabled)
                 {
                     var sw2 = Stopwatch.StartNew();
-                    var spotifyResult = await SpotifyArtistSearchEngine.PerformArtistSearch(result.Name, 1).ConfigureAwait(false);
+                    var spotifyResult = await SpotifyArtistSearchEngine.PerformArtistSearchAsync(result.Name, 1).ConfigureAwait(false);
                     if (spotifyResult.IsSuccess)
                     {
                         var s = spotifyResult.Data.First();
@@ -557,7 +557,7 @@ namespace Roadie.Library.Engines
                 if (DiscogsArtistSearchEngine.IsEnabled)
                 {
                     var sw2 = Stopwatch.StartNew();
-                    var discogsResult = await DiscogsArtistSearchEngine.PerformArtistSearch(result.Name, 1).ConfigureAwait(false);
+                    var discogsResult = await DiscogsArtistSearchEngine.PerformArtistSearchAsync(result.Name, 1).ConfigureAwait(false);
                     if (discogsResult.IsSuccess)
                     {
                         var d = discogsResult?.Data?.FirstOrDefault();
@@ -614,7 +614,7 @@ namespace Roadie.Library.Engines
                     {
                         wikiName += " band";
                     }
-                    var wikipediaResult = await WikipediaArtistSearchEngine.PerformArtistSearch(wikiName, 1).ConfigureAwait(false);
+                    var wikipediaResult = await WikipediaArtistSearchEngine.PerformArtistSearchAsync(wikiName, 1).ConfigureAwait(false);
                     if (wikipediaResult?.Data != null)
                     {
                         if (wikipediaResult.IsSuccess)

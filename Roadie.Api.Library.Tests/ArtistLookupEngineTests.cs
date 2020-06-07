@@ -26,7 +26,7 @@ namespace Roadie.Library.Tests
         {
             get
             {
-                return this.MessageLogger as ILogger;
+                return MessageLogger as ILogger;
             }
         }
 
@@ -38,17 +38,17 @@ namespace Roadie.Library.Tests
 
         public ArtistLookupEngineTests()
         {
-            this.MessageLogger = new EventMessageLogger<ArtistLookupEngineTests>();
-            this.MessageLogger.Messages += MessageLogger_Messages;
+            MessageLogger = new EventMessageLogger<ArtistLookupEngineTests>();
+            MessageLogger.Messages += MessageLogger_Messages;
 
             var settings = new RoadieSettings();
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddJsonFile("appsettings.test.json");
             IConfiguration configuration = configurationBuilder.Build();
             configuration.GetSection("RoadieSettings").Bind(settings);
-            this.Configuration = settings;
-            this.CacheManager = new DictionaryCacheManager(this.Logger, new CachePolicy(TimeSpan.FromHours(4)));
-            this.HttpEncoder = new Encoding.DummyHttpEncoder();
+            Configuration = settings;
+            CacheManager = new DictionaryCacheManager(Logger, new CachePolicy(TimeSpan.FromHours(4)));
+            HttpEncoder = new Encoding.DummyHttpEncoder();
         }
 
         private void MessageLogger_Messages(object sender, EventMessage e)

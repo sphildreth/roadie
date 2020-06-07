@@ -12,21 +12,21 @@ namespace Roadie.Library.Tests
     {
         private readonly IConfiguration _configuration;
 
-        private readonly IRoadieSettings _settings = null;
+        private readonly IRoadieSettings _settings;
 
         private IRoadieSettings Configuration
         {
             get
             {
-                return this._settings;
+                return _settings;
             }
         }
 
         public StringExtensionTests()
         {
-            this._configuration = InitConfiguration();
-            this._settings = new RoadieSettings();
-            this._configuration.GetSection("RoadieSettings").Bind(this._settings);
+            _configuration = InitConfiguration();
+            _settings = new RoadieSettings();
+            _configuration.GetSection("RoadieSettings").Bind(_settings);
         }
 
         public static IConfiguration InitConfiguration()
@@ -102,7 +102,7 @@ namespace Roadie.Library.Tests
         public void CleanStringReleaseShouldBeAngie(string input)
         {
             var r = @"(\s*(-\s)*((CD[_\-#\s]*[0-9]*)))|((\(|\[)+([0-9]|,|self|bonus|re(leas|master|(e|d)*)*|th|anniversary|cd|disc|deluxe|dig(ipack)*|vinyl|japan(ese)*|asian|remastered|limited|ltd|expanded|edition|\s)+(]|\)*))";
-            var cleaned = input.CleanString(this.Configuration, r);
+            var cleaned = input.CleanString(Configuration, r);
             Assert.Equal("Angie", cleaned);
         }
 

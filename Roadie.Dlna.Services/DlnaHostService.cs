@@ -73,7 +73,7 @@ namespace Roadie.Dlna.Services
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(5000, cancellationToken);
+                await Task.Delay(5000, cancellationToken).ConfigureAwait(false);
             }
         }
 

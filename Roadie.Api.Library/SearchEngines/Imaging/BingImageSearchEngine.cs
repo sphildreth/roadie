@@ -44,11 +44,11 @@ namespace Roadie.Library.SearchEngines.Imaging
             return request;
         }
 
-        public override async Task<IEnumerable<ImageSearchResult>> PerformImageSearch(string query, int resultsCount)
+        public override async Task<IEnumerable<ImageSearchResult>> PerformImageSearchAsync(string query, int resultsCount)
         {
             var request = BuildRequest(query, resultsCount);
 
-            var response = await _client.ExecuteAsync<BingImageResult>(request);
+            var response = await _client.ExecuteAsync<BingImageResult>(request).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
                 throw new AuthenticationException("Api Key is not correct");

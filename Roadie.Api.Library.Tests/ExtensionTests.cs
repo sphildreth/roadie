@@ -220,8 +220,8 @@ namespace Roadie.Library.Tests
             var lastTrack = shuffledTracks.First();
             foreach(var track in shuffledTracks.Skip(1))
             {
-                Assert.False(track.Artist.Artist.Text == lastTrack.Artist.Artist.Text &&
-                            track.Release.Release.Text == lastTrack.Release.Release.Text);
+                Assert.False(string.Equals(track.Artist.Artist.Text, lastTrack.Artist.Artist.Text, StringComparison.Ordinal) &&
+                             string.Equals(track.Release.Release.Text, lastTrack.Release.Release.Text, StringComparison.Ordinal));
                 lastTrack = track;
             }
 

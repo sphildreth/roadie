@@ -103,11 +103,11 @@ namespace Roadie.Library.MetaData.Audio
                     if (!result.IsValid)
                     {
                         tagSources.Add("MusicBrainz");
-                        result = await ParseFromMusicBrainz(result);
+                        result = await ParseFromMusicBrainzAsync(result).ConfigureAwait(false);
                         if (!result.IsValid)
                         {
                             tagSources.Add("LastFm");
-                            result = await GetFromLastFmIntegration(result);
+                            result = await GetFromLastFmIntegrationAsync(result).ConfigureAwait(false);
                         }
                     }
 
@@ -183,15 +183,18 @@ namespace Roadie.Library.MetaData.Audio
             return result;
         }
 
-        private async Task<AudioMetaData> GetFromLastFmIntegration(AudioMetaData metaData)
+        private async Task<AudioMetaData> GetFromLastFmIntegrationAsync(AudioMetaData metaData)
         {
             var artistName = metaData.Artist;
             var ReleaseName = metaData.Release;
 
             if (DoParseFromLastFM)
             {
-                if (string.IsNullOrEmpty(artistName) && string.IsNullOrEmpty(ReleaseName)) return metaData;
-                var lastFmReleaseTracks = await LastFmHelper.TracksForRelease(artistName, ReleaseName);
+                if (string.IsNullOrEmpty(artistName) && string.IsNullOrEmpty(ReleaseName))
+                {
+                    return metaData;
+                }
+                var lastFmReleaseTracks = await LastFmHelper.TracksForReleaseAsync(artistName, ReleaseName).ConfigureAwait(false);
                 if (lastFmReleaseTracks != null)
                 {
                     var lastFmReleaseTrack = lastFmReleaseTracks.FirstOrDefault(x =>
@@ -224,12 +227,11 @@ namespace Roadie.Library.MetaData.Audio
             return metaData;
         }
 
-        private async Task<AudioMetaData> ParseFromMusicBrainz(AudioMetaData metaData)
+        private async Task<AudioMetaData> ParseFromMusicBrainzAsync(AudioMetaData metaData)
         {
             if (DoParseFromMusicBrainz)
             {
-                var musicBrainzReleaseTracks =
-                    await MusicBrainzProvider.MusicBrainzReleaseTracks(metaData.Artist, metaData.Release);
+                var musicBrainzReleaseTracks = await MusicBrainzProvider.MusicBrainzReleaseTracksAsync(metaData.Artist, metaData.Release).ConfigureAwait(false);
                 if (musicBrainzReleaseTracks != null)
                 {
                     var musicBrainzReleaseTrack = musicBrainzReleaseTracks.FirstOrDefault(x =>

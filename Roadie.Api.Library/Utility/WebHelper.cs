@@ -66,7 +66,7 @@ namespace Roadie.Library.Utility
                 using (var webClient = new WebClient())
                 {
                     webClient.Headers.Add("user-agent", UserAgent);
-                    imageBytes = await webClient.DownloadDataTaskAsync(new Uri(url));
+                    imageBytes = await webClient.DownloadDataTaskAsync(new Uri(url)).ConfigureAwait(false);
                 }
             }
             catch

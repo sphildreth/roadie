@@ -24,7 +24,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             _apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey") ?? new ApiKey();
         }
 
-        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount)
+        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearchAsync(string query, int resultsCount)
         {
             ArtistSearchResult data = null;
             try
@@ -40,7 +40,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         UserAgent = WebHelper.UserAgent
                     };
 
-                    var response = await client.ExecuteAsync<DiscogsResult>(request);
+                    var response = await client.ExecuteAsync<DiscogsResult>(request).ConfigureAwait(false);
 
                     if (response.ResponseStatus == ResponseStatus.Error)
                     {
@@ -61,7 +61,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         {
                             UserAgent = WebHelper.UserAgent
                         };
-                        var artistResponse = await c2.ExecuteTaskAsync<DiscogArtistResponse>(request);
+                        var artistResponse = await c2.ExecuteTaskAsync<DiscogArtistResponse>(request).ConfigureAwait(false);
                         var artist = artistResponse.Data;
                         if (artist != null)
                         {
@@ -99,7 +99,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         }
                     }
                     return null;
-                }, "uri:metadata");
+                }, "uri:metadata").ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -126,7 +126,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                     var client = new RestClient("https://api.discogs.com/database");
                     client.UserAgent = WebHelper.UserAgent;
 
-                    var response = await client.ExecuteAsync<DiscogsResult>(request);
+                    var response = await client.ExecuteAsync<DiscogsResult>(request).ConfigureAwait(false);
 
                     if (response.ResponseStatus == ResponseStatus.Error)
                     {
@@ -144,7 +144,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         request = BuildLabelRequest(responseData.id);
                         var c2 = new RestClient("https://api.discogs.com/");
                         c2.UserAgent = WebHelper.UserAgent;
-                        var labelResponse = await c2.ExecuteTaskAsync<DiscogsLabelResult>(request);
+                        var labelResponse = await c2.ExecuteTaskAsync<DiscogsLabelResult>(request).ConfigureAwait(false);
                         var label = labelResponse.Data;
                         if (label != null)
                         {
@@ -157,7 +157,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                             if (label.images != null)
                             {
                                 images.AddRange(label.images.Where(x => x.type != "primary").Select(x => x.uri));
-                                var primaryImage = label.images.FirstOrDefault(x => x.type == "primary");
+                                var primaryImage = label.images.Find(x => x.type == "primary");
                                 if (primaryImage != null) labelThumbnailUrl = primaryImage.uri;
                                 if (string.IsNullOrEmpty(labelThumbnailUrl))
                                     labelThumbnailUrl = label.images.First(x => !string.IsNullOrEmpty(x.uri)).uri;
@@ -176,7 +176,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         }
                     }
                     return null;
-                }, "uri:metadata");
+                }, "uri:metadata").ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -207,7 +207,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         Timeout = SafeParser.ToNumber<int>(Configuration.Integrations.DiscogsTimeout)
                     };
 
-                    var response = await client.ExecuteAsync<DiscogsReleaseSearchResult>(request);
+                    var response = await client.ExecuteAsync<DiscogsReleaseSearchResult>(request).ConfigureAwait(false);
                     if (response?.ResponseStatus == null || response.ResponseStatus == ResponseStatus.Error)
                     {
                         if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -225,7 +225,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         {
                             UserAgent = WebHelper.UserAgent
                         };
-                        var releaseResult = await c2.ExecuteTaskAsync<DiscogReleaseDetail>(request);
+                        var releaseResult = await c2.ExecuteTaskAsync<DiscogReleaseDetail>(request).ConfigureAwait(false);
                         var release = releaseResult?.Data;
                         if (release != null)
                         {
@@ -296,7 +296,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
 
                             if (release.identifiers != null)
                             {
-                                var barcode = release.identifiers.FirstOrDefault(x => (x.type ?? string.Empty) == "Barcode");
+                                var barcode = release.identifiers.Find(x => (x.type ?? string.Empty) == "Barcode");
                                 if (barcode?.value != null)
                                 {
                                     data.Tags = new[] { "barcode:" + barcode.value };
@@ -305,7 +305,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         }
                     }
                     return null;
-                }, "uri:metadata");
+                }, "uri:metadata").ConfigureAwait(false);
             }
             catch (Exception ex)
             {

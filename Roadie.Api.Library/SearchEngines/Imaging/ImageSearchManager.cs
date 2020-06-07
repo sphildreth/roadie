@@ -37,7 +37,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             }
             if (Configuration.Integrations.BingImageSearchEngineEnabled)
             {
-                var bingResults = await _bingSearchEngine.PerformImageSearch(query, count);
+                var bingResults = await _bingSearchEngine.PerformImageSearchAsync(query, count).ConfigureAwait(false);
                 if (bingResults != null)
                 {
                     result.AddRange(bingResults);
@@ -45,7 +45,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             }
             if (Configuration.Integrations.ITunesProviderEnabled)
             {
-                var iTunesResults = await _itunesSearchEngine.PerformImageSearch(query, count);
+                var iTunesResults = await _itunesSearchEngine.PerformImageSearchAsync(query, count).ConfigureAwait(false);
                 if (iTunesResults != null)
                 {
                     result.AddRange(iTunesResults);

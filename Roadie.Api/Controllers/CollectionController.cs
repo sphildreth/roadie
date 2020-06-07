@@ -23,9 +23,12 @@ namespace Roadie.Api.Controllers
     {
         private ICollectionService CollectionService { get; }
 
-        public CollectionController(ICollectionService collectionService, ILogger<CollectionController> logger,
-                    ICacheManager cacheManager,
-            UserManager<User> userManager, IRoadieSettings roadieSettings)
+        public CollectionController(
+            ICollectionService collectionService,
+            ILogger<CollectionController> logger,
+            ICacheManager cacheManager,
+            UserManager<User> userManager,
+            IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -37,7 +40,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Add()
         {
-            var result = CollectionService.Add(await CurrentUserModel());
+            var result = CollectionService.Add(await CurrentUserModel().ConfigureAwait(false));
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -59,7 +62,7 @@ namespace Roadie.Api.Controllers
         [Authorize(Policy = "Editor")]
         public async Task<IActionResult> DeleteCollection(Guid id)
         {
-            var result = await CollectionService.DeleteCollection(await CurrentUserModel(), id);
+            var result = await CollectionService.DeleteCollectionAsync(await CurrentUserModel().ConfigureAwait(false), id).ConfigureAwait(false);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
@@ -84,9 +87,13 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await CollectionService.ById(await CurrentUserModel(), id,
-                (inc ?? Collection.DefaultIncludes).ToLower().Split(","));
-            if (result == null || result.IsNotFoundResult) return NotFound();
+            var result = await CollectionService.ByIdAsync(await CurrentUserModel().ConfigureAwait(false), id,
+                (inc ?? Collection.DefaultIncludes).ToLower().Split(",")).ConfigureAwait(false); 
+            if (result == null || result.IsNotFoundResult)
+            {
+                return NotFound();
+            }
+
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -108,8 +115,12 @@ namespace Roadie.Api.Controllers
         {
             try
             {
-                var result = await CollectionService.List(await CurrentUserModel(), request);
-                if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+                var result = await CollectionService.ListAsync(await CurrentUserModel().ConfigureAwait(false), request).ConfigureAwait(false);
+                if (!result.IsSuccess)
+                {
+                    return StatusCode((int)HttpStatusCode.InternalServerError);
+                }
+
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -134,7 +145,7 @@ namespace Roadie.Api.Controllers
             {
                 return BadRequest(ModelState);
             }
-            var result = await CollectionService.UpdateCollection(await CurrentUserModel(), collection);
+            var result = await CollectionService.UpdateCollectionAsync(await CurrentUserModel().ConfigureAwait(false), collection).ConfigureAwait(false);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();

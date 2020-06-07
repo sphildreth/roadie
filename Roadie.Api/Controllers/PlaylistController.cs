@@ -23,8 +23,12 @@ namespace Roadie.Api.Controllers
     {
         private IPlaylistService PlaylistService { get; }
 
-        public PlaylistController(IPlaylistService playlistService, ILogger<PlaylistController> logger, ICacheManager cacheManager,
-                    UserManager<User> userManager, IRoadieSettings roadieSettings)
+        public PlaylistController(
+            IPlaylistService playlistService,
+            ILogger<PlaylistController> logger,
+            ICacheManager cacheManager,
+            UserManager<User> userManager,
+            IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -36,7 +40,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> AddNewPlaylist([FromBody] Playlist model)
         {
-            var result = await PlaylistService.AddNewPlaylist(await CurrentUserModel(), model);
+            var result = await PlaylistService.AddNewPlaylistAsync(await CurrentUserModel().ConfigureAwait(false), model).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.IsAccessDeniedResult)
@@ -57,7 +61,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> DeletePlaylist(Guid id)
         {
-            var result = await PlaylistService.DeletePlaylist(await CurrentUserModel(), id);
+            var result = await PlaylistService.DeletePlaylistAsync(await CurrentUserModel().ConfigureAwait(false), id).ConfigureAwait(false);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
@@ -82,7 +86,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
-            var result = await PlaylistService.ById(await CurrentUserModel(), id, (inc ?? Playlist.DefaultIncludes).ToLower().Split(","));
+            var result = await PlaylistService.ByIdAsync(await CurrentUserModel().ConfigureAwait(false), id, (inc ?? Playlist.DefaultIncludes).ToLower().Split(",")).ConfigureAwait(false);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
@@ -106,9 +110,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> List([FromQuery] PagedRequest request, string inc)
         {
-            var result = await PlaylistService.List(roadieUser: await CurrentUserModel(),
-                request: request);
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+            var result = await PlaylistService.ListAsync(roadieUser: await CurrentUserModel().ConfigureAwait(false),  request: request).ConfigureAwait(false);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+
             return Ok(result);
         }
 
@@ -117,8 +124,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Update(Playlist playlist)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-            var result = await PlaylistService.UpdatePlaylist(await CurrentUserModel(), playlist);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await PlaylistService.UpdatePlaylistAsync(await CurrentUserModel().ConfigureAwait(false), playlist).ConfigureAwait(false);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();
@@ -143,7 +154,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> UpdateTracks(PlaylistTrackModifyRequest request)
         {
-            var result = await PlaylistService.UpdatePlaylistTracks(await CurrentUserModel(), request);
+            var result = await PlaylistService.UpdatePlaylistTracksAsync(await CurrentUserModel().ConfigureAwait(false), request).ConfigureAwait(false);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();

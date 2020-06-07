@@ -5,9 +5,9 @@ namespace Roadie.Api.Hubs
 {
     public class ScanActivityHub : Hub
     {
-        public async Task SendSystemActivity(string scanActivity)
+        public Task SendSystemActivityAsync(string scanActivity, System.Threading.CancellationToken cancellationToken)
         {
-            await Clients.All.SendAsync("SendSystemActivity", scanActivity);
+            return Clients.All.SendAsync("SendSystemActivity", scanActivity, cancellationToken);
         }
     }
 }

@@ -4,7 +4,13 @@ namespace Roadie.Api.Models
 {
     public class ResetPasswordModel : LoginModel
     {
-        [Required] [Compare("Password")] public string PasswordConfirmation { get; set; }
-        [Required] public string Token { get; set; }
+
+        [Required]
+        [Compare(nameof(Password))]
+        public string PasswordConfirmation { get; set; }
+
+        [Required]
+        public string Token { get; set; }
+
     }
 }

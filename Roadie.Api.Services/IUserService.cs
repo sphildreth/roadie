@@ -9,44 +9,44 @@ namespace Roadie.Api.Services
 {
     public interface IUserService
     {
-        Task<OperationResult<User>> ById(User user, Guid id, IEnumerable<string> includes, bool isAccountSettingsEdit = false);
+        Task<OperationResult<User>> ByIdAsync(User user, Guid id, IEnumerable<string> includes, bool isAccountSettingsEdit = false);
 
-        Task<PagedResult<UserList>> List(PagedRequest request);
+        Task<OperationResult<bool>> DeleteAllBookmarksAsync(User roadieUser);
 
-        Task<OperationResult<bool>> DeleteAllBookmarks(User roadieUser);
+        Task<PagedResult<UserList>> ListAsync(PagedRequest request);
 
-        Task<OperationResult<bool>> SetArtistBookmark(Guid artistId, User roadieUser, bool isBookmarked);
+        Task<OperationResult<bool>> SetArtistBookmarkAsync(Guid artistId, User roadieUser, bool isBookmarked);
 
-        Task<OperationResult<bool>> SetArtistDisliked(Guid artistId, User roadieUser, bool isDisliked);
+        Task<OperationResult<bool>> SetArtistDislikedAsync(Guid artistId, User roadieUser, bool isDisliked);
 
-        Task<OperationResult<bool>> SetArtistFavorite(Guid artistId, User roadieUser, bool isFavorite);
+        Task<OperationResult<bool>> SetArtistFavoriteAsync(Guid artistId, User roadieUser, bool isFavorite);
 
-        Task<OperationResult<short>> SetArtistRating(Guid artistId, User roadieUser, short rating);
+        Task<OperationResult<short>> SetArtistRatingAsync(Guid artistId, User roadieUser, short rating);
 
-        Task<OperationResult<bool>> SetCollectionBookmark(Guid collectionId, User roadieUser, bool isBookmarked);
+        Task<OperationResult<bool>> SetCollectionBookmarkAsync(Guid collectionId, User roadieUser, bool isBookmarked);
 
-        Task<OperationResult<bool>> SetLabelBookmark(Guid labelId, User roadieUser, bool isBookmarked);
+        Task<OperationResult<bool>> SetLabelBookmarkAsync(Guid labelId, User roadieUser, bool isBookmarked);
 
-        Task<OperationResult<bool>> SetPlaylistBookmark(Guid playlistId, User roadieUser, bool isBookmarked);
+        Task<OperationResult<bool>> SetPlaylistBookmarkAsync(Guid playlistId, User roadieUser, bool isBookmarked);
 
-        Task<OperationResult<bool>> SetReleaseBookmark(Guid releaseid, User roadieUser, bool isBookmarked);
+        Task<OperationResult<bool>> SetReleaseBookmarkAsync(Guid releaseid, User roadieUser, bool isBookmarked);
 
-        Task<OperationResult<bool>> SetReleaseDisliked(Guid releaseId, User roadieUser, bool isDisliked);
+        Task<OperationResult<bool>> SetReleaseDislikedAsync(Guid releaseId, User roadieUser, bool isDisliked);
 
-        Task<OperationResult<bool>> SetReleaseFavorite(Guid releaseId, User roadieUser, bool isFavorite);
+        Task<OperationResult<bool>> SetReleaseFavoriteAsync(Guid releaseId, User roadieUser, bool isFavorite);
 
-        Task<OperationResult<short>> SetReleaseRating(Guid releaseId, User roadieUser, short rating);
+        Task<OperationResult<short>> SetReleaseRatingAsync(Guid releaseId, User roadieUser, short rating);
 
-        Task<OperationResult<bool>> SetTrackBookmark(Guid trackId, User roadieUser, bool isBookmarked);
+        Task<OperationResult<bool>> SetTrackBookmarkAsync(Guid trackId, User roadieUser, bool isBookmarked);
 
-        Task<OperationResult<bool>> SetTrackDisliked(Guid trackId, User roadieUser, bool isDisliked);
+        Task<OperationResult<bool>> SetTrackDislikedAsync(Guid trackId, User roadieUser, bool isDisliked);
 
-        Task<OperationResult<bool>> SetTrackFavorite(Guid releaseId, User roadieUser, bool isFavorite);
+        Task<OperationResult<bool>> SetTrackFavoriteAsync(Guid releaseId, User roadieUser, bool isFavorite);
 
-        Task<OperationResult<short>> SetTrackRating(Guid trackId, User roadieUser, short rating);
+        Task<OperationResult<short>> SetTrackRatingAsync(Guid trackId, User roadieUser, short rating);
 
-        Task<OperationResult<bool>> UpdateIntegrationGrant(Guid userId, string integrationName, string token);
+        Task<OperationResult<bool>> UpdateIntegrationGrantAsync(Guid userId, string integrationName, string token);
 
-        Task<OperationResult<bool>> UpdateProfile(User userPerformingUpdate, User userBeingUpdatedModel);
+        Task<OperationResult<bool>> UpdateProfileAsync(User userPerformingUpdate, User userBeingUpdatedModel);
     }
 }

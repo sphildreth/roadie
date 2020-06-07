@@ -9,7 +9,7 @@ namespace Roadie.Api.Services
 {
     public interface IBookmarkService
     {
-        Task<OperationResult<bool>> RemoveAllBookmarksForItem(BookmarkType type, int id);
-        Task<PagedResult<BookmarkList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, BookmarkType? filterType = null);
+        Task<PagedResult<BookmarkList>> ListAsync(User roadieUser, PagedRequest request, bool? doRandomize = false, BookmarkType? filterType = null);
+        Task<OperationResult<bool>> RemoveAllBookmarksForItemAsync(BookmarkType type, int id);
     }
 }

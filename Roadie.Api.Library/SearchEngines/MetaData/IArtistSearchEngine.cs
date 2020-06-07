@@ -7,6 +7,6 @@ namespace Roadie.Library.SearchEngines.MetaData
     {
         bool IsEnabled { get; }
 
-        Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearch(string query, int resultsCount);
+        Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearchAsync(string query, int resultsCount);
     }
 }

@@ -17,7 +17,7 @@ namespace Roadie.Library.Tests
             configurationBuilder.AddJsonFile("appsettings.test.json");
             IConfiguration configuration = configurationBuilder.Build();
             configuration.GetSection("RoadieSettings").Bind(settings);
-            this.Configuration = settings;
+            Configuration = settings;
         }
 
         [Theory]

@@ -7,24 +7,24 @@ namespace Roadie.Api.Services
 {
     public interface ILookupService
     {
-        Task<OperationResult<IEnumerable<DataToken>>> ArtistTypes();
+        Task<OperationResult<IEnumerable<DataToken>>> ArtistTypesAsync();
 
-        Task<OperationResult<IEnumerable<DataToken>>> BandStatus();
+        Task<OperationResult<IEnumerable<DataToken>>> BandStatusAsync();
 
-        Task<OperationResult<IEnumerable<DataToken>>> BookmarkTypes();
+        Task<OperationResult<IEnumerable<DataToken>>> BookmarkTypesAsync();
 
-        Task<OperationResult<IEnumerable<DataToken>>> CollectionTypes();
+        Task<OperationResult<IEnumerable<DataToken>>> CollectionTypesAsync();
 
-        Task<OperationResult<IEnumerable<DataToken>>> LibraryStatus();
+        Task<OperationResult<IEnumerable<DataToken>>> CreditCategoriesAsync();
 
-        Task<OperationResult<IEnumerable<DataToken>>> QueMessageTypes();
+        Task<OperationResult<IEnumerable<DataToken>>> LibraryStatusAsync();
 
-        Task<OperationResult<IEnumerable<DataToken>>> ReleaseTypes();
+        Task<OperationResult<IEnumerable<DataToken>>> QueMessageTypesAsync();
 
-        Task<OperationResult<IEnumerable<DataToken>>> RequestStatus();
+        Task<OperationResult<IEnumerable<DataToken>>> ReleaseTypesAsync();
 
-        Task<OperationResult<IEnumerable<DataToken>>> Status();
+        Task<OperationResult<IEnumerable<DataToken>>> RequestStatusAsync();
 
-        Task<OperationResult<IEnumerable<DataToken>>> CreditCategories();
+        Task<OperationResult<IEnumerable<DataToken>>> StatusAsync();
     }
 }

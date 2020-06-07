@@ -10,10 +10,10 @@ namespace Roadie.Api.Services
 {
     public interface IPlayActivityService
     {
-        Task<PagedResult<PlayActivityList>> List(PagedRequest request, User roadieUser = null, DateTime? newerThan = null);
+        Task<PagedResult<PlayActivityList>> ListAsync(PagedRequest request, User roadieUser = null, DateTime? newerThan = null);
 
-        Task<OperationResult<bool>> NowPlaying(User roadieUser, ScrobbleInfo scrobble);
+        Task<OperationResult<bool>> NowPlayingAsync(User roadieUser, ScrobbleInfo scrobble);
 
-        Task<OperationResult<bool>> Scrobble(User roadieUser, ScrobbleInfo scrobble);
+        Task<OperationResult<bool>> ScrobbleAsync(User roadieUser, ScrobbleInfo scrobble);
     }
 }

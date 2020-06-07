@@ -12,11 +12,15 @@ namespace Roadie.Api.ModelBinding
     /// <summary>
     ///     This is needed as some clienst post some get, some query string some body post.
     /// </summary>
-    public class SubsonicRequestBinder : IModelBinder
+    class SubsonicRequestBinder : IModelBinder
     {
         public Task BindModelAsync(ModelBindingContext bindingContext)
         {
-            if (bindingContext == null) throw new ArgumentNullException(nameof(bindingContext));
+            if (bindingContext == null)
+            {
+                throw new ArgumentNullException(nameof(bindingContext));
+            }
+
             var queryDictionary = QueryHelpers.ParseQuery(bindingContext.HttpContext.Request.QueryString.ToString());
 
             // Create a dictionary of all the properties to populate on the result model
@@ -113,15 +117,24 @@ namespace Roadie.Api.ModelBinding
                 !string.IsNullOrEmpty(bindingContext.HttpContext.Request.ContentType))
             {
                 var formCollection = bindingContext.HttpContext.Request.Form;
-                if (formCollection != null && formCollection.Any())
+                if (formCollection?.Any() == true)
+                {
                     foreach (var form in formCollection)
                     {
                         if (modelDictionary.ContainsKey(form.Key))
+                        {
                             modelDictionary[form.Key] = form.Value.FirstOrDefault();
+                        }
                         else
+                        {
                             modelDictionary.Add(form.Key, form.Value.FirstOrDefault());
-                        if (form.Key == "id") postedIds.AddRange(form.Value.ToArray());
+                        }
+                        if (string.Equals(form.Key, "id", StringComparison.Ordinal))
+                        {
+                            postedIds.AddRange(form.Value.ToArray());
+                        }
                     }
+                }
             }
 
             var model = new SubsonicRequest

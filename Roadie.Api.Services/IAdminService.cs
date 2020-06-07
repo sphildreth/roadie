@@ -9,48 +9,48 @@ namespace Roadie.Api.Services
 {
     public interface IAdminService
     {
-        Task<OperationResult<bool>> DeleteArtist(User user, Guid artistId, bool deleteFolder);
+        Task<OperationResult<bool>> DeleteArtistAsync(User user, Guid artistId, bool deleteFolder);
 
-        Task<OperationResult<bool>> DeleteArtistReleases(User user, Guid artistId, bool doDeleteFiles = false);
+        Task<OperationResult<bool>> DeleteArtistReleasesAsync(User user, Guid artistId, bool doDeleteFiles = false);
 
-        Task<OperationResult<bool>> DeleteArtistSecondaryImage(User user, Guid artistId, int index);
+        Task<OperationResult<bool>> DeleteArtistSecondaryImageAsync(User user, Guid artistId, int index);
 
-        Task<OperationResult<bool>> DeleteGenre(User user, Guid genreId);
+        Task<OperationResult<bool>> DeleteGenreAsync(User user, Guid genreId);
 
-        Task<OperationResult<bool>> DeleteLabel(User user, Guid labelId);
+        Task<OperationResult<bool>> DeleteLabelAsync(User user, Guid labelId);
 
-        Task<OperationResult<bool>> DeleteRelease(User user, Guid releaseId, bool? doDeleteFiles);
+        Task<OperationResult<bool>> DeleteReleaseAsync(User user, Guid releaseId, bool? doDeleteFiles);
 
-        Task<OperationResult<bool>> DeleteReleaseSecondaryImage(User user, Guid releaseId, int index);
+        Task<OperationResult<bool>> DeleteReleaseSecondaryImageAsync(User user, Guid releaseId, int index);
 
-        Task<OperationResult<bool>> DeleteTracks(User user, IEnumerable<Guid> trackIds, bool? doDeleteFile);
+        Task<OperationResult<bool>> DeleteTracksAsync(User user, IEnumerable<Guid> trackIds, bool? doDeleteFile);
 
-        Task<OperationResult<bool>> DeleteUser(User applicationUser, Guid id);
+        Task<OperationResult<bool>> DeleteUserAsync(User applicationUser, Guid id);
 
-        Task<OperationResult<bool>> DoInitialSetup(User user, UserManager<User> userManager);
+        Task<OperationResult<bool>> DoInitialSetupAsync(User user, UserManager<User> userManager);
 
-        Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleases(User user);
+        Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleasesAsync(User user);
 
         void PerformStartUpTasks();
 
-        Task<OperationResult<bool>> ScanAllCollections(User user, bool isReadOnly = false, bool doPurgeFirst = false);
+        Task<OperationResult<bool>> ScanAllCollectionsAsync(User user, bool isReadOnly = false, bool doPurgeFirst = false);
 
-        Task<OperationResult<bool>> ScanArtist(User user, Guid artistId, bool isReadOnly = false);
+        Task<OperationResult<bool>> ScanArtistAsync(User user, Guid artistId, bool isReadOnly = false);
 
-        Task<OperationResult<bool>> ScanArtists(User user, IEnumerable<Guid> artistIds, bool isReadOnly = false);
+        Task<OperationResult<bool>> ScanArtistsAsync(User user, IEnumerable<Guid> artistIds, bool isReadOnly = false);
 
-        Task<OperationResult<bool>> ScanCollection(User user, Guid collectionId, bool isReadOnly = false, bool doPurgeFirst = false, bool doUpdateRanks = true);
+        Task<OperationResult<bool>> ScanCollectionAsync(User user, Guid collectionId, bool isReadOnly = false, bool doPurgeFirst = false, bool doUpdateRanks = true);
 
-        Task<OperationResult<bool>> ScanInboundFolder(User user, bool isReadOnly = false);
+        Task<OperationResult<bool>> ScanInboundFolderAsync(User user, bool isReadOnly = false);
 
-        Task<OperationResult<bool>> ScanLibraryFolder(User user, bool isReadOnly = false);
+        Task<OperationResult<bool>> ScanLibraryFolderAsync(User user, bool isReadOnly = false);
 
-        Task<OperationResult<bool>> ScanRelease(User user, Guid releaseIds, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
+        Task<OperationResult<bool>> ScanReleaseAsync(User user, Guid releaseIds, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
 
-        Task<OperationResult<bool>> ScanReleases(User user, IEnumerable<Guid> releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
+        Task<OperationResult<bool>> ScanReleasesAsync(User user, IEnumerable<Guid> releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
 
-        Task<OperationResult<bool>> UpdateInviteTokenUsed(Guid? tokenId);
+        Task<OperationResult<bool>> UpdateInviteTokenUsedAsync(Guid? tokenId);
 
-        Task<OperationResult<bool>> ValidateInviteToken(Guid? tokenId);
+        Task<OperationResult<bool>> ValidateInviteTokenAsync(Guid? tokenId);
     }
 }

@@ -6,9 +6,9 @@ namespace Roadie.Api.Hubs
 {
     public class PlayActivityHub : Hub
     {
-        public async Task SendActivity(PlayActivityList playActivity)
+        public Task SendActivityAsync(PlayActivityList playActivity, System.Threading.CancellationToken cancellationToken)
         {
-            await Clients.All.SendAsync("PlayActivity", playActivity);
+            return Clients.All.SendAsync("PlayActivity", playActivity, cancellationToken);
         }
     }
 }

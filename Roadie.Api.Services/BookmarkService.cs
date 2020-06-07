@@ -1,5 +1,4 @@
-﻿using Mapster;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Roadie.Library;
 using Roadie.Library.Caching;
@@ -20,7 +19,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
-using data = Roadie.Library.Data;
 using models = Roadie.Library.Models;
 
 namespace Roadie.Api.Services
@@ -41,30 +39,7 @@ namespace Roadie.Api.Services
             UserService = userService;
         }
 
-        /// <summary>
-        /// When a bookmarkable item gets deleted then delete any bookmarks to that item, since its a generic column there is not FK setup.
-        /// </summary>
-        public async Task<OperationResult<bool>> RemoveAllBookmarksForItem(BookmarkType type, int id)
-        {
-            var bookmarks = await DbContext.Bookmarks.Include(x => x.User)
-                                           .Where(x => x.BookmarkType == type && x.BookmarkTargetId == id)
-                                           .ToListAsync();
-
-            var users = bookmarks.Select(x => x.User).ToList().Distinct();
-            DbContext.Bookmarks.RemoveRange(bookmarks);
-            await DbContext.SaveChangesAsync();
-            foreach(var user in users)
-            {
-                CacheManager.ClearRegion(user.CacheRegion);            
-            }            
-            return new OperationResult<bool>
-            {
-                IsSuccess = true,
-                Data = true
-            };
-        }
-
-        public async Task<Library.Models.Pagination.PagedResult<models.BookmarkList>> List(User roadieUser, PagedRequest request, bool? doRandomize = false, BookmarkType? filterType = null)
+        public async Task<Library.Models.Pagination.PagedResult<models.BookmarkList>> ListAsync(User roadieUser, PagedRequest request, bool? doRandomize = false, BookmarkType? filterType = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -95,14 +70,19 @@ namespace Roadie.Api.Services
             var rowCount = result.Count();
             var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
 
-            var user = await GetUser(roadieUser.UserId);
+            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
 
             foreach (var row in rows)
+            {
                 switch (row.Type)
                 {
                     case BookmarkType.Artist:
                         var artist = DbContext.Artists.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
-                        if (artist == null) continue;
+                        if (artist == null)
+                        {
+                            continue;
+                        }
+
                         row.Bookmark = new models.DataToken
                         {
                             Text = artist.Name,
@@ -117,7 +97,11 @@ namespace Roadie.Api.Services
                     case BookmarkType.Release:
                         var release = DbContext.Releases.Include(x => x.Artist)
                             .FirstOrDefault(x => x.Id == row.BookmarkTargetId);
-                        if (release == null) continue;
+                        if (release == null)
+                        {
+                            continue;
+                        }
+
                         row.Bookmark = new models.DataToken
                         {
                             Text = release.Title,
@@ -137,7 +121,11 @@ namespace Roadie.Api.Services
                             .Include(x => x.ReleaseMedia.Release.Artist)
                             .Include(x => x.TrackArtist)
                             .FirstOrDefault(x => x.Id == row.BookmarkTargetId);
-                        if (track == null) continue;
+                        if (track == null)
+                        {
+                            continue;
+                        }
+
                         row.Bookmark = new models.DataToken
                         {
                             Text = track.Title,
@@ -165,7 +153,11 @@ namespace Roadie.Api.Services
                         var playlist = DbContext.Playlists
                             .Include(x => x.User)
                             .FirstOrDefault(x => x.Id == row.BookmarkTargetId);
-                        if (playlist == null) continue;
+                        if (playlist == null)
+                        {
+                            continue;
+                        }
+
                         row.Bookmark = new models.DataToken
                         {
                             Text = playlist.Name,
@@ -180,7 +172,11 @@ namespace Roadie.Api.Services
 
                     case BookmarkType.Collection:
                         var collection = DbContext.Collections.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
-                        if (collection == null) continue;
+                        if (collection == null)
+                        {
+                            continue;
+                        }
+
                         row.Bookmark = new models.DataToken
                         {
                             Text = collection.Name,
@@ -196,7 +192,11 @@ namespace Roadie.Api.Services
 
                     case BookmarkType.Label:
                         var label = DbContext.Labels.FirstOrDefault(x => x.Id == row.BookmarkTargetId);
-                        if (label == null) continue;
+                        if (label == null)
+                        {
+                            continue;
+                        }
+
                         row.Bookmark = new models.DataToken
                         {
                             Text = label.Name,
@@ -207,8 +207,7 @@ namespace Roadie.Api.Services
                         row.SortName = label.SortName ?? label.Name;
                         break;
                 }
-
-            ;
+            };
             sw.Stop();
             return new Library.Models.Pagination.PagedResult<models.BookmarkList>
             {
@@ -217,6 +216,30 @@ namespace Roadie.Api.Services
                 TotalPages = (int)Math.Ceiling((double)rowCount / request.LimitValue),
                 OperationTime = sw.ElapsedMilliseconds,
                 Rows = rows
+            };
+        }
+
+        /// <summary>
+        /// When a bookmarkable item gets deleted then delete any bookmarks to that item, since its a generic column there is not FK setup.
+        /// </summary>
+        public async Task<OperationResult<bool>> RemoveAllBookmarksForItemAsync(BookmarkType type, int id)
+        {
+            var bookmarks = await DbContext.Bookmarks.Include(x => x.User)
+                                           .Where(x => x.BookmarkType == type && x.BookmarkTargetId == id)
+                                           .ToListAsync()
+                                           .ConfigureAwait(false);
+
+            var users = bookmarks.Select(x => x.User).ToList().Distinct();
+            DbContext.Bookmarks.RemoveRange(bookmarks);
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
+            foreach (var user in users)
+            {
+                CacheManager.ClearRegion(user.CacheRegion);
+            }
+            return new OperationResult<bool>
+            {
+                IsSuccess = true,
+                Data = true
             };
         }
     }

@@ -7,17 +7,17 @@ namespace Roadie.Api.Services
 {
     public interface IStatisticsService
     {
-        Task<OperationResult<LibraryStats>> LibraryStatistics();       
 
-        Task<OperationResult<IEnumerable<DateAndCount>>> ArtistsByDate();
+        Task<OperationResult<IEnumerable<DateAndCount>>> ArtistsByDateAsync();
+        Task<OperationResult<LibraryStats>> LibraryStatisticsAsync();
 
-        Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDate();
+        Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDateAsync();
 
-        Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDecade();
+        Task<OperationResult<IEnumerable<DateAndCount>>> ReleasesByDecadeAsync();
 
-        Task<OperationResult<IEnumerable<DateAndCount>>> SongsPlayedByDate();
+        Task<OperationResult<IEnumerable<DateAndCount>>> SongsPlayedByDateAsync();
 
-        Task<OperationResult<IEnumerable<DateAndCount>>> SongsPlayedByUser();
+        Task<OperationResult<IEnumerable<DateAndCount>>> SongsPlayedByUserAsync();
 
     }
 }

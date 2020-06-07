@@ -33,7 +33,7 @@ namespace Roadie.Library.Scrobble
         ///         indication of what music player they're using.
         ///     </remark>
         /// </summary>
-        public override async Task<OperationResult<bool>> NowPlaying(User roadieUser, ScrobbleInfo scrobble) => await LastFmHelper.NowPlaying(roadieUser, scrobble);
+        public override async Task<OperationResult<bool>> NowPlaying(User roadieUser, ScrobbleInfo scrobble) => await LastFmHelper.NowPlaying(roadieUser, scrobble).ConfigureAwait(false);
 
         /// <summary>
         ///     Send a Scrobble Request
@@ -42,7 +42,7 @@ namespace Roadie.Library.Scrobble
         ///         listening history and generate personalised charts and recommendations (and more).
         ///     </remark>
         /// </summary>
-        public override async Task<OperationResult<bool>> Scrobble(User roadieUser, ScrobbleInfo scrobble) => await LastFmHelper.Scrobble(roadieUser, scrobble);
+        public override async Task<OperationResult<bool>> Scrobble(User roadieUser, ScrobbleInfo scrobble) => await LastFmHelper.Scrobble(roadieUser, scrobble).ConfigureAwait(false);
 
     }
 }

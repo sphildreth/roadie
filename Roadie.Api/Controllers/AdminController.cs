@@ -21,8 +21,12 @@ namespace Roadie.Api.Controllers
     {
         private IAdminService AdminService { get; }
 
-        public AdminController(IAdminService adminService, ILogger<AdminController> logger, ICacheManager cacheManager,
-                    UserManager<User> userManager, IRoadieSettings roadieSettings)
+        public AdminController(
+            IAdminService adminService,
+            ILogger<AdminController> logger,
+            ICacheManager cacheManager,
+            UserManager<User> userManager,
+            IRoadieSettings roadieSettings)
             : base(cacheManager, roadieSettings, userManager)
         {
             Logger = logger;
@@ -42,7 +46,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteArtist(Guid id, bool? doDeleteFile)
         {
-            var result = await AdminService.DeleteArtist(await UserManager.GetUserAsync(User), id, doDeleteFile ?? true);
+            var result = await AdminService.DeleteArtistAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, doDeleteFile ?? true).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -58,7 +62,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteArtistReleases(Guid id)
         {
-            var result = await AdminService.DeleteArtistReleases(await UserManager.GetUserAsync(User), id);
+            var result = await AdminService.DeleteArtistReleasesAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -74,39 +78,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteArtistSecondaryImage(Guid id, int index)
         {
-            var result = await AdminService.DeleteArtistSecondaryImage(await UserManager.GetUserAsync(User), id, index);
-            if (!result.IsSuccess)
-            {
-                if (result.Messages?.Any() ?? false)
-                {
-                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
-                }
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
-        [HttpPost("delete/release/{id}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> DeleteRelease(Guid id, bool? doDeleteFiles)
-        {
-            var result = await AdminService.DeleteRelease(await UserManager.GetUserAsync(User), id, doDeleteFiles);
-            if (!result.IsSuccess)
-            {
-                if (result.Messages?.Any() ?? false)
-                {
-                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
-                }
-                return StatusCode((int)HttpStatusCode.InternalServerError);
-            }
-            return Ok(result);
-        }
-
-        [HttpPost("delete/label/{id}")]
-        [ProducesResponseType(200)]
-        public async Task<IActionResult> DeleteLabel(Guid id)
-        {
-            var result = await AdminService.DeleteLabel(await UserManager.GetUserAsync(User), id);
+            var result = await AdminService.DeleteArtistSecondaryImageAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, index).ConfigureAwait(false); 
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -122,7 +94,39 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteGenre(Guid id)
         {
-            var result = await AdminService.DeleteGenre(await UserManager.GetUserAsync(User), id);
+            var result = await AdminService.DeleteGenreAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id).ConfigureAwait(false);
+            if (!result.IsSuccess)
+            {
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("delete/label/{id}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> DeleteLabel(Guid id)
+        {
+            var result = await AdminService.DeleteLabelAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id).ConfigureAwait(false);
+            if (!result.IsSuccess)
+            {
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("delete/release/{id}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> DeleteRelease(Guid id, bool? doDeleteFiles)
+        {
+            var result = await AdminService.DeleteReleaseAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, doDeleteFiles).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -139,16 +143,20 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> DeleteReleaseSecondaryImage(Guid id, int index)
         {
             var result =
-                await AdminService.DeleteReleaseSecondaryImage(await UserManager.GetUserAsync(User), id, index);
-            if (!result.IsSuccess) return StatusCode((int)HttpStatusCode.InternalServerError);
+                await AdminService.DeleteReleaseSecondaryImageAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, index).ConfigureAwait(false);
+            if (!result.IsSuccess)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+
             return Ok(result);
         }
 
-        [HttpPost("delete/tracks")]
+        [HttpPost("delete/track/{id}")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> DeleteTracks([FromBody]IEnumerable<Guid> ids, bool? doDeleteFile)
+        public async Task<IActionResult> DeleteTrack(Guid id, bool? doDeleteFile)
         {
-            var result = await AdminService.DeleteTracks(await UserManager.GetUserAsync(User), ids, doDeleteFile);
+            var result = await AdminService.DeleteTracksAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), new Guid[1] { id }, doDeleteFile).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -160,11 +168,11 @@ namespace Roadie.Api.Controllers
             return Ok(result);
         }
 
-        [HttpPost("delete/track/{id}")]
+        [HttpPost("delete/tracks")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> DeleteTrack(Guid id, bool? doDeleteFile)
+        public async Task<IActionResult> DeleteTracks([FromBody] IEnumerable<Guid> ids, bool? doDeleteFile)
         {
-            var result = await AdminService.DeleteTracks(await UserManager.GetUserAsync(User), new Guid[1] { id }, doDeleteFile);
+            var result = await AdminService.DeleteTracksAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), ids, doDeleteFile).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -180,7 +188,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
-            var result = await AdminService.DeleteUser(await UserManager.GetUserAsync(User), id);
+            var result = await AdminService.DeleteUserAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -196,7 +204,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> MissingCollectionReleases()
         {
-            var result = await AdminService.MissingCollectionReleases(await UserManager.GetUserAsync(User));
+            var result = await AdminService.MissingCollectionReleasesAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false)).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -212,7 +220,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanAllCollections()
         {
-            var result = await AdminService.ScanAllCollections(await UserManager.GetUserAsync(User).ConfigureAwait(false)).ConfigureAwait(false);
+            var result = await AdminService.ScanAllCollectionsAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false)).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -228,7 +236,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanArtist(Guid id)
         {
-            var result = await AdminService.ScanArtist(await UserManager.GetUserAsync(User), id);
+            var result = await AdminService.ScanArtistAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -244,7 +252,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanArtists(IEnumerable<Guid> ids)
         {
-            var result = await AdminService.ScanArtists(await UserManager.GetUserAsync(User), ids);
+            var result = await AdminService.ScanArtistsAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), ids).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -260,7 +268,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanCollection(Guid id, bool doPurgeFirst = false)
         {
-            var result = await AdminService.ScanCollection(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, doPurgeFirst: doPurgeFirst).ConfigureAwait(false);
+            var result = await AdminService.ScanCollectionAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, doPurgeFirst: doPurgeFirst).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -276,7 +284,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanInbound()
         {
-            var result = await AdminService.ScanInboundFolder(await UserManager.GetUserAsync(User));
+            var result = await AdminService.ScanInboundFolderAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false)).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -292,7 +300,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanLibrary()
         {
-            var result = await AdminService.ScanLibraryFolder(await UserManager.GetUserAsync(User));
+            var result = await AdminService.ScanLibraryFolderAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false)).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -308,7 +316,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanRelease(Guid id)
         {
-            var result = await AdminService.ScanRelease(await UserManager.GetUserAsync(User), id);
+            var result = await AdminService.ScanReleaseAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
@@ -324,7 +332,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> ScanReleases(IEnumerable<Guid> ids)
         {
-            var result = await AdminService.ScanReleases(await UserManager.GetUserAsync(User), ids);
+            var result = await AdminService.ScanReleasesAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), ids).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)
