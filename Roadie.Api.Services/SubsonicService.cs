@@ -2,25 +2,23 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
-using Roadie.Library.Identity;
 using Roadie.Library.Imaging;
 using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Playlists;
 using Roadie.Library.Models.Releases;
-using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 using subsonic = Roadie.Library.Models.ThirdPartyApi.Subsonic;
@@ -39,19 +37,12 @@ namespace Roadie.Api.Services
         public const string SubsonicVersion = "1.16.1";
 
         private IArtistService ArtistService { get; }
-
         private IBookmarkService BookmarkService { get; }
-
         private IImageService ImageService { get; }
-
         private IPlayActivityService PlayActivityService { get; }
-
         private IPlaylistService PlaylistService { get; }
-
         private IReleaseService ReleaseService { get; }
-
         private ITrackService TrackService { get; }
-
         private UserManager<Library.Identity.User> UserManger { get; }
 
         public SubsonicService(IRoadieSettings configuration,
@@ -88,8 +79,11 @@ namespace Roadie.Api.Services
             Library.Models.Users.User roadieUser)
         {
             if (string.IsNullOrEmpty(request.Message))
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.RequiredParameterMissing, "Message is required");
+                   subsonic.ErrorCodes.RequiredParameterMissing, "Message is required");
+            }
+
             var chatMessage = new data.ChatMessage
             {
                 UserId = roadieUser.Id.Value,
@@ -115,8 +109,11 @@ namespace Roadie.Api.Services
         public async Task<subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>> AuthenticateAsync(subsonic.Request request)
         {
             if (request == null || string.IsNullOrEmpty(request?.u))
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>(
-                    subsonic.ErrorCodes.WrongUsernameOrPassword, "Unknown Username");
+                   subsonic.ErrorCodes.WrongUsernameOrPassword, "Unknown Username");
+            }
+
             try
             {
                 var user = DbContext.Users.FirstOrDefault(x => x.UserName == request.u);
@@ -129,25 +126,35 @@ namespace Roadie.Api.Services
 
                 var password = request.Password;
                 if (!string.IsNullOrEmpty(request.s))
+                {
                     try
                     {
                         var token = HashHelper.CreateMD5((user.ApiToken ?? user.Email) + request.s);
-                        if (!token.Equals(request.t, StringComparison.OrdinalIgnoreCase)) user = null;
+                        if (!token.Equals(request.t, StringComparison.OrdinalIgnoreCase))
+                        {
+                            user = null;
+                        }
                     }
                     catch
                     {
                     }
+                }
 
                 if (user != null && !string.IsNullOrEmpty(user.PasswordHash) && !string.IsNullOrEmpty(password))
+                {
                     try
                     {
                         var hashCheck =
                             UserManger.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
-                        if (hashCheck == PasswordVerificationResult.Failed) user = null;
+                        if (hashCheck == PasswordVerificationResult.Failed)
+                        {
+                            user = null;
+                        }
                     }
                     catch
                     {
                     }
+                }
 
                 if (user != null)
                 {
@@ -177,7 +184,7 @@ namespace Roadie.Api.Services
             catch (Exception ex)
             {
                 Logger.LogError(ex,
-                    "Subsonic.Authenticate, Error CheckPassword [" + JsonConvert.SerializeObject(request) + "]");
+                    $"Subsonic.Authenticate, Error CheckPassword [{JsonSerializer.Serialize(request)}]");
             }
 
             return null;
@@ -191,14 +198,20 @@ namespace Roadie.Api.Services
             Library.Models.Users.User roadieUser, int position, string comment)
         {
             if (!request.TrackId.HasValue)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{request.id}]");
+                   subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{request.id}]");
+            }
+
             var track = GetTrack(request.TrackId.Value);
             if (track == null)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{request.TrackId.Value}]");
+                   subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{request.TrackId.Value}]");
+            }
+
             var userBookmark = DbContext.Bookmarks.FirstOrDefault(x =>
-                x.UserId == roadieUser.Id && x.BookmarkTargetId == track.Id && x.BookmarkType == BookmarkType.Track);
+               x.UserId == roadieUser.Id && x.BookmarkTargetId == track.Id && x.BookmarkType == BookmarkType.Track);
             var createdBookmark = false;
             if (userBookmark == null)
             {
@@ -270,15 +283,21 @@ namespace Roadie.Api.Services
                 playlist = DbContext.Playlists.Include(x => x.Tracks)
                     .FirstOrDefault(x => x.RoadieId == request.PlaylistId);
                 if (playlist == null)
+                {
                     return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                        subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid PlaylistId [{playlistId}]");
+                       subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid PlaylistId [{playlistId}]");
+                }
                 // When Create is called again on an existing delete all existing tracks and add given
                 if (playlist.Tracks?.Any() == true)
+                {
                     DbContext.PlaylistTracks.RemoveRange(playlist.Tracks);
+                }
+
                 var listNumber = playlist.Tracks?.Any() == true
-                    ? playlist.Tracks?.Max(x => x.ListNumber) ?? 0
-                    : 0;
+                   ? playlist.Tracks?.Max(x => x.ListNumber) ?? 0
+                   : 0;
                 foreach (var submittedTrack in submittedTracks)
+                {
                     if (playlist.Tracks?.Any(x => x.TrackId == submittedTrack.Id) != true)
                     {
                         listNumber++;
@@ -289,6 +308,7 @@ namespace Roadie.Api.Services
                             TrackId = submittedTrack.Id
                         });
                     }
+                }
 
                 playlist.Name = name ?? playlist.Name;
                 playlist.LastUpdated = DateTime.UtcNow;
@@ -320,9 +340,8 @@ namespace Roadie.Api.Services
             }
 
             await DbContext.SaveChangesAsync().ConfigureAwait(false);
-            Logger.LogTrace(
-                $"Subsonic: User `{roadieUser}` {(didCreate ? "created" : "modified")} Playlist `{playlist}` added [{songRoadieIds.Length}] Tracks.");
-            request.id = subsonic.Request.PlaylistdIdentifier + playlist.RoadieId;
+            Logger.LogTrace($"Subsonic: User `{roadieUser}` {(didCreate ? "created" : "modified")} Playlist `{playlist}` added [{songRoadieIds.Length}] Tracks.");
+            request.id = $"{subsonic.Request.PlaylistdIdentifier}{playlist.RoadieId}";
             return await GetPlaylistAsync(request, roadieUser).ConfigureAwait(false);
         }
 
@@ -333,14 +352,20 @@ namespace Roadie.Api.Services
             Library.Models.Users.User roadieUser)
         {
             if (!request.TrackId.HasValue)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{request.id}]");
+                   subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{request.id}]");
+            }
+
             var track = GetTrack(request.TrackId.Value);
             if (track == null)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{request.TrackId.Value}]");
+                   subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track Id [{request.TrackId.Value}]");
+            }
+
             var userBookmark = DbContext.Bookmarks.FirstOrDefault(x =>
-                x.UserId == roadieUser.Id && x.BookmarkTargetId == track.Id && x.BookmarkType == BookmarkType.Track);
+               x.UserId == roadieUser.Id && x.BookmarkTargetId == track.Id && x.BookmarkType == BookmarkType.Track);
             if (userBookmark != null)
             {
                 DbContext.Bookmarks.Remove(userBookmark);
@@ -408,12 +433,18 @@ namespace Roadie.Api.Services
             {
                 var releaseId = SafeParser.ToGuid(request.id);
                 if (!releaseId.HasValue)
+                {
                     return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                        subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{request.ReleaseId}]");
+                       subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{request.ReleaseId}]");
+                }
+
                 var release = await GetRelease(releaseId.Value).ConfigureAwait(false);
                 if (release == null)
+                {
                     return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                        subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{request.ReleaseId}]");
+                       subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{request.ReleaseId}]");
+                }
+
                 var trackPagedRequest = request.PagedRequest;
                 trackPagedRequest.Sort = "TrackNumber";
                 trackPagedRequest.Order = "ASC";
@@ -434,12 +465,12 @@ namespace Roadie.Api.Services
                         Item = new subsonic.AlbumWithSongsID3
                         {
                             artist = release.Artist.Name,
-                            artistId = subsonic.Request.ArtistIdIdentifier + release.Artist.RoadieId,
-                            coverArt = subsonic.Request.ReleaseIdIdentifier + release.RoadieId,
+                            artistId = $"{subsonic.Request.ArtistIdIdentifier}{release.Artist.RoadieId}",
+                            coverArt = $"{subsonic.Request.ReleaseIdIdentifier}{release.RoadieId}",
                             created = release.CreatedDate,
                             duration = release.Duration.ToSecondsFromMilliseconds(),
                             genre = (genre?.Genre.Name),
-                            id = subsonic.Request.ReleaseIdIdentifier + release.RoadieId,
+                            id = $"{subsonic.Request.ReleaseIdIdentifier}{release.RoadieId}",
                             name = release.Title,
                             playCount = releaseTracks.Rows.Sum(x => x.PlayedCount) ?? 0,
                             playCountSpecified = releaseTracks.Rows.Any(),
@@ -455,7 +486,7 @@ namespace Roadie.Api.Services
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "GetAlbum Request [{0}], User [{1}]", JsonConvert.SerializeObject(request),
+                Logger.LogError(ex, "GetAlbum Request [{0}], User [{1}]", JsonSerializer.Serialize(request),
                     roadieUser.ToString());
             }
 
@@ -470,10 +501,16 @@ namespace Roadie.Api.Services
         {
             var releaseId = SafeParser.ToGuid(request.id);
             if (!releaseId.HasValue)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{request.id}]");
+            }
+
             var release = await GetRelease(releaseId.Value).ConfigureAwait(false);
             if (release == null)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{request.id}]");
+            }
+
             switch (version)
             {
                 case subsonic.AlbumInfoVersion.One:
@@ -542,7 +579,9 @@ namespace Roadie.Api.Services
             }
 
             if (!releaseResult.IsSuccess)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(releaseResult.Message);
+            }
 
             switch (version)
             {
@@ -593,16 +632,22 @@ namespace Roadie.Api.Services
         {
             var artistId = SafeParser.ToGuid(request.id);
             if (!artistId.HasValue)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{request.id}]");
+                   subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{request.id}]");
+            }
+
             var pagedRequest = request.PagedRequest;
             pagedRequest.Sort = "Id";
             pagedRequest.FilterToArtistId = artistId.Value;
             var artistResult = await ArtistService.ListAsync(roadieUser, pagedRequest).ConfigureAwait(false);
             var artist = artistResult.Rows.FirstOrDefault();
             if (artist == null)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{request.id}]");
+                   subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Release [{request.id}]");
+            }
+
             var artistReleaseResult = await ReleaseService.ListAsync(roadieUser, pagedRequest).ConfigureAwait(false);
             return new subsonic.SubsonicOperationResult<subsonic.Response>
             {
@@ -612,8 +657,7 @@ namespace Roadie.Api.Services
                     version = SubsonicVersion,
                     status = subsonic.ResponseStatus.ok,
                     ItemElementName = subsonic.ItemChoiceType.artist,
-                    Item = SubsonicArtistWithAlbumsID3ForArtist(artist,
-                        SubsonicAlbumID3ForReleases(artistReleaseResult.Rows))
+                    Item = SubsonicArtistWithAlbumsID3ForArtist(artist, SubsonicAlbumID3ForReleases(artistReleaseResult.Rows))
                 }
             };
         }
@@ -625,7 +669,10 @@ namespace Roadie.Api.Services
         {
             var artistId = SafeParser.ToGuid(request.id);
             if (!artistId.HasValue)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid ArtistId [{request.id}]");
+            }
+
             var artist = await GetArtist(artistId.Value).ConfigureAwait(false);
             if (artist == null)
             {
@@ -751,42 +798,68 @@ namespace Roadie.Api.Services
             if (request.ArtistId != null)
             {
                 var artistImage = await ImageService.ArtistImageAsync(request.ArtistId.Value, size, size).ConfigureAwait(false);
-                if (!artistImage.IsSuccess) return artistImage.Adapt<subsonic.SubsonicFileOperationResult<Library.Models.Image>>();
+                if (!artistImage.IsSuccess)
+                {
+                    return artistImage.Adapt<subsonic.SubsonicFileOperationResult<Library.Models.Image>>();
+                }
+
                 result.Data = new Library.Models.Image(artistImage.Data.Bytes);
             }
             else if (request.TrackId != null)
             {
                 var trackimage = await ImageService.TrackImageAsync(request.TrackId.Value, size, size).ConfigureAwait(false);
-                if (!trackimage.IsSuccess) return trackimage.Adapt<subsonic.SubsonicFileOperationResult<Library.Models.Image>>();
+                if (!trackimage.IsSuccess)
+                {
+                    return trackimage.Adapt<subsonic.SubsonicFileOperationResult<Library.Models.Image>>();
+                }
+
                 result.Data = new Library.Models.Image(trackimage.Data.Bytes);
             }
             else if (request.CollectionId != null)
             {
                 var collectionImage = await ImageService.CollectionImageAsync(request.CollectionId.Value, size, size).ConfigureAwait(false);
                 if (!collectionImage.IsSuccess)
+                {
                     return collectionImage.Adapt<subsonic.SubsonicFileOperationResult<Library.Models.Image>>();
+                }
+
                 result.Data = new Library.Models.Image(collectionImage.Data.Bytes);
             }
             else if (request.ReleaseId != null)
             {
                 var releaseimage = await ImageService.ReleaseImageAsync(request.ReleaseId.Value, size, size).ConfigureAwait(false);
-                if (!releaseimage.IsSuccess) return releaseimage.Adapt<subsonic.SubsonicFileOperationResult<Library.Models.Image>>();
+                if (!releaseimage.IsSuccess)
+                {
+                    return releaseimage.Adapt<subsonic.SubsonicFileOperationResult<Library.Models.Image>>();
+                }
+
                 result.Data = new Library.Models.Image(releaseimage.Data.Bytes);
             }
             else if (request.PlaylistId != null)
             {
                 var playlistImage = await ImageService.PlaylistImageAsync(request.PlaylistId.Value, size, size).ConfigureAwait(false);
-                if (!playlistImage.IsSuccess) return playlistImage.Adapt<subsonic.SubsonicFileOperationResult<Library.Models.Image>>();
+                if (!playlistImage.IsSuccess)
+                {
+                    return playlistImage.Adapt<subsonic.SubsonicFileOperationResult<Library.Models.Image>>();
+                }
+
                 result.Data = new Library.Models.Image(playlistImage.Data.Bytes);
             }
             else if (!string.IsNullOrEmpty(request.u))
             {
                 var user = await GetUser(request.u).ConfigureAwait(false);
                 if (user == null)
+                {
                     return new subsonic.SubsonicFileOperationResult<Library.Models.Image>(
-                        subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Username [{request.u}]");
+                       subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Username [{request.u}]");
+                }
+
                 var userImage = await ImageService.UserImageAsync(user.RoadieId, size, size).ConfigureAwait(false);
-                if (!userImage.IsSuccess) return userImage.Adapt<subsonic.SubsonicFileOperationResult<Library.Models.Image>>();
+                if (!userImage.IsSuccess)
+                {
+                    return userImage.Adapt<subsonic.SubsonicFileOperationResult<Library.Models.Image>>();
+                }
+
                 result.Data = new Library.Models.Image(userImage.Data.Bytes);
             }
 
@@ -925,9 +998,12 @@ namespace Roadie.Api.Services
                 var artistId = SafeParser.ToGuid(request.id);
                 var artist = await GetArtist(artistId.Value).ConfigureAwait(false);
                 if (artist == null)
+                {
                     return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                        subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid ArtistId [{request.id}]");
-                directory.id = subsonic.Request.ArtistIdIdentifier + artist.RoadieId;
+                       subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid ArtistId [{request.id}]");
+                }
+
+                directory.id = $"{subsonic.Request.ArtistIdIdentifier}{artist.RoadieId}";
                 directory.name = artist.Name;
                 var artistRating = user == null
                     ? null
@@ -943,7 +1019,7 @@ namespace Roadie.Api.Services
                 pagedRequest.Sort = "Release.Text";
                 var artistReleases = await ReleaseService.ListAsync(roadieUser, pagedRequest).ConfigureAwait(false);
                 directory.child = SubsonicChildrenForReleases(artistReleases.Rows,
-                    subsonic.Request.ArtistIdIdentifier + artist.RoadieId);
+                    $"{subsonic.Request.ArtistIdIdentifier}{artist.RoadieId}");
             }
             // Request to get albums for in a Collection
             else if (request.CollectionId != null)
@@ -951,15 +1027,18 @@ namespace Roadie.Api.Services
                 var collectionId = SafeParser.ToGuid(request.id);
                 var collection = await GetCollection(collectionId.Value).ConfigureAwait(false);
                 if (collection == null)
+                {
                     return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                        subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid CollectionId [{request.id}]");
-                directory.id = subsonic.Request.CollectionIdentifier + collection.RoadieId;
+                       subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid CollectionId [{request.id}]");
+                }
+
+                directory.id = $"{subsonic.Request.CollectionIdentifier}{collection.RoadieId}";
                 directory.name = collection.Name;
                 var pagedRequest = request.PagedRequest;
                 pagedRequest.FilterToCollectionId = collection.RoadieId;
                 var collectionReleases = await ReleaseService.ListAsync(roadieUser, pagedRequest).ConfigureAwait(false);
                 directory.child = SubsonicChildrenForReleases(collectionReleases.Rows,
-                    subsonic.Request.CollectionIdentifier + collection.RoadieId);
+                    $"{subsonic.Request.CollectionIdentifier}{collection.RoadieId}");
             }
             // Request to get Tracks for an Album
             else if (request.ReleaseId.HasValue)
@@ -967,15 +1046,18 @@ namespace Roadie.Api.Services
                 var releaseId = SafeParser.ToGuid(request.id);
                 var release = await GetRelease(releaseId.Value).ConfigureAwait(false);
                 if (release == null)
+                {
                     return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                        subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid ReleaseId [{request.id}]");
-                directory.id = subsonic.Request.ReleaseIdIdentifier + release.RoadieId;
+                       subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid ReleaseId [{request.id}]");
+                }
+
+                directory.id = $"{subsonic.Request.ReleaseIdIdentifier}{release.RoadieId}";
                 directory.name = release.Title;
                 var releaseRating = user == null
                     ? null
                     : await DbContext.UserReleases.FirstOrDefaultAsync(x => x.UserId == user.Id && x.ReleaseId == release.Id).ConfigureAwait(false);
                 directory.averageRating = release.Rating ?? 0;
-                directory.parent = subsonic.Request.ArtistIdIdentifier + release.Artist.RoadieId;
+                directory.parent = $"{subsonic.Request.ArtistIdIdentifier}{release.Artist.RoadieId}";
                 if (releaseRating?.IsFavorite ?? false)
                 {
                     directory.starred = releaseRating.LastUpdated ?? releaseRating.CreatedDate;
@@ -993,7 +1075,7 @@ namespace Roadie.Api.Services
             {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
                     subsonic.ErrorCodes.TheRequestedDataWasNotFound,
-                    $"Unknown GetMusicDirectory Type [{JsonConvert.SerializeObject(request)}], id [{request.id}]");
+                    $"Unknown GetMusicDirectory Type [{JsonSerializer.Serialize(request)}], id [{request.id}]");
             }
 
             return new subsonic.SubsonicOperationResult<subsonic.Response>
@@ -1082,24 +1164,26 @@ namespace Roadie.Api.Services
         /// <summary>
         ///     Returns a listing of files in a saved playlist.
         /// </summary>
-        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPlaylistAsync(subsonic.Request request,
-            Library.Models.Users.User roadieUser)
+        public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPlaylistAsync(subsonic.Request request, Library.Models.Users.User roadieUser)
         {
             var playListId = SafeParser.ToGuid(request.id);
             if (!playListId.HasValue)
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid PlaylistId [{request.id}]");
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid PlaylistId [{request.id}]");
+            }
             var pagedRequest = request.PagedRequest;
             pagedRequest.Sort = "Id";
             pagedRequest.FilterToPlaylistId = playListId.Value;
             var playlistResult = await PlaylistService.ListAsync(pagedRequest, roadieUser).ConfigureAwait(false);
             var playlist = playlistResult.Rows.FirstOrDefault();
             if (playlist == null)
-                return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid PlaylistId [{request.id}]");
+            {
+                return new subsonic.SubsonicOperationResult<subsonic.Response>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid PlaylistId [{request.id}]");
+            }
             // For a playlist to show all the tracks in the playlist set the limit to the playlist size
             pagedRequest.Limit = playlist.PlaylistCount ?? pagedRequest.Limit;
             var tracksForPlaylist = await TrackService.ListAsync(pagedRequest, roadieUser).ConfigureAwait(false);
+            var detail = await SubsonicPlaylistForPlaylist(playlist, tracksForPlaylist.Rows).ConfigureAwait(false);
             return new subsonic.SubsonicOperationResult<subsonic.Response>
             {
                 IsSuccess = true,
@@ -1108,7 +1192,7 @@ namespace Roadie.Api.Services
                     version = SubsonicVersion,
                     status = subsonic.ResponseStatus.ok,
                     ItemElementName = subsonic.ItemChoiceType.playlist,
-                    Item = SubsonicPlaylistForPlaylist(playlist, tracksForPlaylist.Rows)
+                    Item = detail
                 }
             };
         }
@@ -1296,16 +1380,22 @@ namespace Roadie.Api.Services
             Library.Models.Users.User roadieUser)
         {
             if (!request.TrackId.HasValue)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track [{request.id}]");
+                   subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track [{request.id}]");
+            }
+
             var pagedRequest = request.PagedRequest;
             pagedRequest.FilterToTrackId = request.TrackId.Value;
             pagedRequest.Sort = "Id";
             var trackResult = await TrackService.ListAsync(pagedRequest, roadieUser).ConfigureAwait(false);
             var track = trackResult.Rows.FirstOrDefault();
             if (track == null)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track [{request.id}]");
+                   subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Track [{request.id}]");
+            }
+
             return new subsonic.SubsonicOperationResult<subsonic.Response>
             {
                 IsSuccess = true,
@@ -1413,11 +1503,20 @@ namespace Roadie.Api.Services
         {
             data.Artist artist = null;
             if (!string.IsNullOrEmpty(request.ArtistName))
+            {
                 artist = await GetArtist(request.ArtistName).ConfigureAwait(false);
-            else if (request.ArtistId.HasValue) artist = await GetArtist(request.ArtistId.Value).ConfigureAwait(false);
+            }
+            else if (request.ArtistId.HasValue)
+            {
+                artist = await GetArtist(request.ArtistId.Value).ConfigureAwait(false);
+            }
+
             if (artist == null)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Unknown Artist [{request.ArtistName}]");
+                   subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Unknown Artist [{request.ArtistName}]");
+            }
+
             var pagedRequest = request.PagedRequest;
             pagedRequest.FilterToArtistId = artist.RoadieId;
             pagedRequest.FilterTopPlayedOnly = true;
@@ -1449,8 +1548,11 @@ namespace Roadie.Api.Services
         {
             var user = await GetUser(username).ConfigureAwait(false);
             if (user == null)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Username [{username}]");
+                   subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Username [{username}]");
+            }
+
             return new subsonic.SubsonicOperationResult<subsonic.Response>
             {
                 IsSuccess = true,
@@ -1559,7 +1661,7 @@ namespace Roadie.Api.Services
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> SearchAsync(subsonic.Request request,
             Library.Models.Users.User roadieUser, subsonic.SearchVersion version)
         {
-            var query = HttpEncoder.UrlDecode(request.Query).Replace("*", "").Replace("%", "").Replace(";", "");
+            var query = HttpEncoder.UrlDecode(request.Query).Replace("*", string.Empty).Replace("%", string.Empty).Replace(";", string.Empty);
 
             // Search artists with query returning ArtistCount skipping ArtistOffset
             var artistPagedRequest = request.PagedRequest;
@@ -1644,44 +1746,52 @@ namespace Roadie.Api.Services
         {
             var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.UserIsNotAuthorizedForGivenOperation, $"Invalid User [{roadieUser}]");
+                   subsonic.ErrorCodes.UserIsNotAuthorizedForGivenOperation, $"Invalid User [{roadieUser}]");
+            }
 
             // Id can be a song, album or artist
             if (request.TrackId.HasValue)
             {
                 var starResult = await SetTrackRating(request.TrackId.Value, user, rating).ConfigureAwait(false);
                 if (starResult.IsSuccess)
+                {
                     return new subsonic.SubsonicOperationResult<subsonic.Response>
                     {
                         IsSuccess = true,
                         Data = new subsonic.Response()
                     };
+                }
             }
             else if (request.ReleaseId.HasValue)
             {
                 var starResult = await SetReleaseRating(request.ReleaseId.Value, user, rating).ConfigureAwait(false);
                 if (starResult.IsSuccess)
+                {
                     return new subsonic.SubsonicOperationResult<subsonic.Response>
                     {
                         IsSuccess = true,
                         Data = new subsonic.Response()
                     };
+                }
             }
             else if (request.ArtistId.HasValue)
             {
                 var starResult = await SetArtistRating(request.ArtistId.Value, user, rating).ConfigureAwait(false);
                 if (starResult.IsSuccess)
+                {
                     return new subsonic.SubsonicOperationResult<subsonic.Response>
                     {
                         IsSuccess = true,
                         Data = new subsonic.Response()
                     };
+                }
             }
 
             return new subsonic.SubsonicOperationResult<subsonic.Response>(
                 subsonic.ErrorCodes.TheRequestedDataWasNotFound,
-                $"Unknown Star Id [{JsonConvert.SerializeObject(request)}]");
+                $"Unknown Star Id [{JsonSerializer.Serialize(request)}]");
         }
 
         /// <summary>
@@ -1692,39 +1802,47 @@ namespace Roadie.Api.Services
         {
             var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.UserIsNotAuthorizedForGivenOperation, $"Invalid User [{roadieUser}]");
+                   subsonic.ErrorCodes.UserIsNotAuthorizedForGivenOperation, $"Invalid User [{roadieUser}]");
+            }
 
             // Id can be a song, album or artist
             if (request.TrackId.HasValue)
             {
                 var starResult = await ToggleTrackStar(request.TrackId.Value, user, star).ConfigureAwait(false);
                 if (starResult.IsSuccess)
+                {
                     return new subsonic.SubsonicOperationResult<subsonic.Response>
                     {
                         IsSuccess = true,
                         Data = new subsonic.Response()
                     };
+                }
             }
             else if (request.ReleaseId.HasValue)
             {
                 var starResult = await ToggleReleaseStar(request.ReleaseId.Value, user, star).ConfigureAwait(false);
                 if (starResult.IsSuccess)
+                {
                     return new subsonic.SubsonicOperationResult<subsonic.Response>
                     {
                         IsSuccess = true,
                         Data = new subsonic.Response()
                     };
+                }
             }
             else if (request.ArtistId.HasValue)
             {
                 var starResult = await ToggleArtistStar(request.ArtistId.Value, user, star).ConfigureAwait(false);
                 if (starResult.IsSuccess)
+                {
                     return new subsonic.SubsonicOperationResult<subsonic.Response>
                     {
                         IsSuccess = true,
                         Data = new subsonic.Response()
                     };
+                }
             }
             else if (albumIds?.Any() == true)
             {
@@ -1735,8 +1853,10 @@ namespace Roadie.Api.Services
                     {
                         var starResult = await ToggleReleaseStar(releaseId.Value, user, star).ConfigureAwait(false);
                         if (!starResult.IsSuccess)
+                        {
                             return new subsonic.SubsonicOperationResult<subsonic.Response>(starResult.ErrorCode.Value,
-                                starResult.Messages.FirstOrDefault());
+                               starResult.Messages.FirstOrDefault());
+                        }
                     }
                 }
             }
@@ -1749,15 +1869,17 @@ namespace Roadie.Api.Services
                     {
                         var starResult = await ToggleReleaseStar(artistId.Value, user, star).ConfigureAwait(false);
                         if (!starResult.IsNotFoundResult)
+                        {
                             return new subsonic.SubsonicOperationResult<subsonic.Response>(starResult.ErrorCode.Value,
-                                starResult.Messages.FirstOrDefault());
+                               starResult.Messages.FirstOrDefault());
+                        }
                     }
                 }
             }
 
             return new subsonic.SubsonicOperationResult<subsonic.Response>(
                 subsonic.ErrorCodes.TheRequestedDataWasNotFound,
-                $"Unknown Star Id [{JsonConvert.SerializeObject(request)}]");
+                $"Unknown Star Id [{JsonSerializer.Serialize(request)}]");
         }
 
         /// <summary>
@@ -1776,16 +1898,24 @@ namespace Roadie.Api.Services
         {
             request.id = playListId ?? request.id;
             if (!request.PlaylistId.HasValue)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Playlist Id [{request.id}]");
+                   subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Playlist Id [{request.id}]");
+            }
+
             var playlist = await GetPlaylist(request.PlaylistId.Value).ConfigureAwait(false);
             if (playlist == null)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Playlist Id [{request.TrackId.Value}]");
+                   subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Playlist Id [{request.TrackId.Value}]");
+            }
+
             if (playlist.UserId != roadieUser.Id && !roadieUser.IsAdmin)
+            {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
-                    subsonic.ErrorCodes.UserIsNotAuthorizedForGivenOperation,
-                    "User is not allowed to update playlist.");
+                   subsonic.ErrorCodes.UserIsNotAuthorizedForGivenOperation,
+                   "User is not allowed to update playlist.");
+            }
 
             playlist.Name = name ?? playlist.Name;
             playlist.IsPublic = isPublic ?? playlist.IsPublic;
@@ -1801,6 +1931,7 @@ namespace Roadie.Api.Services
 
                 var listNumber = playlist.Tracks?.Max(x => x.ListNumber) ?? 0;
                 foreach (var submittedTrack in submittedTracks)
+                {
                     if (playlist.Tracks == null || playlist.Tracks?.Any(x => x.TrackId == submittedTrack.Id) != true)
                     {
                         listNumber++;
@@ -1811,12 +1942,15 @@ namespace Roadie.Api.Services
                             TrackId = submittedTrack.Id
                         });
                     }
+                }
             }
 
             if (songIndexesToRemove?.Any() == true)
+            {
                 // Remove tracks from playlist
                 // Not clear from API documentation if this is zero based, wait until someone calls it to get values passed.
-                throw new NotImplementedException($"Request [{JsonConvert.SerializeObject(request)}]");
+                throw new NotImplementedException($"Request [{JsonSerializer.Serialize(request)}]");
+            }
 
             await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
@@ -1836,21 +1970,25 @@ namespace Roadie.Api.Services
 
         #region Privates
 
-        private async Task<string[]> AllowedUsers()
+        private Task<string[]> AllowedUsers()
         {
-            return await CacheManager.GetAsync(CacheManagerBase.SystemCacheRegionUrn + ":active_usernames", async () =>
-            {
-                return await DbContext.Users.Where(x => x.IsActive ?? false).Select(x => x.UserName).ToArrayAsync().ConfigureAwait(false);
-            }, CacheManagerBase.SystemCacheRegionUrn).ConfigureAwait(false);
+            return CacheManager.GetAsync(CacheManagerBase.SystemCacheRegionUrn + ":active_usernames", async () => await DbContext.Users.Where(x => x.IsActive ?? false).Select(x => x.UserName).ToArrayAsync().ConfigureAwait(false), CacheManagerBase.SystemCacheRegionUrn);
         }
+
+        //private async Task<string[]> AllowedUsers()
+        //{
+        //    return await CacheManager.GetAsync(CacheManagerBase.SystemCacheRegionUrn + ":active_usernames", async () =>
+        //    {
+        //        return await DbContext.Users.Where(x => x.IsActive ?? false).Select(x => x.UserName).ToArrayAsync().ConfigureAwait(false);
+        //    }, CacheManagerBase.SystemCacheRegionUrn).ConfigureAwait(false);
+        //}
 
         private subsonic.MusicFolder CollectionMusicFolder()
         {
             return MusicFolders().First(x => x.id == 1);
         }
 
-        private async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetArtistsAction(
-            subsonic.Request request, Library.Models.Users.User roadieUser)
+        private async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetArtistsAction(subsonic.Request request, Library.Models.Users.User roadieUser)
         {
             var indexes = new List<subsonic.IndexID3>();
             var musicFolder = MusicFolders().Find(x => x.id == (request.MusicFolderId ?? 2));
@@ -1867,12 +2005,13 @@ namespace Roadie.Api.Services
                 pagedRequest.Sort = "Artist.Text";
                 var artistList = await ArtistService.ListAsync(roadieUser, pagedRequest).ConfigureAwait(false);
                 foreach (var artistGroup in artistList.Rows.GroupBy(x => x.Artist.Text.Substring(0, 1)))
+                {
                     indexes.Add(new subsonic.IndexID3
                     {
                         name = artistGroup.Key,
                         artist = SubsonicArtistID3sForArtists(artistGroup)
                     });
-                ;
+                }
             }
 
             return new subsonic.SubsonicOperationResult<subsonic.Response>
@@ -1894,8 +2033,7 @@ namespace Roadie.Api.Services
         private async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetIndexesAction(
             subsonic.Request request, Library.Models.Users.User roadieUser, long? ifModifiedSince = null)
         {
-            var modifiedSinceFilter =
-                ifModifiedSince.HasValue ? (DateTime?)ifModifiedSince.Value.FromUnixTime() : null;
+            var modifiedSinceFilter = ifModifiedSince?.FromUnixTime();
             var musicFolderFilter = !request.MusicFolderId.HasValue
                 ? new subsonic.MusicFolder()
                 : MusicFolders().Find(x => x.id == request.MusicFolderId.Value);
@@ -1908,6 +2046,7 @@ namespace Roadie.Api.Services
                                                        let first = c.Name.Substring(0, 1)
                                                        orderby first
                                                        select first).Distinct().ToArray())
+                {
                     indexes.Add(new subsonic.Index
                     {
                         name = collectionFirstLetter,
@@ -1924,6 +2063,7 @@ namespace Roadie.Api.Services
                                       userRating = 0
                                   }).ToArray()
                     });
+                }
             }
             else
             {
@@ -1934,12 +2074,13 @@ namespace Roadie.Api.Services
                 pagedRequest.Sort = "Artist.Text";
                 var artistList = await ArtistService.ListAsync(roadieUser, pagedRequest).ConfigureAwait(false);
                 foreach (var artistGroup in artistList.Rows.GroupBy(x => x.Artist.Text.Substring(0, 1)))
+                {
                     indexes.Add(new subsonic.Index
                     {
                         name = artistGroup.Key,
                         artist = SubsonicArtistsForArtists(artistGroup)
                     });
-                ;
+                }
             }
 
             return new subsonic.SubsonicOperationResult<subsonic.Response>
@@ -1968,18 +2109,13 @@ namespace Roadie.Api.Services
             };
         }
 
-        private subsonic.MusicFolder MusicMusicFolder()
-        {
-            return MusicFolders().First(x => x.id == 2);
-        }
-
-        private new async Task<subsonic.SubsonicOperationResult<bool>> SetArtistRating(Guid artistId,
-            Library.Identity.User user, short rating)
+        private new async Task<subsonic.SubsonicOperationResult<bool>> SetArtistRating(Guid artistId, Library.Identity.User user, short rating)
         {
             var r = await base.SetArtistRating(artistId, user, rating).ConfigureAwait(false);
             if (r.IsNotFoundResult)
-                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound,
-                    $"Invalid Artist Id [{artistId}]");
+            {
+                return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound, $"Invalid Artist Id [{artistId}]");
+            }
             return new subsonic.SubsonicOperationResult<bool>
             {
                 IsSuccess = r.IsSuccess,
@@ -1992,8 +2128,11 @@ namespace Roadie.Api.Services
         {
             var r = await base.SetReleaseRating(releaseId, user, rating).ConfigureAwait(false);
             if (r.IsNotFoundResult)
+            {
                 return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound,
-                    $"Invalid Release Id [{releaseId}]");
+                   $"Invalid Release Id [{releaseId}]");
+            }
+
             return new subsonic.SubsonicOperationResult<bool>
             {
                 IsSuccess = r.IsSuccess,
@@ -2006,8 +2145,11 @@ namespace Roadie.Api.Services
         {
             var r = await base.SetTrackRating(trackId, user, rating).ConfigureAwait(false);
             if (r.IsNotFoundResult)
+            {
                 return new subsonic.SubsonicOperationResult<bool>(subsonic.ErrorCodes.TheRequestedDataWasNotFound,
-                    $"Invalid Track Id [{trackId}]");
+                   $"Invalid Track Id [{trackId}]");
+            }
+
             return new subsonic.SubsonicOperationResult<bool>
             {
                 IsSuccess = r.IsSuccess,
@@ -2019,13 +2161,13 @@ namespace Roadie.Api.Services
         {
             return new subsonic.AlbumID3
             {
-                id = subsonic.Request.ReleaseIdIdentifier + r.Id,
+                id = $"{subsonic.Request.ReleaseIdIdentifier}{r.Id}",
                 artistId = r.Artist.Value,
                 name = r.Release.Text,
                 songCount = r.TrackCount ?? 0,
                 duration = r.Duration.ToSecondsFromMilliseconds(),
                 artist = r.Artist.Text,
-                coverArt = subsonic.Request.ReleaseIdIdentifier + r.Id,
+                coverArt = $"{subsonic.Request.ReleaseIdIdentifier}{r.Id}",
                 created = r.CreatedDate.Value,
                 genre = r.Genre.Text,
                 playCount = r.TrackPlayedCount ?? 0,
@@ -2039,7 +2181,11 @@ namespace Roadie.Api.Services
 
         private subsonic.AlbumID3[] SubsonicAlbumID3ForReleases(IEnumerable<ReleaseList> r)
         {
-            if (r == null || !r.Any()) return new subsonic.AlbumID3[0];
+            if (r?.Any() != true)
+            {
+                return new subsonic.AlbumID3[0];
+            }
+
             return r.Select(x => SubsonicAlbumID3ForRelease(x)).ToArray();
         }
 
@@ -2047,7 +2193,7 @@ namespace Roadie.Api.Services
         {
             return new subsonic.Artist
             {
-                id = subsonic.Request.ArtistIdIdentifier + artist.Artist.Value,
+                id = $"{subsonic.Request.ArtistIdIdentifier}{artist.Artist.Value}",
                 name = artist.Artist.Text,
                 artistImageUrl = ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, artist.Id).Url,
                 averageRating = artist.Rating ?? 0,
@@ -2055,7 +2201,7 @@ namespace Roadie.Api.Services
                 starred = artist.UserRating?.RatedDate ?? DateTime.UtcNow,
                 starredSpecified = artist.UserRating?.IsFavorite ?? false,
                 userRating = artist.UserRating != null ? artist.UserRating.Rating ?? 0 : 0,
-                userRatingSpecified = artist.UserRating != null && artist.UserRating.Rating != null
+                userRatingSpecified = artist.UserRating?.Rating != null
             };
         }
 
@@ -2064,7 +2210,7 @@ namespace Roadie.Api.Services
             var artistImageUrl = ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, artist.Id).Url;
             return new subsonic.ArtistID3
             {
-                id = subsonic.Request.ArtistIdIdentifier + artist.Artist.Value,
+                id = $"{subsonic.Request.ArtistIdIdentifier}{artist.Artist.Value}",
                 name = artist.Artist.Text,
                 albumCount = artist.ReleaseCount ?? 0,
                 coverArt = artistImageUrl,
@@ -2076,7 +2222,11 @@ namespace Roadie.Api.Services
 
         private subsonic.ArtistID3[] SubsonicArtistID3sForArtists(IEnumerable<ArtistList> artists)
         {
-            if (artists == null || !artists.Any()) return new subsonic.ArtistID3[0];
+            if (artists?.Any() != true)
+            {
+                return new subsonic.ArtistID3[0];
+            }
+
             return artists.Select(x => SubsonicArtistID3ForArtist(x)).ToArray();
         }
 
@@ -2085,11 +2235,11 @@ namespace Roadie.Api.Services
             return new subsonic.ArtistInfo2
             {
                 biography = artist.BioContext,
-                largeImageUrl = ImageHelper.MakeImage(Configuration, HttpContext, artist.RoadieId, "artist", Configuration.LargeImageSize).Url,
-                mediumImageUrl = ImageHelper.MakeImage(Configuration, HttpContext, artist.RoadieId, "artist", Configuration.MediumImageSize).Url,
+                largeImageUrl = ImageHelper.MakeImage(Configuration, HttpContext, artist.RoadieId, nameof(artist), Configuration.LargeImageSize).Url,
+                mediumImageUrl = ImageHelper.MakeImage(Configuration, HttpContext, artist.RoadieId, nameof(artist), Configuration.MediumImageSize).Url,
                 musicBrainzId = artist.MusicBrainzId,
                 similarArtist = new subsonic.ArtistID3[0],
-                smallImageUrl = ImageHelper.MakeImage(Configuration, HttpContext, artist.RoadieId, "artist", Configuration.SmallImageSize).Url
+                smallImageUrl = ImageHelper.MakeImage(Configuration, HttpContext, artist.RoadieId, nameof(artist), Configuration.SmallImageSize).Url
             };
         }
 
@@ -2098,29 +2248,32 @@ namespace Roadie.Api.Services
             return new subsonic.ArtistInfo
             {
                 biography = artist.BioContext,
-                largeImageUrl = ImageHelper.MakeImage(Configuration, HttpContext, artist.RoadieId, "artist", Configuration.LargeImageSize).Url,
-                mediumImageUrl = ImageHelper.MakeImage(Configuration, HttpContext, artist.RoadieId, "artist", Configuration.MediumImageSize).Url,
+                largeImageUrl = ImageHelper.MakeImage(Configuration, HttpContext, artist.RoadieId, nameof(artist), Configuration.LargeImageSize).Url,
+                mediumImageUrl = ImageHelper.MakeImage(Configuration, HttpContext, artist.RoadieId, nameof(artist), Configuration.MediumImageSize).Url,
                 musicBrainzId = artist.MusicBrainzId,
                 similarArtist = new subsonic.Artist[0],
-                smallImageUrl = ImageHelper.MakeImage(Configuration, HttpContext, artist.RoadieId, "artist", Configuration.SmallImageSize).Url
+                smallImageUrl = ImageHelper.MakeImage(Configuration, HttpContext, artist.RoadieId, nameof(artist), Configuration.SmallImageSize).Url
             };
         }
 
         private subsonic.Artist[] SubsonicArtistsForArtists(IEnumerable<ArtistList> artists)
         {
-            if (artists == null || !artists.Any()) return new subsonic.Artist[0];
+            if (artists?.Any() != true)
+            {
+                return new subsonic.Artist[0];
+            }
+
             return artists.Select(x => SubsonicArtistForArtist(x)).ToArray();
         }
 
-        private subsonic.ArtistWithAlbumsID3 SubsonicArtistWithAlbumsID3ForArtist(ArtistList artist,
-            subsonic.AlbumID3[] releases)
+        private subsonic.ArtistWithAlbumsID3 SubsonicArtistWithAlbumsID3ForArtist(ArtistList artist, subsonic.AlbumID3[] releases)
         {
             var artistImageUrl = ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, artist.Id).Url;
             return new subsonic.ArtistWithAlbumsID3
             {
-                id = subsonic.Request.ArtistIdIdentifier + artist.Artist.Value,
+                id = $"{subsonic.Request.ArtistIdIdentifier}{artist.Artist.Value}",
                 album = releases,
-                albumCount = releases.Count(),
+                albumCount = releases.Length,
                 artistImageUrl = artistImageUrl,
                 coverArt = artistImageUrl,
                 name = artist.Artist.Text,
@@ -2145,7 +2298,11 @@ namespace Roadie.Api.Services
         private subsonic.Bookmark[] SubsonicBookmarksForBookmarks(IEnumerable<BookmarkList> bb,
             IEnumerable<TrackList> childTracks)
         {
-            if (bb == null || !bb.Any()) return new subsonic.Bookmark[0];
+            if (bb?.Any() != true)
+            {
+                return new subsonic.Bookmark[0];
+            }
+
             var result = new List<subsonic.Bookmark>();
             foreach (var bookmark in bb)
             {
@@ -2153,8 +2310,7 @@ namespace Roadie.Api.Services
                 switch (bookmark.Type.Value)
                 {
                     case BookmarkType.Track:
-                        child = SubsonicChildForTrack(childTracks.FirstOrDefault(x =>
-                            x.Id == SafeParser.ToGuid(bookmark.Bookmark.Value)));
+                        child = SubsonicChildForTrack(childTracks.FirstOrDefault(x => x.Id == SafeParser.ToGuid(bookmark.Bookmark.Value)));
                         break;
 
                     default:
@@ -2171,13 +2327,13 @@ namespace Roadie.Api.Services
         {
             return new subsonic.Child
             {
-                id = subsonic.Request.ReleaseIdIdentifier + r.Id,
+                id = $"{subsonic.Request.ReleaseIdIdentifier}{r.Id}",
                 album = r.Release.Text,
-                albumId = subsonic.Request.ReleaseIdIdentifier + r.Id,
+                albumId = $"{subsonic.Request.ReleaseIdIdentifier}{r.Id}",
                 artist = r.Artist.Text,
                 averageRating = r.Rating ?? 0,
                 averageRatingSpecified = true,
-                coverArt = subsonic.Request.ReleaseIdIdentifier + r.Id,
+                coverArt = $"{subsonic.Request.ReleaseIdIdentifier}{r.Id}",
                 created = r.CreatedDate.Value,
                 createdSpecified = true,
                 genre = r.Genre.Text,
@@ -2190,7 +2346,7 @@ namespace Roadie.Api.Services
                 starredSpecified = r.UserRating?.IsFavorite ?? false,
                 title = r.Release.Text,
                 userRating = r.UserRating != null ? r.UserRating.Rating ?? 0 : 0,
-                userRatingSpecified = r.UserRating != null && r.UserRating.Rating != null,
+                userRatingSpecified = r.UserRating?.Rating != null,
                 year = SafeParser.ToNumber<int>(r.ReleaseYear),
                 yearSpecified = true
             };
@@ -2208,17 +2364,17 @@ namespace Roadie.Api.Services
             }
             return new subsonic.Child
             {
-                id = subsonic.Request.TrackIdIdentifier + t.Id,
+                id = $"{subsonic.Request.TrackIdIdentifier}{t.Id}",
                 album = t.Release.Release.Text,
-                albumId = subsonic.Request.ReleaseIdIdentifier + t.Release.Release.Value,
+                albumId = $"{subsonic.Request.ReleaseIdIdentifier}{t.Release.Release.Value}",
                 artist = t.Artist.Artist.Text,
-                artistId = subsonic.Request.ArtistIdIdentifier + t.Artist.Artist.Value,
+                artistId = $"{subsonic.Request.ArtistIdIdentifier}{t.Artist.Artist.Value}",
                 averageRating = t.Rating ?? 0,
                 averageRatingSpecified = true,
                 bitRate = 320,
                 bitRateSpecified = true,
                 contentType = MimeTypeHelper.Mp3MimeType,
-                coverArt = subsonic.Request.TrackIdIdentifier + t.Id,
+                coverArt = $"{subsonic.Request.TrackIdIdentifier}{t.Id}",
                 created = t.CreatedDate.Value,
                 createdSpecified = true,
                 discNumber = t.MediaNumber ?? 0,
@@ -2226,7 +2382,7 @@ namespace Roadie.Api.Services
                 duration = t.Duration.ToSecondsFromMilliseconds(),
                 durationSpecified = true,
                 isDir = false,
-                parent = subsonic.Request.ReleaseIdIdentifier + t.Release.Release.Value,
+                parent = $"{subsonic.Request.ReleaseIdIdentifier}{t.Release.Release.Value}",
                 path = $"{t.Artist.Artist.Text}/{t.Release.Release.Text}/{t.TrackNumber} - {t.Title}.mp3",
                 playCountSpecified = true,
                 size = t.FileSize ?? 0,
@@ -2253,13 +2409,19 @@ namespace Roadie.Api.Services
 
         private subsonic.Child[] SubsonicChildrenForReleases(IEnumerable<ReleaseList> r, string parent)
         {
-            if (r == null || !r.Any()) return new subsonic.Child[0];
+            if (r?.Any() != true)
+            {
+                return new subsonic.Child[0];
+            }
             return r.Select(x => SubsonicChildForRelease(x, parent, $"{x.Artist.Text}/{x.Release.Text}/")).ToArray();
         }
 
         private subsonic.Child[] SubsonicChildrenForTracks(IEnumerable<TrackList> tracks)
         {
-            if (tracks == null || !tracks.Any()) return new subsonic.Child[0];
+            if (tracks?.Any() != true)
+            {
+                return new subsonic.Child[0];
+            }
             return tracks.Select(x => SubsonicChildForTrack(x)).ToArray();
         }
 
@@ -2272,7 +2434,7 @@ namespace Roadie.Api.Services
                 changed = playlist.LastUpdated ?? playlist.CreatedDate ?? DateTime.UtcNow,
                 created = playlist.CreatedDate ?? DateTime.UtcNow,
                 duration = playlist.Duration.ToSecondsFromMilliseconds(),
-                id = subsonic.Request.PlaylistdIdentifier + playlist.Id,
+                id = $"{subsonic.Request.PlaylistdIdentifier}{playlist.Id}",
                 name = playlist.Playlist.Text,
                 owner = playlist.User.Text,
                 @public = playlist.IsPublic,
@@ -2289,7 +2451,7 @@ namespace Roadie.Api.Services
                 return new subsonic.Playlist[0];
             }
             var result = new List<subsonic.Playlist>();
-            foreach(var playlist in playlists)
+            foreach (var playlist in playlists)
             {
                 result.Add(await SubsonicPlaylistForPlaylist(playlist).ConfigureAwait(false));
             }

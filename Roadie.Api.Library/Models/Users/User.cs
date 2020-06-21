@@ -3,6 +3,7 @@ using Roadie.Library.Models.Statistics;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Roadie.Library.Models.Users
 {
@@ -11,7 +12,9 @@ namespace Roadie.Library.Models.Users
     {
         public const string ActionKeyUserRated = "__userrated__";
         public const string DefaultIncludes = "stats";
-        [MaxLength(100)] public string ApiToken { get; set; }
+
+        [MaxLength(100)]
+        public string ApiToken { get; set; }
 
         public Image Avatar { get; set; }
 
@@ -20,7 +23,12 @@ namespace Roadie.Library.Models.Users
         /// </summary>
         public string AvatarData { get; set; }
 
-        [Required] [MaxLength(100)] public string ConcurrencyStamp { get; set; }
+        [Required]
+        [MaxLength(100)]
+        public string ConcurrencyStamp { get; set; }
+
+        public short? DefaultRowsPerPage { get; set; }
+
         public bool DoUseHtmlPlayer { get; set; }
 
         [Required]
@@ -28,17 +36,33 @@ namespace Roadie.Library.Models.Users
         [DataType(DataType.EmailAddress)]
         public string Email { get; set; }
 
-        [MaxLength(500)] public string FtpDirectory { get; set; }
+        [MaxLength(500)]
+        public string FtpDirectory { get; set; }
 
-        [MaxLength(500)] public string FtpPassword { get; set; }
+        [MaxLength(500)]
+        public string FtpPassword { get; set; }
 
-        [MaxLength(250)] public string FtpUrl { get; set; }
+        [MaxLength(250)]
+        [DataType(DataType.Url)]
+        public string FtpUrl { get; set; }
 
-        [MaxLength(50)] public string FtpUsername { get; set; }
+        [MaxLength(50)]
+        public string FtpUsername { get; set; }
+
+        [JsonPropertyName("UserDbId")]
         public new int? Id { get; set; }
+
         public bool IsAdmin { get; set; }
+
         public bool IsEditor { get; set; }
+
         public bool IsPrivate { get; set; }
+
+        public DateTime LastApiAccess { get; set; }
+
+        public DateTime LastLogin { get; set; }
+
+        public Image MediumThumbnail { get; set; }
 
         /// <summary>
         ///     Posted password only used when changing password from profile edits
@@ -55,23 +79,34 @@ namespace Roadie.Library.Models.Users
         public string PasswordConfirmation { get; set; }
 
         public short? PlayerTrackLimit { get; set; }
-        [MaxLength(65535)] public string Profile { get; set; }
+
+        [MaxLength(65535)]
+        public string Profile { get; set; }
+
         public short? RandomReleaseLimit { get; set; }
+
         public short? RecentlyPlayedLimit { get; set; }
+
         public bool RemoveTrackFromQueAfterPlayed { get; set; }
-        [NotMapped] [AdaptIgnore] public UserStatistics Statistics { get; set; }
-        [StringLength(50)] [Required] public string Timeformat { get; set; }
 
-        [MaxLength(50)] [Required] public string Timezone { get; set; }
+        [NotMapped]
+        [AdaptIgnore]
+        public UserStatistics Statistics { get; set; }
 
-        [AdaptMember("RoadieId")] public Guid UserId { get; set; }
+        [StringLength(50)]
+        [Required]
+        public string Timeformat { get; set; }
 
-        [Required] [MaxLength(20)] public string UserName { get; set; }
-        public Image MediumThumbnail { get; set; }
+        [MaxLength(50)]
+        [Required]
+        public string Timezone { get; set; }
 
-        public DateTime LastLogin { get; set; }
-        public DateTime LastApiAccess { get; set; }
-        public short? DefaultRowsPerPage { get; set; }
+        [AdaptMember("RoadieId")]
+        public Guid UserId { get; set; }
+
+        [Required]
+        [MaxLength(20)]
+        public string UserName { get; set; }
 
         public override string ToString() => $"Id [{Id}], RoadieId [{UserId}], UserName [{UserName}]";
     }

@@ -1,8 +1,6 @@
-﻿using Roadie.Library.Utility;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Roadie.Library.Extensions
 {
@@ -10,7 +8,7 @@ namespace Roadie.Library.Extensions
     {
         public static string ToTimings(this IDictionary<string, long> values)
         {
-            if(values == null || !values.Any())
+            if (values == null || !values.Any())
             {
                 return null;
             }
@@ -24,7 +22,5 @@ namespace Roadie.Library.Extensions
             }
             return string.Join(", ", timings);
         }
-
-
     }
 }

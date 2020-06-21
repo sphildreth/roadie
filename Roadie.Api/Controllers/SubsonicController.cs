@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Api.ModelBinding;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
@@ -15,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text.Json;
 using System.Threading.Tasks;
 using User = Roadie.Library.Models.Users.User;
 
@@ -364,7 +364,7 @@ namespace Roadie.Api.Controllers
 
             if (!result.IsSuccess)
             {
-                Logger.LogWarning($"GetCoverArt Failed For [{JsonConvert.SerializeObject(request)}]");
+                Logger.LogWarning($"GetCoverArt Failed For [{ JsonSerializer.Serialize(request)}]");
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
 
@@ -901,7 +901,7 @@ namespace Roadie.Api.Controllers
                 }
                 else
                 {
-                    jsonResult = $"{{ \"subsonic-response\": {{ \"status\":\"{status}\", \"version\": \"{version}\", \"{responseType}\":{((response?.Data != null ? JsonConvert.SerializeObject(response.Data.Item) : string.Empty))}}}}}";
+                    jsonResult = $"{{ \"subsonic-response\": {{ \"status\":\"{status}\", \"version\": \"{version}\", \"{responseType}\":{((response?.Data != null ? JsonSerializer.Serialize(response.Data.Item) : string.Empty))}}}}}";
                 }
 
                 if ((request?.f ?? string.Empty).Equals("jsonp", StringComparison.OrdinalIgnoreCase))

@@ -1,8 +1,8 @@
-﻿using Newtonsoft.Json;
-using Roadie.Library.Configuration;
+﻿using Roadie.Library.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 namespace Roadie.Library.Models.Player
 {
@@ -11,14 +11,11 @@ namespace Roadie.Library.Models.Player
     {
         private string _rawTracks;
 
-        public string RawTracks => _rawTracks ?? (_rawTracks = JsonConvert.SerializeObject(Tracks));
+        public string RawTracks => _rawTracks ?? (_rawTracks = JsonSerializer.Serialize(Tracks));
 
         public string SiteName { get; set; }
 
-        public string TotalTrackTime
-        {
-            get { return TimeSpan.FromMilliseconds((double)Tracks.Sum(x => x.Duration)).ToString(@"hh\:mm\:ss"); }
-        }
+        public string TotalTrackTime => TimeSpan.FromMilliseconds((double)Tracks.Sum(x => x.Duration)).ToString(@"hh\:mm\:ss");
 
         public string TrackCount => Tracks.Count().ToString("D3");
 

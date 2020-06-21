@@ -1,8 +1,8 @@
 ﻿using Mapster;
-using Newtonsoft.Json;
 using Roadie.Library.Utility;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Roadie.Library.Models
 {
@@ -26,15 +26,15 @@ namespace Roadie.Library.Models
 
         public DateTime? LastUpdated { get; set; }
 
-        [MaxLength(250)]
-        public virtual string SortName { get; set; }
-
         /// <summary>
         ///     Random int to sort when Random Request
         /// </summary>
         [AdaptIgnore]
         [JsonIgnore]
         public int RandomSortId { get; set; }
+
+        [MaxLength(250)]
+        public virtual string SortName { get; set; }
 
         public EntityInfoModelBase()
         {

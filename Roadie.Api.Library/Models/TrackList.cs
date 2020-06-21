@@ -1,15 +1,15 @@
-﻿using Newtonsoft.Json;
+﻿using Roadie.Library.Enums;
 using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 using Release = Roadie.Library.Data.Release;
-using Roadie.Library.Enums;
 
 namespace Roadie.Library.Models
 {
@@ -18,6 +18,7 @@ namespace Roadie.Library.Models
     public sealed class TrackList : EntityInfoModelBase
     {
         public ArtistList Artist { get; set; }
+
         public int? Duration { get; set; }
 
         public string DurationTime => Duration.HasValue ? new TimeInfo(Duration.Value).ToFullFormattedString() : "--:--";
@@ -25,8 +26,11 @@ namespace Roadie.Library.Models
         public string DurationTimeShort => Duration.HasValue ? new TimeInfo(Duration.Value).ToShortFormattedString() : "--:--";
 
         public int? FavoriteCount { get; set; }
+
         public int? FileSize { get; set; }
+
         public DateTime? LastPlayed { get; set; }
+
         public int? MediaNumber { get; set; }
 
         [MaxLength(65535)]
@@ -38,99 +42,83 @@ namespace Roadie.Library.Models
         {
             get
             {
-                if (string.IsNullOrEmpty(PartTitles)) return null;
+                if (string.IsNullOrEmpty(PartTitles))
+                {
+                    return null;
+                }
+
                 return PartTitles.Split('\n');
             }
         }
 
         public int? PlayedCount { get; set; }
-        public short? Rating { get; set; }
-        public ReleaseList Release { get; set; }
-        [JsonIgnore] public DateTime? ReleaseDate { get; set; }
-        public short? ReleaseRating { get; set; }
-        public Image Thumbnail { get; set; }
-        public string Title { get; set; }
-        public DataToken Track { get; set; }
-        public ArtistList TrackArtist { get; set; }
-        [JsonIgnore] public string TrackId => Track?.Value;
 
-        [JsonIgnore] public string TrackName => Track?.Text;
-        [JsonIgnore] public string ReleaseName => Release?.Release?.Text;
+        public short? Rating { get; set; }
+
+        public ReleaseList Release { get; set; }
+
+        [JsonIgnore]
+        public DateTime? ReleaseDate { get; set; }
+
+        [JsonIgnore]
+        public string ReleaseName => Release?.Release?.Text;
+
+        public short? ReleaseRating { get; set; }
+
         public Statuses? Status { get; set; }
+
         public string StatusVerbose => (Status ?? Statuses.Missing).ToString();
+
+        public Image Thumbnail { get; set; }
+
+        public string Title { get; set; }
+
+        public DataToken Track { get; set; }
+
+        public ArtistList TrackArtist { get; set; }
+
+        [JsonIgnore]
+        public string TrackId => Track?.Value;
+
+        [JsonIgnore]
+        public string TrackName => Track?.Text;
+
         public int? TrackNumber { get; set; }
+
         public string TrackPlayUrl { get; set; }
+
         public UserTrack UserRating { get; set; }
 
         public int? Year
         {
             get
             {
-                if (ReleaseDate.HasValue) return ReleaseDate.Value.Year;
+                if (ReleaseDate.HasValue)
+                {
+                    return ReleaseDate.Value.Year;
+                }
+
                 return null;
             }
         }
 
-        public int GetArtistReleaseHashCode() => this.Artist?.Artist?.Value.GetHashCode() + this.Release?.Release?.Value.GetHashCode() ?? 0;
-
-        public override int GetHashCode() => this.Artist?.Artist?.Value.GetHashCode() + this.Release?.Release?.Value.GetHashCode() + this.Track?.Value.GetHashCode() ?? 0;
-
         public static IEnumerable<int> AllIndexesOfArtist(IEnumerable<TrackList> tracks, string artistId)
         {
-            if(tracks == null || !tracks.Any())
+            if (tracks?.Any() != true)
             {
                 return new int[0];
             }
-            return tracks.Select((b, i) => b.Artist?.Artist?.Value == artistId ? i : -1).Where(i => i != -1).ToArray();            
+            return tracks.Select((b, i) => b.Artist?.Artist?.Value == artistId ? i : -1).Where(i => i != -1).ToArray();
         }
 
         public static IEnumerable<int> AllIndexesOfRelease(IEnumerable<TrackList> tracks, string releaseId)
         {
-            if (tracks == null || !tracks.Any())
+            if (tracks?.Any() != true)
             {
                 return new int[0];
             }
             return tracks.Select((b, i) => b.Release?.Release?.Value == releaseId ? i : -1).Where(i => i != -1).ToArray();
         }
-
-
-        /// <summary>
-        /// Ensure that the given list is sorted so that Artist and Release don't repeat in sequence.
-        /// </summary>
-        public static IEnumerable<TrackList> Shuffle(IEnumerable<TrackList> tracks)
-        {
-            
-            var shuffledTracks = new List<TrackList>();
-            var skippedTracks = new List<TrackList>();
-            foreach(var track in tracks)
-            {
-                var trackArtist = track.Artist?.Artist?.Value ?? track.Release?.Artist?.Value;
-                var trackRelease = track.Release?.Release?.Value;
-                if (!shuffledTracks.Any(x => x.Artist?.Artist?.Value == trackArtist &&
-                                             x.Release?.Release?.Value != trackRelease))
-                {
-                    shuffledTracks.Add(track);
-                }
-                else
-                {
-                    skippedTracks.Add(track);
-                }
-            }
-            var result = new List<TrackList>(shuffledTracks);
-            while (skippedTracks.ToList().Any())
-            {
-                var st = skippedTracks.First();
-                var trackArtist = st.Artist?.Artist?.Value ?? st.Release?.Artist?.Value;
-                var insertAt = AllIndexesOfArtist(result, trackArtist).Last() + 2;
-                if(insertAt < result.Count() - 1)
-                {
-                    result.Insert(insertAt, st);
-                    skippedTracks.Remove(st);
-                }
-            }
-            return result;
-        }
-
 
         public static TrackList FromDataTrack(string trackPlayUrl,
             Data.Track track,
@@ -173,6 +161,44 @@ namespace Roadie.Library.Models
             };
         }
 
+        public int GetArtistReleaseHashCode() => this.Artist?.Artist?.Value.GetHashCode() + this.Release?.Release?.Value.GetHashCode() ?? 0;
 
+        public override int GetHashCode() => this.Artist?.Artist?.Value.GetHashCode() + this.Release?.Release?.Value.GetHashCode() + this.Track?.Value.GetHashCode() ?? 0;
+
+        /// <summary>
+        /// Ensure that the given list is sorted so that Artist and Release don't repeat in sequence.
+        /// </summary>
+        public static IEnumerable<TrackList> Shuffle(IEnumerable<TrackList> tracks)
+        {
+            var shuffledTracks = new List<TrackList>();
+            var skippedTracks = new List<TrackList>();
+            foreach (var track in tracks)
+            {
+                var trackArtist = track.Artist?.Artist?.Value ?? track.Release?.Artist?.Value;
+                var trackRelease = track.Release?.Release?.Value;
+                if (!shuffledTracks.Any(x => x.Artist?.Artist?.Value == trackArtist &&
+                                             x.Release?.Release?.Value != trackRelease))
+                {
+                    shuffledTracks.Add(track);
+                }
+                else
+                {
+                    skippedTracks.Add(track);
+                }
+            }
+            var result = new List<TrackList>(shuffledTracks);
+            while (skippedTracks.ToList().Count > 0)
+            {
+                var st = skippedTracks[0];
+                var trackArtist = st.Artist?.Artist?.Value ?? st.Release?.Artist?.Value;
+                var insertAt = AllIndexesOfArtist(result, trackArtist).Last() + 2;
+                if (insertAt < result.Count() - 1)
+                {
+                    result.Insert(insertAt, st);
+                    skippedTracks.Remove(st);
+                }
+            }
+            return result;
+        }
     }
 }

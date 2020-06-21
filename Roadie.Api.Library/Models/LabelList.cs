@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 
 namespace Roadie.Library.Models
 {
@@ -7,9 +6,13 @@ namespace Roadie.Library.Models
     public sealed class LabelList : EntityInfoModelBase
     {
         public int? ArtistCount { get; set; }
+
         public DataToken Label { get; set; }
+
         public int? ReleaseCount { get; set; }
+
         public Image Thumbnail { get; set; }
+
         public int? TrackCount { get; set; }
 
         public static LabelList FromDataLabel(Data.Label label, Image labelThumbnail)

@@ -36,10 +36,13 @@ namespace Roadie.Library.Inspect.Plugins.Directory
                 var firstMetaData = metaDatasForFilesInFolder.OrderBy(x => x.Filename ?? string.Empty)
                     .ThenBy(x => SafeParser.ToNumber<short>(x.TrackNumber)).FirstOrDefault();
                 if (firstMetaData == null)
+                {
                     return new OperationResult<string>("Error Getting First MetaData")
                     {
                         Data = $"Unable to read Metadatas for Directory [{directory.FullName}]"
                     };
+                }
+
                 var artist = firstMetaData.Artist;
                 foreach (var metaData in metaDatasForFilesInFolder.Where(x => x.Artist != artist))
                 {
@@ -47,7 +50,10 @@ namespace Roadie.Library.Inspect.Plugins.Directory
                     Console.WriteLine(
                         $"╟ Setting Artist to [{artist}], was [{metaData.Artist}] on file [{metaData.FileInfo.Name}");
                     metaData.Artist = artist;
-                    if (!Configuration.Inspector.IsInReadOnlyMode) TagsHelper.WriteTags(metaData, metaData.Filename);
+                    if (!Configuration.Inspector.IsInReadOnlyMode)
+                    {
+                        TagsHelper.WriteTags(metaData, metaData.Filename);
+                    }
                 }
 
                 data = $"Found [{found}] files, Modified [{modified}] files";

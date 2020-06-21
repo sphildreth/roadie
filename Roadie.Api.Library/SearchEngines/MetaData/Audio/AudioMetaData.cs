@@ -1,10 +1,10 @@
-﻿using Newtonsoft.Json;
-using Roadie.Library.Extensions;
+﻿using Roadie.Library.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace Roadie.Library.MetaData.Audio
 {
@@ -14,10 +14,11 @@ namespace Roadie.Library.MetaData.Audio
     public sealed class AudioMetaData : IAudioMetaData
     {
         public const char ArtistSplitCharacter = '/';
-
         public const int MinimumYearValue = 1900;
         public const string SoundTrackArtist = "Sound Tracks";
+
         private string _artist;
+
         private bool _doModifyArtistNameOnGet = true;
 
         private FileInfo _fileInfo;
@@ -43,15 +44,20 @@ namespace Roadie.Library.MetaData.Audio
         {
             get
             {
-                if (_doModifyArtistNameOnGet)
-                    if (!string.IsNullOrEmpty(_artist) && _artist.Contains(ArtistSplitCharacter.ToString()))
-                        return _artist.Split(ArtistSplitCharacter).First();
+                if (_doModifyArtistNameOnGet && !string.IsNullOrEmpty(_artist) && _artist.Contains(ArtistSplitCharacter.ToString()))
+                {
+                    return _artist.Split(ArtistSplitCharacter)[0];
+                }
+
                 return _artist;
             }
             set
             {
                 _artist = value;
-                if (!string.IsNullOrEmpty(_artist)) _artist = _artist.Replace(';', ArtistSplitCharacter);
+                if (!string.IsNullOrEmpty(_artist))
+                {
+                    _artist = _artist.Replace(';', ArtistSplitCharacter);
+                }
             }
         }
 
@@ -66,12 +72,36 @@ namespace Roadie.Library.MetaData.Audio
             get
             {
                 var result = AudioMetaDataWeights.None;
-                if (!string.IsNullOrEmpty(Artist)) result |= AudioMetaDataWeights.Artist;
-                if (!string.IsNullOrEmpty(Title)) result |= AudioMetaDataWeights.Time;
-                if ((Year ?? 0) > 1) result |= AudioMetaDataWeights.Year;
-                if ((TrackNumber ?? 0) > 1) result |= AudioMetaDataWeights.TrackNumber;
-                if ((TotalTrackNumbers ?? 0) > 1) result |= AudioMetaDataWeights.TrackTotalNumber;
-                if (TotalSeconds > 1) result |= AudioMetaDataWeights.Time;
+                if (!string.IsNullOrEmpty(Artist))
+                {
+                    result |= AudioMetaDataWeights.Artist;
+                }
+
+                if (!string.IsNullOrEmpty(Title))
+                {
+                    result |= AudioMetaDataWeights.Time;
+                }
+
+                if ((Year ?? 0) > 1)
+                {
+                    result |= AudioMetaDataWeights.Year;
+                }
+
+                if ((TrackNumber ?? 0) > 1)
+                {
+                    result |= AudioMetaDataWeights.TrackNumber;
+                }
+
+                if ((TotalTrackNumbers ?? 0) > 1)
+                {
+                    result |= AudioMetaDataWeights.TrackTotalNumber;
+                }
+
+                if (TotalSeconds > 1)
+                {
+                    result |= AudioMetaDataWeights.Time;
+                }
+
                 return result;
             }
         }
@@ -90,7 +120,11 @@ namespace Roadie.Library.MetaData.Audio
         {
             get
             {
-                if (string.IsNullOrEmpty(Filename)) return null;
+                if (string.IsNullOrEmpty(Filename))
+                {
+                    return null;
+                }
+
                 return Path.GetDirectoryName(Filename);
             }
         }
@@ -105,7 +139,8 @@ namespace Roadie.Library.MetaData.Audio
         /// </summary>
         public string DiscSubTitle { get; set; }
 
-        [JsonIgnore] public FileInfo FileInfo => _fileInfo ?? (_fileInfo = new FileInfo(Filename));
+        [JsonIgnore]
+        public FileInfo FileInfo => _fileInfo ?? (_fileInfo = new FileInfo(Filename));
 
         /// <summary>
         ///     Full filename to the file used to get this AudioMetaData
@@ -114,7 +149,8 @@ namespace Roadie.Library.MetaData.Audio
 
         public ICollection<string> Genres { get; set; }
 
-        [JsonIgnore] public IEnumerable<AudioMetaDataImage> Images { get; set; }
+        [JsonIgnore]
+        public IEnumerable<AudioMetaDataImage> Images { get; set; }
 
         public string ISRC { get; internal set; }
 
@@ -122,10 +158,13 @@ namespace Roadie.Library.MetaData.Audio
         {
             get
             {
-                if (Genres != null && Genres.Any())
+                if (Genres?.Any() == true)
                 {
                     var soundtrackGenres = new List<string> { "24", "soundtrack" };
-                    if (Genres.Intersect(soundtrackGenres, StringComparer.OrdinalIgnoreCase).Any()) return true;
+                    if (Genres.Intersect(soundtrackGenres, StringComparer.OrdinalIgnoreCase).Any())
+                    {
+                        return true;
+                    }
                 }
 
                 return false;
@@ -142,7 +181,7 @@ namespace Roadie.Library.MetaData.Audio
                     Release = Release == null ? null : Release.Equals("Unknown Release") ? null : Release;
                     if (!string.IsNullOrEmpty(Title))
                     {
-                        var trackNumberTitle = string.Format("Track {0}", TrackNumber);
+                        var trackNumberTitle = $"Track {TrackNumber}";
                         Title = Title == trackNumberTitle ? null : Title;
                     }
 
@@ -193,7 +232,10 @@ namespace Roadie.Library.MetaData.Audio
             set
             {
                 _title = value;
-                if (IsSoundTrack) Artist = SoundTrackArtist;
+                if (IsSoundTrack)
+                {
+                    Artist = SoundTrackArtist;
+                }
             }
         }
 
@@ -206,7 +248,11 @@ namespace Roadie.Library.MetaData.Audio
         {
             get
             {
-                if (Time == null) return 0;
+                if (Time == null)
+                {
+                    return 0;
+                }
+
                 return Time.Value.TotalSeconds;
             }
         }
@@ -225,9 +271,11 @@ namespace Roadie.Library.MetaData.Audio
             {
                 string result = null;
                 if (!string.IsNullOrEmpty(_trackArtist))
-                    result = _trackArtist.Split(ArtistSplitCharacter).First().ToTitleCase();
-                result = !_artist?.Equals(result, StringComparison.OrdinalIgnoreCase) ?? false ? result : null;
-                return result;
+                {
+                    result = _trackArtist.Split(ArtistSplitCharacter)[0].ToTitleCase();
+                }
+
+                return !String.Equals(_artist, result, StringComparison.OrdinalIgnoreCase) ? result : null;
             }
             set => _trackArtist = value;
         }
@@ -242,17 +290,33 @@ namespace Roadie.Library.MetaData.Audio
         {
             get
             {
-                if (string.IsNullOrEmpty(_trackArtist)) return new string[0];
+                if (string.IsNullOrEmpty(_trackArtist))
+                {
+                    return new string[0];
+                }
+
                 if (!_trackArtist.Contains(ArtistSplitCharacter.ToString()))
                 {
-                    if (string.IsNullOrEmpty(TrackArtist)) return new string[0];
+                    if (string.IsNullOrEmpty(TrackArtist))
+                    {
+                        return new string[0];
+                    }
+
                     return new string[1] { TrackArtist };
                 }
 
                 if (!string.IsNullOrEmpty(_artist) || !string.IsNullOrEmpty(_trackArtist))
-                    if (!_artist.Equals(_trackArtist, StringComparison.OrdinalIgnoreCase))
-                        return _trackArtist.Split(ArtistSplitCharacter).Where(x => !string.IsNullOrEmpty(x))
-                            .Select(x => x.ToTitleCase()).OrderBy(x => x).ToArray();
+                {
+                    if (!String.Equals(_artist, _trackArtist, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return _trackArtist.Split(ArtistSplitCharacter)
+                                           .Where(x => !string.IsNullOrEmpty(x))
+                                           .Select(x => x.ToTitleCase())
+                                           .OrderBy(x => x)
+                                           .ToArray();
+                    }
+                }
+
                 return new string[0];
             }
         }
@@ -280,8 +344,11 @@ namespace Roadie.Library.MetaData.Audio
 
         public override bool Equals(object obj)
         {
-            var item = obj as AudioMetaData;
-            if (item == null) return false;
+            if (!(obj is AudioMetaData item))
+            {
+                return false;
+            }
+
             return item.GetHashCode() == GetHashCode();
         }
 
@@ -290,12 +357,12 @@ namespace Roadie.Library.MetaData.Audio
             unchecked
             {
                 var hash = 17;
-                hash = hash * 23 + Artist.GetHashCode();
-                hash = hash * 23 + Release.GetHashCode();
-                hash = hash * 23 + Title.GetHashCode();
-                hash = hash * 23 + TrackNumber.GetHashCode();
-                hash = hash * 23 + AudioBitrate.GetHashCode();
-                hash = hash * 23 + AudioSampleRate.GetHashCode();
+                hash = (hash * 23) + Artist.GetHashCode();
+                hash = (hash * 23) + Release.GetHashCode();
+                hash = (hash * 23) + Title.GetHashCode();
+                hash = (hash * 23) + TrackNumber.GetHashCode();
+                hash = (hash * 23) + AudioBitrate.GetHashCode();
+                hash = (hash * 23) + AudioSampleRate.GetHashCode();
                 return hash;
             }
         }
@@ -314,9 +381,17 @@ namespace Roadie.Library.MetaData.Audio
         {
             var result =
                 $"IsValid: {IsValid}{(IsSoundTrack ? " [SoundTrack ]" : string.Empty)}, ValidWeight {ValidWeight}, Artist: {Artist}";
-            if (!string.IsNullOrEmpty(TrackArtist)) result += $", TrackArtist: {TrackArtist}";
+            if (!string.IsNullOrEmpty(TrackArtist))
+            {
+                result += $", TrackArtist: {TrackArtist}";
+            }
+
             result += $", Release: {Release}, TrackNumber: {TrackNumber}, TrackTotal: {TotalTrackNumbers}";
-            if (TotalDiscCount > 1) result += $", Disc: {Disc}/{TotalDiscCount}";
+            if (TotalDiscCount > 1)
+            {
+                result += $", Disc: {Disc}/{TotalDiscCount}";
+            }
+
             result += $", Title: {Title}, Year: {Year}, Duration: {(Time == null ? "-" : Time.Value.ToString())}";
             return result;
         }

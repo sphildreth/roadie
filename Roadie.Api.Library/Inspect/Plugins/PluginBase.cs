@@ -12,22 +12,21 @@ namespace Roadie.Library.Inspect.Plugins
 {
     public abstract class PluginBase
     {
-        public abstract string Description { get; }
-
-        public abstract int Order { get; }
+        private Dictionary<string, IEnumerable<AudioMetaData>> CachedAudioDatas { get; }
 
         protected ICacheManager CacheManager { get; }
 
         protected IRoadieSettings Configuration { get; }
 
-        protected IEnumerable<string> ListReplacements { get; } = new List<string>
-            {" ; ", " ;", "; ", ";", ";", "\\"};
+        protected IEnumerable<string> ListReplacements { get; } = new List<string> { " ; ", " ;", "; ", ";", ";", "\\" };
 
         protected ILogger Logger { get; }
 
         protected IID3TagsHelper TagsHelper { get; }
 
-        private Dictionary<string, IEnumerable<AudioMetaData>> CachedAudioDatas { get; }
+        public abstract string Description { get; }
+
+        public abstract int Order { get; }
 
         public PluginBase(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger,
                                                                             IID3TagsHelper tagsHelper)

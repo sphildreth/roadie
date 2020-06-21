@@ -27,9 +27,21 @@ namespace Roadie.Library.Inspect.Plugins.File
                 var originalRelease = metaData.Release;
                 metaData.Release = metaData.Release
                     ?.CleanString(Configuration, Configuration.Processing.ReleaseRemoveStringsRegex).ToTitleCase(false);
-                if (string.IsNullOrEmpty(metaData.Release)) metaData.Release = originalRelease;
+                if (string.IsNullOrEmpty(metaData.Release))
+                {
+                    metaData.Release = originalRelease;
+                }
             }
-
+            if (Configuration.Processing.DoDetectFeatureFragments)
+            {
+                if (!string.IsNullOrWhiteSpace(metaData?.Release))
+                {
+                    if (metaData.Release.HasFeaturingFragments())
+                    {
+                        throw new RoadieProcessingException($"Release title [{ metaData?.Release }] has Feature fragments.");
+                    }
+                }
+            }
             result.Data = metaData;
             result.IsSuccess = true;
             return result;

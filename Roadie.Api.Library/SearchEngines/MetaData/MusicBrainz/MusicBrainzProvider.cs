@@ -88,7 +88,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
                             Release = release.title,
                             Title = track.title,
                             Time = track.length.HasValue ? (TimeSpan?)TimeSpan.FromMilliseconds(track.length.Value) : null,
-                            TrackNumber = SafeParser.ToNumber<short?>(track.position ?? track.number) ?? 0,
+                            TrackNumber = SafeParser.ToNumber<short?>(track.position) ?? SafeParser.ToNumber<short?>(track.number) ?? 0,
                             Disc = media.position,
                             Year = date > 0 ? (int?)date : null,
                             TotalTrackNumbers = media.trackcount

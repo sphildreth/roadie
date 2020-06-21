@@ -36,7 +36,11 @@ namespace Roadie.Library.Inspect.Plugins.Directory
             {
                 if (fileExtensionsToDelete.Any(x => x.Equals(file.Extension, StringComparison.OrdinalIgnoreCase)))
                 {
-                    if (!Configuration.Inspector.IsInReadOnlyMode) file.Delete();
+                    if (!Configuration.Inspector.IsInReadOnlyMode)
+                    {
+                        file.Delete();
+                    }
+
                     deletedFiles.Add(file.Name);
                     Console.WriteLine($" X Deleted File [{file}], Was found in in FileExtensionsToDelete");
                 }

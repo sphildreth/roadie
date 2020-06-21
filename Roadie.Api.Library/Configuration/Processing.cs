@@ -46,6 +46,8 @@ namespace Roadie.Library.Configuration
 
         public string UnknownFolder { get; set; }
 
+        public bool DoDetectFeatureFragments { get; set; }
+
         public Processing()
         {
             DoAudioCleanup = true;
@@ -55,6 +57,7 @@ namespace Roadie.Library.Configuration
             DoParseFromLastFM = true;
             DoParseFromMusicBrainz = true;
             DoSaveEditsToTags = true;
+            DoDetectFeatureFragments = true;
 
             MaximumArtistImagesToAdd = 12;
             MaximumReleaseImagesToAdd = 12;

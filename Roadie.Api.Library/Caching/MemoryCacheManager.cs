@@ -9,8 +9,8 @@ namespace Roadie.Library.Caching
     {
         private MemoryCache _cache;
 
-        public MemoryCacheManager(ILogger logger, CachePolicy defaultPolicy)
-            : base(logger, defaultPolicy)
+        public MemoryCacheManager(ILogger logger, ICacheSerializer cacheSerializer, CachePolicy defaultPolicy)
+            : base(logger, cacheSerializer, defaultPolicy)
         {
             _cache = new MemoryCache(new MemoryCacheOptions());
         }

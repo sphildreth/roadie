@@ -42,7 +42,7 @@ namespace Roadie.Library.Tests
             configuration.GetSection("RoadieSettings").Bind(settings);
             settings.ConnectionString = configuration.GetConnectionString("RoadieDatabaseConnection");
             Configuration = settings;
-            CacheManager = new DictionaryCacheManager(Logger, new CachePolicy(TimeSpan.FromHours(4)));
+            CacheManager = new DictionaryCacheManager(Logger, new NewtonsoftCacheSerializer(Logger), new CachePolicy(TimeSpan.FromHours(4)));
             var tagHelperLooper = new EventMessageLogger<ID3TagsHelper>();
             tagHelperLooper.Messages += MessageLoggerMessages;
             TagsHelper = new ID3TagsHelper(Configuration, CacheManager, tagHelperLooper);

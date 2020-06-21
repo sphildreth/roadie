@@ -3,7 +3,6 @@ using HashidsNet;
 using Mapster;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Enums;
@@ -21,6 +20,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Management.Automation;
+using System.Text.Json;
 
 namespace Roadie.Library.Inspect
 {
@@ -28,7 +28,13 @@ namespace Roadie.Library.Inspect
     {
         private const string Salt = "6856F2EE-5965-4345-884B-2CCA457AAF59";
 
+        private IRoadieSettings Configuration { get; }
+        private ILogger Logger => MessageLogger as ILogger;
+        private IEventMessageLogger MessageLogger { get; }
+        private ID3TagsHelper TagsHelper { get; }
+
         private IEnumerable<IInspectorDirectoryPlugin> _directoryPlugins;
+
         private IEnumerable<IInspectorFilePlugin> _filePlugins;
 
         public DictionaryCacheManager CacheManager { get; }
@@ -47,6 +53,7 @@ namespace Roadie.Library.Inspect
                             .SelectMany(s => s.GetTypes())
                             .Where(p => type.IsAssignableFrom(p));
                         foreach (var t in types)
+                        {
                             if (t.GetInterface("IInspectorDirectoryPlugin") != null && !t.IsAbstract && !t.IsInterface)
                             {
                                 var plugin = Activator.CreateInstance(t, Configuration, CacheManager, Logger, TagsHelper) as IInspectorDirectoryPlugin;
@@ -59,6 +66,7 @@ namespace Roadie.Library.Inspect
                                     Console.WriteLine($"╠╣ Not Loading Disabled Plugin [{plugin.Description}]");
                                 }
                             }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -113,18 +121,8 @@ namespace Roadie.Library.Inspect
             }
         }
 
-        private IRoadieSettings Configuration { get; }
-
-        private ILogger Logger => MessageLogger as ILogger;
-
-        private IEventMessageLogger MessageLogger { get; }
-
-        private ID3TagsHelper TagsHelper { get; }
-
         public Inspector()
         {
-            Console.WriteLine("Roadie Media Inspector");
-
             MessageLogger = new EventMessageLogger<Inspector>();
             MessageLogger.Messages += MessageLogger_Messages;
 
@@ -135,30 +133,140 @@ namespace Roadie.Library.Inspect
             configuration.GetSection("RoadieSettings").Bind(settings);
             settings.ConnectionString = configuration.GetConnectionString("RoadieDatabaseConnection");
             Configuration = settings;
-            CacheManager = new DictionaryCacheManager(Logger, new CachePolicy(TimeSpan.FromHours(4)));
+            CacheManager = new DictionaryCacheManager(Logger, new NewtonsoftCacheSerializer(Logger), new CachePolicy(TimeSpan.FromHours(4)));
 
             var tagHelperLooper = new EventMessageLogger<ID3TagsHelper>();
             tagHelperLooper.Messages += MessageLogger_Messages;
             TagsHelper = new ID3TagsHelper(Configuration, CacheManager, tagHelperLooper);
         }
 
-        public static string ArtistInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist);
-
-        public static string ReleaseInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist + metaData.Release);
-
-        public static string ToToken(string input)
+        private void InspectImage(bool isReadOnly, bool doCopy, string dest, string subdirectory, FileInfo image)
         {
-            var hashids = new Hashids(Salt);
-            var numbers = 0;
-            var bytes = System.Text.Encoding.ASCII.GetBytes(input);
-            var looper = bytes.Length / 4;
-            for (var i = 0; i < looper; i++)
+            if (!image.Exists)
             {
-                numbers += BitConverter.ToInt32(bytes, i * 4);
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"╟ ■ InspectImage: Image Not Found [{image.FullName}]");
+                Console.ResetColor();
+                return;
             }
-            if (numbers < 0) numbers *= -1;
-            return hashids.Encode(numbers);
+
+            Console.WriteLine($"╟─ Inspecting Image [{image.FullName}]");
+            var newImageFolder = new DirectoryInfo(Path.Combine(dest, subdirectory));
+            if (!newImageFolder.Exists)
+            {
+                newImageFolder.Create();
+            }
+
+            var newImagePath = Path.Combine(dest, subdirectory, image.Name);
+
+            if (image.FullName != newImagePath)
+            {
+                var looper = 0;
+                while (File.Exists(newImagePath))
+                {
+                    looper++;
+                    newImagePath = Path.Combine(dest, subdirectory, looper.ToString("00"), image.Name);
+                }
+                if (isReadOnly)
+                {
+                    Console.WriteLine($"╟ 🔒 Read Only Mode: Would be [{(doCopy ? "Copied" : "Moved")}] to [{newImagePath}]");
+                }
+                else
+                {
+                    try
+                    {
+                        if (!doCopy)
+                        {
+                            image.MoveTo(newImagePath);
+                        }
+                        else
+                        {
+                            image.CopyTo(newImagePath, true);
+                        }
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        Console.WriteLine($"╠═ 🚛 {(doCopy ? "Copied" : "Moved")} Image File to [{newImagePath}]");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex);
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"📛 Error file [{image.FullName}], newImagePath [{newImagePath}], Exception: [{ex}]");
+                    }
+                }
+            }
+
+            Console.ResetColor();
         }
+
+        private void MessageLogger_Messages(object sender, EventMessage e)
+        {
+            Console.WriteLine($"Log Level [{e.Level}] Log Message [{e.Message}] ");
+            var message = e.Message;
+            switch (e.Level)
+            {
+                case LogLevel.Trace:
+                    Logger.LogTrace(message);
+                    break;
+
+                case LogLevel.Debug:
+                    Logger.LogDebug(message);
+                    break;
+
+                case LogLevel.Information:
+                    Logger.LogInformation(message);
+                    break;
+
+                case LogLevel.Warning:
+                    Logger.LogWarning(message);
+                    break;
+
+                case LogLevel.Critical:
+                    Logger.LogCritical(message);
+                    break;
+            }
+        }
+
+        private string RunScript(string scriptFilename, bool doCopy, bool isReadOnly, string directoryToInspect, string dest)
+        {
+            if (string.IsNullOrEmpty(scriptFilename))
+            {
+                return null;
+            }
+
+            try
+            {
+                if (!File.Exists(scriptFilename))
+                {
+                    Console.WriteLine($"Script Not Found: [{ scriptFilename }]");
+                    return null;
+                }
+
+                Console.WriteLine($"Running Script: [{ scriptFilename }]");
+                var script = File.ReadAllText(scriptFilename);
+                using (var ps = PowerShell.Create())
+                {
+                    var r = string.Empty;
+                    var results = ps.AddScript(script)
+                                    .AddParameter("DoCopy", doCopy)
+                                    .AddParameter("IsReadOnly", isReadOnly)
+                                    .AddParameter("DirectoryToInspect", directoryToInspect)
+                                    .AddParameter("Dest", dest)
+                                    .Invoke();
+                    foreach (var result in results)
+                    {
+                        r += result + Environment.NewLine;
+                    }
+                    return r;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"📛 Error with Script File [{scriptFilename}], Error [{ex}] ");
+            }
+            return null;
+        }
+
+        public static string ArtistInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist);
 
         public void Inspect(bool doCopy, bool isReadOnly, string directoryToInspect, string destination, bool dontAppendSubFolder, bool dontDeleteEmptyFolders, bool dontRunPreScripts)
         {
@@ -171,13 +279,32 @@ namespace Roadie.Library.Inspect
 
             Trace.Listeners.Add(new LoggingTraceListener());
 
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine("");
+            Console.WriteLine(" ▄▄▄         ▄▄▄· ·▄▄▄▄  ▪  ▄▄▄ .    • ▌ ▄ ·. ▄▄▄ .·▄▄▄▄  ▪   ▄▄▄·     ▪   ▐ ▄ .▄▄ ·  ▄▄▄·▄▄▄ . ▄▄· ▄▄▄▄▄      ▄▄▄  ");
+            Console.WriteLine(" ▀▄ █·▪     ▐█ ▀█ ██▪ ██ ██ ▀▄.▀·    ·██ ▐███▪▀▄.▀·██▪ ██ ██ ▐█ ▀█     ██ •█▌▐█▐█ ▀. ▐█ ▄█▀▄.▀·▐█ ▌▪•██  ▪     ▀▄ █·");
+            Console.WriteLine(" ▐▀▀▄  ▄█▀▄ ▄█▀▀█ ▐█· ▐█▌▐█·▐▀▀▪▄    ▐█ ▌▐▌▐█·▐▀▀▪▄▐█· ▐█▌▐█·▄█▀▀█     ▐█·▐█▐▐▌▄▀▀▀█▄ ██▀·▐▀▀▪▄██ ▄▄ ▐█.▪ ▄█▀▄ ▐▀▀▄ ");
+            Console.WriteLine(" ▐█•█▌▐█▌.▐▌▐█ ▪▐▌██. ██ ▐█▌▐█▄▄▌    ██ ██▌▐█▌▐█▄▄▌██. ██ ▐█▌▐█ ▪▐▌    ▐█▌██▐█▌▐█▄▪▐█▐█▪·•▐█▄▄▌▐███▌ ▐█▌·▐█▌.▐▌▐█•█▌");
+            Console.WriteLine(" .▀  ▀ ▀█▄▀▪ ▀  ▀ ▀▀▀▀▀• ▀▀▀ ▀▀▀     ▀▀  █▪▀▀▀ ▀▀▀ ▀▀▀▀▀• ▀▀▀ ▀  ▀     ▀▀▀▀▀ █▪ ▀▀▀▀ .▀    ▀▀▀ ·▀▀▀  ▀▀▀  ▀█▄▀▪.▀  ▀");
+            Console.WriteLine("");
+            Console.ResetColor();
+
             Console.BackgroundColor = ConsoleColor.White;
             Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine($"✨ Inspector Start, UTC [{DateTime.UtcNow.ToString("s")}]");
             Console.ResetColor();
 
+            if (!Directory.Exists(directoryToInspect))
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"📛 Folder To Inspect [{ directoryToInspect }] is not found.");
+                Console.ResetColor();
+                return;
+            }
+
             string scriptResult = null;
             // Run PreInspect script
+            dontRunPreScripts = File.Exists(Configuration.Processing.PreInspectScript) && dontRunPreScripts;
             if (dontRunPreScripts)
             {
                 Console.BackgroundColor = ConsoleColor.Blue;
@@ -198,7 +325,10 @@ namespace Roadie.Library.Inspect
             }
             // Create a new destination subfolder for each Inspector run by Current timestamp
             var dest = Path.Combine(destination, DateTime.UtcNow.ToString("yyyyMMddHHmm"));
-            if (isReadOnly || dontAppendSubFolder) dest = destination;
+            if (isReadOnly || dontAppendSubFolder)
+            {
+                dest = destination;
+            }
             // Get all the directorys in the directory
             var directoryDirectories = Directory.GetDirectories(directoryToInspect, "*.*", SearchOption.AllDirectories);
             var directories = new List<string>
@@ -239,7 +369,7 @@ namespace Roadie.Library.Inspect
                             var pluginResult = plugin.Process(directoryInfo);
                             if (!pluginResult.IsSuccess)
                             {
-                                Console.WriteLine($"📛 Plugin Failed: Error [{JsonConvert.SerializeObject(pluginResult)}]");
+                                Console.WriteLine($"📛 Plugin Failed: Error [{JsonSerializer.Serialize(pluginResult)}]");
                                 return;
                             }
                             if (!string.IsNullOrEmpty(pluginResult.Data))
@@ -261,7 +391,11 @@ namespace Roadie.Library.Inspect
                             Console.WriteLine($"╟─ 🎵 Inspecting [{fileInfo.FullName}]");
                             var tagLib = TagsHelper.MetaDataForFile(fileInfo.FullName, true);
                             Console.ForegroundColor = ConsoleColor.Cyan;
-                            if (!tagLib?.IsSuccess ?? false) Console.ForegroundColor = ConsoleColor.DarkYellow;
+                            if (!tagLib?.IsSuccess ?? false)
+                            {
+                                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                            }
+
                             Console.WriteLine($"╟ (Pre ) : {tagLib.Data}");
                             Console.ResetColor();
                             tagLib.Data.Filename = fileInfo.FullName;
@@ -270,7 +404,7 @@ namespace Roadie.Library.Inspect
                             {
                                 Console.ForegroundColor = ConsoleColor.DarkYellow;
                                 Console.WriteLine($"╟ ❗ INVALID: Missing: {ID3TagsHelper.DetermineMissingRequiredMetaData(originalMetaData)}");
-                                Console.WriteLine($"╟ [{JsonConvert.SerializeObject(tagLib, Newtonsoft.Json.Formatting.Indented)}]");
+                                Console.WriteLine($"╟ [{JsonSerializer.Serialize(tagLib, new JsonSerializerOptions { WriteIndented = true })}]");
                                 Console.ResetColor();
                             }
 
@@ -283,7 +417,7 @@ namespace Roadie.Library.Inspect
                                 if (!pluginResult.IsSuccess)
                                 {
                                     Console.ForegroundColor = ConsoleColor.Red;
-                                    Console.WriteLine($"📛 Plugin Failed: Error [{JsonConvert.SerializeObject(pluginResult)}]");
+                                    Console.WriteLine($"📛 Plugin Failed: Error [{JsonSerializer.Serialize(pluginResult)}]");
                                     Console.ResetColor();
                                     return;
                                 }
@@ -421,7 +555,11 @@ namespace Roadie.Library.Inspect
                                     {
                                         if (fileInfo.FullName != newPath)
                                         {
-                                            if (File.Exists(newPath)) File.Delete(newPath);
+                                            if (File.Exists(newPath))
+                                            {
+                                                File.Delete(newPath);
+                                            }
+
                                             fileInfo.MoveTo(newPath);
                                         }
                                     }
@@ -453,12 +591,14 @@ namespace Roadie.Library.Inspect
                         var pluginResult = plugin.Process(directoryInfo);
                         if (!pluginResult.IsSuccess)
                         {
-                            Console.WriteLine($"📛 Plugin Failed: Error [{JsonConvert.SerializeObject(pluginResult)}]");
+                            Console.WriteLine($"📛 Plugin Failed: Error [{JsonSerializer.Serialize(pluginResult)}]");
                             return;
                         }
 
                         if (!string.IsNullOrEmpty(pluginResult.Data))
+                        {
                             Console.WriteLine($"╠╣ Directory Plugin Message: {pluginResult.Data}");
+                        }
                     }
                 }
 
@@ -469,7 +609,7 @@ namespace Roadie.Library.Inspect
             catch (Exception ex)
             {
                 Logger.LogError(ex);
-                Console.WriteLine("📛 Exception: " + ex);
+                Console.WriteLine($"📛 Exception: {ex}");
             }
 
             if (!dontDeleteEmptyFolders)
@@ -496,120 +636,24 @@ namespace Roadie.Library.Inspect
             }
         }
 
-        private void InspectImage(bool isReadOnly, bool doCopy, string dest, string subdirectory, FileInfo image)
+        public static string ReleaseInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist + metaData.Release);
+
+        public static string ToToken(string input)
         {
-            if (!image.Exists)
+            var hashids = new Hashids(Salt);
+            var numbers = 0;
+            var bytes = System.Text.Encoding.ASCII.GetBytes(input);
+            var looper = bytes.Length / 4;
+            for (var i = 0; i < looper; i++)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"╟ ■ InspectImage: Image Not Found [{image.FullName}]");
-                Console.ResetColor();
-                return;
+                numbers += BitConverter.ToInt32(bytes, i * 4);
+            }
+            if (numbers < 0)
+            {
+                numbers *= -1;
             }
 
-            Console.WriteLine($"╟─ Inspecting Image [{image.FullName}]");
-            var newImageFolder = new DirectoryInfo(Path.Combine(dest, subdirectory));
-            if (!newImageFolder.Exists) newImageFolder.Create();
-            var newImagePath = Path.Combine(dest, subdirectory, image.Name);
-
-            if (image.FullName != newImagePath)
-            {
-                var looper = 0;
-                while (File.Exists(newImagePath))
-                {
-                    looper++;
-                    newImagePath = Path.Combine(dest, subdirectory, looper.ToString("00"), image.Name);
-                }
-                if (isReadOnly)
-                {
-                    Console.WriteLine($"╟ 🔒 Read Only Mode: Would be [{(doCopy ? "Copied" : "Moved")}] to [{newImagePath}]");
-                }
-                else
-                {
-                    try
-                    {
-                        if (!doCopy)
-                        {
-                            image.MoveTo(newImagePath);
-                        }
-                        else
-                        {
-                            image.CopyTo(newImagePath, true);
-                        }
-                        Console.ForegroundColor = ConsoleColor.DarkYellow;
-                        Console.WriteLine($"╠═ 🚛 {(doCopy ? "Copied" : "Moved")} Image File to [{newImagePath}]");
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogError(ex);
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"📛 Error file [{image.FullName}], newImagePath [{newImagePath}], Exception: [{ex}]");
-                    }
-                }
-            }
-
-            Console.ResetColor();
-        }
-
-        private void MessageLogger_Messages(object sender, EventMessage e)
-        {
-            Console.WriteLine($"Log Level [{e.Level}] Log Message [{e.Message}] ");
-            var message = e.Message;
-            switch (e.Level)
-            {
-                case LogLevel.Trace:
-                    Logger.LogTrace(message);
-                    break;
-
-                case LogLevel.Debug:
-                    Logger.LogDebug(message);
-                    break;
-
-                case LogLevel.Information:
-                    Logger.LogInformation(message);
-                    break;
-
-                case LogLevel.Warning:
-                    Logger.LogWarning(message);
-                    break;
-
-                case LogLevel.Critical:
-                    Logger.LogCritical(message);
-                    break;
-            }
-        }
-
-        private string RunScript(string scriptFilename, bool doCopy, bool isReadOnly, string directoryToInspect, string dest)
-        {
-            if (string.IsNullOrEmpty(scriptFilename))
-            {
-                return null;
-            }
-
-            try
-            {
-                Console.WriteLine($"Running Script: [{ scriptFilename }]");
-                var script = File.ReadAllText(scriptFilename);
-                using (var ps = PowerShell.Create())
-                {
-                    var r = string.Empty;
-                    var results = ps.AddScript(script)
-                                    .AddParameter("DoCopy", doCopy)
-                                    .AddParameter("IsReadOnly", isReadOnly)
-                                    .AddParameter("DirectoryToInspect", directoryToInspect)
-                                    .AddParameter("Dest", dest)
-                                    .Invoke();
-                    foreach (var result in results)
-                    {
-                        r += result + Environment.NewLine;
-                    }
-                    return r;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"📛 Error with Script File [{scriptFilename}], Error [{ex}] ");
-            }
-            return null;
+            return hashids.Encode(numbers);
         }
     }
 

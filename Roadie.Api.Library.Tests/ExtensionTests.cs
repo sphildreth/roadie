@@ -290,5 +290,22 @@ namespace Roadie.Library.Tests
             var d = input.ToSecondsFromMilliseconds();
             Assert.Equal(shouldBe, d);
         }
+
+        [Theory]
+        [InlineData("Song (ft. Joe)")]
+        [InlineData("Song (featuring Joe)")]
+        [InlineData("Song (feat. Joe)")]
+          public void StringHaveFeatureFragments(string input)
+        {
+            Assert.True(input.HasFeaturingFragments());
+        }
+
+        [Theory]
+        [InlineData("Future Feature")]
+        [InlineData("Feature Song")]
+        public void StringShouldNotHaveFeatureFragments(string input)
+        {
+            Assert.False(input.HasFeaturingFragments());
+        }
     }
 }

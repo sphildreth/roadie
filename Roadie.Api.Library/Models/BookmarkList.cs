@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json;
-using Roadie.Library.Enums;
+﻿using Roadie.Library.Enums;
 using Roadie.Library.Models.Collections;
 using Roadie.Library.Models.Playlists;
 using Roadie.Library.Models.Releases;
 using System;
+using System.Text.Json.Serialization;
 
 namespace Roadie.Library.Models
 {

@@ -21,9 +21,7 @@ namespace Roadie.Api.Controllers
     [Authorize]
     public class UserController : EntityControllerBase
     {
-
         private IHttpContext RoadieHttpContext { get; }
-
         private IUserService UserService { get; }
 
         private readonly ITokenService TokenService;
@@ -65,8 +63,14 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
             var user = await CurrentUserModel().ConfigureAwait(false);
-            var result = await CacheManager.GetAsync($"urn:user_model_by_id:{id}",
-                async () => await UserService.ByIdAsync(user, id, (inc ?? Library.Models.Users.User.DefaultIncludes).ToLower().Split(",")).ConfigureAwait(false), ControllerCacheRegionUrn).ConfigureAwait(false);
+            var result = await CacheManager.GetAsync($"urn:user_model_by_id:{id}", async () =>
+            {
+                return await UserService.ByIdAsync(user, id, (inc ?? Library.Models.Users.User.DefaultIncludes)
+                                 .ToLower()
+                                 .Split(","))
+                                 .ConfigureAwait(false);
+            },
+            ControllerCacheRegionUrn).ConfigureAwait(false);
             if (result?.IsNotFoundResult != false)
             {
                 return NotFound();
@@ -385,12 +389,6 @@ namespace Roadie.Api.Controllers
                 modelUser.Timezone,
                 DefaultRowsPerPage = modelUser.DefaultRowsPerPage ?? RoadieSettings.DefaultRowsPerPage
             });
-        }
-
-        public class PagingParams
-        {
-            public int Limit { get; set; } = 5;
-            public int Page { get; set; } = 1;
         }
     }
 }

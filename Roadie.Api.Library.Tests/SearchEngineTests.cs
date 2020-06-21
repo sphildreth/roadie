@@ -35,7 +35,7 @@ namespace Roadie.Library.Tests
             IConfiguration configuration = configurationBuilder.Build();
             configuration.GetSection("RoadieSettings").Bind(settings);
             Configuration = settings;
-            CacheManager = new DictionaryCacheManager(Logger, new CachePolicy(TimeSpan.FromHours(4)));
+            CacheManager = new DictionaryCacheManager(Logger, new NewtonsoftCacheSerializer(Logger), new CachePolicy(TimeSpan.FromHours(4)));
             HttpEncoder = new Encoding.DummyHttpEncoder();
         }
 

@@ -26,8 +26,8 @@ namespace Roadie.Library.Caching
 
         private IDatabase Redis => _redis ?? (_redis = Connection.GetDatabase());
 
-        public RedisCacheManager(ILogger logger, CachePolicy defaultPolicy)
-                            : base(logger, defaultPolicy)
+        public RedisCacheManager(ILogger logger, ICacheSerializer cacheSerializer, CachePolicy defaultPolicy)
+                            : base(logger, cacheSerializer, defaultPolicy)
         {
         }
 
@@ -49,7 +49,7 @@ namespace Roadie.Library.Caching
         public override bool Add<TCacheValue>(string key, TCacheValue value, string region, CachePolicy policy)
         {
             if (_doTraceLogging) Logger.LogTrace("Added [{0}], Region [{1}]", key, region);
-            return Redis.StringSet(key, Serialize(value));
+            return Redis.StringSet(key, CacheSerializer.Serialize(value));
         }
 
         public override void Clear()
@@ -135,7 +135,7 @@ namespace Roadie.Library.Caching
 
         private TOut Get<TOut>(string key, string region, CachePolicy policy)
         {
-            var result = Deserialize<TOut>(Redis.StringGet(key));
+            var result = CacheSerializer.Deserialize<TOut>(Redis.StringGet(key));
             if (result == null)
             {
                 if (_doTraceLogging) Logger.LogTrace("Get Cache Miss Key [{0}], Region [{1}]", key, region);

@@ -1,7 +1,7 @@
 ﻿using Mapster;
-using Newtonsoft.Json;
 using Roadie.Library.Utility;
 using System;
+using System.Text.Json.Serialization;
 
 namespace Roadie.Library.Models
 {

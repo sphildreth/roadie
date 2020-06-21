@@ -1,8 +1,8 @@
-﻿using Newtonsoft.Json;
-using Roadie.Library.Extensions;
+﻿using Roadie.Library.Extensions;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Utility;
 using System;
+using System.Text.Json.Serialization;
 
 namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
 {
@@ -20,8 +20,16 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
             get
             {
-                if (string.IsNullOrEmpty(id)) return null;
-                if (id.StartsWith(ArtistIdIdentifier)) return SafeParser.ToGuid(id);
+                if (string.IsNullOrEmpty(id))
+                {
+                    return null;
+                }
+
+                if (id.StartsWith(ArtistIdIdentifier))
+                {
+                    return SafeParser.ToGuid(id);
+                }
+
                 return null;
             }
         }
@@ -40,8 +48,16 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
             get
             {
-                if (string.IsNullOrEmpty(id)) return null;
-                if (id.StartsWith(CollectionIdentifier)) return SafeParser.ToGuid(id);
+                if (string.IsNullOrEmpty(id))
+                {
+                    return null;
+                }
+
+                if (id.StartsWith(CollectionIdentifier))
+                {
+                    return SafeParser.ToGuid(id);
+                }
+
                 return null;
             }
         }
@@ -73,8 +89,12 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
             // Default should be false (XML)
             get
             {
-                if (string.IsNullOrEmpty(f)) return false;
-                return f.ToLower().StartsWith("j");
+                if (string.IsNullOrEmpty(f))
+                {
+                    return false;
+                }
+
+                return f.StartsWith("j", StringComparison.OrdinalIgnoreCase);
             }
         }
 
@@ -90,8 +110,16 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
             get
             {
-                if (string.IsNullOrEmpty(p)) return null;
-                if (p.StartsWith("enc:")) return p.ToLower().Replace("enc:", "").FromHexString();
+                if (string.IsNullOrEmpty(p))
+                {
+                    return null;
+                }
+
+                if (p.StartsWith("enc:"))
+                {
+                    return p.ToLower().Replace("enc:", string.Empty).FromHexString();
+                }
+
                 return p;
             }
         }
@@ -100,8 +128,16 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
             get
             {
-                if (string.IsNullOrEmpty(id)) return null;
-                if (id.StartsWith(PlaylistdIdentifier)) return SafeParser.ToGuid(id);
+                if (string.IsNullOrEmpty(id))
+                {
+                    return null;
+                }
+
+                if (id.StartsWith(PlaylistdIdentifier))
+                {
+                    return SafeParser.ToGuid(id);
+                }
+
                 return null;
             }
         }
@@ -115,8 +151,16 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
             get
             {
-                if (string.IsNullOrEmpty(id)) return null;
-                if (id.StartsWith(ReleaseIdIdentifier)) return SafeParser.ToGuid(id);
+                if (string.IsNullOrEmpty(id))
+                {
+                    return null;
+                }
+
+                if (id.StartsWith(ReleaseIdIdentifier))
+                {
+                    return SafeParser.ToGuid(id);
+                }
+
                 return null;
             }
         }
@@ -145,8 +189,16 @@ namespace Roadie.Library.Models.ThirdPartyApi.Subsonic
         {
             get
             {
-                if (string.IsNullOrEmpty(id)) return null;
-                if (id.StartsWith(TrackIdIdentifier)) return SafeParser.ToGuid(id);
+                if (string.IsNullOrEmpty(id))
+                {
+                    return null;
+                }
+
+                if (id.StartsWith(TrackIdIdentifier))
+                {
+                    return SafeParser.ToGuid(id);
+                }
+
                 return null;
             }
         }

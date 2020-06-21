@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Pastel;
 using Serilog;
 using System;
 using System.Diagnostics;
@@ -31,19 +32,19 @@ namespace Roadie.Api
 
 #if DEBUG
                 // Logging Output tests
-                Log.Verbose(":: Log Test: Verbose (Trace,None)"); // Microsoft.Extensions.Logging.LogLevel.Trace and Microsoft.Extensions.Logging.LogLevel.None
-                Log.Debug(":: Log Test: Debug"); // Microsoft.Extensions.Logging.LogLevel.Debug
-                Log.Information(":: Log Test: Information"); // Microsoft.Extensions.Logging.LogLevel.Information
-                Log.Warning(":: Log Test: Warning"); // Microsoft.Extensions.Logging.LogLevel.Warning
-                Log.Error(new Exception("Log Test Exception"), "Log Test Error Message"); // Microsoft.Extensions.Logging.LogLevel.Error
-                Log.Fatal(":: Log Test: Fatal (Critial)"); // Microsoft.Extensions.Logging.LogLevel.Critical
-                Trace.WriteLine(":: Log Test: Trace WriteLine()");
+                Log.Verbose(":: Log Test: Verbose (Trace,None), Test 'value', Test: Value"); // Microsoft.Extensions.Logging.LogLevel.Trace and Microsoft.Extensions.Logging.LogLevel.None
+                Log.Debug(":: Log Test: Debug, Test 'value', Test: Value"); // Microsoft.Extensions.Logging.LogLevel.Debug
+                Log.Information(":: Log Test: Information, Test 'value', Test: Value"); // Microsoft.Extensions.Logging.LogLevel.Information
+                Log.Warning(":: Log Test: Warning, Test 'value', Test: Value"); // Microsoft.Extensions.Logging.LogLevel.Warning
+                Log.Error(new Exception("Log Test Exception"), "Log Test Error Message, Test 'value', Test: Value"); // Microsoft.Extensions.Logging.LogLevel.Error
+                Log.Fatal(":: Log Test: Fatal (Critial), Test 'value', Test: Value"); // Microsoft.Extensions.Logging.LogLevel.Critical
+                Trace.WriteLine(":: Log Test: Trace WriteLine(), Test 'value', Test: Value");
 #endif
                 Console.WriteLine("");
-                Console.WriteLine(@" ____   __    __   ____  __  ____     __   ____  __  ");
-                Console.WriteLine(@"(  _ \ /  \  / _\ (    \(  )(  __)   / _\ (  _ \(  ) ");
-                Console.WriteLine(@" )   /(  O )/    \ ) D ( )(  ) _)   /    \ ) __/ )(  ");
-                Console.WriteLine(@"(__\_) \__/ \_/\_/(____/(__)(____)  \_/\_/(__)  (__) ");
+                Console.WriteLine(@" ____   __    __   ____  __  ____     __   ____  __  ".Pastel("#FEFF0E"));
+                Console.WriteLine(@"(  _ \ /  \  / _\ (    \(  )(  __)   / _\ (  _ \(  ) ".Pastel("#F49014"));
+                Console.WriteLine(@" )   /(  O )/    \ ) D ( )(  ) _)   /    \ ) __/ )(  ".Pastel("#E30014"));
+                Console.WriteLine(@"(__\_) \__/ \_/\_/(____/(__)(____)  \_/\_/(__)  (__) ".Pastel("#DB0083"));
                 Console.WriteLine("");
 
                 CreateHostBuilder(args).Build().Run();

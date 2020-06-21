@@ -1,7 +1,5 @@
 ﻿using CsvHelper;
-using Newtonsoft.Json;
 using Roadie.Library.Configuration;
-using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.Utility;
 using System;
@@ -14,6 +12,10 @@ namespace Roadie.Library.Data
 {
     public partial class Collection
     {
+        public const string ArtistPosition = "artist";
+        public const string PositionPosition = "position";
+        public const string ReleasePosition = "release";
+
         /// <summary>
         /// If the given value in either Artist or Release starts with this then the next value is the database Id, example "1,~4,~19"
         /// </summary>
@@ -35,7 +37,10 @@ namespace Roadie.Library.Data
                     foreach (var pos in ListInCSVFormat.Split(','))
                     {
                         looper++;
-                        if (pos.ToLower().Equals("artist")) _artistColumn = looper;
+                        if (String.Equals(pos, ArtistPosition, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _artistColumn = looper;
+                        }
                     }
                 }
 
@@ -70,7 +75,10 @@ namespace Roadie.Library.Data
                     foreach (var pos in ListInCSVFormat.Split(','))
                     {
                         looper++;
-                        if (pos.ToLower().Equals("position")) _positionColumn = looper;
+                        if (String.Equals(pos, PositionPosition, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _positionColumn = looper;
+                        }
                     }
                 }
 
@@ -88,7 +96,10 @@ namespace Roadie.Library.Data
                     foreach (var pos in ListInCSVFormat.Split(','))
                     {
                         looper++;
-                        if (pos.ToLower().Equals("release")) _releaseColumn = looper;
+                        if (String.Equals(pos, ReleasePosition, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _releaseColumn = looper;
+                        }
                     }
                 }
 
@@ -129,10 +140,7 @@ namespace Roadie.Library.Data
                         MissingFieldFound = null,
                         HasHeaderRecord = false
                     };
-                    configuration.BadDataFound = context =>
-                    {
-                        Trace.WriteLine($"PositionArtistReleases: Bad data found on row '{context.RawRow}'", "Warning");
-                    };
+                    configuration.BadDataFound = context => Trace.WriteLine($"PositionArtistReleases: Bad data found on row '{context.RawRow}'", "Warning");
                     using (var csv = new CsvReader(sr, configuration))
                     {
                         while (csv.Read())
@@ -160,6 +168,4 @@ namespace Roadie.Library.Data
             return $"Id [{Id}], Name [{Name}], RoadieId [{RoadieId}]";
         }
     }
-
-
 }

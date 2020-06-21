@@ -8,7 +8,6 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Web;
 
 namespace Roadie.Library.Extensions
 {
@@ -88,7 +87,7 @@ namespace Roadie.Library.Extensions
             var rs = removeStringsRegex ?? settings.Processing.RemoveStringsRegex;
             if (!string.IsNullOrEmpty(rs))
             {
-                result = Regex.Replace(result, rs, "", RegexOptions.IgnoreCase);
+                result = Regex.Replace(result, rs, string.Empty, RegexOptions.IgnoreCase);
             }
             if (result.Length > 5)
             {
@@ -106,9 +105,25 @@ namespace Roadie.Library.Extensions
             return Regex.Replace(result, @"\s+", " ").Trim();
         }
 
+        public static bool HasFeaturingFragments(this string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return false;
+            }
+
+            return Regex.IsMatch(input,
+                                @"\((ft.|feat.|featuring|feature)+",
+                                RegexOptions.IgnoreCase);
+        }
+
         public static bool DoesStartWithNumber(this string input)
         {
-            if (string.IsNullOrEmpty(input)) return false;
+            if (string.IsNullOrEmpty(input))
+            {
+                return false;
+            }
+
             var firstPart = input.Split(' ').First().SafeReplace("[").SafeReplace("]");
             return SafeParser.ToNumber<long>(firstPart) > 0;
         }
@@ -116,32 +131,59 @@ namespace Roadie.Library.Extensions
         public static string FromHexString(this string hexString)
         {
             var bytes = new byte[hexString.Length / 2];
-            for (var i = 0; i < bytes.Length; i++) bytes[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
+            }
 
             return System.Text.Encoding.UTF8.GetString(bytes); // returns: "Hello world" for "48656C6C6F20776F726C64"
         }
 
         public static bool IsValidFilename(this string input)
         {
-            var containsABadCharacter = new Regex("[" + Regex.Escape(new string(Path.GetInvalidPathChars())) + "]");
-            if (containsABadCharacter.IsMatch(input)) return false;
-            ;
+            var containsABadCharacter = new Regex($"[{Regex.Escape(new string(Path.GetInvalidPathChars()))}]");
+            if (containsABadCharacter.IsMatch(input))
+            {
+                return false;
+            };
             return true;
         }
 
         public static bool IsValueInDelimitedList(this string input, string value, char delimiter = '|')
         {
-            if (string.IsNullOrEmpty(input)) return false;
+            if (string.IsNullOrEmpty(input))
+            {
+                return false;
+            }
+
             var p = input.Split(delimiter);
             return !p.Any() ? false : p.Any(x => x.Trim().Equals(value, StringComparison.OrdinalIgnoreCase));
         }
 
+        public static string LastSegmentInUrl(this string input)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+            var uri = new Uri(input);
+            return uri.Segments.Last();
+        }
+
         public static string NormalizeName(this string input)
         {
-            if (string.IsNullOrEmpty(input)) return input;
+            if (string.IsNullOrEmpty(input))
+            {
+                return input;
+            }
+
             input = input.ToLower();
             var removeParts = new List<string> { " ft. ", " ft ", " feat ", " feat. " };
-            foreach (var removePart in removeParts) input = input.Replace(removePart, "");
+            foreach (var removePart in removeParts)
+            {
+                input = input.Replace(removePart, string.Empty);
+            }
+
             var cultInfo = new CultureInfo("en-US", false).TextInfo;
             return cultInfo.ToTitleCase(input).Trim();
         }
@@ -158,7 +200,10 @@ namespace Roadie.Library.Extensions
             for (var i = 0; i < normalizedString.Length; i++)
             {
                 var c = normalizedString[i];
-                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) stringBuilder.Append(c);
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
             }
 
             return stringBuilder.ToString();
@@ -166,7 +211,11 @@ namespace Roadie.Library.Extensions
 
         public static string RemoveFirst(this string input, string remove = "")
         {
-            if (string.IsNullOrEmpty(input)) return input;
+            if (string.IsNullOrEmpty(input))
+            {
+                return input;
+            }
+
             var index = input.IndexOf(remove);
             return index < 0
                 ? input
@@ -175,7 +224,11 @@ namespace Roadie.Library.Extensions
 
         public static string RemoveStartsWith(this string input, string remove = "")
         {
-            if (string.IsNullOrEmpty(input)) return input;
+            if (string.IsNullOrEmpty(input))
+            {
+                return input;
+            }
+
             var index = input.IndexOf(remove);
             var result = input;
             while (index == 0)
@@ -194,7 +247,11 @@ namespace Roadie.Library.Extensions
                 (sb, c) =>
                 {
                     string r;
-                    if (UnicodeAccents.TryGetValue(c, out r)) return sb.Append(r);
+                    if (UnicodeAccents.TryGetValue(c, out r))
+                    {
+                        return sb.Append(r);
+                    }
+
                     return sb.Append(c);
                 }).ToString();
         }
@@ -211,21 +268,33 @@ namespace Roadie.Library.Extensions
 
         public static string SafeReplace(this string input, string replace, string replaceWith = " ")
         {
-            if (string.IsNullOrEmpty(input)) return null;
+            if (string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+
             return input.Replace(replace, replaceWith);
         }
 
         public static string ScrubHtml(this string value)
         {
-            var step1 = Regex.Replace(value, @"<[^>]+>|&nbsp;", "").Trim();
+            var step1 = Regex.Replace(value, @"<[^>]+>|&nbsp;", string.Empty).Trim();
             var step2 = Regex.Replace(step1, @"\s{2,}", " ");
             return step2;
         }
 
         public static string StripStartingNumber(this string input)
         {
-            if (string.IsNullOrEmpty(input)) return null;
-            if (input.DoesStartWithNumber()) return string.Join(" ", input.Split(' ').Skip(1));
+            if (string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+
+            if (input.DoesStartWithNumber())
+            {
+                return string.Join(" ", input.Split(' ').Skip(1));
+            }
+
             return input;
         }
 
@@ -240,23 +309,40 @@ namespace Roadie.Library.Extensions
                          .Replace("%", "per");
             input = WebUtility.HtmlDecode(input);
             input = input.ScrubHtml().ToLower()
-                                     .Replace("&", "and");                                 
+                                     .Replace("&", "and");
             var arr = input.ToCharArray();
             arr = Array.FindAll(arr, c => (c == ',' && !stripCommas) || (char.IsWhiteSpace(c) && !stripSpaces) || char.IsLetterOrDigit(c));
             input = new string(arr).RemoveDiacritics().RemoveUnicodeAccents().Translit();
-            input = Regex.Replace(input, $"[^A-Za-z0-9{ ( !stripSpaces ? @"\s" : "") }{ (!stripCommas ? "," : "")}]+", "");
+            input = Regex.Replace(input, $"[^A-Za-z0-9{ (!stripSpaces ? @"\s" : string.Empty) }{ (!stripCommas ? "," : string.Empty)}]+", string.Empty);
             return input;
         }
 
         public static string ToContentDispositionFriendly(this string input)
         {
-            if (string.IsNullOrEmpty(input)) return null;
+            if (string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+
             return input.Replace(',', ' ');
+        }
+
+        public static string ToCSV(this IEnumerable<string> input)
+        {
+            if (input == null || !input.Any())
+            {
+                return null;
+            }
+            return string.Join(",", input);
         }
 
         public static string ToFileNameFriendly(this string input)
         {
-            if (string.IsNullOrEmpty(input)) return null;
+            if (string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+
             return Regex.Replace(PathSanitizer.SanitizeFilename(input, ' '), @"\s+", " ").Trim();
         }
 
@@ -275,14 +361,21 @@ namespace Roadie.Library.Extensions
             var sb = new StringBuilder();
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(str);
-            foreach (var t in bytes) sb.Append(t.ToString("X2"));
+            foreach (var t in bytes)
+            {
+                sb.Append(t.ToString("X2"));
+            }
 
             return sb.ToString(); // returns: "48656C6C6F20776F726C64" for "Hello world"
         }
 
         public static IEnumerable<string> ToListFromDelimited(this string input, char delimiter = '|')
         {
-            if (string.IsNullOrEmpty(input)) return new string[0];
+            if (string.IsNullOrEmpty(input))
+            {
+                return new string[0];
+            }
+
             return input.Split(delimiter);
         }
 
@@ -300,7 +393,7 @@ namespace Roadie.Library.Extensions
             {
                 if (r.StartsWith("The "))
                 {
-                    r = r.Replace("The ", "") + ", The";
+                    r = $"{(r.Replace("The ", string.Empty))}, The";
                 }
             }
             return r.NameCase();
@@ -309,21 +402,36 @@ namespace Roadie.Library.Extensions
 
         public static int? ToTrackDuration(this string input)
         {
-            if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(input.Replace(":", ""))) return null;
+            if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(input.Replace(":", string.Empty)))
+            {
+                return null;
+            }
+
             try
             {
                 var parts = input.Contains(":") ? input.Split(':').ToList() : new List<string> { input };
-                while (parts.Count() < 3) parts.Insert(0, "00:");
+                while (parts.Count() < 3)
+                {
+                    parts.Insert(0, "00:");
+                }
+
                 var tsRaw = string.Empty;
                 foreach (var part in parts)
                 {
-                    if (tsRaw.Length > 0) tsRaw += ":";
+                    if (tsRaw.Length > 0)
+                    {
+                        tsRaw += ":";
+                    }
+
                     tsRaw += part.PadLeft(2, '0').Substring(0, 2);
                 }
 
                 var ts = TimeSpan.MinValue;
                 var success = TimeSpan.TryParse(tsRaw, out ts);
-                if (success) return (int?)ts.TotalMilliseconds;
+                if (success)
+                {
+                    return (int?)ts.TotalMilliseconds;
+                }
             }
             catch
             {
@@ -366,27 +474,11 @@ namespace Roadie.Library.Extensions
         public static string TrimEnd(this string input, string suffixToRemove)
         {
             if (input != null && suffixToRemove != null && input.EndsWith(suffixToRemove))
+            {
                 return input.Substring(0, input.Length - suffixToRemove.Length);
+            }
+
             return input;
-        }
-
-        public static string LastSegmentInUrl(this string input)
-        {
-            if(string.IsNullOrEmpty(input))
-            {
-                return null;
-            }
-            var uri = new Uri(input);
-            return uri.Segments.Last();
-        }
-
-        public static string ToCSV(this IEnumerable<string> input)
-        {
-            if(input == null || !input.Any())
-            {
-                return null;
-            }
-            return string.Join(",", input);
         }
     }
 }

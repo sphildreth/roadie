@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Dlna.Server.Metadata;
 using Roadie.Dlna.Utility;
 using System;
@@ -13,22 +12,15 @@ namespace Roadie.Dlna.Server
     internal partial class MediaMount
     {
         private const string NS_DC = "http://purl.org/dc/elements/1.1/";
-
         private const string NS_DIDL = "urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/";
-
         private const string NS_DLNA = "urn:schemas-dlna-org:metadata-1-0/";
-
         private const string NS_SEC = "http://www.sec.co.kr/";
-
         private const string NS_SOAPENV = "http://schemas.xmlsoap.org/soap/envelope/";
-
         private const string NS_UPNP = "urn:schemas-upnp-org:metadata-1-0/upnp/";
 
-        private static readonly IDictionary<string, AttributeCollection> soapCache = new LeastRecentlyUsedDictionary<string, AttributeCollection>(200);
-
-        private static readonly XmlNamespaceManager namespaceMgr = CreateNamespaceManager();
-
         private static readonly string featureList = Encoding.UTF8.GetString(ResourceHelper.GetResourceData("x_featurelist.xml") ?? new byte[0]);
+
+        private static readonly IDictionary<string, AttributeCollection> soapCache = new LeastRecentlyUsedDictionary<string, AttributeCollection>(200);
 
         private static void AddBookmarkInfo(IMediaResource resource, XmlElement item)
         {
@@ -79,10 +71,7 @@ namespace Roadie.Dlna.Server
                 var res = result.CreateElement(string.Empty, "res", NS_DIDL);
                 res.InnerText = curl;
 
-                res.SetAttribute("protocolInfo", string.Format(
-                  "http-get:*:{1}:DLNA.ORG_PN={0};DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS={2}",
-                  c.PN, DlnaMaps.Mime[c.Type], DlnaMaps.DefaultStreaming
-                                                   ));
+                res.SetAttribute("protocolInfo", $"http-get:*:{DlnaMaps.Mime[c.Type]}:DLNA.ORG_PN={c.PN};DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS={DlnaMaps.DefaultStreaming}");
                 var width = c.MetaWidth;
                 var height = c.MetaHeight;
                 if (width.HasValue && height.HasValue)
@@ -270,10 +259,7 @@ namespace Roadie.Dlna.Server
                 res.SetAttribute("duration", prop);
             }
 
-            res.SetAttribute("protocolInfo", string.Format(
-              "http-get:*:{1}:DLNA.ORG_PN={0};DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS={2}",
-              resource.PN, DlnaMaps.Mime[resource.Type], DlnaMaps.DefaultStreaming
-                                               ));
+            res.SetAttribute("protocolInfo", $"http-get:*:{DlnaMaps.Mime[resource.Type]}:DLNA.ORG_PN={resource.PN};DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS={DlnaMaps.DefaultStreaming}");
             item.AppendChild(res);
 
             AddCover(request, resource, item);
@@ -509,7 +495,7 @@ namespace Roadie.Dlna.Server
             {
                 Logger.LogError(ex, $"ProcessSoapRequest. Error Loading Request From [{ request.RemoteEndpoint.Address }], Body [{ request.Body }]");
             }
-             var sparams = new RawHeaders();
+            var sparams = new RawHeaders();
             var body = soap.SelectSingleNode("//soap:Body", namespaceMgr);
             if (body == null)
             {
@@ -625,5 +611,7 @@ namespace Roadie.Dlna.Server
             rv.Headers.Add("EXT", string.Empty);
             return rv;
         }
+
+        private static readonly XmlNamespaceManager namespaceMgr = CreateNamespaceManager();
     }
 }

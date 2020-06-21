@@ -38,7 +38,10 @@ namespace Roadie.Library.Inspect.Plugins.Directory
                     Console.WriteLine(
                         $"╟ Setting Year to [{year}], was [{metaData.Year}] on file [{metaData.FileInfo.Name}");
                     metaData.Year = year;
-                    if (!Configuration.Inspector.IsInReadOnlyMode) TagsHelper.WriteTags(metaData, metaData.Filename);
+                    if (!Configuration.Inspector.IsInReadOnlyMode)
+                    {
+                        TagsHelper.WriteTags(metaData, metaData.Filename);
+                    }
                 }
 
                 data = $"Found [{found}] files, Modified [{modified}] files";

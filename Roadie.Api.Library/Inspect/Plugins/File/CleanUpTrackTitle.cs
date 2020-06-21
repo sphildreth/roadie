@@ -27,9 +27,21 @@ namespace Roadie.Library.Inspect.Plugins.File
                 var originalTitle = metaData.Title;
                 metaData.Title = metaData.Title
                     ?.CleanString(Configuration, Configuration.Processing.TrackRemoveStringsRegex).ToTitleCase(false);
-                if (string.IsNullOrEmpty(metaData.Title)) metaData.Title = originalTitle;
+                if (string.IsNullOrEmpty(metaData.Title))
+                {
+                    metaData.Title = originalTitle;
+                }
             }
-
+            if (Configuration.Processing.DoDetectFeatureFragments)
+            {
+                if (!string.IsNullOrWhiteSpace(metaData?.Title))
+                {
+                    if (metaData.Release.HasFeaturingFragments())
+                    {
+                        throw new RoadieProcessingException($"Track title [{ metaData?.Title }] has Feature fragments.");
+                    }
+                }
+            }
             result.Data = metaData;
             result.IsSuccess = true;
             return result;

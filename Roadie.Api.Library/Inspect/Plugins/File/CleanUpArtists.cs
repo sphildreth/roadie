@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using MetadataExtractor;
+using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
@@ -14,16 +15,15 @@ namespace Roadie.Library.Inspect.Plugins.File
 
         public override int Order => 5;
 
-        public CleanUpArtists(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger,
-                            IID3TagsHelper tagsHelper)
+        public CleanUpArtists(IRoadieSettings configuration, ICacheManager cacheManager, ILogger logger, IID3TagsHelper tagsHelper)
             : base(configuration, cacheManager, logger, tagsHelper)
         {
         }
 
         public string CleanArtist(string artist, string trackArtist = null)
         {
-            artist = artist ?? string.Empty;
-            trackArtist = trackArtist ?? string.Empty;
+            artist ??= string.Empty;
+            trackArtist ??= string.Empty;
             var splitCharacter = AudioMetaData.ArtistSplitCharacter.ToString();
 
             // Replace seperators with proper split character
@@ -39,12 +39,21 @@ namespace Roadie.Library.Inspect.Plugins.File
             }
             if (!string.IsNullOrEmpty(result) && !string.IsNullOrEmpty(trackArtist))
             {
-                result = result.Replace(splitCharacter + trackArtist + splitCharacter, "", StringComparison.OrdinalIgnoreCase);
-                result = result.Replace(trackArtist + splitCharacter, "", StringComparison.OrdinalIgnoreCase);
-                result = result.Replace(splitCharacter + trackArtist, "", StringComparison.OrdinalIgnoreCase);
-                result = result.Replace(trackArtist, "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace(splitCharacter + trackArtist + splitCharacter, string.Empty, StringComparison.OrdinalIgnoreCase);
+                result = result.Replace(trackArtist + splitCharacter, string.Empty, StringComparison.OrdinalIgnoreCase);
+                result = result.Replace(splitCharacter + trackArtist, string.Empty, StringComparison.OrdinalIgnoreCase);
+                result = result.Replace(trackArtist, string.Empty, StringComparison.OrdinalIgnoreCase);
             }
-
+            if(Configuration.Processing.DoDetectFeatureFragments)
+            {
+                if(!string.IsNullOrWhiteSpace(result))
+                {
+                    if(result.HasFeaturingFragments())
+                    {
+                        throw new RoadieProcessingException($"Artist name [{ result }] has Feature fragments.");
+                    }
+                }
+            }
             return string.IsNullOrEmpty(result) ? null : result;
         }
 

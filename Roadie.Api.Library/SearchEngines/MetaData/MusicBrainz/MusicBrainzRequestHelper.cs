@@ -1,8 +1,8 @@
-﻿using Newtonsoft.Json;
-using Roadie.Library.Utility;
+﻿using Roadie.Library.Utility;
 using System;
 using System.Diagnostics;
 using System.Net;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -48,6 +48,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
         {
             var tryCount = 0;
             var result = default(T);
+            string downloadedString = null;
             while (result == null && tryCount < MaxRetries)
             {
                 try
@@ -55,7 +56,11 @@ namespace Roadie.Library.MetaData.MusicBrainz
                     using (var webClient = new WebClient())
                     {
                         webClient.Headers.Add("user-agent", WebHelper.UserAgent);
-                        result = JsonConvert.DeserializeObject<T>(await webClient.DownloadStringTaskAsync(new Uri(url)).ConfigureAwait(false));
+                        downloadedString = await webClient.DownloadStringTaskAsync(new Uri(url)).ConfigureAwait(false);
+                        if (!string.IsNullOrWhiteSpace(downloadedString))
+                        {
+                            result = JsonSerializer.Deserialize<T>(downloadedString);
+                        }
                     }
                 }
                 catch (WebException ex)
@@ -69,7 +74,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
                 }
                 catch (Exception ex)
                 {
-                    Trace.WriteLine($"GetAsync: [{ ex.ToString() }]", "Warning");
+                    Trace.WriteLine($"GetAsync: DownloadedString [{ downloadedString }], Exception: [{ ex }]", "Warning");
                     Thread.Sleep(100);
                 }
                 finally

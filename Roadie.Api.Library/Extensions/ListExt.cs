@@ -31,7 +31,6 @@ namespace Roadie.Library.Extensions
             }
         }
 
-
         public static string ToDelimitedList<T>(this IList<T> list, char delimiter = '|')
         {
             return ((ICollection<T>)list).ToDelimitedList(delimiter);
@@ -39,7 +38,11 @@ namespace Roadie.Library.Extensions
 
         public static string ToDelimitedList<T>(this IEnumerable<T> list, char delimiter = '|')
         {
-            if (list == null || !list.Any()) return null;
+            if (list == null || !list.Any())
+            {
+                return null;
+            }
+
             return string.Join(delimiter.ToString(), list);
         }
     }

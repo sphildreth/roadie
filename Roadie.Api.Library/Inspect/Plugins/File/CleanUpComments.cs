@@ -22,8 +22,13 @@ namespace Roadie.Library.Inspect.Plugins.File
         {
             var result = new OperationResult<AudioMetaData>();
             if (Configuration.Processing.DoAudioCleanup)
+            {
                 if (Configuration.Processing.DoClearComments)
+                {
                     metaData.Comments = null;
+                }
+            }
+
             result.Data = metaData;
             result.IsSuccess = true;
             return result;

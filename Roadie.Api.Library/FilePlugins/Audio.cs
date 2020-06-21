@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Encoding;
@@ -14,6 +13,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Roadie.Library.FilePlugins
@@ -98,9 +98,16 @@ namespace Roadie.Library.FilePlugins
                     return result;
                 }
 
-                if (CheckMakeFolder(artistFolder)) Logger.LogTrace("Created ArtistFolder [{0}]", artistFolder);
-                if (CheckMakeFolder(releaseFolder)) Logger.LogTrace("Created ReleaseFolder [{0}]", releaseFolder);
+                if (CheckMakeFolder(artistFolder))
+                {
+                    Logger.LogTrace("Created ArtistFolder [{0}]", artistFolder);
+                }
+                if (CheckMakeFolder(releaseFolder))
+                {
+                    Logger.LogTrace("Created ReleaseFolder [{0}]", releaseFolder);
+                }
 
+                string imageFilename = null;
                 try
                 {
                     // See if file folder parent folder (likely file is in release folder) has primary artist image if so then move to artist folder
@@ -110,8 +117,8 @@ namespace Roadie.Library.FilePlugins
                     if (artistImages.Count > 0)
                     {
                         var artistImage = artistImages[0];
-                        var artistImageFilename = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
-                        if (artistImageFilename != artistImage.FullName)
+                        imageFilename = Path.Combine(artistFolder, ImageHelper.ArtistImageFilename);
+                        if (imageFilename != artistImage.FullName)
                         {
                             // Read image and convert to jpeg
                             var imageBytes = File.ReadAllBytes(artistImage.FullName);
@@ -120,7 +127,7 @@ namespace Roadie.Library.FilePlugins
                             // Move artist image to artist folder
                             if (!doJustInfo)
                             {
-                                File.WriteAllBytes(artistImageFilename, imageBytes);
+                                File.WriteAllBytes(imageFilename, imageBytes);
                                 artistImage.Delete();
                             }
 
@@ -179,7 +186,10 @@ namespace Roadie.Library.FilePlugins
                             // Read image and convert to jpeg
                             var imageBytes = File.ReadAllBytes(releaseImage.FullName);
                             imageBytes = ImageHelper.ConvertToJpegFormat(imageBytes);
-
+                            if(imageBytes == null)
+                            {
+                                Logger.LogWarning($"Unable to read image [{ releaseImage.FullName }]");
+                            }
                             // Move cover to release folder
                             if (!doJustInfo)
                             {
@@ -199,8 +209,7 @@ namespace Roadie.Library.FilePlugins
                         foreach (var releaseImage in releaseImages)
                         {
                             looper++;
-                            var releaseImageFilename = Path.Combine(releaseFolder,
-                                string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
+                            var releaseImageFilename = Path.Combine(releaseFolder, string.Format(ImageHelper.ReleaseSecondaryImageFilename, looper.ToString("00")));
                             if (releaseImageFilename != releaseImage.FullName)
                             {
                                 // Read image and convert to jpeg
@@ -221,7 +230,7 @@ namespace Roadie.Library.FilePlugins
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex, "Error with Managing Images For [{0}]", fileInfo.FullName);
+                    Logger.LogError(ex, $"Error with Managing Images For [{fileInfo.FullName}], ImageFilename [{imageFilename }]");
                 }
 
                 var doesFileExistsForTrack = File.Exists(destinationName);
@@ -291,8 +300,7 @@ namespace Roadie.Library.FilePlugins
             }
 
             sw.Stop();
-            Logger.LogTrace("<< Audio: Process Complete. Result `{0}`, ElapsedTime [{1}]",
-                JsonConvert.SerializeObject(result), sw.ElapsedMilliseconds);
+            Logger.LogTrace("<< Audio: Process Complete. Result `{0}`, ElapsedTime [{1}]", JsonSerializer.Serialize(result), sw.ElapsedMilliseconds);
             return result;
         }
 

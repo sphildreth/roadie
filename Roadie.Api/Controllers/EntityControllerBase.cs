@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Api.Services;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -13,6 +12,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Text.Json;
 using System.Threading.Tasks;
 using models = Roadie.Library.Models.Users;
 
@@ -146,7 +146,7 @@ namespace Roadie.Api.Controllers
             };
             await playActivityService.NowPlayingAsync(user, scrobble).ConfigureAwait(false); 
             sw.Stop();
-            Logger.LogTrace($"StreamTrack ElapsedTime [{sw.ElapsedMilliseconds}], Timings [{JsonConvert.SerializeObject(timings)}], StreamInfo `{info?.Data}`");
+            Logger.LogTrace($"StreamTrack ElapsedTime [{sw.ElapsedMilliseconds}], Timings [{JsonSerializer.Serialize(timings)}], StreamInfo `{info?.Data}`");
             return new EmptyResult();
         }
 

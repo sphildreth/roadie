@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Roadie.Library.Models.Collections;
+﻿using Roadie.Library.Models.Collections;
 using Roadie.Library.Models.Playlists;
 using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Statistics;
@@ -8,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Roadie.Library.Models
 {
@@ -48,7 +48,7 @@ namespace Roadie.Library.Models
         [IgnoreDataMember]
         public string ISNI { get; set; }
 
-        [JsonProperty("isniList")]
+        [JsonPropertyName("isniList")]
         public IEnumerable<string> ISNIList
         {
             get

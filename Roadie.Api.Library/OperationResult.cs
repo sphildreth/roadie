@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Xml.Serialization;
 
 namespace Roadie.Library
@@ -10,6 +10,7 @@ namespace Roadie.Library
     public class OperationResult<T>
     {
         private List<Exception> _errors;
+
         private List<string> _messages;
 
         [XmlIgnore]
@@ -22,12 +23,15 @@ namespace Roadie.Library
         /// <summary>
         ///     Client friendly exceptions
         /// </summary>
-        [JsonProperty("errors")]
+        [JsonPropertyName("errors")]
         public IEnumerable<AppException> AppExceptions
         {
             get
             {
-                if (Errors == null || !Errors.Any()) return null;
+                if (Errors?.Any() != true)
+                {
+                    return null;
+                }
 
                 return Errors.Select(x => new AppException(x.Message));
             }
@@ -41,7 +45,8 @@ namespace Roadie.Library
         [JsonIgnore]
         public IEnumerable<Exception> Errors { get; set; }
 
-        [JsonIgnore] public bool IsAccessDeniedResult { get; set; }
+        [JsonIgnore]
+        public bool IsAccessDeniedResult { get; set; }
 
         [JsonIgnore] public bool IsNotFoundResult { get; set; }
 
@@ -57,27 +62,11 @@ namespace Roadie.Library
 
         public OperationResult(IEnumerable<string> messages = null)
         {
-            if (messages != null && messages.Any())
+            if (messages?.Any() == true)
             {
                 AdditionalData = new Dictionary<string, object>();
                 messages.ToList().ForEach(AddMessage);
             }
-        }
-
-        public OperationResult(bool isNotFoundResult, IEnumerable<string> messages = null)
-        {
-            IsNotFoundResult = isNotFoundResult;
-            if (messages != null && messages.Any())
-            {
-                AdditionalData = new Dictionary<string, object>();
-                messages.ToList().ForEach(AddMessage);
-            }
-        }
-
-        public OperationResult(bool isNotFoundResult, string message)
-        {
-            IsNotFoundResult = isNotFoundResult;
-            AddMessage(message);
         }
 
         public OperationResult(string message = null)
@@ -91,6 +80,22 @@ namespace Roadie.Library
             AddError(error);
         }
 
+        public OperationResult(bool isNotFoundResult, IEnumerable<string> messages = null)
+        {
+            IsNotFoundResult = isNotFoundResult;
+            if (messages?.Any() == true)
+            {
+                AdditionalData = new Dictionary<string, object>();
+                messages.ToList().ForEach(AddMessage);
+            }
+        }
+
+        public OperationResult(bool isNotFoundResult, string message)
+        {
+            IsNotFoundResult = isNotFoundResult;
+            AddMessage(message);
+        }
+
         public OperationResult(string message = null, Exception error = null)
         {
             AddMessage(message);
@@ -101,9 +106,7 @@ namespace Roadie.Library
         {
             if (exception != null)
             {
-                if (_errors == null) _errors = new List<Exception>();
-
-                _errors.Add(exception);
+                (_errors ?? (_errors = new List<Exception>())).Add(exception);
             }
         }
 
@@ -111,9 +114,7 @@ namespace Roadie.Library
         {
             if (!string.IsNullOrEmpty(message))
             {
-                if (_messages == null) _messages = new List<string>();
-
-                _messages.Add(message);
+                (_messages ?? (_messages = new List<string>())).Add(message);
             }
         }
     }

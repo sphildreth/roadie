@@ -1,11 +1,11 @@
 ﻿using Mapster;
-using Newtonsoft.Json;
 using Roadie.Library.Enums;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace Roadie.Library.Models.Releases
 {
@@ -14,14 +14,20 @@ namespace Roadie.Library.Models.Releases
     public sealed class ReleaseList : EntityInfoModelBase
     {
         public DataToken Artist { get; set; }
+
         public Image ArtistThumbnail { get; set; }
+
         public decimal? Duration { get; set; }
 
         public string DurationTime
         {
             get
             {
-                if (!Duration.HasValue) return "--:--";
+                if (!Duration.HasValue)
+                {
+                    return "--:--";
+                }
+
                 return new TimeInfo(Duration.Value).ToFullFormattedString();
             }
         }
@@ -41,6 +47,7 @@ namespace Roadie.Library.Models.Releases
         }
 
         public DateTime? LastPlayed { get; set; }
+
         public LibraryStatus? LibraryStatus { get; set; }
 
         /// <summary>
@@ -49,17 +56,26 @@ namespace Roadie.Library.Models.Releases
         public int? ListNumber { get; set; }
 
         public IEnumerable<ReleaseMediaList> Media { get; set; }
+
         public int? MediaCount { get; set; }
+
         public double? Rank { get; set; }
+
         public short? Rating { get; set; }
+
         public DataToken Release { get; set; }
 
         public string ReleaseDate => ReleaseDateDateTime.HasValue
             ? ReleaseDateDateTime.Value.ToUniversalTime().ToString("yyyy-MM-dd")
             : null;
 
-        [JsonIgnore] public DateTime? ReleaseDateDateTime { get; set; }
-        [JsonIgnore] [AdaptIgnore] public string ReleaseName => Release?.Text;
+        [JsonIgnore] 
+        public DateTime? ReleaseDateDateTime { get; set; }
+
+        [JsonIgnore] 
+        [AdaptIgnore]
+        public string ReleaseName => Release?.Text;
+
         public string ReleasePlayUrl { get; set; }
 
         public string ReleaseYear => ReleaseDateDateTime.HasValue
@@ -67,10 +83,15 @@ namespace Roadie.Library.Models.Releases
             : null;
 
         public Statuses? Status { get; set; }
+
         public string StatusVerbose => (Status ?? Statuses.Missing).ToString();
+
         public Image Thumbnail { get; set; }
+
         public int? TrackCount { get; set; }
+
         public int? TrackPlayedCount { get; set; }
+
         public UserRelease UserRating { get; set; }
 
         public static ReleaseList FromDataRelease(Data.Release release, Data.Artist artist, string baseUrl,

@@ -1,5 +1,5 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
+using System.Text.Json;
 
 namespace Roadie.Library.Extensions
 {
@@ -7,12 +7,15 @@ namespace Roadie.Library.Extensions
     {
         public static string Serialize(this Exception input)
         {
-            if (input == null) return null;
-            var settings = new JsonSerializerSettings
+            if (input == null)
             {
-                NullValueHandling = NullValueHandling.Ignore
-            };
-            return JsonConvert.SerializeObject(input, Formatting.Indented, settings);
+                return null;
+            }
+            return JsonSerializer.Serialize(input, new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                WriteIndented = true
+            });
         }
     }
 }

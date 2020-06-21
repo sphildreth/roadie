@@ -39,7 +39,10 @@ namespace Roadie.Library.Inspect.Plugins.Directory
                     Console.WriteLine(
                         $"╟ Setting Release to [{release}], was [{metaData.Release}] on file [{metaData.FileInfo.Name}");
                     metaData.Release = release;
-                    if (!Configuration.Inspector.IsInReadOnlyMode) TagsHelper.WriteTags(metaData, metaData.Filename);
+                    if (!Configuration.Inspector.IsInReadOnlyMode)
+                    {
+                        TagsHelper.WriteTags(metaData, metaData.Filename);
+                    }
                 }
 
                 data = $"Found [{found}] files, Modified [{modified}] files";

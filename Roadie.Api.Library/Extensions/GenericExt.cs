@@ -18,10 +18,16 @@ namespace Roadie.Library.Extensions
         /// <returns>The copied object.</returns>
         public static T Clone<T>(this T source)
         {
-            if (!typeof(T).IsSerializable) throw new ArgumentException("The type must be serializable.", "source");
+            if (!typeof(T).IsSerializable)
+            {
+                throw new ArgumentException("The type must be serializable.", nameof(source));
+            }
 
             // Don't serialize a null object, simply return the default for that object
-            if (ReferenceEquals(source, null)) return default(T);
+            if (ReferenceEquals(source, null))
+            {
+                return default(T);
+            }
 
             IFormatter formatter = new BinaryFormatter();
             using (Stream stream = new MemoryStream())
@@ -37,8 +43,12 @@ namespace Roadie.Library.Extensions
             var oProperties = OriginalEntity.GetType().GetProperties();
 
             foreach (var CurrentProperty in oProperties.Where(p => p.CanWrite))
+            {
                 if (CurrentProperty.GetValue(NewEntity, null) != null)
+                {
                     CurrentProperty.SetValue(OriginalEntity, CurrentProperty.GetValue(NewEntity, null), null);
+                }
+            }
 
             return OriginalEntity;
         }
@@ -47,7 +57,11 @@ namespace Roadie.Library.Extensions
         {
             var fi = source.GetType().GetField(source.ToString());
             var attributes = (DescriptionAttribute[])fi.GetCustomAttributes(typeof(DescriptionAttribute), false);
-            if (attributes != null && attributes.Length > 0) return attributes[0].Description;
+            if (attributes != null && attributes.Length > 0)
+            {
+                return attributes[0].Description;
+            }
+
             return source.ToString();
         }
     }

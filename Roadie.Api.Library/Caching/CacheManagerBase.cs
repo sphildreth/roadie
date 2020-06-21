@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
 
@@ -10,19 +9,15 @@ namespace Roadie.Library.Caching
         public const string SystemCacheRegionUrn = "urn:system";
 
         protected readonly CachePolicy _defaultPolicy;
-        protected readonly JsonSerializerSettings _serializerSettings;
 
         protected ILogger Logger { get; }
+        protected ICacheSerializer CacheSerializer { get; }
 
-        public CacheManagerBase(ILogger logger, CachePolicy defaultPolicy)
+        public CacheManagerBase(ILogger logger, ICacheSerializer cacheSerializer, CachePolicy defaultPolicy)
         {
             Logger = logger;
+            CacheSerializer = cacheSerializer;
             _defaultPolicy = defaultPolicy;
-            _serializerSettings = new JsonSerializerSettings
-            {
-                ContractResolver = new IgnoreJsonAttributesResolver(),
-                Formatting = Formatting.Indented
-            };
         }
 
         public abstract bool Add<TCacheValue>(string key, TCacheValue value);
@@ -55,24 +50,5 @@ namespace Roadie.Library.Caching
 
         public abstract bool Remove(string key, string region);
 
-        protected TOut Deserialize<TOut>(string s)
-        {
-            if (string.IsNullOrEmpty(s)) return default(TOut);
-            try
-            {
-                return JsonConvert.DeserializeObject<TOut>(s, _serializerSettings);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex);
-            }
-
-            return default(TOut);
-        }
-
-        protected string Serialize(object o)
-        {
-            return JsonConvert.SerializeObject(o, _serializerSettings);
-        }
     }
 }

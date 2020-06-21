@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -24,6 +23,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
+using System.Text.Json;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 
@@ -791,7 +791,7 @@ namespace Roadie.Api.Services
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Error In List, Request [{0}], User [{1}]", JsonConvert.SerializeObject(request), roadieUser);
+                Logger.LogError(ex, "Error In List, Request [{0}], User [{1}]", JsonSerializer.Serialize(request), roadieUser);
                 return new Library.Models.Pagination.PagedResult<TrackList>
                 {
                     Message = "An Error has occured"

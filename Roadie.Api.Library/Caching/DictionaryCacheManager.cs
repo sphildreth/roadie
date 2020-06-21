@@ -11,8 +11,8 @@ namespace Roadie.Library.Caching
 
         private Dictionary<string, object> Cache { get; }
 
-        public DictionaryCacheManager(ILogger logger, CachePolicy defaultPolicy)
-                    : base(logger, defaultPolicy)
+        public DictionaryCacheManager(ILogger logger, ICacheSerializer cacheSerializer, CachePolicy defaultPolicy)
+                    : base(logger, cacheSerializer, defaultPolicy)
         {
             Cache = new Dictionary<string, object>();
         }

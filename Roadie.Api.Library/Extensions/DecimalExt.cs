@@ -1,5 +1,4 @@
-﻿using Roadie.Library.Utility;
-using System;
+﻿using System;
 
 namespace Roadie.Library.Extensions
 {
@@ -17,7 +16,11 @@ namespace Roadie.Library.Extensions
 
         public static TimeSpan? ToTimeSpan(this decimal? value)
         {
-            if (!value.HasValue) return null;
+            if (!value.HasValue)
+            {
+                return null;
+            }
+
             return TimeSpan.FromSeconds((double)value);
         }
     }

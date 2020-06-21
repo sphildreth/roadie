@@ -1,5 +1,5 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
+using System.Text.Json.Serialization;
 
 namespace Roadie.Library.Models.Collections
 {
@@ -7,7 +7,9 @@ namespace Roadie.Library.Models.Collections
     internal class CollectionReleaseList : EntityInfoModelBase
     {
         private string _listNumber;
+
         public DataToken Artist { get; set; }
+
         public string ArtistThumbnailUrl { get; set; }
 
         public string ListNumber
@@ -16,10 +18,16 @@ namespace Roadie.Library.Models.Collections
             set => _listNumber = value;
         }
 
-        [JsonIgnore] public int ListNumberValue { get; set; }
+        [JsonIgnore]
+        public int ListNumberValue { get; set; }
+
         public DataToken Release { get; set; }
-        [JsonIgnore] public DateTime? ReleaseDateDateTime { get; set; }
+
+        [JsonIgnore] 
+        public DateTime? ReleaseDateDateTime { get; set; }
+
         public short? ReleaseRating { get; set; }
+
         public string ReleaseThumbnailUrl { get; set; }
 
         public string ReleaseYear => ReleaseDateDateTime.HasValue

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Library;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
@@ -23,6 +22,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
+using System.Text.Json;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 using models = Roadie.Library.Models;
@@ -593,7 +593,7 @@ namespace Roadie.Api.Services
 
             result.AdditionalData.Add("Timing", sw.ElapsedMilliseconds);
             Logger.LogTrace(
-                $"User `{roadieUser}` set rating [{rating}] on TrackId [{trackId}]. Result [{JsonConvert.SerializeObject(result)}]");
+                $"User `{roadieUser}` set rating [{rating}] on TrackId [{trackId}]. Result [{JsonSerializer.Serialize(result)}]");
             return result;
         }
 

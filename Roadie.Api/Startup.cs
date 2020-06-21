@@ -16,7 +16,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 using Roadie.Api.Hubs;
 using Roadie.Api.ModelBinding;
 using Roadie.Api.Services;
@@ -113,10 +112,17 @@ namespace Roadie.Api
             services.AddSingleton<IHttpEncoder, HttpEncoder>();
             services.AddSingleton<IEmailSender, EmailSenderService>();
 
+            services.AddSingleton<ICacheSerializer>(options =>
+            {
+                var logger = options.GetService<ILogger<Utf8JsonCacheSerializer>>();
+                return new Utf8JsonCacheSerializer(logger);
+            });
+
             services.AddSingleton<ICacheManager>(options =>
             {
                 var logger = options.GetService<ILogger<MemoryCacheManager>>();
-                return new MemoryCacheManager(logger, new CachePolicy(TimeSpan.FromHours(4)));
+                var serializer = options.GetService<ICacheSerializer>();
+                return new MemoryCacheManager(logger, serializer, new CachePolicy(TimeSpan.FromHours(4)));
             });
 
             var dbFolder = new DirectoryInfo(settings.FileDatabaseOptions.DatabaseFolder);
@@ -326,11 +332,7 @@ namespace Roadie.Api
                     options.RespectBrowserAcceptHeader = true; // false by default
                     options.ModelBinderProviders.Insert(0, new SubsonicRequestBinderProvider());
                 })
-                .AddNewtonsoftJson(options =>
-                {
-                    options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
-                    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-                })
+                .AddJsonOptions(options => options.JsonSerializerOptions.IgnoreNullValues = true)
                 .AddXmlSerializerFormatters();
 
             services.Configure<IdentityOptions>(options =>

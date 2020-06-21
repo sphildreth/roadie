@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data;
@@ -19,6 +18,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using discogs = Roadie.Library.SearchEngines.MetaData.Discogs;
 using lastfm = Roadie.Library.MetaData.LastFm;
@@ -251,7 +251,7 @@ namespace Roadie.Library.Engines
                         }
                         if (!string.IsNullOrEmpty(releaseRoadieDataFilename) && File.Exists(releaseRoadieDataFilename))
                         {
-                            artist = JsonConvert.DeserializeObject<Artist>(File.ReadAllText(releaseRoadieDataFilename));
+                            artist = JsonSerializer.Deserialize<Artist>(File.ReadAllText(releaseRoadieDataFilename));
                             var addResult = await Add(artist).ConfigureAwait(false);
                             if (!addResult.IsSuccess)
                             {
