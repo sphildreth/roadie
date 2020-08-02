@@ -5,6 +5,8 @@ namespace Roadie.Library.Caching
 {
     public interface ICacheManager
     {
+        ICacheSerializer CacheSerializer { get; }
+
         bool Add<TCacheValue>(string key, TCacheValue value);
 
         bool Add<TCacheValue>(string key, TCacheValue value, string region);

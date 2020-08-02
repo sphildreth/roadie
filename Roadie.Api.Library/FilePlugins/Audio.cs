@@ -300,7 +300,7 @@ namespace Roadie.Library.FilePlugins
             }
 
             sw.Stop();
-            Logger.LogTrace("<< Audio: Process Complete. Result `{0}`, ElapsedTime [{1}]", JsonSerializer.Serialize(result), sw.ElapsedMilliseconds);
+            Logger.LogTrace("<< Audio: Process Complete. Result `{0}`, ElapsedTime [{1}]", CacheManager.CacheSerializer.Serialize(result), sw.ElapsedMilliseconds);
             return result;
         }
 

@@ -369,7 +369,7 @@ namespace Roadie.Library.Inspect
                             var pluginResult = plugin.Process(directoryInfo);
                             if (!pluginResult.IsSuccess)
                             {
-                                Console.WriteLine($"📛 Plugin Failed: Error [{JsonSerializer.Serialize(pluginResult)}]");
+                                Console.WriteLine($"📛 Plugin Failed: Error [{CacheManager.CacheSerializer.Serialize(pluginResult)}]");
                                 return;
                             }
                             if (!string.IsNullOrEmpty(pluginResult.Data))
@@ -404,7 +404,7 @@ namespace Roadie.Library.Inspect
                             {
                                 Console.ForegroundColor = ConsoleColor.DarkYellow;
                                 Console.WriteLine($"╟ ❗ INVALID: Missing: {ID3TagsHelper.DetermineMissingRequiredMetaData(originalMetaData)}");
-                                Console.WriteLine($"╟ [{JsonSerializer.Serialize(tagLib, new JsonSerializerOptions { WriteIndented = true })}]");
+                                Console.WriteLine($"╟ [{CacheManager.CacheSerializer.Serialize(tagLib)}]");
                                 Console.ResetColor();
                             }
 
@@ -417,7 +417,7 @@ namespace Roadie.Library.Inspect
                                 if (!pluginResult.IsSuccess)
                                 {
                                     Console.ForegroundColor = ConsoleColor.Red;
-                                    Console.WriteLine($"📛 Plugin Failed: Error [{JsonSerializer.Serialize(pluginResult)}]");
+                                    Console.WriteLine($"📛 Plugin Failed: Error [{CacheManager.CacheSerializer.Serialize(pluginResult)}]");
                                     Console.ResetColor();
                                     return;
                                 }
@@ -591,7 +591,7 @@ namespace Roadie.Library.Inspect
                         var pluginResult = plugin.Process(directoryInfo);
                         if (!pluginResult.IsSuccess)
                         {
-                            Console.WriteLine($"📛 Plugin Failed: Error [{JsonSerializer.Serialize(pluginResult)}]");
+                            Console.WriteLine($"📛 Plugin Failed: Error [{CacheManager.CacheSerializer.Serialize(pluginResult)}]");
                             return;
                         }
 

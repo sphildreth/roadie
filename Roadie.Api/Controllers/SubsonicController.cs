@@ -66,6 +66,7 @@ namespace Roadie.Api.Controllers
             return null;
         }
 
+        [HttpGet("addChatMessage")]
         [HttpGet("addChatMessage.view")]
         [HttpPost("addChatMessage.view")]
         [ProducesResponseType(200)]
@@ -81,6 +82,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result);
         }
 
+        [HttpGet("createBookmark")]
         [HttpGet("createBookmark.view")]
         [HttpPost("createBookmark.view")]
         [ProducesResponseType(200)]
@@ -96,6 +98,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result);
         }
 
+        [HttpGet("createPlaylist")]
         [HttpGet("createPlaylist.view")]
         [HttpPost("createPlaylist.view")]
         [ProducesResponseType(200)]
@@ -112,6 +115,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "playlist");
         }
 
+        [HttpGet("deleteBookmark")]
         [HttpGet("deleteBookmark.view")]
         [HttpPost("deleteBookmark.view")]
         [ProducesResponseType(200)]
@@ -127,6 +131,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result);
         }
 
+        [HttpGet("deletePlaylist")]
         [HttpGet("deletePlaylist.view")]
         [HttpPost("deletePlaylist.view")]
         [ProducesResponseType(200)]
@@ -142,6 +147,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result);
         }
 
+        [HttpGet("download")]
         [HttpGet("download.view")]
         [HttpPost("download.view")]
         [ProducesResponseType(200)]
@@ -174,6 +180,7 @@ namespace Roadie.Api.Controllers
             return NotFound($"Unknown download id `{request.id}`");
         }
 
+        [HttpGet("getAlbum")]
         [HttpGet("getAlbum.view")]
         [HttpPost("getAlbum.view")]
         [ProducesResponseType(200)]
@@ -189,6 +196,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "album");
         }
 
+        [HttpGet("getAlbumInfo")]
         [HttpGet("getAlbumInfo.view")]
         [HttpPost("getAlbumInfo.view")]
         [ProducesResponseType(200)]
@@ -204,6 +212,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "albumInfo");
         }
 
+        [HttpGet("getAlbumInfo2")]
         [HttpGet("getAlbumInfo2.view")]
         [HttpPost("getAlbumInfo2.view")]
         [ProducesResponseType(200)]
@@ -219,6 +228,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "albumInfo");
         }
 
+        [HttpGet("getAlbumList")]
         [HttpGet("getAlbumList.view")]
         [HttpPost("getAlbumList.view")]
         [ProducesResponseType(200)]
@@ -234,6 +244,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "albumList");
         }
 
+        [HttpGet("getAlbumList2")]
         [HttpGet("getAlbumList2.view")]
         [HttpPost("getAlbumList2.view")]
         [ProducesResponseType(200)]
@@ -249,6 +260,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "albumList");
         }
 
+        [HttpGet("getArtist")]
         [HttpGet("getArtist.view")]
         [HttpPost("getArtist.view")]
         [ProducesResponseType(200)]
@@ -264,6 +276,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "artist");
         }
 
+        [HttpGet("getArtistInfo")]
         [HttpGet("getArtistInfo.view")]
         [HttpPost("getArtistInfo.view")]
         [ProducesResponseType(200)]
@@ -280,6 +293,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "artistInfo");
         }
 
+        [HttpGet("getArtistInfo2")]
         [HttpGet("getArtistInfo2.view")]
         [HttpPost("getArtistInfo2.view")]
         [ProducesResponseType(200)]
@@ -296,6 +310,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "artistInfo2");
         }
 
+        [HttpGet("getArtists")]
         [HttpGet("getArtists.view")]
         [HttpPost("getArtists.view")]
         [ProducesResponseType(200)]
@@ -311,6 +326,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "artists");
         }
 
+        [HttpGet("getAvatar")]
         [HttpGet("getAvatar.view")]
         [HttpPost("getAvatar.view")]
         [ProducesResponseType(200)]
@@ -321,6 +337,7 @@ namespace Roadie.Api.Controllers
                 $"/images/user/{user.RoadieId}/{RoadieSettings.ThumbnailImageSize.Width}/{RoadieSettings.ThumbnailImageSize.Height}");
         }
 
+        [HttpGet("getBookmarks")]
         [HttpGet("getBookmarks.view")]
         [HttpPost("getBookmarks.view")]
         [ProducesResponseType(200)]
@@ -336,6 +353,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "bookmarks");
         }
 
+        [HttpGet("getChatMessages")]
         [HttpGet("getChatMessages.view")]
         [HttpPost("getChatMessages.view")]
         [ProducesResponseType(200)]
@@ -351,6 +369,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "chatMessages");
         }
 
+        [HttpGet("getCoverArt")]
         [HttpGet("getCoverArt.view")]
         [HttpPost("getCoverArt.view")]
         [ProducesResponseType(200)]
@@ -364,7 +383,7 @@ namespace Roadie.Api.Controllers
 
             if (!result.IsSuccess)
             {
-                Logger.LogWarning($"GetCoverArt Failed For [{ JsonSerializer.Serialize(request)}]");
+                Logger.LogWarning($"GetCoverArt Failed For [{ CacheManager.CacheSerializer.Serialize(request)}]");
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             }
 
@@ -375,6 +394,7 @@ namespace Roadie.Api.Controllers
                 result.ETag);
         }
 
+        [HttpGet("getGenres")]
         [HttpGet("getGenres.view")]
         [HttpPost("getGenres.view")]
         [ProducesResponseType(200)]
@@ -384,6 +404,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "genres");
         }
 
+        [HttpGet("getIndexes")]
         [HttpGet("getIndexes.view")]
         [HttpPost("getIndexes.view")]
         [ProducesResponseType(200)]
@@ -399,6 +420,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "indexes");
         }
 
+        [HttpGet("getLicense")]
         [HttpGet("getLicense.view")]
         [HttpPost("getLicense.view")]
         [ProducesResponseType(200)]
@@ -408,6 +430,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "license");
         }
 
+        [HttpGet("getLyrics")]
         [HttpGet("getLyrics.view")]
         [HttpPost("getLyrics.view")]
         [ProducesResponseType(200)]
@@ -417,6 +440,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "lyrics ");
         }
 
+        [HttpGet("getMusicDirectory")]
         [HttpGet("getMusicDirectory.view")]
         [HttpPost("getMusicDirectory.view")]
         [ProducesResponseType(200)]
@@ -432,6 +456,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "directory");
         }
 
+        [HttpGet("getMusicFolders")]
         [HttpGet("getMusicFolders.view")]
         [HttpPost("getMusicFolders.view")]
         [ProducesResponseType(200)]
@@ -441,6 +466,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "musicFolders");
         }
 
+        [HttpGet("getNowPlaying")]
         [HttpGet("getNowPlaying.view")]
         [HttpPost("getNowPlaying.view")]
         [ProducesResponseType(200)]
@@ -456,6 +482,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "nowPlaying");
         }
 
+        [HttpGet("getPlaylist")]
         [HttpGet("getPlaylist.view")]
         [HttpPost("getPlaylist.view")]
         [ProducesResponseType(200)]
@@ -471,6 +498,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "playlist");
         }
 
+        [HttpGet("getPlaylists")]
         [HttpGet("getPlaylists.view")]
         [HttpPost("getPlaylists.view")]
         [ProducesResponseType(200)]
@@ -486,6 +514,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "playlists");
         }
 
+        [HttpGet("getPlayQueue")]
         [HttpGet("getPlayQueue.view")]
         [HttpPost("getPlayQueue.view")]
         [ProducesResponseType(200)]
@@ -506,6 +535,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "playQueue");
         }
 
+        [HttpGet("getPodcasts")]
         [HttpGet("getPodcasts.view")]
         [HttpPost("getPodcasts.view")]
         [ProducesResponseType(200)]
@@ -521,6 +551,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "podcasts");
         }
 
+        [HttpGet("getRandomSongs")]
         [HttpGet("getRandomSongs.view")]
         [HttpPost("getRandomSongs.view")]
         [ProducesResponseType(200)]
@@ -536,6 +567,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "randomSongs");
         }
 
+        [HttpGet("getSimilarSongs")]
         [HttpGet("getSimilarSongs.view")]
         [HttpPost("getSimilarSongs.view")]
         [ProducesResponseType(200)]
@@ -551,6 +583,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "similarSongs");
         }
 
+        [HttpGet("getSimilarSongs2")]
         [HttpGet("getSimilarSongs2.view")]
         [HttpPost("getSimilarSongs2.view")]
         [ProducesResponseType(200)]
@@ -566,6 +599,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "similarSongs2");
         }
 
+        [HttpGet("getSong")]
         [HttpGet("getSong.view")]
         [HttpPost("getSong.view")]
         [ProducesResponseType(200)]
@@ -581,6 +615,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "song");
         }
 
+        [HttpGet("getSongsByGenre")]
         [HttpGet("getSongsByGenre.view")]
         [HttpPost("getSongsByGenre.view")]
         [ProducesResponseType(200)]
@@ -596,6 +631,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "songsByGenre");
         }
 
+        [HttpGet("getStarred")]
         [HttpGet("getStarred.view")]
         [HttpPost("getStarred.view")]
         [ProducesResponseType(200)]
@@ -611,6 +647,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "starred");
         }
 
+        [HttpGet("getStarred2")]
         [HttpGet("getStarred2.view")]
         [HttpPost("getStarred2.view")]
         [ProducesResponseType(200)]
@@ -626,6 +663,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "starred");
         }
 
+        [HttpGet("getTopSongs")]
         [HttpGet("getTopSongs.view")]
         [HttpPost("getTopSongs.view")]
         [ProducesResponseType(200)]
@@ -641,6 +679,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "topSongs");
         }
 
+        [HttpGet("getUser")]
         [HttpGet("getUser.view")]
         [HttpPost("getUser.view")]
         [ProducesResponseType(200)]
@@ -656,6 +695,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "user");
         }
 
+        [HttpGet("getVideos")]
         [HttpGet("getVideos.view")]
         [HttpPost("getVideos.view")]
         [ProducesResponseType(200)]
@@ -665,6 +705,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "videos");
         }
 
+        [HttpGet("ping")]
         [HttpGet("ping.view")]
         [HttpPost("ping.view")]
         [ProducesResponseType(200)]
@@ -687,6 +728,7 @@ namespace Roadie.Api.Controllers
                 "application/xml");
         }
 
+        [HttpGet("savePlayQueue")]
         [HttpGet("savePlayQueue.view")]
         [HttpPost("savePlayQueue.view")]
         [ProducesResponseType(200)]
@@ -734,6 +776,7 @@ namespace Roadie.Api.Controllers
         /// <summary>
         ///     Returns albums, artists and songs matching the given search criteria. Supports paging through the result.
         /// </summary>
+        [HttpGet("search")]
         [HttpGet("search.view")]
         [HttpPost("search.view")]
         [ProducesResponseType(200)]
@@ -749,6 +792,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "searchResult");
         }
 
+        [HttpGet("search2")]
         [HttpGet("search2.view")]
         [HttpPost("search2.view")]
         [ProducesResponseType(200)]
@@ -764,6 +808,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "searchResult2");
         }
 
+        [HttpGet("search3")]
         [HttpGet("search3.view")]
         [HttpPost("search3.view")]
         [ProducesResponseType(200)]
@@ -779,6 +824,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result, "searchResult3");
         }
 
+        [HttpGet("setRating")]
         [HttpGet("setRating.view")]
         [HttpPost("setRating.view")]
         [ProducesResponseType(200)]
@@ -794,6 +840,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result);
         }
 
+        [HttpGet("star")]
         [HttpGet("star.view")]
         [HttpPost("star.view")]
         [ProducesResponseType(200)]
@@ -809,6 +856,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result);
         }
 
+        [HttpGet("stream")]
         [HttpGet("stream.view")]
         [HttpPost("stream.view")]
         [ProducesResponseType(200)]
@@ -829,6 +877,7 @@ namespace Roadie.Api.Controllers
             return await StreamTrack(trackId.Value, TrackService, PlayActivityService, SubsonicUser).ConfigureAwait(false);
         }
 
+        [HttpGet("unstar")]
         [HttpGet("unstar.view")]
         [HttpPost("unstar.view")]
         [ProducesResponseType(200)]
@@ -844,6 +893,7 @@ namespace Roadie.Api.Controllers
             return BuildResponse(request, result);
         }
 
+        [HttpGet("updatePlaylist")]
         [HttpGet("updatePlaylist.view")]
         [HttpPost("updatePlaylist.view")]
         [ProducesResponseType(200)]
@@ -901,7 +951,8 @@ namespace Roadie.Api.Controllers
                 }
                 else
                 {
-                    jsonResult = $"{{ \"subsonic-response\": {{ \"status\":\"{status}\", \"version\": \"{version}\", \"{responseType}\":{((response?.Data != null ? JsonSerializer.Serialize(response.Data.Item) : string.Empty))}}}}}";
+                    var responseString = response?.Data != null ? Newtonsoft.Json.JsonConvert.SerializeObject(response.Data.Item) : string.Empty;
+                    jsonResult = $"{{ \"subsonic-response\": {{ \"status\":\"{status}\", \"version\": \"{version}\", \"{responseType}\":{ responseString }}}}}";
                 }
 
                 if ((request?.f ?? string.Empty).Equals("jsonp", StringComparison.OrdinalIgnoreCase))

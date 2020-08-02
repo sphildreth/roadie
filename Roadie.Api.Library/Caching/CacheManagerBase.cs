@@ -11,7 +11,8 @@ namespace Roadie.Library.Caching
         protected readonly CachePolicy _defaultPolicy;
 
         protected ILogger Logger { get; }
-        protected ICacheSerializer CacheSerializer { get; }
+
+        public ICacheSerializer CacheSerializer { get; }
 
         public CacheManagerBase(ILogger logger, ICacheSerializer cacheSerializer, CachePolicy defaultPolicy)
         {

@@ -11,11 +11,18 @@ namespace Roadie.Library.Extensions
             {
                 return null;
             }
-            return JsonSerializer.Serialize(input, new JsonSerializerOptions
+            try
             {
-                IgnoreNullValues = true,
-                WriteIndented = true
-            });
+                return JsonSerializer.Serialize(input, new JsonSerializerOptions
+                {
+                    IgnoreNullValues = true,
+                    WriteIndented = true
+                });
+            }
+            catch (Exception)
+            {
+                return input?.ToString();
+            }
         }
     }
 }

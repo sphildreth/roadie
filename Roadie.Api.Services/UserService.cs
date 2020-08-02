@@ -593,7 +593,7 @@ namespace Roadie.Api.Services
 
             result.AdditionalData.Add("Timing", sw.ElapsedMilliseconds);
             Logger.LogTrace(
-                $"User `{roadieUser}` set rating [{rating}] on TrackId [{trackId}]. Result [{JsonSerializer.Serialize(result)}]");
+                $"User `{roadieUser}` set rating [{rating}] on TrackId [{trackId}]. Result [{CacheManager.CacheSerializer.Serialize(result)}]");
             return result;
         }
 

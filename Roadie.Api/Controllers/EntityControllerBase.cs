@@ -146,7 +146,7 @@ namespace Roadie.Api.Controllers
             };
             await playActivityService.NowPlayingAsync(user, scrobble).ConfigureAwait(false); 
             sw.Stop();
-            Logger.LogTrace($"StreamTrack ElapsedTime [{sw.ElapsedMilliseconds}], Timings [{JsonSerializer.Serialize(timings)}], StreamInfo `{info?.Data}`");
+            Logger.LogTrace($"StreamTrack ElapsedTime [{sw.ElapsedMilliseconds}], Timings [{CacheManager.CacheSerializer.Serialize(timings)}], StreamInfo `{info?.Data}`");
             return new EmptyResult();
         }
 

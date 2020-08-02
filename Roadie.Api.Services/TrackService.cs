@@ -791,7 +791,7 @@ namespace Roadie.Api.Services
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Error In List, Request [{0}], User [{1}]", JsonSerializer.Serialize(request), roadieUser);
+                Logger.LogError(ex, "Error In List, Request [{0}], User [{1}]", CacheManager.CacheSerializer.Serialize(request), roadieUser);
                 return new Library.Models.Pagination.PagedResult<TrackList>
                 {
                     Message = "An Error has occured"

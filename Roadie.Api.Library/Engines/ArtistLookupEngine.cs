@@ -46,10 +46,18 @@ namespace Roadie.Library.Engines
 
         public IArtistSearchEngine WikipediaArtistSearchEngine { get; }
 
-        public ArtistLookupEngine(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
-                                  ICacheManager cacheManager, ILogger<ArtistLookupEngine> logger, musicbrainz.IMusicBrainzProvider musicBrainzProvider,
-                                  lastfm.ILastFmHelper lastFmHelper, spotify.ISpotifyHelper spotifyHelper, wikipedia.IWikipediaHelper wikipediaHelper,
-                                  discogs.IDiscogsHelper discogsHelper, IITunesSearchEngine iTunesSearchEngine)
+        public ArtistLookupEngine(
+            IRoadieSettings configuration,
+            IHttpEncoder httpEncoder,
+            IRoadieDbContext context,
+            ICacheManager cacheManager,
+            ILogger<ArtistLookupEngine> logger,
+            musicbrainz.IMusicBrainzProvider musicBrainzProvider,
+            lastfm.ILastFmHelper lastFmHelper,
+            spotify.ISpotifyHelper spotifyHelper,
+            wikipedia.IWikipediaHelper wikipediaHelper,
+            discogs.IDiscogsHelper discogsHelper,
+            IITunesSearchEngine iTunesSearchEngine)
             : base(configuration, httpEncoder, context, cacheManager, logger)
         {
             ITunesArtistSearchEngine = iTunesSearchEngine;
@@ -251,7 +259,7 @@ namespace Roadie.Library.Engines
                         }
                         if (!string.IsNullOrEmpty(releaseRoadieDataFilename) && File.Exists(releaseRoadieDataFilename))
                         {
-                            artist = JsonSerializer.Deserialize<Artist>(File.ReadAllText(releaseRoadieDataFilename));
+                            artist = CacheManager.CacheSerializer.Deserialize<Artist>(File.ReadAllText(releaseRoadieDataFilename));
                             var addResult = await Add(artist).ConfigureAwait(false);
                             if (!addResult.IsSuccess)
                             {

@@ -292,7 +292,7 @@ namespace Roadie.Api.Controllers
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, $"Error In Register. Model [{0}]", JsonSerializer.Serialize(registerModel));
+                Logger.LogError(ex, $"Error In Register. Model [{0}]", CacheManager.CacheSerializer.Serialize(registerModel));
             }
             return BadRequest(ModelState);
         }
@@ -344,7 +344,7 @@ namespace Roadie.Api.Controllers
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, $"Error In ResetPassword. Model [{0}]", JsonSerializer.Serialize(resetPasswordModel));
+                Logger.LogError(ex, $"Error In ResetPassword. Model [{0}]", CacheManager.CacheSerializer.Serialize(resetPasswordModel));
             }
 
             return BadRequest(ModelState);

@@ -184,7 +184,7 @@ namespace Roadie.Api.Services
             catch (Exception ex)
             {
                 Logger.LogError(ex,
-                    $"Subsonic.Authenticate, Error CheckPassword [{JsonSerializer.Serialize(request)}]");
+                    $"Subsonic.Authenticate, Error CheckPassword [{CacheManager.CacheSerializer.Serialize(request)}]");
             }
 
             return null;
@@ -486,7 +486,7 @@ namespace Roadie.Api.Services
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "GetAlbum Request [{0}], User [{1}]", JsonSerializer.Serialize(request),
+                Logger.LogError(ex, "GetAlbum Request [{0}], User [{1}]", CacheManager.CacheSerializer.Serialize(request),
                     roadieUser.ToString());
             }
 
@@ -1075,7 +1075,7 @@ namespace Roadie.Api.Services
             {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
                     subsonic.ErrorCodes.TheRequestedDataWasNotFound,
-                    $"Unknown GetMusicDirectory Type [{JsonSerializer.Serialize(request)}], id [{request.id}]");
+                    $"Unknown GetMusicDirectory Type [{CacheManager.CacheSerializer.Serialize(request)}], id [{request.id}]");
             }
 
             return new subsonic.SubsonicOperationResult<subsonic.Response>
@@ -1791,7 +1791,7 @@ namespace Roadie.Api.Services
 
             return new subsonic.SubsonicOperationResult<subsonic.Response>(
                 subsonic.ErrorCodes.TheRequestedDataWasNotFound,
-                $"Unknown Star Id [{JsonSerializer.Serialize(request)}]");
+                $"Unknown Star Id [{CacheManager.CacheSerializer.Serialize(request)}]");
         }
 
         /// <summary>
@@ -1879,7 +1879,7 @@ namespace Roadie.Api.Services
 
             return new subsonic.SubsonicOperationResult<subsonic.Response>(
                 subsonic.ErrorCodes.TheRequestedDataWasNotFound,
-                $"Unknown Star Id [{JsonSerializer.Serialize(request)}]");
+                $"Unknown Star Id [{CacheManager.CacheSerializer.Serialize(request)}]");
         }
 
         /// <summary>
@@ -1949,7 +1949,7 @@ namespace Roadie.Api.Services
             {
                 // Remove tracks from playlist
                 // Not clear from API documentation if this is zero based, wait until someone calls it to get values passed.
-                throw new NotImplementedException($"Request [{JsonSerializer.Serialize(request)}]");
+                throw new NotImplementedException($"Request [{CacheManager.CacheSerializer.Serialize(request)}]");
             }
 
             await DbContext.SaveChangesAsync().ConfigureAwait(false);
