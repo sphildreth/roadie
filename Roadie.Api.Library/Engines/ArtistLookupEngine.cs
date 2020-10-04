@@ -239,6 +239,22 @@ namespace Roadie.Library.Engines
                     };
                 }
 
+                // See if roadie.json file exists in the metadata files folder, if so then use artist data from that
+                string releaseRoadieDataFilename = null;
+                try
+                {
+                    releaseRoadieDataFilename = Path.Combine(Path.GetDirectoryName(metaData.Filename), "roadie.artist.json");
+                }
+                catch (Exception)
+                {
+                }
+
+                if (!string.IsNullOrEmpty(releaseRoadieDataFilename) && File.Exists(releaseRoadieDataFilename))
+                {
+                    var artistFromJson = CacheManager.CacheSerializer.Deserialize<Artist>(File.ReadAllText(releaseRoadieDataFilename));
+                    artistName = artistFromJson?.Name;
+                }
+
                 var artist = (await DatabaseQueryForArtistName(artistName).ConfigureAwait(false)).FirstOrDefault();
                 sw.Stop();
                 if (artist?.IsValid != true)
@@ -247,16 +263,6 @@ namespace Roadie.Library.Engines
                     if (doFindIfNotInDatabase)
                     {
                         OperationResult<Artist> artistSearch = null;
-
-                        // See if roadie.json file exists in the metadata files folder, if so then use artist data from that
-                        string releaseRoadieDataFilename = null;
-                        try
-                        {
-                            releaseRoadieDataFilename = Path.Combine(Path.GetDirectoryName(metaData.Filename), "roadie.artist.json");
-                        }
-                        catch (Exception)
-                        {
-                        }
                         if (!string.IsNullOrEmpty(releaseRoadieDataFilename) && File.Exists(releaseRoadieDataFilename))
                         {
                             artist = CacheManager.CacheSerializer.Deserialize<Artist>(File.ReadAllText(releaseRoadieDataFilename));

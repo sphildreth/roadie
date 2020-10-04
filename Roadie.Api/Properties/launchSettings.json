@@ -6,6 +6,11 @@
         "ASPNETCORE_ENVIRONMENT": "Production"
       },
       "applicationUrl": "http://localhost:5123/"
+    },
+    "Docker": {
+      "commandName": "Docker",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "publishAllPorts": true
     }
   }
 }
