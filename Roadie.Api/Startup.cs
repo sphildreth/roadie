@@ -127,12 +127,13 @@ namespace Roadie.Api
 
             var dbFolder = new DirectoryInfo(settings.FileDatabaseOptions.DatabaseFolder);
 
+            var connectionString = _configuration.GetConnectionString("RoadieDatabaseConnection");
             switch (settings.DbContextToUse)
             {
                 case DbContexts.MySQL:
                     services.AddDbContextPool<ApplicationUserDbContext>(
-                        options => options.UseMySql(_configuration.GetConnectionString("RoadieDatabaseConnection"),
-                            mySqlOptions =>
+                        options => options.UseMySql(connectionString,
+                            ServerVersion.AutoDetect(connectionString), mySqlOptions =>
                             {
                                 mySqlOptions.EnableRetryOnFailure(
                                     10,
@@ -141,8 +142,8 @@ namespace Roadie.Api
                             }
                         ));
                     services.AddDbContextPool<IRoadieDbContext, MySQLRoadieDbContext>(
-                        options => options.UseMySql(_configuration.GetConnectionString("RoadieDatabaseConnection"),
-                            mySqlOptions =>
+                        options => options.UseMySql(connectionString,
+                            ServerVersion.AutoDetect(connectionString), mySqlOptions =>
                             {
                                 mySqlOptions.EnableRetryOnFailure(
                                     10,

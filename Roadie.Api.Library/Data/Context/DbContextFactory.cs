@@ -28,7 +28,8 @@ namespace Roadie.Library.Data.Context
 
                 case DbContexts.MySQL:
                     var mysqlOptionsBuilder = new DbContextOptionsBuilder<MySQLRoadieDbContext>();
-                    mysqlOptionsBuilder.UseMySql(configuration.ConnectionString, mySqlOptions =>
+                    mysqlOptionsBuilder.UseMySql(configuration.ConnectionString,
+                        ServerVersion.AutoDetect(configuration.ConnectionString), mySqlOptions =>
                     {
                         mySqlOptions.EnableRetryOnFailure(
                             10,
