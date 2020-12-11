@@ -37,10 +37,10 @@ namespace Roadie.Library.SearchEngines.Imaging
 
             request.AddHeader("Ocp-Apim-Subscription-Key", ApiKey.Key);
 
-            request.AddParameter(new Parameter("count", resultsCount > 0 ? resultsCount : 10, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("safeSearch", "Off", ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("aspect", "Square", ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("q", string.Format("'{0}'", query.Trim()), ParameterType.GetOrPost));
+            request.AddParameter("count", resultsCount > 0 ? resultsCount : 10, ParameterType.GetOrPost);
+            request.AddParameter("safeSearch", "Off", ParameterType.GetOrPost);
+            request.AddParameter("aspect", "Square", ParameterType.GetOrPost);
+            request.AddParameter("q", string.Format("'{0}'", query.Trim()), ParameterType.GetOrPost);
             return request;
         }
 

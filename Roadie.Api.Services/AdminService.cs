@@ -692,10 +692,17 @@ namespace Roadie.Api.Services
                     Directory.CreateDirectory(Configuration.LabelImageFolder);
                     Logger.LogInformation($"Created Label Image Folder [{Configuration.LabelImageFolder}]");
                 }
-                if (Configuration.DbContextToUse != DbContexts.MySQL && !Directory.Exists(Configuration.FileDatabaseOptions.DatabaseFolder))
+                if (Configuration.DbContextToUse != DbContexts.MySQL)
                 {
-                    Directory.CreateDirectory(Configuration.FileDatabaseOptions.DatabaseFolder);
-                    Logger.LogInformation($"Created File Database Folder [{Configuration.FileDatabaseOptions.DatabaseFolder}]");
+                    if (!Directory.Exists(Configuration.FileDatabaseOptions.DatabaseFolder))
+                    {
+                        Directory.CreateDirectory(Configuration.FileDatabaseOptions.DatabaseFolder);
+                        Logger.LogInformation($"Created File Database Folder [{Configuration.FileDatabaseOptions.DatabaseFolder}]");
+                    }
+                    else
+                    {
+                        Logger.LogInformation($"Administration Information: DatabaseFolder [{ Configuration.FileDatabaseOptions.DatabaseFolder }], Size [{ GetDirectorySize(Configuration.FileDatabaseOptions.DatabaseFolder) }] ");
+                    }
                 }
             }
             catch (Exception ex)
@@ -707,7 +714,15 @@ namespace Roadie.Api.Services
             #endregion Setup Configured storage folders
 
             sw.Stop();
+            Logger.LogInformation($"Administration Information: LibraryFolder [{ Configuration.LibraryFolder }]");
+            Logger.LogInformation($"Administration Information: InboundFolder [{ Configuration.InboundFolder }]");
             Logger.LogInformation($"Administration startup tasks completed, elapsed time [{ sw.ElapsedMilliseconds }]");
+        }
+
+        private static long GetDirectorySize(string folderPath)
+        {
+            DirectoryInfo di = new DirectoryInfo(folderPath);
+            return di.EnumerateFiles("*.*", SearchOption.AllDirectories).Sum(fi => fi.Length);
         }
 
         public async Task<OperationResult<bool>> ScanAllCollectionsAsync(User user, bool isReadOnly = false, bool doPurgeFirst = false)

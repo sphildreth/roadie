@@ -78,6 +78,14 @@ namespace Roadie.Library.MetaData.MusicBrainz
             catch (Exception ex)
             {
                 Logger.LogError(ex);
+                try
+                {
+                    File.Delete(FileName);
+                    Logger.LogWarning($"Deleted corrupt MusicBrainzRepository [{ FileName }].");
+                }
+                catch
+                {
+                }
             }
             return result;
         }
@@ -117,12 +125,13 @@ namespace Roadie.Library.MetaData.MusicBrainz
                             page++;
                             mbReleaseBrowseResult = await MusicBrainzRequestHelper.GetAsync<ReleaseBrowseResult>(MusicBrainzRequestHelper.CreateArtistBrowseTemplate(artistMbId, pageSize, pageSize * page)).ConfigureAwait(false);
                         } while (page < totalPages);
-                        col.InsertBulk(fetchResult.Select(x => new RepositoryRelease
+                        var releasesToInsert = fetchResult.GroupBy(x => x.title).Select(x => x.OrderBy(x => x.date).First()).OrderBy(x => x.date).ThenBy(x => x.title);
+                        col.InsertBulk(releasesToInsert.Where(x => x != null).Select(x => new RepositoryRelease
                         {
                             ArtistMbId = artistMbId,
                             Release = x
                         }));
-                        results = fetchResult;
+                        results = releasesToInsert;
                     }
                     else
                     {

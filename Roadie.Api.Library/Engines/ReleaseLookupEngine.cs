@@ -887,7 +887,7 @@ namespace Roadie.Library.Engines
                         {
                             result.Genres.Add(new ReleaseGenre
                             {
-                                Genre = DbContext.Genres.Where(x => string.Equals(x.Name, g, StringComparison.OrdinalIgnoreCase)).FirstOrDefault() ?? new Genre
+                                Genre = DbContext.Genres.Where(x => x.Name == g).FirstOrDefault() ?? new Genre
                                 {
                                     Name = g,
                                     NormalizedName = g.ToAlphanumericName()

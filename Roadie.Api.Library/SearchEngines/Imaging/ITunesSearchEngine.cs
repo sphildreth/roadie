@@ -170,11 +170,11 @@ namespace Roadie.Library.SearchEngines.Imaging
 
             if (resultsCount > 0)
             {
-                request.AddParameter(new Parameter("limit", resultsCount, ParameterType.GetOrPost));
+                request.AddParameter("limit", resultsCount, ParameterType.GetOrPost);
             }
-            request.AddParameter(new Parameter("entity", entityType, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("country", "us", ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("term", string.Format("'{0}'", query.Trim()), ParameterType.GetOrPost));
+            request.AddParameter("entity", entityType, ParameterType.GetOrPost);
+            request.AddParameter("country", "us", ParameterType.GetOrPost);
+            request.AddParameter("term", string.Format("'{0}'", query.Trim()), ParameterType.GetOrPost);
             return request;
         }
     }

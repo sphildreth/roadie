@@ -6,7 +6,7 @@ namespace Roadie.Library.Extensions
     {
         public static string ToDuration(this TimeSpan input)
         {
-            if (input == null || input.TotalMilliseconds == 0)
+            if (input == default || input.TotalMilliseconds == 0)
             {
                 return "--/--/--";
             }

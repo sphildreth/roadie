@@ -64,7 +64,7 @@ namespace Roadie.Dlna.Utility
                     }
                 }
                 return Path.GetFileNameWithoutExtension(
-                  Assembly.GetExecutingAssembly().CodeBase);
+                  Assembly.GetExecutingAssembly().Location);
             }
         }
     }

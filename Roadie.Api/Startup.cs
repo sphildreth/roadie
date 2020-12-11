@@ -224,7 +224,7 @@ namespace Roadie.Api
                 configuration.GetSection("RoadieSettings").Bind(settings);
                 var hostingEnvironment = ctx.GetService<IWebHostEnvironment>();
                 settings.ContentPath = hostingEnvironment.WebRootPath;
-                settings.ConnectionString = _configuration.GetConnectionString("RoadieDatabaseConnection");
+                settings.ConnectionString =  _configuration.GetConnectionString("RoadieDatabaseConnection");
 
                 // This is so 'User Secrets' can be used in Debugging
                 var integrationKeys = _configuration.GetSection("IntegrationKeys").Get<IntegrationKey>();

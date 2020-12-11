@@ -61,7 +61,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         {
                             UserAgent = WebHelper.UserAgent
                         };
-                        var artistResponse = await c2.ExecuteTaskAsync<DiscogArtistResponse>(request).ConfigureAwait(false);
+                        var artistResponse = await c2.ExecuteAsync<DiscogArtistResponse>(request).ConfigureAwait(false);
                         var artist = artistResponse.Data;
                         if (artist != null)
                         {
@@ -144,7 +144,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         request = BuildLabelRequest(responseData.id);
                         var c2 = new RestClient("https://api.discogs.com/");
                         c2.UserAgent = WebHelper.UserAgent;
-                        var labelResponse = await c2.ExecuteTaskAsync<DiscogsLabelResult>(request).ConfigureAwait(false);
+                        var labelResponse = await c2.ExecuteAsync<DiscogsLabelResult>(request).ConfigureAwait(false);
                         var label = labelResponse.Data;
                         if (label != null)
                         {
@@ -225,7 +225,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                         {
                             UserAgent = WebHelper.UserAgent
                         };
-                        var releaseResult = await c2.ExecuteTaskAsync<DiscogReleaseDetail>(request).ConfigureAwait(false);
+                        var releaseResult = await c2.ExecuteAsync<DiscogReleaseDetail>(request).ConfigureAwait(false);
                         var release = releaseResult?.Data;
                         if (release != null)
                         {
@@ -328,8 +328,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 RequestFormat = DataFormat.Json
             };
             request.AddUrlSegment("id", artistId.ToString());
-            request.AddParameter(new Parameter("key", ApiKey.Key, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("secret", ApiKey.KeySecret, ParameterType.GetOrPost));
+            request.AddParameter("key", ApiKey.Key, ParameterType.GetOrPost);
+            request.AddParameter("secret", ApiKey.KeySecret, ParameterType.GetOrPost);
             return request;
         }
 
@@ -342,8 +342,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 RequestFormat = DataFormat.Json
             };
             request.AddUrlSegment("id", artistId.ToString());
-            request.AddParameter(new Parameter("key", ApiKey.Key, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("secret", ApiKey.KeySecret, ParameterType.GetOrPost));
+            request.AddParameter("key", ApiKey.Key, ParameterType.GetOrPost);
+            request.AddParameter("secret", ApiKey.KeySecret, ParameterType.GetOrPost);
             return request;
         }
 
@@ -356,8 +356,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 RequestFormat = DataFormat.Json
             };
             request.AddUrlSegment("id", releaseId.ToString());
-            request.AddParameter(new Parameter("key", ApiKey.Key, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("secret", ApiKey.KeySecret, ParameterType.GetOrPost));
+            request.AddParameter("key", ApiKey.Key, ParameterType.GetOrPost);
+            request.AddParameter("secret", ApiKey.KeySecret, ParameterType.GetOrPost);
             return request;
         }
 
@@ -371,18 +371,18 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             };
             if (resultsCount > 0)
             {
-                request.AddParameter(new Parameter("page", 1, ParameterType.GetOrPost));
-                request.AddParameter(new Parameter("per_page", resultsCount, ParameterType.GetOrPost));
+                request.AddParameter("page", 1, ParameterType.GetOrPost);
+                request.AddParameter("per_page", resultsCount, ParameterType.GetOrPost);
             }
 
-            request.AddParameter(new Parameter("type", entityType, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("q", string.Format("'{0}'", query.Trim()), ParameterType.GetOrPost));
+            request.AddParameter("type", entityType, ParameterType.GetOrPost);
+            request.AddParameter("q", string.Format("'{0}'", query.Trim()), ParameterType.GetOrPost);
             if (!string.IsNullOrEmpty(artist))
             {
-                request.AddParameter(new Parameter("artist", string.Format("'{0}'", artist.Trim()), ParameterType.GetOrPost));
+                request.AddParameter("artist", string.Format("'{0}'", artist.Trim()), ParameterType.GetOrPost);
             }
-            request.AddParameter(new Parameter("key", ApiKey.Key, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("secret", ApiKey.KeySecret, ParameterType.GetOrPost));
+            request.AddParameter("key", ApiKey.Key, ParameterType.GetOrPost);
+            request.AddParameter("secret", ApiKey.KeySecret, ParameterType.GetOrPost);
             return request;
         }
     }

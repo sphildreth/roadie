@@ -604,7 +604,7 @@ namespace Roadie.Api.Services
                     foreach (var artistRelease in artistReleases)
                     {
                         // See if there is already a release by the same name for the artist to merge into, if so then merge releases
-                        var artistToMergeHasRelease = DbContext.Releases.FirstOrDefault(x => x.ArtistId == artistToMerge.Id && string.Equals(x.Title, artistRelease.Title, StringComparison.OrdinalIgnoreCase));
+                        var artistToMergeHasRelease = DbContext.Releases.FirstOrDefault(x => x.ArtistId == artistToMerge.Id && x.Title == artistRelease.Title);
                         if (artistToMergeHasRelease != null)
                         {
                             await ReleaseService.MergeReleasesAsync(user, artistRelease, artistToMergeHasRelease, false).ConfigureAwait(false);

@@ -91,24 +91,24 @@ namespace Roadie.Library.Data.Context
                     .HasDefaultValue(BandStatus.Unknown);
 
                 entity.HasIndex(e => e.Name)
-                    .HasName("ix_artist_name")
+                    .HasDatabaseName("ix_artist_name")
                     .IsUnique();
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_artist_roadieId");
+                    .HasDatabaseName("ix_artist_roadieId");
 
                 entity.HasIndex(e => e.SortName)
-                    .HasName("ix_artist_sortname")
+                    .HasDatabaseName("ix_artist_sortname")
                     .IsUnique();
             });
 
             builder.Entity<ArtistAssociation>(entity =>
             {
                 entity.HasIndex(e => e.AssociatedArtistId)
-                    .HasName("ix_associatedArtistId");
+                    .HasDatabaseName("ix_associatedArtistId");
 
                 entity.HasIndex(e => new { e.ArtistId, e.AssociatedArtistId })
-                    .HasName("ix__artistAssociation");
+                    .HasDatabaseName("ix__artistAssociation");
 
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.AssociatedArtists)
@@ -120,13 +120,13 @@ namespace Roadie.Library.Data.Context
             builder.Entity<ArtistGenre>(entity =>
             {
                 entity.HasIndex(e => e.ArtistId)
-                    .HasName("ix_artistGenreTable_artistId");
+                    .HasDatabaseName("ix_artistGenreTable_artistId");
 
                 entity.HasIndex(e => e.GenreId)
-                    .HasName("ix_artistGenre_genreId");
+                    .HasDatabaseName("ix_artistGenre_genreId");
 
                 entity.HasIndex(e => new { e.ArtistId, e.GenreId })
-                    .HasName("ix__artistGenreAssociation");
+                    .HasDatabaseName("ix__artistGenreAssociation");
 
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.Genres)
@@ -144,10 +144,10 @@ namespace Roadie.Library.Data.Context
             builder.Entity<ArtistSimilar>(entity =>
             {
                 entity.HasIndex(e => e.SimilarArtistId)
-                    .HasName("ix_similarArtistId");
+                    .HasDatabaseName("ix_similarArtistId");
 
                 entity.HasIndex(e => new { e.ArtistId, e.SimilarArtistId })
-                    .HasName("ix_artistSimilar");
+                    .HasDatabaseName("ix_artistSimilar");
 
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.SimilarArtists)
@@ -158,13 +158,13 @@ namespace Roadie.Library.Data.Context
             builder.Entity<Bookmark>(entity =>
             {
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_bookmark_roadieId");
+                    .HasDatabaseName("ix_bookmark_roadieId");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("ix_bookmark_userId");
+                    .HasDatabaseName("ix_bookmark_userId");
 
                 entity.HasIndex(e => new { e.BookmarkType, e.BookmarkTargetId, e.UserId })
-                    .HasName("ix_bookmark_bookmarkType")
+                    .HasDatabaseName("ix_bookmark_bookmarkType")
                     .IsUnique();
 
                 entity.HasOne(d => d.User)
@@ -177,7 +177,7 @@ namespace Roadie.Library.Data.Context
             builder.Entity<ChatMessage>(entity =>
             {
                 entity.HasIndex(e => e.UserId)
-                    .HasName("ix__chatMessage_user");
+                    .HasDatabaseName("ix__chatMessage_user");
 
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.ChatMessages)
@@ -197,14 +197,14 @@ namespace Roadie.Library.Data.Context
                     .HasDefaultValue(CollectionType.Unknown);
 
                 entity.HasIndex(e => e.MaintainerId)
-                    .HasName("ix_collection_maintainerId");
+                    .HasDatabaseName("ix_collection_maintainerId");
 
                 entity.HasIndex(e => e.Name)
-                    .HasName("ix_collection_name")
+                    .HasDatabaseName("ix_collection_name")
                     .IsUnique();
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_collection_roadieId");
+                    .HasDatabaseName("ix_collection_roadieId");
 
                 entity.HasOne(d => d.Maintainer)
                     .WithMany(p => p.Collections)
@@ -216,7 +216,7 @@ namespace Roadie.Library.Data.Context
             builder.Entity<CollectionMissing>(entity =>
             {
                 entity.HasIndex(e => e.CollectionId)
-                    .HasName("ix_collection_collectionId");
+                    .HasDatabaseName("ix_collection_collectionId");
 
                 entity.HasOne(d => d.Collection)
                     .WithMany(p => p.MissingReleases)
@@ -228,13 +228,13 @@ namespace Roadie.Library.Data.Context
             builder.Entity<CollectionRelease>(entity =>
             {
                 entity.HasIndex(e => e.ReleaseId)
-                    .HasName("ix_collectionrelease_releaseId");
+                    .HasDatabaseName("ix_collectionrelease_releaseId");
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_collectionrelease_roadieId");
+                    .HasDatabaseName("ix_collectionrelease_roadieId");
 
                 entity.HasIndex(e => new { e.CollectionId, e.ReleaseId })
-                    .HasName("ix__collection_release");
+                    .HasDatabaseName("ix__collection_release");
 
                 entity.HasOne(d => d.Collection)
                     .WithMany(p => p.Releases)
@@ -252,31 +252,31 @@ namespace Roadie.Library.Data.Context
             builder.Entity<Comment>(entity =>
             {
                 entity.HasIndex(e => e.ArtistId)
-                    .HasName("ix_commentartist_ibfk_1");
+                    .HasDatabaseName("ix_commentartist_ibfk_1");
 
                 entity.HasIndex(e => e.CollectionId)
-                    .HasName("ix_commentcollection_ibfk_1");
+                    .HasDatabaseName("ix_commentcollection_ibfk_1");
 
                 entity.HasIndex(e => e.GenreId)
-                    .HasName("ix_commentgenre_ibfk_1");
+                    .HasDatabaseName("ix_commentgenre_ibfk_1");
 
                 entity.HasIndex(e => e.LabelId)
-                    .HasName("ix_commentlabel_ibfk_1");
+                    .HasDatabaseName("ix_commentlabel_ibfk_1");
 
                 entity.HasIndex(e => e.PlaylistId)
-                    .HasName("ix_commentplaylist_ibfk_1");
+                    .HasDatabaseName("ix_commentplaylist_ibfk_1");
 
                 entity.HasIndex(e => e.ReleaseId)
-                    .HasName("ix_commentrelease_ibfk_1");
+                    .HasDatabaseName("ix_commentrelease_ibfk_1");
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_comment_roadieId");
+                    .HasDatabaseName("ix_comment_roadieId");
 
                 entity.HasIndex(e => e.TrackId)
-                    .HasName("ix_commenttrack_ibfk_1");
+                    .HasDatabaseName("ix_commenttrack_ibfk_1");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("ix_commentuser_ibfk_1");
+                    .HasDatabaseName("ix_commentuser_ibfk_1");
 
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.Comments)
@@ -329,16 +329,16 @@ namespace Roadie.Library.Data.Context
             builder.Entity<CommentReaction>(entity =>
             {
                 entity.HasIndex(e => e.CommentId)
-                    .HasName("ix_commentReactioncomment_ibfk_1");
+                    .HasDatabaseName("ix_commentReactioncomment_ibfk_1");
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_commentReaction_roadieId");
+                    .HasDatabaseName("ix_commentReaction_roadieId");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("ix_commentReactionuser_ibfk_1");
+                    .HasDatabaseName("ix_commentReactionuser_ibfk_1");
 
                 entity.HasIndex(e => new { e.UserId, e.CommentId })
-                    .HasName("ix_commentReaction_userId")
+                    .HasDatabaseName("ix_commentReaction_userId")
                     .IsUnique();
 
                 entity.HasOne(d => d.Comment)
@@ -355,19 +355,19 @@ namespace Roadie.Library.Data.Context
             builder.Entity<Credit>(entity =>
             {
                 entity.HasIndex(e => e.ArtistId)
-                    .HasName("ix_credit_artist_ibfk_1");
+                    .HasDatabaseName("ix_credit_artist_ibfk_1");
 
                 entity.HasIndex(e => e.CreditCategoryId)
-                    .HasName("ix_credit_category_ibfk_1");
+                    .HasDatabaseName("ix_credit_category_ibfk_1");
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_credit_roadieId");
+                    .HasDatabaseName("ix_credit_roadieId");
 
                 entity.HasIndex(e => new { e.ReleaseId, e.Id })
-                    .HasName("ix_creditCreditandRelease");
+                    .HasDatabaseName("ix_creditCreditandRelease");
 
                 entity.HasIndex(e => new { e.TrackId, e.Id })
-                    .HasName("ix_creditCreditandTrack");
+                    .HasDatabaseName("ix_creditCreditandTrack");
 
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.Credits)
@@ -396,29 +396,29 @@ namespace Roadie.Library.Data.Context
             builder.Entity<CreditCategory>(entity =>
             {
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_creditCategory_roadieId");
+                    .HasDatabaseName("ix_creditCategory_roadieId");
             });
 
             builder.Entity<Genre>(entity =>
             {
                 entity.HasIndex(e => e.Name)
-                    .HasName("ix_genre_name")
+                    .HasDatabaseName("ix_genre_name")
                     .IsUnique();
 
                 entity.HasIndex(e => e.NormalizedName)
-                    .HasName("ix_genre_normalizedName");
+                    .HasDatabaseName("ix_genre_normalizedName");
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_genre_roadieId");
+                    .HasDatabaseName("ix_genre_roadieId");
             });
 
             builder.Entity<InviteToken>(entity =>
             {
                 entity.HasIndex(e => e.CreatedByUserId)
-                    .HasName("inviteToken_fk_1");
+                    .HasDatabaseName("inviteToken_fk_1");
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_inviteToken_roadieId");
+                    .HasDatabaseName("ix_inviteToken_roadieId");
 
                 entity.HasOne(d => d.CreatedByUser)
                     .WithMany(p => p.InviteTokens)
@@ -429,23 +429,23 @@ namespace Roadie.Library.Data.Context
             builder.Entity<Label>(entity =>
             {
                 entity.HasIndex(e => e.Name)
-                    .HasName("ix_label_name")
+                    .HasDatabaseName("ix_label_name")
                     .IsUnique();
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_label_roadieId");
+                    .HasDatabaseName("ix_label_roadieId");
             });
 
             builder.Entity<Playlist>(entity =>
             {
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_playlist_roadieId");
+                    .HasDatabaseName("ix_playlist_roadieId");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("ix_playlist_userId");
+                    .HasDatabaseName("ix_playlist_userId");
 
                 entity.HasIndex(e => new { e.Name, e.UserId })
-                    .HasName("ix_playlist_name")
+                    .HasDatabaseName("ix_playlist_name")
                     .IsUnique();
 
                 entity.HasOne(d => d.User)
@@ -458,13 +458,13 @@ namespace Roadie.Library.Data.Context
             builder.Entity<PlaylistTrack>(entity =>
             {
                 entity.HasIndex(e => e.PlayListId)
-                    .HasName("ix_playListId");
+                    .HasDatabaseName("ix_playListId");
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_playlisttrack_roadieId");
+                    .HasDatabaseName("ix_playlisttrack_roadieId");
 
                 entity.HasIndex(e => e.TrackId)
-                    .HasName("trackId");
+                    .HasDatabaseName("trackId");
 
                 entity.HasOne(d => d.Playlist)
                     .WithMany(p => p.Tracks)
@@ -500,13 +500,13 @@ namespace Roadie.Library.Data.Context
                     .HasDefaultValue(LibraryStatus.Incomplete);
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_release_roadieId");
+                    .HasDatabaseName("ix_release_roadieId");
 
                 entity.HasIndex(e => e.Title)
-                    .HasName("ix_release_title");
+                    .HasDatabaseName("ix_release_title");
 
                 entity.HasIndex(e => new { e.ArtistId, e.Title })
-                    .HasName("ix_releaseArtistAndTitle")
+                    .HasDatabaseName("ix_releaseArtistAndTitle")
                     .IsUnique();
 
                 entity.HasOne(d => d.Artist)
@@ -519,10 +519,10 @@ namespace Roadie.Library.Data.Context
             builder.Entity<ReleaseGenre>(entity =>
             {
                 entity.HasIndex(e => e.GenreId)
-                    .HasName("ix_releaseGenre_genreId");
+                    .HasDatabaseName("ix_releaseGenre_genreId");
 
                 entity.HasIndex(e => new { e.ReleaseId, e.GenreId })
-                    .HasName("ix_releaseGenreTableReleaseAndGenre");
+                    .HasDatabaseName("ix_releaseGenreTableReleaseAndGenre");
 
                 entity.HasOne(d => d.Genre)
                     .WithMany(p => p.Releases)
@@ -540,13 +540,13 @@ namespace Roadie.Library.Data.Context
             builder.Entity<ReleaseLabel>(entity =>
             {
                 entity.HasIndex(e => e.LabelId)
-                    .HasName("ix_releaselabel_labelId");
+                    .HasDatabaseName("ix_releaselabel_labelId");
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_releaselabel_roadieId");
+                    .HasDatabaseName("ix_releaselabel_roadieId");
 
                 entity.HasIndex(e => new { e.ReleaseId, e.LabelId })
-                    .HasName("ix_release_label");
+                    .HasDatabaseName("ix_release_label");
 
                 entity.HasOne(d => d.Label)
                     .WithMany(p => p.ReleaseLabels)
@@ -564,10 +564,10 @@ namespace Roadie.Library.Data.Context
             builder.Entity<ReleaseMedia>(entity =>
             {
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_releasemedia_roadieId");
+                    .HasDatabaseName("ix_releasemedia_roadieId");
 
                 entity.HasIndex(e => new { e.ReleaseId, e.MediaNumber })
-                    .HasName("ix_releasemedia_releaseId");
+                    .HasDatabaseName("ix_releasemedia_releaseId");
 
                 entity.HasOne(d => d.Release)
                     .WithMany(p => p.Medias)
@@ -579,10 +579,10 @@ namespace Roadie.Library.Data.Context
             builder.Entity<Request>(entity =>
             {
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_request_roadieId");
+                    .HasDatabaseName("ix_request_roadieId");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("ix_requestartist_ibfk_1");
+                    .HasDatabaseName("ix_requestartist_ibfk_1");
 
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.Requests)
@@ -594,19 +594,19 @@ namespace Roadie.Library.Data.Context
             builder.Entity<ScanHistory>(entity =>
             {
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_scanHistory_roadieId");
+                    .HasDatabaseName("ix_scanHistory_roadieId");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("ix_rscanHistoryt_ibfk_1");
+                    .HasDatabaseName("ix_rscanHistoryt_ibfk_1");
             });
 
             builder.Entity<Submission>(entity =>
             {
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_submission_roadieId");
+                    .HasDatabaseName("ix_submission_roadieId");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("ix_submission_ibfk_1");
+                    .HasDatabaseName("ix_submission_ibfk_1");
 
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.Submissions)
@@ -618,23 +618,23 @@ namespace Roadie.Library.Data.Context
             builder.Entity<Track>(entity =>
             {
                 entity.HasIndex(e => e.ArtistId)
-                    .HasName("ix_track_artistId");
+                    .HasDatabaseName("ix_track_artistId");
 
                 entity.HasIndex(e => e.Hash)
-                    .HasName("ix_track_hash")
+                    .HasDatabaseName("ix_track_hash")
                     .IsUnique();
 
                 entity.HasIndex(e => e.ReleaseMediaId)
-                    .HasName("ix_track_releaseMediaId");
+                    .HasDatabaseName("ix_track_releaseMediaId");
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_track_roadieId");
+                    .HasDatabaseName("ix_track_roadieId");
 
                 entity.HasIndex(e => e.Title)
-                    .HasName("ix_track_title");
+                    .HasDatabaseName("ix_track_title");
 
                 entity.HasIndex(e => new { e.ReleaseMediaId, e.TrackNumber })
-                    .HasName("ix_track_unique_to_eleasemedia")
+                    .HasDatabaseName("ix_track_unique_to_eleasemedia")
                     .IsUnique();
 
                 entity.HasOne(d => d.TrackArtist)
@@ -653,10 +653,10 @@ namespace Roadie.Library.Data.Context
             builder.Entity<UserQue>(entity =>
             {
                 entity.HasIndex(e => e.TrackId)
-                    .HasName("ix_userQue_ibfk_2");
+                    .HasDatabaseName("ix_userQue_ibfk_2");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("ix_user");
+                    .HasDatabaseName("ix_user");
 
                 entity.HasOne(d => d.Track)
                     .WithMany(p => p.UserQues)
@@ -672,13 +672,13 @@ namespace Roadie.Library.Data.Context
             builder.Entity<UserArtist>(entity =>
             {
                 entity.HasIndex(e => e.ArtistId)
-                    .HasName("ix_userartist_artistId");
+                    .HasDatabaseName("ix_userartist_artistId");
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_userartist_roadieId");
+                    .HasDatabaseName("ix_userartist_roadieId");
 
                 entity.HasIndex(e => new { e.UserId, e.ArtistId })
-                    .HasName("ix_userartist_userId")
+                    .HasDatabaseName("ix_userartist_userId")
                     .IsUnique();
 
                 entity.HasOne(d => d.Artist)
@@ -697,13 +697,13 @@ namespace Roadie.Library.Data.Context
             builder.Entity<UserRelease>(entity =>
             {
                 entity.HasIndex(e => e.ReleaseId)
-                    .HasName("ix_userrelease_releaseId");
+                    .HasDatabaseName("ix_userrelease_releaseId");
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_userrelease_roadieId");
+                    .HasDatabaseName("ix_userrelease_roadieId");
 
                 entity.HasIndex(e => new { e.UserId, e.ReleaseId })
-                    .HasName("ix_userrelease_userId_ix")
+                    .HasDatabaseName("ix_userrelease_userId_ix")
                     .IsUnique();
 
                 entity.HasOne(d => d.Release)
@@ -722,13 +722,13 @@ namespace Roadie.Library.Data.Context
             builder.Entity<UserTrack>(entity =>
             {
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_usertrack_roadieId");
+                    .HasDatabaseName("ix_usertrack_roadieId");
 
                 entity.HasIndex(e => e.TrackId)
-                    .HasName("ix_usertrack_trackId");
+                    .HasDatabaseName("ix_usertrack_trackId");
 
                 entity.HasIndex(e => new { e.UserId, e.TrackId })
-                    .HasName("ix_usertrack_userId_ix")
+                    .HasDatabaseName("ix_usertrack_userId_ix")
                     .IsUnique();
 
                 entity.HasOne(d => d.Track)
@@ -747,21 +747,21 @@ namespace Roadie.Library.Data.Context
             builder.Entity<User>(entity =>
             {
                 entity.HasIndex(e => e.Email)
-                    .HasName("ix_user_email")
+                    .HasDatabaseName("ix_user_email")
                     .IsUnique();
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_user_roadieId");
+                    .HasDatabaseName("ix_user_roadieId");
 
                 entity.HasIndex(e => e.UserName)
-                    .HasName("ix_user_username")
+                    .HasDatabaseName("ix_user_username")
                     .IsUnique();
             });
 
             builder.Entity<UserClaims>(entity =>
             {
                 entity.HasIndex(e => e.UserId)
-                    .HasName("ix_userClaims_userId");
+                    .HasDatabaseName("ix_userClaims_userId");
 
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.UserClaims)
@@ -772,7 +772,7 @@ namespace Roadie.Library.Data.Context
             builder.Entity<UserRoleClaims>(entity =>
             {
                 entity.HasIndex(e => e.RoleId)
-                    .HasName("ix_userRoleClaims_userRoleId");
+                    .HasDatabaseName("ix_userRoleClaims_userRoleId");
 
                 entity.HasOne(d => d.UserRole)
                     .WithMany(p => p.RoleClaims)
@@ -783,20 +783,20 @@ namespace Roadie.Library.Data.Context
             builder.Entity<UserRole>(entity =>
             {
                 entity.HasIndex(e => e.Name)
-                    .HasName("ix_userrole_name")
+                    .HasDatabaseName("ix_userrole_name")
                     .IsUnique();
 
                 entity.HasIndex(e => e.RoadieId)
-                    .HasName("ix_userrole_roadieId");
+                    .HasDatabaseName("ix_userrole_roadieId");
             });
 
             builder.Entity<UsersInRoles>(entity =>
             {
                 entity.HasIndex(e => e.UserId)
-                    .HasName("ix_usersInRoles_userId");
+                    .HasDatabaseName("ix_usersInRoles_userId");
 
                 entity.HasIndex(e => e.RoleId)
-                    .HasName("ix_usersInRoles_userRoleId");
+                    .HasDatabaseName("ix_usersInRoles_userRoleId");
 
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.UserRoles)

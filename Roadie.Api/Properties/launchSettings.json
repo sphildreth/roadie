@@ -3,9 +3,9 @@
     "Roadie.Api": {
       "commandName": "Project",
       "environmentVariables": {
+        "ASPNETCORE_URLS": "http://+:5123",
         "ASPNETCORE_ENVIRONMENT": "Production"
-      },
-      "applicationUrl": "http://localhost:5123/"
+      }
     },
     "Docker": {
       "commandName": "Docker",

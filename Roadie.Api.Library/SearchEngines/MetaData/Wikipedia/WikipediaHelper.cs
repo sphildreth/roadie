@@ -21,62 +21,52 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
             HttpEncoder = httpEncoder;
         }
 
-        public Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearchAsync(string query, int resultsCount)
+        public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearchAsync(string query, int resultsCount)
         {
             if(string.IsNullOrEmpty(query) || resultsCount == 0)
             {
-                return Task.FromResult(new OperationResult<IEnumerable<ArtistSearchResult>>());
+                return new OperationResult<IEnumerable<ArtistSearchResult>>();
             }
-            var tcs = new TaskCompletionSource<OperationResult<IEnumerable<ArtistSearchResult>>>();
             var client = new RestClient("https://en.wikipedia.org/w/api.php?format=xml&action=query&redirects=1&prop=extracts&exintro=&explaintext=&titles=" + HttpEncoder.UrlEncode(query ?? string.Empty));
             var request = new RestRequest(Method.GET);
-            client.ExecuteAsync<api>(request, response =>
+            var response = await client.ExecuteAsync<api>(request).ConfigureAwait(false);
+            ArtistSearchResult data = null;
+            if (response?.Data?.query?.pages?.Any() ?? false)
             {
-                ArtistSearchResult data = null;
-                if (response?.Data?.query?.pages?.Any() ?? false)
+                var bio = response?.Data?.query?.pages.FirstOrDefault()?.extract;
+                if (bio != null)
                 {
-                    var bio = response?.Data?.query?.pages.FirstOrDefault()?.extract;
-                    if (bio != null)
-                    {
-                        data = new ArtistSearchResult
-                        {
-                            Bio = response.Data.query.pages.First().extract
-                        };
-                    }
-                }
-                tcs.SetResult(new OperationResult<IEnumerable<ArtistSearchResult>>
-                {
-                    IsSuccess = data != null,
-                    Data = data != null ? new[] { data } : null
-                });
-            });
-            return tcs.Task;
-        }
-
-        public Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName,
-            string query, int resultsCount)
-        {
-            var tcs = new TaskCompletionSource<OperationResult<IEnumerable<ReleaseSearchResult>>>();
-
-            var client = new RestClient("https://en.wikipedia.org/w/api.php?format=xml&action=query&redirects=1&prop=extracts&exintro=&explaintext=&titles=" + HttpEncoder.UrlEncode(query ?? string.Empty) + " (album)");
-            var request = new RestRequest(Method.GET);
-            client.ExecuteAsync<api>(request, response =>
-            {
-                ReleaseSearchResult data = null;
-                if (response?.Data?.query?.pages != null)
-                {
-                    data = new ReleaseSearchResult
+                    data = new ArtistSearchResult
                     {
                         Bio = response.Data.query.pages.First().extract
                     };
                 }
-                tcs.SetResult(new OperationResult<IEnumerable<ReleaseSearchResult>>
+            }
+            return new OperationResult<IEnumerable<ArtistSearchResult>>
+            {
+                IsSuccess = data != null,
+                Data = data != null ? new[] { data } : null
+            };
+        }
+
+        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
+        {
+            var client = new RestClient("https://en.wikipedia.org/w/api.php?format=xml&action=query&redirects=1&prop=extracts&exintro=&explaintext=&titles=" + HttpEncoder.UrlEncode(query ?? string.Empty) + " (album)");
+            var request = new RestRequest(Method.GET);
+            var response = await client.ExecuteAsync<api>(request).ConfigureAwait(false);
+            ReleaseSearchResult data = null;
+            if (response?.Data?.query?.pages != null)
+            {
+                data = new ReleaseSearchResult
                 {
-                    IsSuccess = data != null,
-                    Data = new[] { data }
-                });
-            });
-            return tcs.Task;
+                    Bio = response.Data.query.pages.First().extract
+                };
+            }
+            return new OperationResult<IEnumerable<ReleaseSearchResult>>
+            {
+                IsSuccess = data != null,
+                Data = new[] { data }
+            };
         }
     }
 }
