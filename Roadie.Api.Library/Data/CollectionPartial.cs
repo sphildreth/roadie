@@ -140,7 +140,7 @@ namespace Roadie.Library.Data
                         MissingFieldFound = null,
                         HasHeaderRecord = false
                     };
-                    configuration.BadDataFound = context => Trace.WriteLine($"PositionArtistReleases: Bad data found on row '{context.RawRow}'", "Warning");
+                    configuration.BadDataFound = context => Trace.WriteLine($"PositionArtistReleases: Bad data found on row '{ context.Context.Parser.RawRow}'", "Warning");
                     using (var csv = new CsvReader(sr, configuration))
                     {
                         while (csv.Read())

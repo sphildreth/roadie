@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 
 namespace Roadie.Library.MetaData.Audio
@@ -139,6 +140,7 @@ namespace Roadie.Library.MetaData.Audio
         /// </summary>
         public string DiscSubTitle { get; set; }
 
+        [IgnoreDataMember]
         [JsonIgnore]
         public FileInfo FileInfo => _fileInfo ?? (_fileInfo = new FileInfo(Filename));
 
@@ -149,6 +151,7 @@ namespace Roadie.Library.MetaData.Audio
 
         public ICollection<string> Genres { get; set; }
 
+        [IgnoreDataMember]
         [JsonIgnore]
         public IEnumerable<AudioMetaDataImage> Images { get; set; }
 
