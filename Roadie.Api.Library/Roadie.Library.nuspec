@@ -13,6 +13,5 @@
     <releaseNotes>Summary of changes made in this release of the package.</releaseNotes>
     <copyright>$copyright$</copyright>
     <tags>roadie</tags>
-    <repository type="git" url="https://github.com/sphildreth/Roadie.Library"></repository>
   </metadata>
 </package>
