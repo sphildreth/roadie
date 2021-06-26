@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>$title$</title>
+    <authors>$author$</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>https://github.com/sphildreth/roadie</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/sphildreth/roadie/master/Roadie.Api/wwwroot/Images/Roadie.png</iconUrl>
+    <description>$description$</description>
+    <releaseNotes>Summary of changes made in this release of the package.</releaseNotes>
+    <copyright>$copyright$</copyright>
+    <tags>roadie</tags>
+    <RepositoryUrl type="git" url="https://github.com/sphildreth/Roadie.Library"></RepositoryUrl>
+  </metadata>
+</package>

@@ -260,3 +260,4 @@ paket-files/
 __pycache__/
 *.pyc
 /Roadie.Api/logs/logs.db
+/Roadie.Api.Library/nuget.config
