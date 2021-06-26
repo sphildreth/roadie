@@ -5,7 +5,7 @@
     <Platforms>AnyCPU;x64</Platforms>
     <AssemblyName>Roadie.Library</AssemblyName>
     <RootNamespace>Roadie.Library</RootNamespace>
-    <RepositoryUrl>https://github.com/sphildreth/Roadie.Library/</RepositoryUrl>
+    <RepositoryUrl>https://github.com/sphildreth/roadie/tree/master/Roadie.Api.Library</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
