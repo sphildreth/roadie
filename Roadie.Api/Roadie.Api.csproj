@@ -31,28 +31,28 @@
   <ItemGroup>
     <PackageReference Include="BCrypt-Core" Version="2.0.0" />
     <PackageReference Include="Mapster" Version="7.2.0" />
-    <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.17.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.7" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.7" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.10.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.10.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.10.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="5.0.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.7" />
+    <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.18.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.9" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.11.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.11.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.11.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="5.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.11.1" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2" />
     <PackageReference Include="Pastel" Version="2.1.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
-    <PackageReference Include="Serilog.Enrichers.Environment" Version="2.1.3" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="2.2.0" />
     <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
     <PackageReference Include="Serilog.Exceptions" Version="7.0.0" />
-    <PackageReference Include="Serilog.Settings.Configuration" Version="3.1.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="3.2.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.0.0" />
     <PackageReference Include="Serilog.Sinks.LiteDB.NetStandard" Version="1.0.14" />
     <PackageReference Include="Serilog.Sinks.RollingFileAlternate" Version="2.0.9" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.11.1" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.10" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.12.2" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.12" />
   </ItemGroup>
 
   <ItemGroup>
