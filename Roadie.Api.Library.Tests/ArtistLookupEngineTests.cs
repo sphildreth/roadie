@@ -1,27 +1,16 @@
-﻿using Mapster;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
-using Roadie.Library.Data;
-using Roadie.Library.Engines;
-using Roadie.Library.Extensions;
-using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.Processors;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text;
-using Xunit;
 
 namespace Roadie.Library.Tests
 {
     public class ArtistLookupEngineTests
     {
         private IEventMessageLogger MessageLogger { get; }
+
         private ILogger Logger
         {
             get
@@ -29,8 +18,6 @@ namespace Roadie.Library.Tests
                 return MessageLogger as ILogger;
             }
         }
-
-        
 
         private IRoadieSettings Configuration { get; }
         public DictionaryCacheManager CacheManager { get; }

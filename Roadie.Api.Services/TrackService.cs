@@ -386,17 +386,25 @@ namespace Roadie.Api.Services
                                                     join t in DbContext.Tracks on plt.TrackId equals t.Id
                                                     where p.RoadieId == request.FilterToPlaylistId.Value
                                                     orderby plt.ListNumber
-                                                    select new
-                                                    {
-                                                        plt.ListNumber,
-                                                        t.Id
-                                                    }).ToArrayAsync().ConfigureAwait(false);
+                                                    select new KeyValuePair<int, int>(t.Id, plt.ListNumber)).ToArrayAsync().ConfigureAwait(false);
+
+                    if(!request.FilterFavoriteOnly && 
+                        request.FilterToPlaylistId == PlaylistService.DynamicFavoritePlaylistId)
+                    {
+                        var dynamicPlaylistFavoriteTrackIds = await (from ut in DbContext.UserTracks
+                                                                     join t in DbContext.Tracks on ut.TrackId equals t.Id
+                                                                     where ut.UserId == roadieUser.Id
+                                                                     where ut.IsFavorite == true
+                                                                     orderby t.CreatedDate descending
+                                                                     select t.Id).ToArrayAsync().ConfigureAwait(false);
+                        playlistTrackInfos = dynamicPlaylistFavoriteTrackIds.Select((x,i) => new KeyValuePair<int, int>(x, i+1)).ToArray();
+                    }
 
                     rowCount = playlistTrackInfos.Length;
                     playListTrackPositions = playlistTrackInfos
                                               .Skip(request.SkipValue)
                                               .Take(request.LimitValue)
-                                              .ToDictionary(x => x.Id, x => x.ListNumber);
+                                              .ToDictionary(x => x.Key, x => x.Value);
                     playlistTrackIds = playListTrackPositions.Select(x => x.Key).ToArray();
                     request.Sort = "TrackNumber";
                     request.Order = "ASC";
