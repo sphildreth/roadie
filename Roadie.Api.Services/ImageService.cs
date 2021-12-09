@@ -356,16 +356,29 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var playlist = await GetPlaylist(id).ConfigureAwait(false);
-                if (playlist == null)
+                string playlistImageFilename = null;
+                IImage image = null;
+                if (id == PlaylistService.DynamicFavoritePlaylistId)
                 {
-                    return new FileOperationResult<IImage>(true, $"Playlist Not Found [{id}]");
+                    image = new Library.Imaging.Image(id)
+                    {
+                        CreatedDate = DateTime.UtcNow
+                    };
+                    playlistImageFilename = Path.Combine(Configuration.ContentPath, @"images/d.favorite.playlist.jpg");
                 }
-                IImage image = new Library.Imaging.Image(id)
+                else
                 {
-                    CreatedDate = playlist.CreatedDate
-                };
-                var playlistImageFilename = playlist.PathToImage(Configuration);
+                    var playlist = await GetPlaylist(id).ConfigureAwait(false);
+                    if (playlist == null)
+                    {
+                        return new FileOperationResult<IImage>(true, $"Playlist Not Found [{id}]");
+                    }
+                    image = new Library.Imaging.Image(id)
+                    {
+                        CreatedDate = playlist.CreatedDate
+                    };
+                    playlistImageFilename = playlist.PathToImage(Configuration);
+                }
                 try
                 {
                     if (File.Exists(playlistImageFilename))

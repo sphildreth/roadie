@@ -11,7 +11,7 @@
     <PackageReference Include="Hashids.net" Version="1.4.1" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="6.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.14.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.15.0" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.14" />
   </ItemGroup>
 

@@ -28,6 +28,8 @@ namespace Roadie.Api.Services
 {
     public class PlaylistService : ServiceBase, IPlaylistService
     {
+        public static Guid DynamicFavoritePlaylistId = Guid.Parse("54BA96A4-DFB5-4970-A989-CBA4BF0EFE75");
+
         private IBookmarkService BookmarkService { get; }
 
         public PlaylistService(IRoadieSettings configuration,
@@ -85,7 +87,7 @@ namespace Roadie.Api.Services
                     {
                         ReleaseCount = result.ReleaseCount,
                         TrackCount = result.TrackCount,
-                        TrackSize = result.DurationTime,
+                        TrackSize = result.Duration.ToString(),
                         FileSize = playlistTracks.Sum(x => (long?)x.t.FileSize).ToFileSize()
                     };
                     tsw.Stop();
@@ -232,11 +234,98 @@ namespace Roadie.Api.Services
         {
             var sw = Stopwatch.StartNew();
             sw.Start();
-            var cacheKey = $"urn:playlist_by_id_operation:{id}:{(includes == null ? "0" : string.Join("|", includes))}";
-            var result = await CacheManager.GetAsync(cacheKey, async () =>
+            OperationResult<Playlist> result = null;
+            var isPlaylistDynamic = id == PlaylistService.DynamicFavoritePlaylistId;
+            if (isPlaylistDynamic)
             {
-                return await PlaylistByIdAction(id, includes).ConfigureAwait(false);
-            }, data.Artist.CacheRegionUrn(id)).ConfigureAwait(false);
+                var now = DateTime.UtcNow;
+                var userFavoriteTracks = from ut in DbContext.UserTracks
+                                         join t in DbContext.Tracks on ut.TrackId equals t.Id
+                                         join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                         join r in DbContext.Releases on rm.ReleaseId equals r.Id
+                                         join releaseArtist in DbContext.Artists on r.ArtistId equals releaseArtist.Id
+                                         join trackArtist in DbContext.Artists on t.ArtistId equals trackArtist.Id into tas
+                                         from trackArtist in tas.DefaultIfEmpty()
+                                         where ut.UserId == roadieUser.Id
+                                         where ut.IsFavorite == true
+                                         select new
+                                         {
+                                             r,
+                                             releaseArtist,
+                                             trackArtist,
+                                             rm,
+                                             t
+                                         };
+
+                var dynamicStatus = new ReleaseGroupingStatistics
+                {
+                    ReleaseCount = SafeParser.ToNumber<int?>(await userFavoriteTracks.Select(x => x.rm.ReleaseId).Distinct().CountAsync().ConfigureAwait(false)),
+                    TrackCount = SafeParser.ToNumber<int?>(await userFavoriteTracks.Select(x => x.t.Id).CountAsync().ConfigureAwait(false)),
+                    TrackSize = (await userFavoriteTracks.SumAsync(x => x.t.Duration)).ToString(),
+                    FileSize = SafeParser.ToNumber<long?>(await userFavoriteTracks.SumAsync(x => x.t.FileSize).ConfigureAwait(false)).ToFileSize()
+                };
+                var dynamicTracks = new List<PlaylistTrack>();
+                var looper = 1;
+                foreach(var td in (await userFavoriteTracks.ToArrayAsync().ConfigureAwait(false)))
+                {
+                    dynamicTracks.Add(new PlaylistTrack
+                    {
+                        ListNumber = looper,
+                        Track = TrackList.FromDataTrack(null,
+                                             td.t,
+                                             td.rm.MediaNumber,
+                                             td.r,
+                                             td.releaseArtist,
+                                             td.trackArtist,
+                                             HttpContext.BaseUrl,
+                                             ImageHelper.MakeTrackThumbnailImage(Configuration, HttpContext, td.t.RoadieId),
+                                             ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, td.r.RoadieId),
+                                             ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, td.releaseArtist.RoadieId),
+                                             ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, td.trackArtist == null ? null : (Guid?)td.trackArtist.RoadieId))
+                    });
+                    looper++;
+                }
+                result = new OperationResult<Playlist>
+                {
+                    Data = new Playlist
+                    {
+                        Id = id,
+                        Name = "[r] Favorites",
+                        Description = "Dynamic Playlist of Favorited Tracks",
+                        CreatedDate = now,
+                        LastUpdated = now,
+                        UserCanEdit = false,
+                        IsPublic = false,
+                        Maintainer = new UserList
+                        {
+                            IsAdmin = false,
+                            IsEditor = false,
+                            IsPrivate = true,
+                            User = new DataToken
+                            {
+                                Text = "Roadie System"
+                            },
+                            Thumbnail = ImageHelper.MakeUserThumbnailImage(Configuration, HttpContext, roadieUser.UserId)
+                        },
+                        Statistics = dynamicStatus,
+                        ReleaseCount = SafeParser.ToNumber<short?>(dynamicStatus.ReleaseCount),
+                        TrackCount = SafeParser.ToNumber<short?>(dynamicStatus.TrackCount),
+                        Duration = (await userFavoriteTracks.SumAsync(x => x.t.Duration).ConfigureAwait(false)),
+                        Thumbnail = ImageHelper.MakePlaylistThumbnailImage(Configuration, HttpContext, id),
+                        Tracks = dynamicTracks,
+                        MediumThumbnail = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "playlist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height)
+                    },
+                    IsSuccess = true
+                };
+            }
+            else
+            {
+                var cacheKey = $"urn:playlist_by_id_operation:{id}:{(includes == null ? "0" : string.Join("|", includes))}";
+                result = await CacheManager.GetAsync(cacheKey, async () =>
+                {
+                    return await PlaylistByIdAction(id, includes).ConfigureAwait(false);
+                }, data.Artist.CacheRegionUrn(id)).ConfigureAwait(false);
+            }
             sw.Stop();
             if (result?.Data != null && roadieUser != null)
             {
@@ -248,27 +337,29 @@ namespace Roadie.Api.Services
                         track.Track.TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.Track.Id);
                     }
                 }
-
-                result.Data.UserCanEdit = result.Data.Maintainer.Id == roadieUser.UserId || roadieUser.IsAdmin;
-                var userBookmarkResult = await BookmarkService.ListAsync(roadieUser, new PagedRequest(), false, BookmarkType.Playlist).ConfigureAwait(false);
-                if (userBookmarkResult.IsSuccess)
+                if (!isPlaylistDynamic)
                 {
-                    result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x?.Bookmark?.Value == result?.Data?.Id?.ToString()) != null;
-                }
-                if (result.Data.Comments.Any())
-                {
-                    var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
-                    var userCommentReactions = await (from cr in DbContext.CommentReactions
-                                                where commentIds.Contains(cr.CommentId)
-                                                where cr.UserId == roadieUser.Id
-                                                select cr)
-                                                .ToArrayAsync()
-                                                .ConfigureAwait(false);
-                    foreach (var comment in result.Data.Comments)
+                    result.Data.UserCanEdit = result.Data.Maintainer?.Id == roadieUser.UserId || roadieUser.IsAdmin;
+                    var userBookmarkResult = await BookmarkService.ListAsync(roadieUser, new PagedRequest(), false, BookmarkType.Playlist).ConfigureAwait(false);
+                    if (userBookmarkResult.IsSuccess)
                     {
-                        var userCommentReaction = Array.Find(userCommentReactions, x => x.CommentId == comment.DatabaseId);
-                        comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
-                        comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
+                        result.Data.UserBookmarked = userBookmarkResult?.Rows?.FirstOrDefault(x => x?.Bookmark?.Value == result?.Data?.Id?.ToString()) != null;
+                    }
+                    if (result.Data.Comments?.Any() == true)
+                    {
+                        var commentIds = result.Data.Comments.Select(x => x.DatabaseId).ToArray();
+                        var userCommentReactions = await (from cr in DbContext.CommentReactions
+                                                          where commentIds.Contains(cr.CommentId)
+                                                          where cr.UserId == roadieUser.Id
+                                                          select cr)
+                                                    .ToArrayAsync()
+                                                    .ConfigureAwait(false);
+                        foreach (var comment in result.Data.Comments)
+                        {
+                            var userCommentReaction = Array.Find(userCommentReactions, x => x.CommentId == comment.DatabaseId);
+                            comment.IsDisliked = userCommentReaction?.ReactionValue == CommentReaction.Dislike;
+                            comment.IsLiked = userCommentReaction?.ReactionValue == CommentReaction.Like;
+                        }
                     }
                 }
             }
@@ -344,12 +435,12 @@ namespace Roadie.Api.Services
             if (request.FilterToReleaseId.HasValue)
             {
                 playlistReleaseTrackIds = await (from pl in DbContext.Playlists
-                                           join pltr in DbContext.PlaylistTracks on pl.Id equals pltr.PlayListId
-                                           join t in DbContext.Tracks on pltr.TrackId equals t.Id
-                                           join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                           join r in DbContext.Releases on rm.ReleaseId equals r.Id
-                                           where r.RoadieId == request.FilterToReleaseId
-                                           select pl.Id
+                                                 join pltr in DbContext.PlaylistTracks on pl.Id equals pltr.PlayListId
+                                                 join t in DbContext.Tracks on pltr.TrackId equals t.Id
+                                                 join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                                 join r in DbContext.Releases on rm.ReleaseId equals r.Id
+                                                 where r.RoadieId == request.FilterToReleaseId
+                                                 select pl.Id
                                            ).ToArrayAsync().ConfigureAwait(false);
             }
             var normalizedFilterValue = !string.IsNullOrEmpty(request.FilterValue)
@@ -397,6 +488,46 @@ namespace Roadie.Api.Services
                        .Take(request.LimitValue)
                        .ToArrayAsync()
                        .ConfigureAwait(false);
+
+            // Dynamic list of favorites
+            if (!request.FilterToArtistId.HasValue && !request.FilterToReleaseId.HasValue && roadieUser != null)
+            {
+                var userFavoriteTracks = from ut in DbContext.UserTracks
+                                         join t in DbContext.Tracks on ut.TrackId equals t.Id
+                                         where ut.UserId == roadieUser.Id
+                                         where ut.IsFavorite == true
+                                         select t;
+
+                var numberOfFavorites = SafeParser.ToNumber<short?>(await userFavoriteTracks.CountAsync());
+
+                if (numberOfFavorites > 0)
+                {
+                    var now = DateTime.UtcNow;
+                    var dynamicPlaylist = new PlaylistList
+                    {
+                        Playlist = new DataToken
+                        {
+                            Text = "[r] Favorites",
+                            Value = DynamicFavoritePlaylistId.ToString()
+                        },
+                        User = new DataToken
+                        {
+                            Text = roadieUser.UserName,
+                            Value = roadieUser.UserId.ToString()
+                        },
+                        PlaylistCount = numberOfFavorites.Value,
+                        IsPublic = false,
+                        Duration = userFavoriteTracks.Sum(x => x.Duration),
+                        TrackCount = numberOfFavorites.Value,
+                        CreatedDate = now,
+                        LastUpdated = now,
+                        UserThumbnail = ImageHelper.MakeUserThumbnailImage(Configuration, HttpContext, roadieUser.UserId),
+                        Id = DynamicFavoritePlaylistId,
+                        Thumbnail = ImageHelper.MakePlaylistThumbnailImage(Configuration, HttpContext, DynamicFavoritePlaylistId)
+                    };
+                    rows = new List<PlaylistList>(rows.Concat<PlaylistList>(new PlaylistList[1] { dynamicPlaylist })).ToArray();
+                }
+            }
             sw.Stop();
             return new Library.Models.Pagination.PagedResult<PlaylistList>
             {
@@ -442,7 +573,7 @@ namespace Roadie.Api.Services
             var sw = new Stopwatch();
             sw.Start();
             var errors = new List<Exception>();
-            var playlist = await DbContext.Playlists.FirstOrDefaultAsync(x => x.RoadieId == model.Id).ConfigureAwait(false); 
+            var playlist = await DbContext.Playlists.FirstOrDefaultAsync(x => x.RoadieId == model.Id).ConfigureAwait(false);
             if (playlist == null)
             {
                 return new OperationResult<bool>(true, $"Playlist Not Found [{model.Id}]");
@@ -531,8 +662,8 @@ namespace Roadie.Api.Services
                 playlist.Tracks.Clear();
 
                 var tracks = await (from t in DbContext.Tracks
-                              join plt in request.Tracks on t.RoadieId equals plt.Track.Id
-                              select t).ToArrayAsync().ConfigureAwait(false);
+                                    join plt in request.Tracks on t.RoadieId equals plt.Track.Id
+                                    select t).ToArrayAsync().ConfigureAwait(false);
                 foreach (var newPlaylistTrack in request.Tracks.OrderBy(x => x.ListNumber))
                 {
                     var track = Array.Find(tracks, x => x.RoadieId == newPlaylistTrack.Track.Id);
