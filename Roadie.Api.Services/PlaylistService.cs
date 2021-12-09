@@ -16,6 +16,7 @@ using Roadie.Library.Models.Statistics;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -239,38 +240,43 @@ namespace Roadie.Api.Services
             if (isPlaylistDynamic)
             {
                 var now = DateTime.UtcNow;
-                var userFavoriteTracks = from ut in DbContext.UserTracks
-                                         join t in DbContext.Tracks on ut.TrackId equals t.Id
-                                         join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
-                                         join r in DbContext.Releases on rm.ReleaseId equals r.Id
-                                         join releaseArtist in DbContext.Artists on r.ArtistId equals releaseArtist.Id
-                                         join trackArtist in DbContext.Artists on t.ArtistId equals trackArtist.Id into tas
-                                         from trackArtist in tas.DefaultIfEmpty()
-                                         where ut.UserId == roadieUser.Id
-                                         where ut.IsFavorite == true
-                                         select new
-                                         {
-                                             r,
-                                             releaseArtist,
-                                             trackArtist,
-                                             rm,
-                                             t
-                                         };
+                var userFavoriteTracks = await (from ut in DbContext.UserTracks
+                                                join t in DbContext.Tracks on ut.TrackId equals t.Id
+                                                join rm in DbContext.ReleaseMedias on t.ReleaseMediaId equals rm.Id
+                                                join r in DbContext.Releases on rm.ReleaseId equals r.Id
+                                                join releaseArtist in DbContext.Artists on r.ArtistId equals releaseArtist.Id
+                                                join trackArtist in DbContext.Artists on t.ArtistId equals trackArtist.Id into tas
+                                                from trackArtist in tas.DefaultIfEmpty()
+                                                where ut.UserId == roadieUser.Id
+                                                where ut.IsFavorite == true
+                                                orderby ut.CreatedDate descending
+                                                select new
+                                                {
+                                                    r,
+                                                    releaseArtist,
+                                                    trackArtist,
+                                                    rm,
+                                                    t
+                                                }).ToArrayAsync().ConfigureAwait(false);
+
+                var tracksSize = userFavoriteTracks.Sum(x => x.t.Duration);
+                var releaseCount = SafeParser.ToNumber<int?>(userFavoriteTracks.Select(x => x.rm.ReleaseId).Distinct().Count());
+                var trackCount = SafeParser.ToNumber<int?>(userFavoriteTracks.Select(x => x.t.Id).Count());
+                long? trackFileSize = userFavoriteTracks.Sum(x => (long?)x.t.FileSize);
 
                 var dynamicStatus = new ReleaseGroupingStatistics
                 {
-                    ReleaseCount = SafeParser.ToNumber<int?>(await userFavoriteTracks.Select(x => x.rm.ReleaseId).Distinct().CountAsync().ConfigureAwait(false)),
-                    TrackCount = SafeParser.ToNumber<int?>(await userFavoriteTracks.Select(x => x.t.Id).CountAsync().ConfigureAwait(false)),
-                    TrackSize = (await userFavoriteTracks.SumAsync(x => x.t.Duration)).ToString(),
-                    FileSize = SafeParser.ToNumber<long?>(await userFavoriteTracks.SumAsync(x => x.t.FileSize).ConfigureAwait(false)).ToFileSize()
+                    ReleaseCount = releaseCount,
+                    TrackCount = trackCount,
+                    TrackSize = tracksSize.ToString(),
+                    FileSize = trackFileSize.ToFileSize()
                 };
-                var dynamicTracks = new List<PlaylistTrack>();
-                var looper = 1;
-                foreach(var td in (await userFavoriteTracks.ToArrayAsync().ConfigureAwait(false)))
+                var dynamicTracks = new ConcurrentBag<PlaylistTrack>();
+                Parallel.ForEach(userFavoriteTracks, (td, s, i) =>
                 {
                     dynamicTracks.Add(new PlaylistTrack
                     {
-                        ListNumber = looper,
+                        ListNumber = (int)i,
                         Track = TrackList.FromDataTrack(null,
                                              td.t,
                                              td.rm.MediaNumber,
@@ -283,8 +289,7 @@ namespace Roadie.Api.Services
                                              ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, td.releaseArtist.RoadieId),
                                              ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, td.trackArtist == null ? null : (Guid?)td.trackArtist.RoadieId))
                     });
-                    looper++;
-                }
+                });
                 result = new OperationResult<Playlist>
                 {
                     Data = new Playlist
@@ -310,9 +315,9 @@ namespace Roadie.Api.Services
                         Statistics = dynamicStatus,
                         ReleaseCount = SafeParser.ToNumber<short?>(dynamicStatus.ReleaseCount),
                         TrackCount = SafeParser.ToNumber<short?>(dynamicStatus.TrackCount),
-                        Duration = (await userFavoriteTracks.SumAsync(x => x.t.Duration).ConfigureAwait(false)),
+                        Duration = userFavoriteTracks.Sum(x => x.t.Duration),
                         Thumbnail = ImageHelper.MakePlaylistThumbnailImage(Configuration, HttpContext, id),
-                        Tracks = dynamicTracks,
+                        Tracks = dynamicTracks.OrderBy(x => x.ListNumber),
                         MediumThumbnail = ImageHelper.MakeThumbnailImage(Configuration, HttpContext, id, "playlist", Configuration.MediumImageSize.Width, Configuration.MediumImageSize.Height)
                     },
                     IsSuccess = true
