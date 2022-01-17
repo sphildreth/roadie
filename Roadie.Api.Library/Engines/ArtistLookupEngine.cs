@@ -184,6 +184,10 @@ namespace Roadie.Library.Engines
             try
             {
                 var searchName = name.NormalizeName().ToLower();
+                if (string.IsNullOrEmpty(searchName))
+                {
+                    return null;
+                }
                 var searchSortName = !string.IsNullOrEmpty(sortName) ? sortName.NormalizeName().ToLower() : searchName;
                 var specialSearchName = name.ToAlphanumericName();
 
@@ -257,7 +261,7 @@ namespace Roadie.Library.Engines
                     artistName = artistFromJson?.Name;
                 }
 
-                var artist = (await DatabaseQueryForArtistName(artistName).ConfigureAwait(false)).FirstOrDefault();
+                var artist = (await DatabaseQueryForArtistName(artistName).ConfigureAwait(false))?.FirstOrDefault();
                 sw.Stop();
                 if (artist?.IsValid != true)
                 {
@@ -268,6 +272,15 @@ namespace Roadie.Library.Engines
                         if (!string.IsNullOrEmpty(releaseRoadieDataFilename) && File.Exists(releaseRoadieDataFilename))
                         {
                             artist = CacheManager.CacheSerializer.Deserialize<Artist>(File.ReadAllText(releaseRoadieDataFilename));
+                            if (!artist.IsValid)
+                            {
+                                sw.Stop();
+                                Logger.LogWarning("Artist data is invalid. Data File [{0}]", releaseRoadieDataFilename);
+                                return new OperationResult<Artist>
+                                {
+                                    OperationTime = sw.ElapsedMilliseconds
+                                };
+                            }
                             var addResult = await Add(artist).ConfigureAwait(false);
                             if (!addResult.IsSuccess)
                             {
