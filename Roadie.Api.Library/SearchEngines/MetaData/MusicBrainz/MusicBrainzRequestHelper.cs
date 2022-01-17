@@ -39,7 +39,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
         /// </summary>
         internal static string CreateSearchTemplate(string entity, string query, int limit, int offset)
         {
-            query = Uri.EscapeUriString(query);
+            query = Uri.EscapeDataString(query);
 
             return string.Format("{0}{1}", WebServiceUrl, string.Format(SearchTemplate, entity, query, limit, offset));
         }

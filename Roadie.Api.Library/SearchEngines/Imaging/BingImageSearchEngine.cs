@@ -31,7 +31,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             var request = new RestRequest
             {
                 Resource = "/bing/v7.0/images/search",
-                Method = Method.GET,
+                Method = Method.Get,
                 RequestFormat = DataFormat.Json
             };
 

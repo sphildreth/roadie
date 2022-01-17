@@ -26,6 +26,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Linq.Dynamic.Core;
+using System.Net.Http;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 using Image = Roadie.Library.Models.Image;
@@ -33,7 +34,7 @@ using Release = Roadie.Library.Models.Releases.Release;
 
 namespace Roadie.Api.Services
 {
-    public class ReleaseService : ServiceBase, IReleaseService
+    public class ReleaseService : HttpFactoryServiceBase<ReleaseService>, IReleaseService
     {
         private IArtistLookupEngine ArtistLookupEngine { get; }
 
@@ -56,9 +57,10 @@ namespace Roadie.Api.Services
             ILogger<ReleaseService> logger,
             IBookmarkService bookmarkService,
             IArtistLookupEngine artistLookupEngine,
-            IAudioMetaDataHelper audioMetaDataHelper
+            IAudioMetaDataHelper audioMetaDataHelper,
+            IHttpClientFactory httpClientFactory
         )
-            : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
+            : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext, httpClientFactory)
         {
             PlaylistService = playlistService;
             BookmarkService = bookmarkService;
@@ -1982,7 +1984,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<OperationResult<Image>> SetReleaseImageByUrlAsync(Library.Identity.User user, Guid id, string imageUrl) => await SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl)).ConfigureAwait(false);
+        public async Task<OperationResult<Image>> SetReleaseImageByUrlAsync(Library.Identity.User user, Guid id, string imageUrl) => await SaveImageBytes(user, id, await WebHelper.BytesForImageUrl(HttpClientFactory, imageUrl).ConfigureAwait(false)).ConfigureAwait(false);
 
         public async Task<OperationResult<bool>> UpdateReleaseAsync(Library.Identity.User user, Release model, string originalReleaseFolder = null)
         {

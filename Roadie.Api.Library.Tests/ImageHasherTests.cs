@@ -1,5 +1,4 @@
 using Roadie.Library.Imaging;
-using System;
 using System.IO;
 using Xunit;
 
@@ -10,7 +9,7 @@ namespace Roadie.Library.Tests
         [Fact]
         public void GenerateImageHash()
         {
-            if(!Directory.Exists(@"C:\temp\image_tests"))
+            if (!Directory.Exists(@"C:\temp\image_tests"))
             {
                 return;
             }
@@ -34,7 +33,6 @@ namespace Roadie.Library.Tests
             Assert.Equal(100d, similar);
 
             Assert.True(ImageHasher.ImagesAreSame(imageFilename, secondImagFilename));
-
 
             secondHash = ImageHasher.AverageHash(resizedFirstImageFilename);
             Assert.True(secondHash > 0);

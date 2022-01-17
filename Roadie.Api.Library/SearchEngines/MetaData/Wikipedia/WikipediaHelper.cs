@@ -6,6 +6,7 @@ using Roadie.Library.Encoding;
 using Roadie.Library.MetaData;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
@@ -14,9 +15,13 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
     {
         private IHttpEncoder HttpEncoder { get; }
 
-        public WikipediaHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<WikipediaHelper> logger,
-                    IHttpEncoder httpEncoder)
-            : base(configuration, cacheManager, logger)
+        public WikipediaHelper(
+            IRoadieSettings configuration,
+            ICacheManager cacheManager,
+            ILogger<WikipediaHelper> logger,
+            IHttpEncoder httpEncoder,
+            IHttpClientFactory httpClientFactory)
+            : base(configuration, cacheManager, logger, httpClientFactory)
         {
             HttpEncoder = httpEncoder;
         }
@@ -28,7 +33,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
                 return new OperationResult<IEnumerable<ArtistSearchResult>>();
             }
             var client = new RestClient("https://en.wikipedia.org/w/api.php?format=xml&action=query&redirects=1&prop=extracts&exintro=&explaintext=&titles=" + HttpEncoder.UrlEncode(query ?? string.Empty));
-            var request = new RestRequest(Method.GET);
+            var request = new RestRequest();
+            request.Method = Method.Get;
             var response = await client.ExecuteAsync<api>(request).ConfigureAwait(false);
             ArtistSearchResult data = null;
             if (response?.Data?.query?.pages?.Any() ?? false)
@@ -52,7 +58,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
         public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
         {
             var client = new RestClient("https://en.wikipedia.org/w/api.php?format=xml&action=query&redirects=1&prop=extracts&exintro=&explaintext=&titles=" + HttpEncoder.UrlEncode(query ?? string.Empty) + " (album)");
-            var request = new RestRequest(Method.GET);
+            var request = new RestRequest();
+            request.Method = Method.Get;
             var response = await client.ExecuteAsync<api>(request).ConfigureAwait(false);
             ReleaseSearchResult data = null;
             if (response?.Data?.query?.pages != null)

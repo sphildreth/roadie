@@ -4,19 +4,17 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.MetaData.ID3Tags;
 using Roadie.Library.Processors;
-using Roadie.Library.Utility;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Xunit;
 
 namespace Roadie.Library.Tests
 {
-    public class ID3TagsHelperTests
+    public class ID3TagsHelperTests : HttpClientFactoryBaseTests
     {
         private IEventMessageLogger MessageLogger { get; }
+
         private ILogger Logger
         {
             get
@@ -45,7 +43,8 @@ namespace Roadie.Library.Tests
             CacheManager = new DictionaryCacheManager(Logger, new NewtonsoftCacheSerializer(Logger), new CachePolicy(TimeSpan.FromHours(4)));
             var tagHelperLooper = new EventMessageLogger<ID3TagsHelper>();
             tagHelperLooper.Messages += MessageLoggerMessages;
-            TagsHelper = new ID3TagsHelper(Configuration, CacheManager, tagHelperLooper);
+
+            TagsHelper = new ID3TagsHelper(Configuration, CacheManager, tagHelperLooper, _httpClientFactory);
         }
 
         private void MessageLoggerMessages(object sender, EventMessage e)
@@ -89,7 +88,6 @@ namespace Roadie.Library.Tests
             Assert.Equal(5, dn.Value);
         }
 
-
         [Theory]
         [InlineData("1983")]
         [InlineData("02/24/1983")]
@@ -121,7 +119,6 @@ namespace Roadie.Library.Tests
             Assert.Null(dn);
         }
 
-
         [Theory]
         [InlineData("")]
         [InlineData("Z")]
@@ -133,7 +130,6 @@ namespace Roadie.Library.Tests
             var dn = ID3TagsHelper.ParseTotalTrackNumber(trackNumber);
             Assert.Null(dn);
         }
-
 
         [Theory]
         [InlineData("2")]
@@ -147,7 +143,6 @@ namespace Roadie.Library.Tests
             Assert.NotNull(dn);
             Assert.Equal(2, dn.Value);
         }
-
 
         [Theory]
         [InlineData("1")]
@@ -175,7 +170,7 @@ namespace Roadie.Library.Tests
         }
 
         [Theory]
-        [InlineData("")]        
+        [InlineData("")]
         [InlineData(" /2")]
         [InlineData(null)]
         [InlineData("BATMAN")]
@@ -195,10 +190,10 @@ namespace Roadie.Library.Tests
         [InlineData("1 - Tithe II.mp3")]
         [InlineData("1 Up.mp3")]
         [InlineData("1. Up.mp3")]
-        [InlineData("1- Up.mp3")] 
+        [InlineData("1- Up.mp3")]
         [InlineData("(01) [Iperyt] The Black Emperor.mp3")]
-        [InlineData("[01] [Iperyt] The Black Emperor.mp3")] 
-        [InlineData("Van Morrison - 01 - Some Peace of Mind (with Bobby Womack).mp3")] 
+        [InlineData("[01] [Iperyt] The Black Emperor.mp3")]
+        [InlineData("Van Morrison - 01 - Some Peace of Mind (with Bobby Womack).mp3")]
         public void DetermineTrackNumber(string filename)
         {
             var tn = ID3TagsHelper.DetermineTrackNumber(filename);
@@ -210,13 +205,13 @@ namespace Roadie.Library.Tests
         {
             var cuesDir = @"C:\roadie_dev_root\test_cue_and_playlists\cues1";
             var directory = new DirectoryInfo(cuesDir);
-            if(directory.Exists)
-            { 
-                foreach(var file in Directory.GetFiles(cuesDir))
+            if (directory.Exists)
+            {
+                foreach (var file in Directory.GetFiles(cuesDir))
                 {
                     var t = ID3TagsHelper.DetermineTotalTrackNumbers(file);
                     Assert.Equal(5, t.Value);
-                }    
+                }
             }
             else
             {
@@ -319,7 +314,6 @@ namespace Roadie.Library.Tests
             }
         }
 
-
         [Fact]
         public void ReadTotalTrackNumbersFromM3uShouldBeFour()
         {
@@ -380,7 +374,7 @@ namespace Roadie.Library.Tests
         [Fact]
         public void ReadID3v24Tags()
         {
-      //      var file = new FileInfo(@"N:\_complete\JN Dutplanet net Reset String - Ancient Future 2014\JN Dutplanet.net Reset String - Ancient Future 2014\01 O.P.D. (Obsessive Personality Disorder).mp3");
+            //      var file = new FileInfo(@"N:\_complete\JN Dutplanet net Reset String - Ancient Future 2014\JN Dutplanet.net Reset String - Ancient Future 2014\01 O.P.D. (Obsessive Personality Disorder).mp3");
             var file = new FileInfo(@"C:\roadie_dev_root\mp3_tests\01 O.P.D. (Obsessive Personality Disorder).mp3");
             if (file.Exists)
             {
@@ -402,7 +396,6 @@ namespace Roadie.Library.Tests
                 Assert.True(true);
             }
         }
-
 
         [Fact]
         public void ReadID3TagsMultipleMediasWithMax()
@@ -471,7 +464,7 @@ namespace Roadie.Library.Tests
             else
             {
                 var folderFiles = Directory.GetFiles(folderName, "*.mp3", SearchOption.AllDirectories);
-                foreach(var file in folderFiles)
+                foreach (var file in folderFiles)
                 {
                     var tagLib = TagsHelper.MetaDataForFile(file);
                     Assert.True(tagLib.IsSuccess);
@@ -484,7 +477,6 @@ namespace Roadie.Library.Tests
                     Assert.True(metaData.IsValid);
                 }
             }
-
         }
 
         [Fact]
@@ -646,7 +638,6 @@ namespace Roadie.Library.Tests
             }
         }
 
-
         [Fact]
         public void ReadID3TagsFromFileWithTrackAndArtistTheSame()
         {
@@ -728,9 +719,6 @@ namespace Roadie.Library.Tests
                 Assert.Equal(metaData.Title, tagLibAfterWrite.Data.Title);
                 Assert.Equal(trackNumber, tagLibAfterWrite.Data.TrackNumber);
                 Assert.Equal(numberOfTracks, tagLibAfterWrite.Data.TotalTrackNumbers);
-                
-
-
             }
             else
             {
@@ -948,6 +936,5 @@ namespace Roadie.Library.Tests
                 Assert.True(true);
             }
         }
-
     }
 }

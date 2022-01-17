@@ -1,7 +1,5 @@
 ﻿using Roadie.Library.Utility;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Xunit;
 
 namespace Roadie.Library.Tests
@@ -21,8 +19,6 @@ namespace Roadie.Library.Tests
             var decrypted = EncryptionHelper.Decrypt(encrypted, key);
             Assert.NotNull(decrypted);
             Assert.Equal(decrypted, value);
-
         }
-
     }
 }

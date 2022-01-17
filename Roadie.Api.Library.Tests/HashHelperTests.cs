@@ -1,5 +1,4 @@
 ﻿using Roadie.Library.Utility;
-using System;
 using Xunit;
 
 namespace Roadie.Library.Tests
@@ -66,7 +65,6 @@ namespace Roadie.Library.Tests
             Assert.Equal(md51, md52);
             Assert.Equal("01aad0e51fcd5582b307613842e4ffe5", md51.ToLower());
         }
-
 
         [Fact]
         public void CreateAndEnsureStandardMd5()

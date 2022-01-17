@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using discogs = Roadie.Library.SearchEngines.MetaData.Discogs;
@@ -57,8 +58,9 @@ namespace Roadie.Library.Engines
             spotify.ISpotifyHelper spotifyHelper,
             wikipedia.IWikipediaHelper wikipediaHelper,
             discogs.IDiscogsHelper discogsHelper,
-            IITunesSearchEngine iTunesSearchEngine)
-            : base(configuration, httpEncoder, context, cacheManager, logger)
+            IITunesSearchEngine iTunesSearchEngine,
+            IHttpClientFactory httpClientFactory)
+            : base(configuration, httpEncoder, context, cacheManager, logger, httpClientFactory)
         {
             ITunesArtistSearchEngine = iTunesSearchEngine;
             MusicBrainzArtistSearchEngine = musicBrainzProvider;

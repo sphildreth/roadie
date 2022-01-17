@@ -3,6 +3,7 @@ using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
+using System.Net.Http;
 
 namespace Roadie.Library.Engines
 {
@@ -18,14 +19,22 @@ namespace Roadie.Library.Engines
 
         protected ILogger Logger { get; }
 
-        public LookupEngineBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
-                                                    ICacheManager cacheManager, ILogger logger)
+        protected IHttpClientFactory HttpClientFactory { get; }
+
+        public LookupEngineBase(
+            IRoadieSettings configuration,
+            IHttpEncoder httpEncoder,
+            IRoadieDbContext context,
+            ICacheManager cacheManager,
+            ILogger logger,
+            IHttpClientFactory httpclientFactory)
         {
             Configuration = configuration;
             HttpEncoder = httpEncoder;
             DbContext = context;
             CacheManager = cacheManager;
             Logger = logger;
+            HttpClientFactory = httpclientFactory;
         }
     }
 }

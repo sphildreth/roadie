@@ -1,7 +1,4 @@
 ﻿using Roadie.Library.Utility;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Xunit;
 
 namespace Roadie.Library.Tests
@@ -28,8 +25,6 @@ namespace Roadie.Library.Tests
             Assert.Equal(0, parsed);
         }
 
-
-
         [Fact]
         public void ParseLargerInt()
         {
@@ -52,7 +47,6 @@ namespace Roadie.Library.Tests
             var nothing = "";
             parsed = SafeParser.ToNumber<int?>(nothing);
             Assert.Null(parsed);
-
         }
 
         [Fact]
@@ -82,8 +76,8 @@ namespace Roadie.Library.Tests
         [InlineData("1988/05")]
         [InlineData("1988/05/02")]
         [InlineData("88")]
-        [InlineData("1988-06-15T07:00:00Z")] 
-        [InlineData("1988-07-14T07:00:00Z")] 
+        [InlineData("1988-06-15T07:00:00Z")]
+        [InlineData("1988-07-14T07:00:00Z")]
         public void ParseDatetimeShouldBe1988(string input)
         {
             var parsed = SafeParser.ToDateTime(input);
@@ -104,7 +98,6 @@ namespace Roadie.Library.Tests
             var parsed = SafeParser.ToDateTime(input);
             Assert.NotNull(parsed);
         }
-
 
         [Theory]
         [InlineData("DEB4F298-5D22-4304-916E-F130B02864B7")]
@@ -130,7 +123,6 @@ namespace Roadie.Library.Tests
             var parsed = SafeParser.ToBoolean(input);
             Assert.True(parsed);
         }
-
 
         [Theory]
         [InlineData("")]

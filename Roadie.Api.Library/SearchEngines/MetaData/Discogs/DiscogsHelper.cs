@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 
@@ -18,8 +19,12 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
     {
         public override bool IsEnabled => Configuration.Integrations.DiscogsProviderEnabled;
 
-        public DiscogsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<DiscogsHelper> logger) : base(
-                    configuration, cacheManager, logger)
+        public DiscogsHelper(
+            IRoadieSettings configuration,
+            ICacheManager cacheManager,
+            ILogger<DiscogsHelper> logger,
+            IHttpClientFactory httpClientFactory) : base(
+                    configuration, cacheManager, logger, httpClientFactory)
         {
             _apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey") ?? new ApiKey();
         }
@@ -35,11 +40,10 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                     Logger.LogTrace("DiscogsHelper:PerformArtistSearch:{0}", query);
                     var request = BuildSearchRequest(query, 1, "artist");
 
-                    var client = new RestClient("https://api.discogs.com/database")
-                    {
-                        UserAgent = WebHelper.UserAgent
-                    };
-
+                    var client = new RestClient(new RestClientOptions("https://api.discogs.com/database")
+                    {  
+                        UserAgent  = WebHelper.UserAgent
+                    });
                     var response = await client.ExecuteAsync<DiscogsResult>(request).ConfigureAwait(false);
 
                     if (response.ResponseStatus == ResponseStatus.Error)
@@ -57,10 +61,10 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                     if (responseData != null)
                     {
                         request = BuildArtistRequest(responseData.id);
-                        var c2 = new RestClient("https://api.discogs.com/")
+                        var c2 = new RestClient(new RestClientOptions("https://api.discogs.com/")
                         {
                             UserAgent = WebHelper.UserAgent
-                        };
+                        });
                         var artistResponse = await c2.ExecuteAsync<DiscogArtistResponse>(request).ConfigureAwait(false);
                         var artist = artistResponse.Data;
                         if (artist != null)
@@ -123,8 +127,10 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 {
                     var request = BuildSearchRequest(labelName, 1, "label");
 
-                    var client = new RestClient("https://api.discogs.com/database");
-                    client.UserAgent = WebHelper.UserAgent;
+                    var client = new RestClient(new RestClientOptions("https://api.discogs.com/database")
+                    {
+                        UserAgent = WebHelper.UserAgent
+                    });
 
                     var response = await client.ExecuteAsync<DiscogsResult>(request).ConfigureAwait(false);
 
@@ -142,8 +148,10 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                     if (responseData != null)
                     {
                         request = BuildLabelRequest(responseData.id);
-                        var c2 = new RestClient("https://api.discogs.com/");
-                        c2.UserAgent = WebHelper.UserAgent;
+                        var c2 = new RestClient(new RestClientOptions("https://api.discogs.com/")
+                        {
+                            UserAgent = WebHelper.UserAgent
+                        });
                         var labelResponse = await c2.ExecuteAsync<DiscogsLabelResult>(request).ConfigureAwait(false);
                         var label = labelResponse.Data;
                         if (label != null)
@@ -200,13 +208,12 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                 {
                     var request = BuildSearchRequest(query, 10, "release", artistName);
 
-                    var client = new RestClient("https://api.discogs.com/database")
+                    var client = new RestClient(new RestClientOptions("https://api.discogs.com/database")
                     {
-                        UserAgent = WebHelper.UserAgent,
-                        ReadWriteTimeout = SafeParser.ToNumber<int>(Configuration.Integrations.DiscogsReadWriteTimeout),
+                        UserAgent = WebHelper.UserAgent, 
                         Timeout = SafeParser.ToNumber<int>(Configuration.Integrations.DiscogsTimeout)
-                    };
 
+                    });
                     var response = await client.ExecuteAsync<DiscogsReleaseSearchResult>(request).ConfigureAwait(false);
                     if (response?.ResponseStatus == null || response.ResponseStatus == ResponseStatus.Error)
                     {
@@ -221,10 +228,10 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                     if (responseData?.id != null)
                     {
                         request = BuildReleaseRequest(responseData.id);
-                        var c2 = new RestClient("https://api.discogs.com/")
+                        var c2 = new RestClient(new RestClientOptions("https://api.discogs.com/")
                         {
                             UserAgent = WebHelper.UserAgent
-                        };
+                        });
                         var releaseResult = await c2.ExecuteAsync<DiscogReleaseDetail>(request).ConfigureAwait(false);
                         var release = releaseResult?.Data;
                         if (release != null)
@@ -324,7 +331,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             var request = new RestRequest
             {
                 Resource = "artists/{id}",
-                Method = Method.GET,
+                Method = Method.Get,
                 RequestFormat = DataFormat.Json
             };
             request.AddUrlSegment("id", artistId.ToString());
@@ -338,7 +345,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             var request = new RestRequest
             {
                 Resource = "labels/{id}",
-                Method = Method.GET,
+                Method = Method.Get,
                 RequestFormat = DataFormat.Json
             };
             request.AddUrlSegment("id", artistId.ToString());
@@ -352,7 +359,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             var request = new RestRequest
             {
                 Resource = "releases/{id}",
-                Method = Method.GET,
+                Method = Method.Get,
                 RequestFormat = DataFormat.Json
             };
             request.AddUrlSegment("id", releaseId.ToString());
@@ -366,7 +373,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             var request = new RestRequest
             {
                 Resource = "search",
-                Method = Method.GET,
+                Method = Method.Get,
                 RequestFormat = DataFormat.Json
             };
             if (resultsCount > 0)

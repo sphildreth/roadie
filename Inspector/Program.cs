@@ -1,5 +1,8 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System.ComponentModel.DataAnnotations;
+using System.Net.Http;
 
 namespace Inspector
 {
@@ -29,15 +32,18 @@ namespace Inspector
 
         public static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
 
-#pragma warning disable RCS1213 // Remove unused member declaration.
 #pragma warning disable IDE0051 // Remove unused private members
-#pragma warning disable CRR0026
         private void OnExecute()
 #pragma warning restore IDE0051 // Remove unused private members
-#pragma warning restore RCS1213 // Remove unused member declaration.
-#pragma warning restore CRR0026
         {
-            var inspector = new Roadie.Library.Inspect.Inspector();
+            var builder = new HostBuilder()
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddHttpClient();
+                }).UseConsoleLifetime();
+
+            var host = builder.Build();
+            var inspector = new Roadie.Library.Inspect.Inspector(host.Services.GetRequiredService<IHttpClientFactory>());
             inspector.Inspect(DoCopy, IsReadOnly, Folder, Destination ?? Folder, DontAppendSubFolder, IsReadOnly ? true : DontDeleteEmptyFolders, DontRunPreScript);
         }
     }

@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 
@@ -18,8 +19,12 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
     {
         public override bool IsEnabled => Configuration.Integrations.SpotifyProviderEnabled;
 
-        public SpotifyHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<SpotifyHelper> logger)
-                    : base(configuration, cacheManager, logger)
+        public SpotifyHelper(
+            IRoadieSettings configuration,
+            ICacheManager cacheManager,
+            ILogger<SpotifyHelper> logger,
+            IHttpClientFactory httpClientFactory)
+                    : base(configuration, cacheManager, logger, httpClientFactory)
         {
         }
 
@@ -34,8 +39,10 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
                 Logger.LogTrace("SpotifyHelper:PerformArtistSearch:{0}", query);
                 var request = BuildSearchRequest(query, 1, "artist");
 
-                var client = new RestClient("http://api.spotify.com/v1");
-                client.UserAgent = WebHelper.UserAgent;
+                var client = new RestClient(new RestClientOptions("http://api.spotify.com/v1")
+                {
+                    UserAgent = WebHelper.UserAgent
+                });
 
                 var response = await client.ExecuteAsync<SpotifyResult>(request).ConfigureAwait(false);
 
@@ -84,7 +91,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             try
             {
                 var tcs = new TaskCompletionSource<OperationResult<IEnumerable<ReleaseSearchResult>>>();
-                var request = new RestRequest(Method.GET);
+                var request = new RestRequest();
+                request.Method = Method.Get;
 
                 ReleaseSearchResult result = null;
 
@@ -209,7 +217,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             var result = CacheManager.Get<Albums>(cacheKey);
             if (result == null)
             {
-                var request = new RestRequest(Method.GET);
+                var request = new RestRequest();
+                request.Method = Method.Get;
                 var client = new RestClient(string.Format(
                     "http://api.spotify.com/v1/artists/{0}/albums?offset=0&limit=25&album_type=album&market=US",
                     spotifyId));
@@ -228,7 +237,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             var request = new RestRequest
             {
                 Resource = "search",
-                Method = Method.GET,
+                Method = Method.Get,
                 RequestFormat = DataFormat.Json
             };
             request.AddParameter("type", entityType, ParameterType.GetOrPost);

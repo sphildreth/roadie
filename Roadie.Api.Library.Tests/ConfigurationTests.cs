@@ -1,9 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Roadie.Library.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Xunit;
 
 namespace Roadie.Library.Tests
@@ -44,9 +40,5 @@ namespace Roadie.Library.Tests
             var configInboundFolder = Settings.InboundFolder;
             Assert.Equal(inboundFolder, configInboundFolder);
         }
-
-
-
     }
-
 }

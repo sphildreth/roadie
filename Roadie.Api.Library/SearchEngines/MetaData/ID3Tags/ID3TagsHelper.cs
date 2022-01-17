@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 
 namespace Roadie.Library.MetaData.ID3Tags
@@ -21,8 +22,12 @@ namespace Roadie.Library.MetaData.ID3Tags
     {
         public const int MaximumDiscNumber = 500; // Damnit Karajan
 
-        public ID3TagsHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<ID3TagsHelper> logger)
-            : base(configuration, cacheManager, logger)
+        public ID3TagsHelper(
+            IRoadieSettings configuration,
+            ICacheManager cacheManager,
+            ILogger<ID3TagsHelper> logger,
+            IHttpClientFactory httpClientFactory)
+            : base(configuration, cacheManager, logger, httpClientFactory)
         {
         }
 

@@ -37,10 +37,10 @@ namespace Roadie.Library.SearchEngines.Imaging
             _requestIp = requestIp;
             _logger = logger;
 
-            _client = new RestClient(baseUrl)
+            _client = new RestClient(new RestClientOptions(baseUrl)
             {
                 UserAgent = WebHelper.UserAgent
-            };
+            });
 
             ServicePointManager.ServerCertificateValidationCallback += delegate
             {

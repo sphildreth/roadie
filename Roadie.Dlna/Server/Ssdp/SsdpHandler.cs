@@ -69,7 +69,6 @@ namespace Roadie.Dlna.Server.Ssdp
 
             queueTimer.Elapsed += ProcessQueue;
 
-            client.Client.UseOnlyOverlappedIO = true;
             client.Client.SetSocketOption(
               SocketOptionLevel.Socket,
               SocketOptionName.ReuseAddress,

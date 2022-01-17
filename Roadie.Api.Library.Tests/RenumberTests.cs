@@ -1,8 +1,6 @@
 ﻿using Roadie.Library.MetaData.Audio;
 using Roadie.Library.MetaData.ID3Tags;
-using Roadie.Library.Utility;
 using System.Collections.Generic;
-using System.Linq;
 using Xunit;
 
 namespace Roadie.Library.Tests

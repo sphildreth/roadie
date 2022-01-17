@@ -13,7 +13,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using models = Roadie.Library.Models;
 
 namespace Roadie.Library.Imaging
@@ -332,7 +334,7 @@ namespace Roadie.Library.Imaging
         public static string[] ImageMimeTypes()
         { return new string[4] { "image/bmp", "image/jpeg", "image/png", "image/gif" }; }
 
-        public static ImageSearchResult ImageSearchResultForImageUrl(string imageUrl)
+        public static async Task<ImageSearchResult> ImageSearchResultForImageUrl(IHttpClientFactory httpClientFactory, string imageUrl)
         {
             if (!WebHelper.IsStringUrl(imageUrl))
             {
@@ -340,7 +342,7 @@ namespace Roadie.Library.Imaging
             }
 
             var result = new ImageSearchResult();
-            var imageBytes = WebHelper.BytesForImageUrl(imageUrl);
+            var imageBytes = await WebHelper.BytesForImageUrl(httpClientFactory, imageUrl);
             IImageFormat imageFormat = null;
             using (var image = SixLabors.ImageSharp.Image.Load(imageBytes, out imageFormat))
             {

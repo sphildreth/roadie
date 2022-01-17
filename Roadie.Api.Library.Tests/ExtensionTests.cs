@@ -1,22 +1,13 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Roadie.Library.Caching;
-using Roadie.Library.Configuration;
-using Roadie.Library.Extensions;
-using Roadie.Library.Processors;
-using Roadie.Library.SearchEngines.MetaData.Discogs;
+﻿using Roadie.Library.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Roadie.Library.Tests
 {
     public class ExtensionTests
     {
-
         [Fact]
         public void ShuffleUniqueOrder()
         {
@@ -32,7 +23,7 @@ namespace Roadie.Library.Tests
                     Release = new Models.Releases.ReleaseList
                     {
                         Release = new Models.DataToken { Value = "R1", Text = "R1" }
-                    }                    
+                    }
                 },
                 new Models.TrackList
                 {
@@ -218,7 +209,7 @@ namespace Roadie.Library.Tests
 
             var shuffledTracks = Models.TrackList.Shuffle(tracks);
             var lastTrack = shuffledTracks.First();
-            foreach(var track in shuffledTracks.Skip(1))
+            foreach (var track in shuffledTracks.Skip(1))
             {
                 Assert.False(string.Equals(track.Artist.Artist.Text, lastTrack.Artist.Artist.Text, StringComparison.Ordinal) &&
                              string.Equals(track.Release.Release.Text, lastTrack.Release.Release.Text, StringComparison.Ordinal));
@@ -227,7 +218,6 @@ namespace Roadie.Library.Tests
 
             Assert.Equal(tracks.Count, shuffledTracks.Count());
         }
-
 
         [Fact]
         public void FromUnixTime()
@@ -269,7 +259,6 @@ namespace Roadie.Library.Tests
             decimal? unixDateTime = (long)(shouldBe).TotalSeconds;
             var ts = unixDateTime.ToTimeSpan();
             Assert.Equal(shouldBe, ts);
-            
         }
 
         [Fact]
@@ -295,7 +284,7 @@ namespace Roadie.Library.Tests
         [InlineData("Song (ft. Joe)")]
         [InlineData("Song (featuring Joe)")]
         [InlineData("Song (feat. Joe)")]
-          public void StringHaveFeatureFragments(string input)
+        public void StringHaveFeatureFragments(string input)
         {
             Assert.True(input.HasFeaturingFragments());
         }
