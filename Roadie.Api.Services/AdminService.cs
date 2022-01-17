@@ -38,19 +38,31 @@ namespace Roadie.Api.Services
         private IFileDirectoryProcessorService FileDirectoryProcessorService { get; }
 
         private IGenreService GenreService { get; }
+
         private ILabelService LabelService { get; }
+
         private IReleaseLookupEngine ReleaseLookupEngine { get; }
 
         private IReleaseService ReleaseService { get; }
 
         protected IHubContext<ScanActivityHub> ScanActivityHub { get; }
 
-        public AdminService(IRoadieSettings configuration, IHttpEncoder httpEncoder, IHttpContext httpContext,
-                            IRoadieDbContext context, ICacheManager cacheManager, ILogger<ArtistService> logger,
-                            IHubContext<ScanActivityHub> scanActivityHub, IFileDirectoryProcessorService fileDirectoryProcessorService, IArtistService artistService,
-                            IReleaseService releaseService, IArtistLookupEngine artistLookupEngine, IReleaseLookupEngine releaseLookupEngine,
-                            ILabelService labelService, IGenreService genreService, IBookmarkService bookmarkService
-        )
+        public AdminService(
+            IRoadieSettings configuration,
+            IHttpEncoder httpEncoder,
+            IHttpContext httpContext,
+            IRoadieDbContext context,
+            ICacheManager cacheManager,
+            ILogger<ArtistService> logger,
+            IHubContext<ScanActivityHub> scanActivityHub,
+            IFileDirectoryProcessorService fileDirectoryProcessorService,
+            IArtistService artistService,
+            IReleaseService releaseService,
+            IArtistLookupEngine artistLookupEngine,
+            IReleaseLookupEngine releaseLookupEngine,
+            ILabelService labelService,
+            IGenreService genreService,
+            IBookmarkService bookmarkService)
             : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
         {
             ScanActivityHub = scanActivityHub;
@@ -1070,6 +1082,30 @@ namespace Roadie.Api.Services
             {
                 IsSuccess = errors.Count == 0,
                 Data = true,
+                OperationTime = sw.ElapsedMilliseconds,
+                Errors = errors
+            };
+        }
+
+        public async Task<OperationResult<bool>> ScanLastGiveNumberOfReleasesAsync(User user, int count, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false)
+        {
+            var sw = Stopwatch.StartNew();
+
+            var errors = new List<Exception>();
+            var releaseIds = await DbContext.Releases.OrderByDescending(x => x.CreatedDate).Select(x => x.RoadieId).Take(count).ToListAsync().ConfigureAwait(false);
+            foreach (var releaseId in releaseIds)
+            {
+                var result = await ScanReleaseAsync(user, releaseId, isReadOnly, wasDoneForInvalidTrackPlay).ConfigureAwait(false);
+                if (!result.IsSuccess && (result.Errors?.Any() ?? false))
+                {
+                    errors.AddRange(result.Errors);
+                }
+            }
+            sw.Stop();
+            await LogAndPublishAsync($"** Completed! ScanLastGiveNumberOfReleasesAsync: Release Count [{ releaseIds.Count() }], Elapsed Time [{sw.Elapsed}]").ConfigureAwait(false);
+            return new OperationResult<bool>
+            {
+                IsSuccess = errors.Count == 0,
                 OperationTime = sw.ElapsedMilliseconds,
                 Errors = errors
             };

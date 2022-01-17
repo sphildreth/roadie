@@ -343,5 +343,21 @@ namespace Roadie.Api.Controllers
             }
             return Ok(result);
         }
+
+        [HttpPost("scan/releases/last/{count}")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> ScanLastGiveNumberOfReleasesAsync(int count)
+        {
+            var result = await AdminService.ScanLastGiveNumberOfReleasesAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), count).ConfigureAwait(false);
+            if (!result.IsSuccess)
+            {
+                if (result.Messages?.Any() ?? false)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Messages);
+                }
+                return StatusCode((int)HttpStatusCode.InternalServerError);
+            }
+            return Ok(result);
+        }
     }
 }

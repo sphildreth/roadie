@@ -52,8 +52,13 @@ namespace Roadie.Api.Services
 
         protected ILogger Logger => _logger;
 
-        public ServiceBase(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
-                           ICacheManager cacheManager, ILogger logger, IHttpContext httpContext)
+        public ServiceBase(
+            IRoadieSettings configuration,
+            IHttpEncoder httpEncoder,
+            IRoadieDbContext context,
+            ICacheManager cacheManager,
+            ILogger logger,
+            IHttpContext httpContext)
         {
             _configuration = configuration;
             _httpEncoder = httpEncoder;

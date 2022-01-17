@@ -49,6 +49,8 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<bool>> ScanReleasesAsync(User user, IEnumerable<Guid> releaseId, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
 
+        Task<OperationResult<bool>> ScanLastGiveNumberOfReleasesAsync(User user, int count, bool isReadOnly = false, bool wasDoneForInvalidTrackPlay = false);
+
         Task<OperationResult<bool>> UpdateInviteTokenUsedAsync(Guid? tokenId);
 
         Task<OperationResult<bool>> ValidateInviteTokenAsync(Guid? tokenId);

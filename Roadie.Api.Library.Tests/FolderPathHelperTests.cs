@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Roadie.Library.Configuration;
+using Roadie.Library.Extensions;
 using Roadie.Library.Utility;
 using System.IO;
 using Xunit;
@@ -146,6 +147,7 @@ namespace Roadie.Library.Tests
         [InlineData("Sinatra's Swingin' Session!!! And More", "01/01/1981", @"I\IR\Iron Maiden [9909]", @"I\IR\Iron Maiden [9909]\[1981] Sinatras Swingin Session And More")]
         [InlineData("01234567890123456789012345678901234567890123456789", "01/01/1974", @"I\IR\Iron Maiden [9909]", @"I\IR\Iron Maiden [9909]\[1974] 01234567890123456789012345678901234567890123456789")]
         [InlineData("At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non providenta", "01/01/1975", @"I\IR\Iron Maiden [9909]", @"I\IR\Iron Maiden [9909]\[1975] At Vero Eos Et Accusamus Et Iusto Odio Dignissimos Ducimus Qui Blanditiis Praesentium Volupta")]
+        [InlineData("ΕΚΛΕΙΨΙΣ", "01/01/1981", @"E\EM\Empire Of The Moon [9909]", @"E\EM\Empire Of The Moon [9909]\[1981] _8c009a9a3d03d66b1a0dd24df400203b")]
         public void GenerateReleaseFolderNames(string input, string releaseDate, string artistFolder, string shouldBe)
         {
             var af = new DirectoryInfo(Path.Combine(Configuration.LibraryFolder, artistFolder));

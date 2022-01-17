@@ -194,7 +194,12 @@ namespace Roadie.Library.Utility
             var releasePathTitle = rt.ToString().ToAlphanumericName(false, false).ToFolderNameFriendly().ToTitleCase(false);
             if(string.IsNullOrEmpty(releasePathTitle))
             {
-                throw new Exception($"ReleaseTitle [{ releaseTitle }] is invalid. ArtistFolder [{ artistFolder }].");
+                releasePathTitle = $"_{ HashHelper.CreateMD5(rt.ToString()).ToFolderNameFriendly() }";
+                if (string.IsNullOrEmpty(releasePathTitle))
+                {
+                    throw new Exception($"ReleaseTitle [{ releaseTitle }] is invalid. ArtistFolder [{ artistFolder }].");
+                }
+                Trace.WriteLine($"Using [{ releasePathTitle }] for ReleaseFolder for ReleaseTitle [{ releaseTitle }]");
             }
             var maxFnLength = MaximumReleaseFolderNameLength - 7;
             if (releasePathTitle.Length > maxFnLength)
