@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using discogs = Roadie.Library.SearchEngines.MetaData.Discogs;
 using lastfm = Roadie.Library.MetaData.LastFm;
@@ -53,12 +54,22 @@ namespace Roadie.Library.Engines
 
         public IReleaseSearchEngine WikipediaReleaseSearchEngine { get; }
 
-        public ReleaseLookupEngine(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
-                                   ICacheManager cacheManager, ILogger<ReleaseLookupEngine> logger, IArtistLookupEngine artistLookupEngine,
-                                   ILabelLookupEngine labelLookupEngine, musicbrainz.IMusicBrainzProvider musicBrainzProvider, lastfm.ILastFmHelper lastFmHelper,
-                                   spotify.ISpotifyHelper spotifyHelper, wikipedia.IWikipediaHelper wikipediaHelper, discogs.IDiscogsHelper discogsHelper,
-                                   IITunesSearchEngine iTunesSearchEngine)
-            : base(configuration, httpEncoder, context, cacheManager, logger)
+        public ReleaseLookupEngine(
+            IRoadieSettings configuration,
+            IHttpEncoder httpEncoder,
+            IRoadieDbContext context,
+            ICacheManager cacheManager,
+            ILogger<ReleaseLookupEngine> logger,
+            IArtistLookupEngine artistLookupEngine,
+            ILabelLookupEngine labelLookupEngine,
+            musicbrainz.IMusicBrainzProvider musicBrainzProvider,
+            lastfm.ILastFmHelper lastFmHelper,
+            spotify.ISpotifyHelper spotifyHelper,
+            wikipedia.IWikipediaHelper wikipediaHelper,
+            discogs.IDiscogsHelper discogsHelper,
+            IITunesSearchEngine iTunesSearchEngine,
+            IHttpClientFactory httpClientFactory)
+            : base(configuration, httpEncoder, context, cacheManager, logger, httpClientFactory)
         {
             ArtistLookupEngine = artistLookupEngine;
             LabelLookupEngine = labelLookupEngine;
@@ -497,7 +508,7 @@ namespace Roadie.Library.Engines
                             {
                                 releaseImages.Add(new Imaging.Image()
                                 {
-                                    Bytes = WebHelper.BytesForImageUrl(i.ReleaseThumbnailUrl)
+                                    Bytes = await WebHelper.BytesForImageUrl(HttpClientFactory, i.ReleaseThumbnailUrl).ConfigureAwait(false)
                                 });
                             }
                             result.CopyTo(new Release
@@ -578,7 +589,7 @@ namespace Roadie.Library.Engines
                             {
                                 releaseImages.Add(new Image()
                                 {
-                                    Bytes = WebHelper.BytesForImageUrl(mb.ReleaseThumbnailUrl)
+                                    Bytes = await WebHelper.BytesForImageUrl(HttpClientFactory, mb.ReleaseThumbnailUrl).ConfigureAwait(false)
                                 });
                             }
                             result.CopyTo(new Release
@@ -664,7 +675,7 @@ namespace Roadie.Library.Engines
                             {
                                 releaseImages.Add(new Image()
                                 {
-                                    Bytes = WebHelper.BytesForImageUrl(l.ReleaseThumbnailUrl)
+                                    Bytes = await WebHelper.BytesForImageUrl(HttpClientFactory, l.ReleaseThumbnailUrl).ConfigureAwait(false)
                                 });
                             }
                             result.CopyTo(new Release
@@ -743,7 +754,7 @@ namespace Roadie.Library.Engines
                             {
                                 releaseImages.Add(new Image()
                                 {
-                                    Bytes = WebHelper.BytesForImageUrl(s.ReleaseThumbnailUrl)
+                                    Bytes = await WebHelper.BytesForImageUrl(HttpClientFactory, s.ReleaseThumbnailUrl).ConfigureAwait(false)
                                 });
                             }
                             result.CopyTo(new Release
@@ -816,7 +827,7 @@ namespace Roadie.Library.Engines
                             {
                                 releaseImages.Add(new Image()
                                 {
-                                    Bytes = WebHelper.BytesForImageUrl(d.ReleaseThumbnailUrl)
+                                    Bytes = await WebHelper.BytesForImageUrl(HttpClientFactory, d.ReleaseThumbnailUrl).ConfigureAwait(false)
                                 });
                             }
                             result.CopyTo(new Release

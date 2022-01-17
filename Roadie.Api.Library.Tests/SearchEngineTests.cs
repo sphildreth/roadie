@@ -13,9 +13,10 @@ using Xunit;
 
 namespace Roadie.Library.Tests
 {
-    public class SearchEngineTests
+    public class SearchEngineTests : HttpClientFactoryBaseTests
     {
         private IEventMessageLogger MessageLogger { get; }
+
         private ILogger Logger
         {
             get
@@ -39,8 +40,6 @@ namespace Roadie.Library.Tests
             HttpEncoder = new Encoding.DummyHttpEncoder();
         }
 
-
-
         private IRoadieSettings Configuration { get; }
         public DictionaryCacheManager CacheManager { get; }
         private Encoding.IHttpEncoder HttpEncoder { get; }
@@ -55,7 +54,7 @@ namespace Roadie.Library.Tests
             var discogsLogger = new EventMessageLogger<DiscogsHelper>();
             discogsLogger.Messages += MessageLogger_Messages;
 
-            var engine = new DiscogsHelper(Configuration, CacheManager, discogsLogger);
+            var engine = new DiscogsHelper(Configuration, CacheManager, discogsLogger, _httpClientFactory);
 
             var artistName = "With The Dead";
             var title = "Love From With The Dead";
@@ -63,7 +62,6 @@ namespace Roadie.Library.Tests
             var result = await engine.PerformReleaseSearch(artistName, title, 1).ConfigureAwait(false);
             Assert.NotNull(result);
             Assert.NotEmpty(result.Data);
-
         }
 
         [Fact]
@@ -75,7 +73,7 @@ namespace Roadie.Library.Tests
             }
             var logger = new EventMessageLogger<MusicBrainzProvider>();
             logger.Messages += MessageLogger_Messages;
-            var mb = new MusicBrainzProvider(Configuration, CacheManager, logger);
+            var mb = new MusicBrainzProvider(Configuration, CacheManager, logger, _httpClientFactory);
 
             var artistName = "Billy Joel";
             var mbId = "64b94289-9474-4d43-8c93-918ccc1920d1"; //https://musicbrainz.org/artist/64b94289-9474-4d43-8c93-918ccc1920d1
@@ -103,7 +101,7 @@ namespace Roadie.Library.Tests
             }
             var logger = new EventMessageLogger<MusicBrainzProvider>();
             logger.Messages += MessageLogger_Messages;
-            var mb = new MusicBrainzProvider(Configuration, CacheManager, logger);
+            var mb = new MusicBrainzProvider(Configuration, CacheManager, logger, _httpClientFactory);
 
             var artistName = "Billy Joel";
             var mbId = "584a3887-c74e-4ff2-81e1-1620fbbe4f84"; // https://musicbrainz.org/release/584a3887-c74e-4ff2-81e1-1620fbbe4f84
@@ -122,11 +120,9 @@ namespace Roadie.Library.Tests
             Assert.Equal(release.MusicBrainzId, mbId);
         }
 
-
         private void MessageLogger_Messages(object sender, EventMessage e)
         {
             Console.WriteLine($"Log Level [{ e.Level }] Log Message [{ e.Message }] ");
         }
-
     }
 }

@@ -6,14 +6,19 @@ using Roadie.Library.MetaData.Audio;
 using Roadie.Library.Utility;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 
 namespace Roadie.Library.MetaData.FileName
 {
     public class FileNameHelper : MetaDataProviderBase, IFileNameHelper
     {
-        public FileNameHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<FileNameHelper> logger)
-            : base(configuration, cacheManager, logger)
+        public FileNameHelper(
+            IRoadieSettings configuration,
+            ICacheManager cacheManager,
+            ILogger<FileNameHelper> logger,
+            IHttpClientFactory httpClientFactory)
+            : base(configuration, cacheManager, logger, httpClientFactory)
         {
         }
 

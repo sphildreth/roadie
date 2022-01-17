@@ -21,12 +21,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
+using System.Net.Http;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 
 namespace Roadie.Api.Services
 {
-    public class LabelService : ServiceBase, ILabelService
+    public class LabelService : HttpFactoryServiceBase<LabelService>, ILabelService
     {
         private IBookmarkService BookmarkService { get; }
 
@@ -36,8 +37,9 @@ namespace Roadie.Api.Services
             IRoadieDbContext context,
             ICacheManager cacheManager,
             ILogger<LabelService> logger,
-            IBookmarkService bookmarkService)
-            : base(configuration, httpEncoder, context, cacheManager, logger, httpContext)
+            IBookmarkService bookmarkService,
+            IHttpClientFactory httpClientFactory)
+            : base(configuration, httpEncoder, context, cacheManager, logger, httpContext, httpClientFactory)
         {
             BookmarkService = bookmarkService;
         }
@@ -398,7 +400,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public Task<OperationResult<Library.Models.Image>> SetLabelImageByUrlAsync(Library.Models.Users.User user, Guid id, string imageUrl) => SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
+        public async Task<OperationResult<Library.Models.Image>> SetLabelImageByUrlAsync(Library.Models.Users.User user, Guid id, string imageUrl) => await SaveImageBytes(user, id, await WebHelper.BytesForImageUrl(HttpClientFactory, imageUrl).ConfigureAwait(false)).ConfigureAwait(false);
 
         public async Task<OperationResult<bool>> UpdateLabelAsync(Library.Models.Users.User user, Label model)
         {

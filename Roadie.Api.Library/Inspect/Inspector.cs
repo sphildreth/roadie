@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Management.Automation;
+using System.Net.Http;
 using System.Text.Json;
 
 namespace Roadie.Library.Inspect
@@ -121,7 +122,7 @@ namespace Roadie.Library.Inspect
             }
         }
 
-        public Inspector()
+        public Inspector(IHttpClientFactory httpClientFactory)
         {
             MessageLogger = new EventMessageLogger<Inspector>();
             MessageLogger.Messages += MessageLogger_Messages;
@@ -137,7 +138,7 @@ namespace Roadie.Library.Inspect
 
             var tagHelperLooper = new EventMessageLogger<ID3TagsHelper>();
             tagHelperLooper.Messages += MessageLogger_Messages;
-            TagsHelper = new ID3TagsHelper(Configuration, CacheManager, tagHelperLooper);
+            TagsHelper = new ID3TagsHelper(Configuration, CacheManager, tagHelperLooper, httpClientFactory);
         }
 
         private void InspectImage(bool isReadOnly, bool doCopy, string dest, string subdirectory, FileInfo image)

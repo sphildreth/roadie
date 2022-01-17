@@ -1,5 +1,4 @@
 ﻿using Roadie.Library.Imaging;
-using System;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -139,7 +138,6 @@ namespace Roadie.Library.Tests
             Assert.False(ImageHelper.IsReleaseImage(new FileInfo(input)));
         }
 
-
         [Theory]
         [InlineData("label.jpeg")]
         [InlineData("label.jpg")]
@@ -178,7 +176,6 @@ namespace Roadie.Library.Tests
         }
 
         [Theory]
-
         [InlineData("Booklet-1.jpg")]
         [InlineData("Booklet-10.jpg")]
         [InlineData("Booklet_1.jpg")]
@@ -314,6 +311,5 @@ namespace Roadie.Library.Tests
             Assert.Single(artist);
             Assert.Equal("artist.jpg", artist.First().Name);
         }
-
     }
 }

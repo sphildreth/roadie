@@ -8,6 +8,7 @@ using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Roadie.Library.MetaData.MusicBrainz
@@ -17,8 +18,12 @@ namespace Roadie.Library.MetaData.MusicBrainz
         public override bool IsEnabled => Configuration.Integrations.MusicBrainzProviderEnabled;
         private MusicBrainzRepository Repository { get; }
 
-        public MusicBrainzProvider(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<MusicBrainzProvider> logger)
-            : base(configuration, cacheManager, logger)
+        public MusicBrainzProvider(
+            IRoadieSettings configuration,
+            ICacheManager cacheManager,
+            ILogger<MusicBrainzProvider> logger,
+            IHttpClientFactory httpClientFactory)
+            : base(configuration, cacheManager, logger, httpClientFactory)
         {
             Repository = new MusicBrainzRepository(configuration, logger);
         }

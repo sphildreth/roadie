@@ -85,7 +85,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             ImageSearchResult[] result = null;
             try
             {
-                var response = _client.Execute<ITunesSearchResult>(request);
+                var response = await _client.ExecuteAsync<ITunesSearchResult>(request);
                 if (response.ResponseStatus == ResponseStatus.Error)
                 {
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -164,7 +164,7 @@ namespace Roadie.Library.SearchEngines.Imaging
             var request = new RestRequest
             {
                 Resource = "search",
-                Method = Method.GET,
+                Method = Method.Get,
                 RequestFormat = DataFormat.Json
             };
 

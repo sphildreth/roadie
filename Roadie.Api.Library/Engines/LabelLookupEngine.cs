@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using discogs = Roadie.Library.SearchEngines.MetaData.Discogs;
 
@@ -20,9 +21,15 @@ namespace Roadie.Library.Engines
     {
         private ILabelSearchEngine DiscogsLabelSearchEngine { get; }
 
-        public LabelLookupEngine(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
-                    ICacheManager cacheManager, ILogger<LabelLookupEngine> logger, discogs.IDiscogsHelper discogsHelper)
-            : base(configuration, httpEncoder, context, cacheManager, logger)
+        public LabelLookupEngine(
+            IRoadieSettings configuration,
+            IHttpEncoder httpEncoder,
+            IRoadieDbContext context,
+            ICacheManager cacheManager,
+            ILogger<LabelLookupEngine> logger,
+            discogs.IDiscogsHelper discogsHelper,
+            IHttpClientFactory httpClientFactory)
+            : base(configuration, httpEncoder, context, cacheManager, logger, httpClientFactory)
         {
             DiscogsLabelSearchEngine = discogsHelper;
         }

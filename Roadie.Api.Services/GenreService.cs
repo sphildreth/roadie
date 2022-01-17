@@ -19,20 +19,22 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
+using System.Net.Http;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 
 namespace Roadie.Api.Services
 {
-    public class GenreService : ServiceBase, IGenreService
+    public class GenreService : HttpFactoryServiceBase<GenreService>, IGenreService
     {
         public GenreService(IRoadieSettings configuration,
             IHttpEncoder httpEncoder,
             IHttpContext httpContext,
             IRoadieDbContext dbContext,
             ICacheManager cacheManager,
-            ILogger<GenreService> logger)
-            : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
+            ILogger<GenreService> logger,
+            IHttpClientFactory httpClientFactory)
+            : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext, httpClientFactory)
         {
         }
 
@@ -265,7 +267,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        public Task<OperationResult<Library.Models.Image>> SetGenreImageByUrlAsync(Library.Models.Users.User user, Guid id, string imageUrl) => SaveImageBytes(user, id, WebHelper.BytesForImageUrl(imageUrl));
+        public async Task<OperationResult<Library.Models.Image>> SetGenreImageByUrlAsync(Library.Models.Users.User user, Guid id, string imageUrl) => await SaveImageBytes(user, id, await WebHelper.BytesForImageUrl(HttpClientFactory, imageUrl).ConfigureAwait(false)).ConfigureAwait(false);
 
         public async Task<OperationResult<bool>> UpdateGenreAsync(Library.Models.Users.User user, Genre model)
         {

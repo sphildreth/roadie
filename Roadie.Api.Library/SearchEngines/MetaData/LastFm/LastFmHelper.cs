@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -42,9 +43,14 @@ namespace Roadie.Library.MetaData.LastFm
 
         private IHttpEncoder HttpEncoder { get; }
 
-        public LastFmHelper(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<LastFmHelper> logger,
-                            IRoadieDbContext dbContext, IHttpEncoder httpEncoder)
-            : base(configuration, cacheManager, logger)
+        public LastFmHelper(
+            IRoadieSettings configuration,
+            ICacheManager cacheManager,
+            ILogger<LastFmHelper> logger,
+            IRoadieDbContext dbContext,
+            IHttpEncoder httpEncoder,
+            IHttpClientFactory httpClientFactory)
+            : base(configuration, cacheManager, logger, httpClientFactory)
         {
             _apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey") ??
                       new ApiKey();
@@ -84,7 +90,8 @@ namespace Roadie.Library.MetaData.LastFm
             {
                 {"token", token}
             };
-            var request = new RestRequest(Method.GET);
+            var request = new RestRequest();
+            request.Method = Method.Get;
             var client = new RestClient(BuildUrl("auth.getSession", parameters));
             var responseXML = await client.ExecuteAsync<string>(request).ConfigureAwait(false);
             var doc = new XmlDocument();
@@ -203,7 +210,8 @@ namespace Roadie.Library.MetaData.LastFm
             var cacheKey = $"uri:lastfm:releasesearch:{ artistName.ToAlphanumericName() }:{ query.ToAlphanumericName() }";
             var data = await CacheManager.GetAsync<ReleaseSearchResult>(cacheKey, async () =>
             {
-                var request = new RestRequest(Method.GET);
+                var request = new RestRequest();
+                request.Method = Method.Get;
                 var client = new RestClient(string.Format("http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={0}&artist={1}&album={2}&format=xml", ApiKey.Key, artistName, query));
                 var responseData = await client.ExecuteAsync<lfm>(request).ConfigureAwait(false);
 

@@ -5,29 +5,29 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Roadie.Library.Utility
 {
     public static class WebHelper
     {
-        public const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36";
+        public const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:96.0) Gecko/20100101 Firefox/96.0";
 
-        public static byte[] BytesForImageUrl(string url)
+        public static async Task<byte[]> BytesForImageUrl(IHttpClientFactory httpclientFactory, string url)
         {
-            if (string.IsNullOrEmpty(url)) return null;
+            if (string.IsNullOrEmpty(url))
+            {
+                return null;
+            }
             try
             {
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-                request.Referer = "http://www.roadie.rocks";
-                request.UserAgent = UserAgent;
-
-                using (var response = (HttpWebResponse)request.GetResponse())
+                var client = httpclientFactory.CreateClient();
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                var response = await client.SendAsync(request).ConfigureAwait(false);
+                if(response.IsSuccessStatusCode)
                 {
-                    using (BinaryReader reader = new BinaryReader(response.GetResponseStream()))
-                    {
-                        return reader.ReadBytes(1 * 1024 * 1024 * 10);
-                    }
+                    return await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
                 }
             }
             catch (WebException wex)

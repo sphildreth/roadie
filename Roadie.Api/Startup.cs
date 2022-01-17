@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Polly;
 using Roadie.Api.Hubs;
 using Roadie.Api.ModelBinding;
 using Roadie.Api.Services;
@@ -45,6 +46,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 
@@ -347,6 +349,9 @@ namespace Roadie.Api
             });
 
             services.AddHttpContextAccessor();
+
+            services.AddHttpClient();
+
             services.AddScoped<IHttpContext>(factory =>
             {
                 var actionContext = factory.GetService<IActionContextAccessor>().ActionContext;

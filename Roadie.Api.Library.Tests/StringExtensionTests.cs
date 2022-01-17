@@ -313,10 +313,10 @@ namespace Roadie.Library.Tests
         [InlineData("THE BATMAN", "Batman, The")]
         [InlineData("THE    batman", "Batman, The")]
         [InlineData("ThE BatmaN", "Batman, The")]
-        [InlineData(" THE BatmaN ", "Batman, The")] 
-        [InlineData("Don’T Threaten Me With A Good Time", "Don't Threaten Me With A Good Time")] 
-        [InlineData("Don’t Threaten Me With A Good Time", "Don't Threaten Me With A Good Time")] 
-        [InlineData("don’t threaten me with a good time", "Don't Threaten Me With A Good Time")] 
+        [InlineData(" THE BatmaN ", "Batman, The")]
+        [InlineData("Don’T Threaten Me With A Good Time", "Don't Threaten Me With A Good Time")]
+        [InlineData("Don’t Threaten Me With A Good Time", "Don't Threaten Me With A Good Time")]
+        [InlineData("don’t threaten me with a good time", "Don't Threaten Me With A Good Time")]
         [InlineData("DON'T THREATEN ME WITH A GOOD TIME", "Don't Threaten Me With A Good Time")]
         [InlineData("McDonald's", "McDonald's")]
         [InlineData("Macey Grey", "Macey Grey")]
@@ -331,7 +331,7 @@ namespace Roadie.Library.Tests
         [InlineData("bIlLy jOeL", "Billy Joel")]
         [InlineData("dick van dyke", "Dick Van Dyke")]
         [InlineData("Dick van Dyke", "Dick Van Dyke")]
-        [InlineData("DICK VAN DYKE", "Dick Van Dyke")] 
+        [InlineData("DICK VAN DYKE", "Dick Van Dyke")]
         [InlineData("Michael Mcdonald", "Michael McDonald")]
         [InlineData("MICHAEL MCDONALD", "Michael McDonald")]
         [InlineData("delbert mcclinton", "Delbert McClinton")]
@@ -346,8 +346,8 @@ namespace Roadie.Library.Tests
         [InlineData("don mcclean", "Don McClean")]
         [InlineData("edWIN mccain", "Edwin McCain")]
         [InlineData("kyle mcevoy", "Kyle McEvoy")]
-        [InlineData("c.w. mccall", "C.W. McCall")] 
-        [InlineData("Loreena Mckennitt", "Loreena McKennitt")] 
+        [InlineData("c.w. mccall", "C.W. McCall")]
+        [InlineData("Loreena Mckennitt", "Loreena McKennitt")]
         public void ToTitleCase(string input, string shouldBe)
         {
             Assert.Equal(shouldBe, input.ToTitleCase());
@@ -388,7 +388,6 @@ namespace Roadie.Library.Tests
             var t = input.ToTrackDuration();
             Assert.Null(t);
         }
-
 
         [Theory]
         [InlineData("https://itunes.apple.com/us/artist/id485953", "id485953")]

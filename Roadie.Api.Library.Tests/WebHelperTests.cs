@@ -1,27 +1,22 @@
-﻿using Roadie.Library.Imaging;
-using Roadie.Library.Utility;
-using System;
-using System.Collections.Generic;
+﻿using Roadie.Library.Utility;
 using System.IO;
-using System.Text;
+using System.Threading.Tasks;
 using Xunit;
-
 
 namespace Roadie.Library.Tests
 {
-    public class WebHelperTests
+    public class WebHelperTests : HttpClientFactoryBaseTests
     {
         [Fact]
-        public void DownloadTestImage()
+        public async Task DownloadTestImage()
         {
             var testImageUrl = @"https://i.ytimg.com/vi/OiH5YMXQwYg/maxresdefault.jpg";
-            var imageBytes = WebHelper.BytesForImageUrl(testImageUrl);
+            var imageBytes = await WebHelper.BytesForImageUrl(_httpClientFactory, testImageUrl).ConfigureAwait(false); 
             Assert.NotNull(imageBytes);
             Assert.NotEmpty(imageBytes);
 
             var coverFileName = Path.Combine(@"C:\roadie_dev_root", "testImage.jpg");
             File.WriteAllBytes(coverFileName, imageBytes);
-
         }
     }
 }
