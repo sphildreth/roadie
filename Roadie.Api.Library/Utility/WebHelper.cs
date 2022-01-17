@@ -24,6 +24,7 @@ namespace Roadie.Library.Utility
             {
                 var client = httpclientFactory.CreateClient();
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("User-Agent", UserAgent);
                 var response = await client.SendAsync(request).ConfigureAwait(false);
                 if(response.IsSuccessStatusCode)
                 {
@@ -58,15 +59,18 @@ namespace Roadie.Library.Utility
             return null;
         }
 
-        public static async Task<IImage> GetImageFromUrlAsync(string url)
+        public static async Task<IImage> GetImageFromUrlAsync(IHttpClientFactory httpclientFactory, string url)
         {
             byte[] imageBytes = null;
             try
             {
-                using (var webClient = new WebClient())
+                var client = httpclientFactory.CreateClient();
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("User-Agent", UserAgent);
+                var response = await client.SendAsync(request).ConfigureAwait(false);
+                if (response.IsSuccessStatusCode)
                 {
-                    webClient.Headers.Add("user-agent", UserAgent);
-                    imageBytes = await webClient.DownloadDataTaskAsync(new Uri(url)).ConfigureAwait(false);
+                    imageBytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
                 }
             }
             catch

@@ -705,7 +705,7 @@ namespace Roadie.Library.Engines
                 {
                     var sw2 = Stopwatch.StartNew();
                     var imageBag = new ConcurrentBag<IImage>();
-                    var i = artistImageUrls.Select(async url => imageBag.Add(await WebHelper.GetImageFromUrlAsync(url).ConfigureAwait(false)));
+                    var i = artistImageUrls.Select(async url => imageBag.Add(await WebHelper.GetImageFromUrlAsync(HttpClientFactory, url).ConfigureAwait(false)));
                     await Task.WhenAll(i).ConfigureAwait(false);
                     result.Images = imageBag.Where(x => x?.Bytes != null)
                                             .GroupBy(x => x.Signature)
