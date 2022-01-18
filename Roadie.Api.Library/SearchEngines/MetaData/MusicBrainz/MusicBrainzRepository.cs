@@ -13,9 +13,15 @@ namespace Roadie.Library.MetaData.MusicBrainz
     public class MusicBrainzRepository
     {
         private string FileName { get; }
+
         private ILogger<MusicBrainzProvider> Logger { get; }
 
-        public MusicBrainzRepository(IRoadieSettings configuration, ILogger<MusicBrainzProvider> logger)
+        private IHttpClientFactory HttpClientFactory { get; }
+
+        public MusicBrainzRepository(
+            IRoadieSettings configuration,
+            ILogger<MusicBrainzProvider> logger,
+            IHttpClientFactory httpClientFactory)
         {
             Logger = logger;
             var location = System.Reflection.Assembly.GetEntryAssembly().Location;
@@ -25,6 +31,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
                 Directory.CreateDirectory(directory);
             }
             FileName = Path.Combine(directory, "MusicBrainzRespository.db");
+            HttpClientFactory = httpClientFactory;
         }
 
         /// <summary>
@@ -47,14 +54,14 @@ namespace Roadie.Library.MetaData.MusicBrainz
                     if (artist == null)
                     {
                         // Perform a query to get the MbId for the Name
-                        var artistResult = await MusicBrainzRequestHelper.GetAsync<ArtistResult>(MusicBrainzRequestHelper.CreateSearchTemplate("artist", name, resultsCount ?? 1, 0)).ConfigureAwait(false);
+                        var artistResult = await MusicBrainzRequestHelper.GetAsync<ArtistResult>(HttpClientFactory, MusicBrainzRequestHelper.CreateSearchTemplate("artist", name, resultsCount ?? 1, 0)).ConfigureAwait(false);
                         if (artistResult == null || artistResult.artists == null || !artistResult.artists.Any() || artistResult.count < 1)
                         {
                             return null;
                         }
                         var mbId = artistResult.artists.First().id;
                         // Now perform a detail request to get the details by the MbId
-                        result = await MusicBrainzRequestHelper.GetAsync<Artist>(MusicBrainzRequestHelper.CreateLookupUrl("artist", mbId, "aliases+tags+genres+url-rels")).ConfigureAwait(false);
+                        result = await MusicBrainzRequestHelper.GetAsync<Artist>(HttpClientFactory, MusicBrainzRequestHelper.CreateLookupUrl("artist", mbId, "aliases+tags+genres+url-rels")).ConfigureAwait(false);
                         if (result != null)
                         {
                             col.Insert(new RepositoryArtist
@@ -108,11 +115,11 @@ namespace Roadie.Library.MetaData.MusicBrainz
                     var releases = col.Find(x => x.ArtistMbId == artistMbId);
                     if (releases == null || !releases.Any())
                     {
-                        // Query to get collection of Releases for Artist 
+                        // Query to get collection of Releases for Artist
                         var pageSize = 50;
                         var page = 0;
                         var url = MusicBrainzRequestHelper.CreateArtistBrowseTemplate(artistMbId, pageSize, 0);
-                        var mbReleaseBrowseResult = await MusicBrainzRequestHelper.GetAsync<ReleaseBrowseResult>(url).ConfigureAwait(false);
+                        var mbReleaseBrowseResult = await MusicBrainzRequestHelper.GetAsync<ReleaseBrowseResult>(HttpClientFactory, url).ConfigureAwait(false);
                         var totalReleases = mbReleaseBrowseResult != null ? mbReleaseBrowseResult.releasecount : 0;
                         var totalPages = Math.Ceiling((decimal)totalReleases / pageSize);
                         var fetchResult = new List<Release>();
@@ -123,7 +130,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
                                 fetchResult.AddRange(mbReleaseBrowseResult.releases.Where(x => !string.IsNullOrEmpty(x.date)));
                             }
                             page++;
-                            mbReleaseBrowseResult = await MusicBrainzRequestHelper.GetAsync<ReleaseBrowseResult>(MusicBrainzRequestHelper.CreateArtistBrowseTemplate(artistMbId, pageSize, pageSize * page)).ConfigureAwait(false);
+                            mbReleaseBrowseResult = await MusicBrainzRequestHelper.GetAsync<ReleaseBrowseResult>(HttpClientFactory, MusicBrainzRequestHelper.CreateArtistBrowseTemplate(artistMbId, pageSize, pageSize * page)).ConfigureAwait(false);
                         } while (page < totalPages);
                         var releasesToInsert = fetchResult.GroupBy(x => x.title).Select(x => x.OrderBy(x => x.date).First()).OrderBy(x => x.date).ThenBy(x => x.title);
                         col.InsertBulk(releasesToInsert.Where(x => x != null).Select(x => new RepositoryRelease

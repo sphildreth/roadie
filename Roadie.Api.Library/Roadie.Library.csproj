@@ -15,6 +15,7 @@
     <PackageReference Include="EFCore.BulkExtensions" Version="6.3.0" />
     <PackageReference Include="FluentFTP" Version="36.1.0" />
     <PackageReference Include="Hashids.net" Version="1.4.1" />
+    <PackageReference Include="Hqub.Last.fm" Version="2.1.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.40" />
     <PackageReference Include="IdSharp.Common" Version="1.0.1" />
     <PackageReference Include="IdSharp.Tagging" Version="1.0.0-rc3" />

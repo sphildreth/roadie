@@ -16,7 +16,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using Polly;
 using Roadie.Api.Hubs;
 using Roadie.Api.ModelBinding;
 using Roadie.Api.Services;
@@ -46,7 +45,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Http;
 using System.Reflection;
 using System.Text;
 
@@ -64,7 +62,7 @@ namespace Roadie.Api
             TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IAdminService adminService)
         {
             if (env.IsDevelopment())
             {
@@ -102,6 +100,8 @@ namespace Roadie.Api
                 endpoints.MapControllers();
                 endpoints.MapDefaultControllerRoute();
             });
+
+            adminService.PerformStartUpTasks();
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -117,7 +117,7 @@ namespace Roadie.Api
             services.AddSingleton<ICacheSerializer>(options =>
             {
                 var logger = options.GetService<ILogger<Utf8JsonCacheSerializer>>();
-                return new Utf8JsonCacheSerializer(logger);
+                return new SystemTextCacheSerializer(logger);
             });
 
             services.AddSingleton<ICacheManager>(options =>
@@ -226,7 +226,7 @@ namespace Roadie.Api
                 configuration.GetSection("RoadieSettings").Bind(settings);
                 var hostingEnvironment = ctx.GetService<IWebHostEnvironment>();
                 settings.ContentPath = hostingEnvironment.WebRootPath;
-                settings.ConnectionString =  _configuration.GetConnectionString("RoadieDatabaseConnection");
+                settings.ConnectionString = _configuration.GetConnectionString("RoadieDatabaseConnection");
 
                 // This is so 'User Secrets' can be used in Debugging
                 var integrationKeys = _configuration.GetSection("IntegrationKeys").Get<IntegrationKey>();
@@ -335,7 +335,7 @@ namespace Roadie.Api
                     options.RespectBrowserAcceptHeader = true; // false by default
                     options.ModelBinderProviders.Insert(0, new SubsonicRequestBinderProvider());
                 })
-                .AddJsonOptions(options => options.JsonSerializerOptions.IgnoreNullValues = true)
+                .AddJsonOptions(options => options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)
                 .AddXmlSerializerFormatters();
 
             services.Configure<IdentityOptions>(options =>
@@ -362,9 +362,6 @@ namespace Roadie.Api
                 return new HttpContext(factory.GetService<IRoadieSettings>(), new UrlHelper(actionContext));
             });
 
-            var sp = services.BuildServiceProvider();
-            var adminService = sp.GetService<IAdminService>();
-            adminService.PerformStartUpTasks();
         }
 
         private static string _roadieApiVersion = null;
@@ -385,9 +382,13 @@ namespace Roadie.Api
         private class IntegrationKey
         {
             public string BingImageSearch { get; set; }
+
             public string DiscogsConsumerKey { get; set; }
+
             public string DiscogsConsumerSecret { get; set; }
+
             public string LastFMApiKey { get; set; }
+
             public string LastFMSecret { get; set; }
         }
     }

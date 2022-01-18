@@ -31,6 +31,9 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<Dictionary<string, List<string>>>> MissingCollectionReleasesAsync(User user);
 
+        /// <summary>
+        /// Perform checks/setup on start of application
+        /// </summary>
         void PerformStartUpTasks();
 
         Task<OperationResult<bool>> ScanAllCollectionsAsync(User user, bool isReadOnly = false, bool doPurgeFirst = false);

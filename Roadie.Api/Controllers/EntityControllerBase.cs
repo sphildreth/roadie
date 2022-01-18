@@ -12,7 +12,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
-using System.Text.Json;
 using System.Threading.Tasks;
 using models = Roadie.Library.Models.Users;
 
@@ -91,7 +90,7 @@ namespace Roadie.Api.Controllers
             var info = await trackService.TrackStreamInfoAsync(id,
                 TrackService.DetermineByteStartFromHeaders(Request.Headers),
                 TrackService.DetermineByteEndFromHeaders(Request.Headers, track.Data.FileSize),
-                user).ConfigureAwait(false); 
+                user).ConfigureAwait(false);
             if (!info?.IsSuccess ?? false || info?.Data == null)
             {
                 if (info?.Errors != null && (info?.Errors.Any() ?? false))
@@ -144,7 +143,7 @@ namespace Roadie.Api.Controllers
                 TimePlayed = DateTime.UtcNow,
                 TrackId = id
             };
-            await playActivityService.NowPlayingAsync(user, scrobble).ConfigureAwait(false); 
+            await playActivityService.NowPlayingAsync(user, scrobble).ConfigureAwait(false);
             sw.Stop();
             Logger.LogTrace($"StreamTrack ElapsedTime [{sw.ElapsedMilliseconds}], Timings [{CacheManager.CacheSerializer.Serialize(timings)}], StreamInfo `{info?.Data}`");
             return new EmptyResult();

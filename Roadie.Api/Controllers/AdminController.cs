@@ -78,7 +78,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> DeleteArtistSecondaryImage(Guid id, int index)
         {
-            var result = await AdminService.DeleteArtistSecondaryImageAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, index).ConfigureAwait(false); 
+            var result = await AdminService.DeleteArtistSecondaryImageAsync(await UserManager.GetUserAsync(User).ConfigureAwait(false), id, index).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 if (result.Messages?.Any() ?? false)

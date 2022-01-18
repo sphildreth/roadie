@@ -1,7 +1,6 @@
 ﻿using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Objects;
 using Microsoft.Extensions.Logging;
-using RestSharp;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Data.Context;
@@ -18,20 +17,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.XPath;
-using data = Roadie.Library.Data;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Roadie.Library.MetaData.LastFm
 {
     public class LastFmHelper : MetaDataProviderBase, ILastFmHelper
     {
         private const string LastFmErrorCodeXPath = "/lfm/error/@code";
+
         private const string LastFmErrorXPath = "/lfm/error";
+
         private const string LastFmStatusOk = "ok";
+
         private const string LastFmStatusXPath = "/lfm/@status";
 
         public override bool IsEnabled =>
@@ -90,12 +91,17 @@ namespace Roadie.Library.MetaData.LastFm
             {
                 {"token", token}
             };
-            var request = new RestRequest();
-            request.Method = Method.Get;
-            var client = new RestClient(BuildUrl("auth.getSession", parameters));
-            var responseXML = await client.ExecuteAsync<string>(request).ConfigureAwait(false);
+            string responseXML = null;
+            var client = _httpClientFactory.CreateClient();
+            var request = new HttpRequestMessage(HttpMethod.Get, BuildUrl("auth.getSession", parameters));
+            request.Headers.Add("User-Agent", WebHelper.UserAgent);
+            var response = await client.SendAsync(request).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                responseXML = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            }
             var doc = new XmlDocument();
-            doc.LoadXml(responseXML.Content);
+            doc.LoadXml(responseXML);
             var sessionKey = doc.GetElementsByTagName("key")[0].InnerText;
             return new OperationResult<string>
             {
@@ -117,36 +123,31 @@ namespace Roadie.Library.MetaData.LastFm
                 {
                     return new OperationResult<bool>("User does not have LastFM Integration setup");
                 }
-                await Task.Run(() =>
+                var method = "track.updateNowPlaying";
+                var parameters = new RequestParameters
                 {
-                    var method = "track.updateNowPlaying";
-                    var parameters = new RequestParameters
-                    {
-                        {"artist", scrobble.ArtistName},
-                        {"track", scrobble.TrackTitle},
-                        {"album", scrobble.ReleaseTitle},
-                        {"duration", ((int) scrobble.TrackDuration.TotalSeconds).ToString()}
-                    };
-                    var url = "http://ws.audioscrobbler.com/2.0/";
-                    var signature = GenerateMethodSignature(method, parameters, user.LastFMSessionKey);
-                    parameters.Add("api_sig", signature);
+                    {"artist", scrobble.ArtistName},
+                    {"track", scrobble.TrackTitle},
+                    {"album", scrobble.ReleaseTitle},
+                    {"duration", ((int) scrobble.TrackDuration.TotalSeconds).ToString()}
+                };
+                var url = "http://ws.audioscrobbler.com/2.0/";
+                var signature = GenerateMethodSignature(method, parameters, user.LastFMSessionKey);
+                parameters.Add("api_sig", signature);
 
-                    ServicePointManager.Expect100Continue = false;
-                    var request = WebRequest.Create(url);
-                    request.Method = "POST";
-                    var postData = parameters.ToString();
-                    var byteArray = System.Text.Encoding.UTF8.GetBytes(postData);
-                    request.ContentType = "application/x-www-form-urlencoded";
-                    request.ContentLength = byteArray.Length;
-                    using (var dataStream = request.GetRequestStream())
+                ServicePointManager.Expect100Continue = false;
+                var client = _httpClientFactory.CreateClient();
+                XPathNavigator xp = null;
+                var parametersJson = new StringContent(CacheManager.CacheSerializer.Serialize(parameters), System.Text.Encoding.UTF8, Application.Json);
+                using (var httpResponseMessage = await client.PostAsync(url, parametersJson).ConfigureAwait(false))
+                {
+                    if (httpResponseMessage.IsSuccessStatusCode)
                     {
-                        dataStream.Write(byteArray, 0, byteArray.Length);
-                        dataStream.Close();
+                        xp = await GetResponseAsXml(httpResponseMessage).ConfigureAwait(false);
+                        result = true;
                     }
-                    var xp = GetResponseAsXml(request);
-                    Logger.LogTrace($"LastFmHelper: RoadieUser `{roadieUser}` NowPlaying `{scrobble}` LastFmResult [{xp.InnerXml}]");
-                    result = true;
-                }).ConfigureAwait(false);
+                }
+                Logger.LogTrace($"LastFmHelper: Success [{ result }] RoadieUser `{roadieUser}` NowPlaying `{scrobble}` LastFmResult [{xp.InnerXml}]");
             }
             catch (Exception ex)
             {
@@ -169,7 +170,7 @@ namespace Roadie.Library.MetaData.LastFm
                 {
                     Logger.LogTrace("LastFmHelper:PerformArtistSearch:{0}", query);
                     var auth = new LastAuth(ApiKey.Key, ApiKey.KeySecret);
-                    var albumApi = new ArtistApi(auth);
+                    var albumApi = new ArtistApi(auth, _httpClientFactory.CreateClient());
                     var response = await albumApi.GetInfoAsync(query).ConfigureAwait(false);
                     if (!response.Success)
                     {
@@ -205,19 +206,29 @@ namespace Roadie.Library.MetaData.LastFm
             return new OperationResult<IEnumerable<ArtistSearchResult>>();
         }
 
-        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName,string query, int resultsCount)
+        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
         {
             var cacheKey = $"uri:lastfm:releasesearch:{ artistName.ToAlphanumericName() }:{ query.ToAlphanumericName() }";
             var data = await CacheManager.GetAsync<ReleaseSearchResult>(cacheKey, async () =>
             {
-                var request = new RestRequest();
-                request.Method = Method.Get;
-                var client = new RestClient(string.Format("http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={0}&artist={1}&album={2}&format=xml", ApiKey.Key, artistName, query));
-                var responseData = await client.ExecuteAsync<lfm>(request).ConfigureAwait(false);
-
+                Rootobject response = null;
+                var client = _httpClientFactory.CreateClient();
+                var request = new HttpRequestMessage(HttpMethod.Get, $"http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={ ApiKey.Key }&artist={ artistName }&album={ query }&format=json");
+                request.Headers.Add("User-Agent", WebHelper.UserAgent);
+                var sendResponse = await client.SendAsync(request).ConfigureAwait(false);
+                if (sendResponse.IsSuccessStatusCode)
+                {
+                    try
+                    {
+                        var r = await sendResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        response = CacheManager.CacheSerializer.Deserialize<Rootobject>(r);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex);                       
+                    }
+                }
                 ReleaseSearchResult result = null;
-
-                var response = responseData != null && responseData.Data != null ? responseData.Data : null;
                 if (response != null && response.album != null)
                 {
                     var lastFmAlbum = response.album;
@@ -229,15 +240,15 @@ namespace Roadie.Library.MetaData.LastFm
 
                     // No longer fetching/consuming images LastFm says is violation of ToS ; https://getsatisfaction.com/lastfm/topics/api-announcement-dac8oefw5vrxq
 
-                    if (lastFmAlbum.tags != null) result.Tags = lastFmAlbum.tags.Select(x => x.name).ToList();
+                    if (lastFmAlbum.tags != null) result.Tags = lastFmAlbum.tags.tag.Select(x => x.name).ToList();
                     if (lastFmAlbum.tracks != null)
                     {
                         var tracks = new List<TrackSearchResult>();
-                        foreach (var lastFmTrack in lastFmAlbum.tracks)
+                        foreach (var lastFmTrack in lastFmAlbum.tracks.track)
                         {
                             tracks.Add(new TrackSearchResult
                             {
-                                TrackNumber = SafeParser.ToNumber<short?>(lastFmTrack.rank),
+                                TrackNumber = SafeParser.ToNumber<short?>(lastFmTrack.TrackNumber),
                                 Title = lastFmTrack.name,
                                 Duration = SafeParser.ToNumber<int?>(lastFmTrack.duration),
                                 Urls = string.IsNullOrEmpty(lastFmTrack.url) ? new[] { lastFmTrack.url } : null
@@ -282,7 +293,9 @@ namespace Roadie.Library.MetaData.LastFm
                 var user = DbContext.Users.FirstOrDefault(x => x.RoadieId == roadieUser.UserId);
 
                 if (user == null || string.IsNullOrEmpty(user.LastFMSessionKey))
+                {
                     return new OperationResult<bool>("User does not have LastFM Integration setup");
+                }
                 var parameters = new RequestParameters
                 {
                     {"artist", scrobble.ArtistName},
@@ -299,19 +312,17 @@ namespace Roadie.Library.MetaData.LastFm
                 parameters.Add("api_sig", signature);
 
                 ServicePointManager.Expect100Continue = false;
-                var request = WebRequest.Create(url);
-                request.Method = "POST";
-                var postData = parameters.ToString();
-                var byteArray = System.Text.Encoding.UTF8.GetBytes(postData);
-                request.ContentType = "application/x-www-form-urlencoded";
-                request.ContentLength = byteArray.Length;
-                using (var dataStream = request.GetRequestStream())
+                var client = _httpClientFactory.CreateClient();
+                XPathNavigator xp = null;
+                var parametersJson = new StringContent(CacheManager.CacheSerializer.Serialize(parameters), System.Text.Encoding.UTF8, Application.Json);
+                using (var httpResponseMessage = await client.PostAsync(url, parametersJson).ConfigureAwait(false))
                 {
-                    dataStream.Write(byteArray, 0, byteArray.Length);
-                    dataStream.Close();
+                    if (httpResponseMessage.IsSuccessStatusCode)
+                    {
+                        xp = await GetResponseAsXml(httpResponseMessage).ConfigureAwait(false);
+                        result = true;
+                    }
                 }
-
-                var xp = GetResponseAsXml(request);
                 Logger.LogTrace($"LastFmHelper: RoadieUser `{roadieUser}` Scrobble `{scrobble}` LastFmResult [{xp.InnerXml}]");
                 result = true;
             }
@@ -389,7 +400,7 @@ namespace Roadie.Library.MetaData.LastFm
             return result;
         }
 
-        protected internal virtual XPathNavigator GetResponseAsXml(WebRequest request)
+        protected internal virtual XPathNavigator GetResponseXml(HttpWebRequest request)
         {
             WebResponse response;
             XPathNavigator navigator;
@@ -411,6 +422,45 @@ namespace Roadie.Library.MetaData.LastFm
             }
 
             return navigator;
+        }
+
+        protected internal virtual async Task<XPathNavigator> GetResponseAsXml(HttpResponseMessage request)
+        {
+            XPathNavigator navigator;
+            try
+            {
+                navigator = await GetXpathDocumentFromResponse(request);
+                CheckLastFmStatus(navigator);
+            }
+            catch (WebException exception)
+            {
+                var response = exception.Response;
+
+                XPathNavigator document;
+                TryGetXpathDocumentFromResponse(response, out document);
+
+                if (document != null) CheckLastFmStatus(document, exception);
+                throw; // throw even if Last.fm status is OK
+            }
+
+            return navigator;
+        }
+
+        protected virtual async Task<XPathNavigator> GetXpathDocumentFromResponse(HttpResponseMessage response)
+        {
+            using (var stream = await response.Content.ReadAsStreamAsync())
+            {
+                if (stream == null) throw new InvalidOperationException("Response Stream is null");
+
+                try
+                {
+                    return new XPathDocument(stream).CreateNavigator();
+                }
+                catch (XmlException exception)
+                {
+                    throw new XmlException("Could not read HTTP Response as XML", exception);
+                }
+            }
         }
 
         protected virtual XPathNavigator GetXpathDocumentFromResponse(WebResponse response)

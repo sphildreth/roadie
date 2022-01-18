@@ -25,7 +25,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
             IHttpClientFactory httpClientFactory)
             : base(configuration, cacheManager, logger, httpClientFactory)
         {
-            Repository = new MusicBrainzRepository(configuration, logger);
+            Repository = new MusicBrainzRepository(configuration, logger, httpClientFactory);
         }
 
         public async Task<IEnumerable<AudioMetaData>> MusicBrainzReleaseTracksAsync(string artistName, string releaseTitle)
@@ -61,7 +61,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
                     }
 
                     // Now get The Release Details
-                    release = await MusicBrainzRequestHelper.GetAsync<Release>(MusicBrainzRequestHelper.CreateLookupUrl("release", ReleaseResult.MusicBrainzId, "recordings")).ConfigureAwait(false);
+                    release = await MusicBrainzRequestHelper.GetAsync<Release>(_httpClientFactory, MusicBrainzRequestHelper.CreateLookupUrl("release", ReleaseResult.MusicBrainzId, "recordings")).ConfigureAwait(false);
                     if (release == null) return null;
                     CacheManager.Add(ReleaseCacheKey, release);
                 }
@@ -300,7 +300,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
             };
         }
 
-        private Task<CoverArtArchivesResult> CoverArtForMusicBrainzReleaseByIdAsync(string musicBrainzId) => MusicBrainzRequestHelper.GetAsync<CoverArtArchivesResult>(MusicBrainzRequestHelper.CreateCoverArtReleaseUrl(musicBrainzId));
+        private Task<CoverArtArchivesResult> CoverArtForMusicBrainzReleaseByIdAsync(string musicBrainzId) => MusicBrainzRequestHelper.GetAsync<CoverArtArchivesResult>(_httpClientFactory, MusicBrainzRequestHelper.CreateCoverArtReleaseUrl(musicBrainzId));
 
         private async Task<IEnumerable<Release>> ReleasesForArtistAsync(string artist, string artistMusicBrainzId = null)
         {

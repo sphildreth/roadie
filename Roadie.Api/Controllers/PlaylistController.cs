@@ -110,7 +110,7 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(200)]
         public async Task<IActionResult> List([FromQuery] PagedRequest request, string inc)
         {
-            var result = await PlaylistService.ListAsync(roadieUser: await CurrentUserModel().ConfigureAwait(false),  request: request).ConfigureAwait(false);
+            var result = await PlaylistService.ListAsync(roadieUser: await CurrentUserModel().ConfigureAwait(false), request: request).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError);

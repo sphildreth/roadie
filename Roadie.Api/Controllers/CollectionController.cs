@@ -88,7 +88,7 @@ namespace Roadie.Api.Controllers
         public async Task<IActionResult> Get(Guid id, string inc = null)
         {
             var result = await CollectionService.ByIdAsync(await CurrentUserModel().ConfigureAwait(false), id,
-                (inc ?? Collection.DefaultIncludes).ToLower().Split(",")).ConfigureAwait(false); 
+                (inc ?? Collection.DefaultIncludes).ToLower().Split(",")).ConfigureAwait(false);
             if (result == null || result.IsNotFoundResult)
             {
                 return NotFound();

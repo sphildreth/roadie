@@ -20,7 +20,9 @@ namespace Roadie.Library.Tests
         }
 
         private IRoadieSettings Configuration { get; }
+
         public DictionaryCacheManager CacheManager { get; }
+
         private Encoding.IHttpEncoder HttpEncoder { get; }
 
         public ArtistLookupEngineTests()

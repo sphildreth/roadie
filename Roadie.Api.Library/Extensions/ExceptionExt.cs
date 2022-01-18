@@ -15,7 +15,7 @@ namespace Roadie.Library.Extensions
             {
                 return JsonSerializer.Serialize(input, new JsonSerializerOptions
                 {
-                    IgnoreNullValues = true,
+                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                     WriteIndented = true
                 });
             }

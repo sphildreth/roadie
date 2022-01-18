@@ -17,7 +17,6 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.Encodings.Web;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Roadie.Api.Controllers
@@ -28,7 +27,6 @@ namespace Roadie.Api.Controllers
     [AllowAnonymous]
     public class AccountController : ControllerBase
     {
-
         private IAdminService AdminService { get; }
 
         private string BaseUrl
@@ -65,9 +63,13 @@ namespace Roadie.Api.Controllers
         private IRoadieSettings RoadieSettings { get; }
 
         private string _baseUrl;
+
         private readonly ILogger<AccountController> Logger;
+
         private readonly SignInManager<User> SignInManager;
+
         private readonly ITokenService TokenService;
+
         private readonly UserManager<User> UserManager;
 
         public AccountController(

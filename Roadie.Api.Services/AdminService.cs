@@ -658,9 +658,7 @@ namespace Roadie.Api.Services
             });
         }
 
-        /// <summary>
-        /// Perform checks/setup on start of application
-        /// </summary>
+
         public void PerformStartUpTasks()
         {
             var sw = Stopwatch.StartNew();

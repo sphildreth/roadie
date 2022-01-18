@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 namespace Roadie.Api.ModelBinding
 {
     /// <summary>
-    ///     This is needed as some clienst post some get, some query string some body post.
+    ///     This is needed as some clients post some get, some query string some body post.
     /// </summary>
-    class SubsonicRequestBinder : IModelBinder
+    internal class SubsonicRequestBinder : IModelBinder
     {
         public Task BindModelAsync(ModelBindingContext bindingContext)
         {
