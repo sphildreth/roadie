@@ -1,4 +1,7 @@
-﻿using System.Text.Json.Serialization;
+﻿using Roadie.Library.Caching;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace Roadie.Library.SearchEngines.MetaData.LastFm
 {
@@ -12,8 +15,8 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
         public string artist { get; set; }
 
         public string mbid { get; set; }
-
-        public Tags tags { get; set; }
+       
+        public string tags { get; set; }
 
         public string name { get; set; }
 
@@ -26,6 +29,23 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
         public string playcount { get; set; }
 
         public string url { get; set; }
+
+        /// <summary>
+        /// Sometimes LastFM returns string empty for an object (?!) and that blows up the serializer. This returns tags if the object value isn't an empty string.
+        /// </summary>
+        public IEnumerable<Tag> GetTags(ICacheSerializer serializer)
+        {
+            if(string.IsNullOrWhiteSpace(tags))
+            {
+                return Enumerable.Empty<Tag>();
+            }
+            var t = serializer.Deserialize<Tags>(tags);
+            if(t != null)
+            {
+                return t.tag;
+            }
+            return Enumerable.Empty<Tag>();
+        }
     }
 
     public class Tags
@@ -57,8 +77,6 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
 
         [JsonPropertyName("@attr")]
         public Attr attr { get; set; }
-
-        //public int? TrackNumber => string.IsNullOrWhiteSpace(attr) ? null : int.Parse(attr.Replace("\"@attr\":{\"rank\":", "").Replace("}", ""));
 
         public int? TrackNumber => attr?.rank;
 

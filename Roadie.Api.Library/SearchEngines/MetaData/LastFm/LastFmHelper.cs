@@ -240,7 +240,10 @@ namespace Roadie.Library.MetaData.LastFm
 
                     // No longer fetching/consuming images LastFm says is violation of ToS ; https://getsatisfaction.com/lastfm/topics/api-announcement-dac8oefw5vrxq
 
-                    if (lastFmAlbum.tags != null) result.Tags = lastFmAlbum.tags.tag.Select(x => x.name).ToList();
+                    if (!string.IsNullOrWhiteSpace(lastFmAlbum.tags))
+                    {
+                        result.Tags = lastFmAlbum.GetTags(CacheManager.CacheSerializer)?.Select(x => x.name).ToList();
+                    }
                     if (lastFmAlbum.tracks != null)
                     {
                         var tracks = new List<TrackSearchResult>();
