@@ -15,10 +15,7 @@ namespace Roadie.Library.Utility
         {
             if (!Predicate)
             {
-                var ex = new TException();
-                // I could not figure out how to set message on a generic Error so I pushed it to Data with Predicate Result as Key
-                ex.Data.Add(Predicate.ToString(), Message);
-                throw ex;
+                throw (TException)Activator.CreateInstance(typeof(TException), Message);
             }
         }
 

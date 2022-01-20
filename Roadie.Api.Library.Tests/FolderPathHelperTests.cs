@@ -2,6 +2,7 @@
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
 using Roadie.Library.Utility;
+using System;
 using System.IO;
 using Xunit;
 
@@ -154,6 +155,34 @@ namespace Roadie.Library.Tests
             var releaseFolder = FolderPathHelper.ReleasePath(af.FullName, input, SafeParser.ToDateTime(releaseDate).Value);
             var t = new DirectoryInfo(Path.Combine(Configuration.LibraryFolder, shouldBe));
             Assert.Equal(t.FullName, releaseFolder);
+        }
+
+        [Fact]
+        public void GenerateReleaseFolderNameInvalidArtistAndReleaseShouldThrowException()
+        {
+            Assert.Throws<ArgumentException>(() => FolderPathHelper.ReleasePath(null, null, DateTime.MinValue));
+        }
+
+        [Fact]
+        public void GenerateReleaseFolderNameInvalidReleaseShouldThrowException()
+        {
+            var af = new DirectoryInfo(Path.Combine(Configuration.LibraryFolder, @"E\EM\Empire Of The Moon [9909]"));
+            Assert.Throws<ArgumentException>(() => FolderPathHelper.ReleasePath(af.FullName, null, DateTime.MinValue));
+        }
+
+        [Fact]
+        public void GenerateReleaseFolderNameBlankReleaseShouldThrowException()
+        {
+            var af = new DirectoryInfo(Path.Combine(Configuration.LibraryFolder, @"E\EM\Empire Of The Moon [9909]"));
+            Assert.Throws<ArgumentException>(() => FolderPathHelper.ReleasePath(af.FullName, "", DateTime.MinValue));
+        }
+
+        [Fact]
+        public void GenerateReleaseFolderNameTooLongReleaseShouldThrowException()
+        {
+            var af = new DirectoryInfo(Path.Combine(Configuration.LibraryFolder, @"E\EM\Empire Of The Moon [9909]"));
+            var tooLong = new String('X', 500);
+            Assert.Throws<ArgumentException>(() => FolderPathHelper.ReleasePath(af.FullName, tooLong, DateTime.MinValue));
         }
     }
 }

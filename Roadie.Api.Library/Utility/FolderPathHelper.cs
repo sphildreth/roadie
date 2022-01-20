@@ -178,7 +178,7 @@ namespace Roadie.Library.Utility
         public static string ReleasePath(string artistFolder, string releaseTitle, DateTime releaseDate, bool createIfNotFound = false)
         {
             SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(artistFolder), "Invalid Artist Folder");
-            SimpleContract.Requires<ArgumentException>(artistFolder.Length < MaximumArtistFolderNameLength, $"Artist Folder is longer than maximum allowed [{ MaximumArtistFolderNameLength }]");
+            SimpleContract.Requires<ArgumentException>(artistFolder.Length < MaximumArtistFolderNameLength, $"Artist Folder [{ artistFolder }] is longer than maximum allowed [{ MaximumArtistFolderNameLength }]");
 
             SimpleContract.Requires<ArgumentException>(!string.IsNullOrEmpty(releaseTitle), "Invalid Release Title");
             SimpleContract.Requires<ArgumentException>(releaseDate != DateTime.MinValue, "Invalid Release Date");

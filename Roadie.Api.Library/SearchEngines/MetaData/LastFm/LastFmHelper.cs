@@ -255,10 +255,19 @@ namespace Roadie.Library.MetaData.LastFm
                             result.Tags = FilterTags(tagResult.Select(x => x.Name).Distinct().Take(25).ToArray());
                         }
                     }
-                    if (lastFmAlbum.Tracks != null)
+                    LastTrack[] lastFmTracks = null;
+                    try
+                    {
+                        lastFmTracks = lastFmAlbum.Tracks?.Where(x => x != null).ToArray();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, $"Error getting LastFM Tracks for [{ artistName }] Query [{ query }]");
+                    }
+                    if (lastFmTracks?.Any() == true)
                     {
                         var tracks = new List<TrackSearchResult>();
-                        foreach (var lastFmTrack in lastFmAlbum.Tracks)
+                        foreach (var lastFmTrack in lastFmTracks)
                         {
                             tracks.Add(new TrackSearchResult
                             {

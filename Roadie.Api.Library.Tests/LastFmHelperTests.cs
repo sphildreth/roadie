@@ -54,18 +54,10 @@ namespace Roadie.Library.Tests
         [Fact]
         public async Task LastFMReleaseSearch()
         {
-            //if (!Configuration.Integrations.LastFmProviderEnabled)
-            //{
-            //    return;
-            //}
-
-            Configuration.Integrations.ApiKeys = new List<ApiKey>();
-            Configuration.Integrations.ApiKeys.Add(new ApiKey
+            if (!Configuration.Integrations.LastFmProviderEnabled)
             {
-                ApiName = "LastFMApiKey",
-                Key = "a31dd32179375f9e332b89f8b9e38fc5",
-                KeySecret = "35b3684601b2ecf9c0c0c1cfda28159e"
-            });
+                return;
+            }
 
             var logger = new EventMessageLogger<LastFmHelper>();
             logger.Messages += MessageLogger_Messages;
@@ -86,8 +78,8 @@ namespace Roadie.Library.Tests
             var release = result.Data.FirstOrDefault();
             Assert.NotNull(release);
 
-            artistName = "Rigor Mortis";
-            title = "The Infinite Carnage";
+            artistName = "Arkhangelsk";
+            title = "Advent";
             sw = Stopwatch.StartNew();
 
             // Without Tags
