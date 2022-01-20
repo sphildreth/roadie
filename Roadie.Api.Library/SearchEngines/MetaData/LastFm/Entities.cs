@@ -1,128 +1,437 @@
-﻿using System.Collections.Generic;
-using System.Xml.Serialization;
-
-namespace Roadie.Library.SearchEngines.MetaData.LastFm
+﻿namespace Roadie.Library.SearchEngines.MetaData.LastFm
 {
-    /// <remarks />
-    [XmlType(AnonymousType = true)]
-    [XmlRoot(Namespace = "", IsNullable = false)]
-    public class lfm
+    // NOTE: Generated code may require at least .NET Framework 4.5 or .NET Core/Standard 2.0.
+    /// <remarks/>
+    [System.SerializableAttribute()]
+    public partial class lfm
     {
-        /// <remarks />
-        public lfmAlbum album { get; set; }
+        private lfmAlbum albumField;
 
-        /// <remarks />
-        [XmlAttribute]
-        public string status { get; set; }
+        private string statusField;
+
+        /// <remarks/>
+        public lfmAlbum album
+        {
+            get
+            {
+                return this.albumField;
+            }
+            set
+            {
+                this.albumField = value;
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public string status
+        {
+            get
+            {
+                return this.statusField;
+            }
+            set
+            {
+                this.statusField = value;
+            }
+        }
     }
 
-    /// <remarks />
-    [XmlType(AnonymousType = true)]
-    public class lfmAlbum
+    /// <remarks/>
+    [System.SerializableAttribute()]
+    public partial class lfmAlbum
     {
-        /// <remarks />
-        public string artist { get; set; }
+        private string nameField;
 
-        /// <remarks />
-        [XmlElement("image")]
-        public List<lfmAlbumImage> image { get; set; }
+        private string artistField;
 
-        /// <remarks />
-        public ushort listeners { get; set; }
+        private string mbidField;
 
-        /// <remarks />
-        public string mbid { get; set; }
+        private string urlField;
 
-        /// <remarks />
-        public string name { get; set; }
+        private lfmAlbumImage[] imageField;
 
-        /// <remarks />
-        public uint playcount { get; set; }
+        private uint? listenersField;
 
-        /// <remarks />
-        [XmlArrayItem("tag", IsNullable = false)]
-        public List<lfmAlbumTag> tags { get; set; }
+        private uint? playcountField;
 
-        /// <remarks />
-        [XmlArrayItem("track", IsNullable = false)]
-        public List<lfmAlbumTrack> tracks { get; set; }
+        private lfmAlbumTrack[] tracksField;
 
-        /// <remarks />
-        public string url { get; set; }
+        private lfmAlbumTag[] tagsField;
+
+        /// <remarks/>
+        public string name
+        {
+            get
+            {
+                return this.nameField;
+            }
+            set
+            {
+                this.nameField = value;
+            }
+        }
+
+        /// <remarks/>
+        public string artist
+        {
+            get
+            {
+                return this.artistField;
+            }
+            set
+            {
+                this.artistField = value;
+            }
+        }
+
+        /// <remarks/>
+        public string mbid
+        {
+            get
+            {
+                return this.mbidField;
+            }
+            set
+            {
+                this.mbidField = value;
+            }
+        }
+
+        /// <remarks/>
+        public string url
+        {
+            get
+            {
+                return this.urlField;
+            }
+            set
+            {
+                this.urlField = value;
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlElementAttribute("image")]
+        public lfmAlbumImage[] image
+        {
+            get
+            {
+                return this.imageField;
+            }
+            set
+            {
+                this.imageField = value;
+            }
+        }
+
+        /// <remarks/>
+        public uint? listeners
+        {
+            get
+            {
+                return this.listenersField;
+            }
+            set
+            {
+                this.listenersField = value;
+            }
+        }
+
+        /// <remarks/>
+        public uint? playcount
+        {
+            get
+            {
+                return this.playcountField;
+            }
+            set
+            {
+                this.playcountField = value;
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlArrayItemAttribute("track", IsNullable = false)]
+        public lfmAlbumTrack[] tracks
+        {
+            get
+            {
+                return this.tracksField;
+            }
+            set
+            {
+                this.tracksField = value;
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlArrayItemAttribute("tag", IsNullable = false)]
+        public lfmAlbumTag[] tags
+        {
+            get
+            {
+                return this.tagsField;
+            }
+            set
+            {
+                this.tagsField = value;
+            }
+        }
     }
 
-    /// <remarks />
-    [XmlType(AnonymousType = true)]
-    public class lfmAlbumImage
+    /// <remarks/>
+    [System.SerializableAttribute()]
+    public partial class lfmAlbumImage
     {
-        /// <remarks />
-        [XmlAttribute]
-        public string size { get; set; }
+        private string sizeField;
 
-        /// <remarks />
-        [XmlText]
-        public string Value { get; set; }
+        private string valueField;
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public string size
+        {
+            get
+            {
+                return this.sizeField;
+            }
+            set
+            {
+                this.sizeField = value;
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlTextAttribute()]
+        public string Value
+        {
+            get
+            {
+                return this.valueField;
+            }
+            set
+            {
+                this.valueField = value;
+            }
+        }
     }
 
-    /// <remarks />
-    [XmlType(AnonymousType = true)]
-    public class lfmAlbumTag
+    /// <remarks/>
+    [System.SerializableAttribute()]
+    public partial class lfmAlbumTrack
     {
-        /// <remarks />
-        public string name { get; set; }
+        private string nameField;
 
-        /// <remarks />
-        public string url { get; set; }
+        private string urlField;
+
+        private ushort durationField;
+
+        private lfmAlbumTrackStreamable streamableField;
+
+        private lfmAlbumTrackArtist artistField;
+
+        private byte rankField;
+
+        /// <remarks/>
+        public string name
+        {
+            get
+            {
+                return this.nameField;
+            }
+            set
+            {
+                this.nameField = value;
+            }
+        }
+
+        /// <remarks/>
+        public string url
+        {
+            get
+            {
+                return this.urlField;
+            }
+            set
+            {
+                this.urlField = value;
+            }
+        }
+
+        /// <remarks/>
+        public ushort duration
+        {
+            get
+            {
+                return this.durationField;
+            }
+            set
+            {
+                this.durationField = value;
+            }
+        }
+
+        /// <remarks/>
+        public lfmAlbumTrackStreamable streamable
+        {
+            get
+            {
+                return this.streamableField;
+            }
+            set
+            {
+                this.streamableField = value;
+            }
+        }
+
+        /// <remarks/>
+        public lfmAlbumTrackArtist artist
+        {
+            get
+            {
+                return this.artistField;
+            }
+            set
+            {
+                this.artistField = value;
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public byte rank
+        {
+            get
+            {
+                return this.rankField;
+            }
+            set
+            {
+                this.rankField = value;
+            }
+        }
     }
 
-    /// <remarks />
-    [XmlType(AnonymousType = true)]
-    public class lfmAlbumTrack
+    /// <remarks/>
+    [System.SerializableAttribute()]
+    public partial class lfmAlbumTrackStreamable
     {
-        /// <remarks />
-        public lfmAlbumTrackArtist artist { get; set; }
+        private byte fulltrackField;
 
-        /// <remarks />
-        public ushort duration { get; set; }
+        private byte valueField;
 
-        /// <remarks />
-        public string name { get; set; }
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public byte fulltrack
+        {
+            get
+            {
+                return this.fulltrackField;
+            }
+            set
+            {
+                this.fulltrackField = value;
+            }
+        }
 
-        /// <remarks />
-        [XmlAttribute]
-        public byte rank { get; set; }
-
-        /// <remarks />
-        public lfmAlbumTrackStreamable streamable { get; set; }
-
-        /// <remarks />
-        public string url { get; set; }
+        /// <remarks/>
+        [System.Xml.Serialization.XmlTextAttribute()]
+        public byte Value
+        {
+            get
+            {
+                return this.valueField;
+            }
+            set
+            {
+                this.valueField = value;
+            }
+        }
     }
 
-    /// <remarks />
-    [XmlType(AnonymousType = true)]
-    public class lfmAlbumTrackArtist
+    /// <remarks/>
+    [System.SerializableAttribute()]
+    public partial class lfmAlbumTrackArtist
     {
-        /// <remarks />
-        public string mbid { get; set; }
+        private string nameField;
 
-        /// <remarks />
-        public string name { get; set; }
+        private string mbidField;
 
-        /// <remarks />
-        public string url { get; set; }
+        private string urlField;
+
+        /// <remarks/>
+        public string name
+        {
+            get
+            {
+                return this.nameField;
+            }
+            set
+            {
+                this.nameField = value;
+            }
+        }
+
+        /// <remarks/>
+        public string mbid
+        {
+            get
+            {
+                return this.mbidField;
+            }
+            set
+            {
+                this.mbidField = value;
+            }
+        }
+
+        /// <remarks/>
+        public string url
+        {
+            get
+            {
+                return this.urlField;
+            }
+            set
+            {
+                this.urlField = value;
+            }
+        }
     }
 
-    /// <remarks />
-    [XmlType(AnonymousType = true)]
-    public class lfmAlbumTrackStreamable
+    /// <remarks/>
+    [System.SerializableAttribute()]
+    public partial class lfmAlbumTag
     {
-        /// <remarks />
-        [XmlAttribute]
-        public byte fulltrack { get; set; }
+        private string nameField;
 
-        /// <remarks />
-        [XmlText]
-        public byte Value { get; set; }
+        private string urlField;
+
+        /// <remarks/>
+        public string name
+        {
+            get
+            {
+                return this.nameField;
+            }
+            set
+            {
+                this.nameField = value;
+            }
+        }
+
+        /// <remarks/>
+        public string url
+        {
+            get
+            {
+                return this.urlField;
+            }
+            set
+            {
+                this.urlField = value;
+            }
+        }
     }
 }

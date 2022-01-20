@@ -40,7 +40,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
             return string.Format("{0}{1}", WebServiceUrl, string.Format(SearchTemplate, entity, query, limit, offset));
         }
 
-        internal static async Task<T> GetAsync<T>(IHttpClientFactory httpClientFactory, string url, bool withoutMetadata = true)
+        internal static async Task<T> GetAsync<T>(HttpClient client, string url, bool withoutMetadata = true)
         {
             var tryCount = 0;
             var result = default(T);
@@ -49,7 +49,6 @@ namespace Roadie.Library.MetaData.MusicBrainz
             {
                 try
                 {
-                    var client = httpClientFactory.CreateClient();
                     var request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Headers.Add("User-Agent", WebHelper.UserAgent);
                     var response = await client.SendAsync(request).ConfigureAwait(false);

@@ -54,10 +54,19 @@ namespace Roadie.Library.Tests
         [Fact]
         public async Task LastFMReleaseSearch()
         {
-            if (!Configuration.Integrations.LastFmProviderEnabled)
+            //if (!Configuration.Integrations.LastFmProviderEnabled)
+            //{
+            //    return;
+            //}
+
+            Configuration.Integrations.ApiKeys = new List<ApiKey>();
+            Configuration.Integrations.ApiKeys.Add(new ApiKey
             {
-                return;
-            }
+                ApiName = "LastFMApiKey",
+                Key = "a31dd32179375f9e332b89f8b9e38fc5",
+                KeySecret = "35b3684601b2ecf9c0c0c1cfda28159e"
+            });
+
             var logger = new EventMessageLogger<LastFmHelper>();
             logger.Messages += MessageLogger_Messages;
             var lfmHelper = new LastFmHelper(Configuration, CacheManager, new EventMessageLogger<LastFmHelper>(), RoadieDbContext, HttpEncoder, _httpClientFactory);
@@ -66,6 +75,7 @@ namespace Roadie.Library.Tests
             var title = "Piano Man";
             var sw = Stopwatch.StartNew();
 
+            // With Tags
             var result = await lfmHelper.PerformReleaseSearch(artistName, title, 1).ConfigureAwait(false);
 
             sw.Stop();
@@ -74,6 +84,21 @@ namespace Roadie.Library.Tests
             Assert.NotNull(result.Data);
             Assert.NotEmpty(result.Data);
             var release = result.Data.FirstOrDefault();
+            Assert.NotNull(release);
+
+            artistName = "Rigor Mortis";
+            title = "The Infinite Carnage";
+            sw = Stopwatch.StartNew();
+
+            // Without Tags
+            result = await lfmHelper.PerformReleaseSearch(artistName, title, 1).ConfigureAwait(false);
+
+            sw.Stop();
+
+            Assert.NotNull(result);
+            Assert.NotNull(result.Data);
+            Assert.NotEmpty(result.Data);
+            release = result.Data.FirstOrDefault();
             Assert.NotNull(release);
         }
 

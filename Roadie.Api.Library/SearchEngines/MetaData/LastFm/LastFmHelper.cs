@@ -14,12 +14,14 @@ using Roadie.Library.SearchEngines.MetaData.LastFm;
 using Roadie.Library.Utility;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.Serialization;
 using System.Xml.XPath;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -92,10 +94,9 @@ namespace Roadie.Library.MetaData.LastFm
                 {"token", token}
             };
             string responseXML = null;
-            var client = _httpClientFactory.CreateClient();
             var request = new HttpRequestMessage(HttpMethod.Get, BuildUrl("auth.getSession", parameters));
             request.Headers.Add("User-Agent", WebHelper.UserAgent);
-            var response = await client.SendAsync(request).ConfigureAwait(false);
+            var response = await HttpClient.SendAsync(request).ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
             {
                 responseXML = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -136,10 +137,9 @@ namespace Roadie.Library.MetaData.LastFm
                 parameters.Add("api_sig", signature);
 
                 ServicePointManager.Expect100Continue = false;
-                var client = _httpClientFactory.CreateClient();
                 XPathNavigator xp = null;
                 var parametersJson = new StringContent(CacheManager.CacheSerializer.Serialize(parameters), System.Text.Encoding.UTF8, Application.Json);
-                using (var httpResponseMessage = await client.PostAsync(url, parametersJson).ConfigureAwait(false))
+                using (var httpResponseMessage = await HttpClient.PostAsync(url, parametersJson).ConfigureAwait(false))
                 {
                     if (httpResponseMessage.IsSuccessStatusCode)
                     {
@@ -170,7 +170,7 @@ namespace Roadie.Library.MetaData.LastFm
                 {
                     Logger.LogTrace("LastFmHelper:PerformArtistSearch:{0}", query);
                     var auth = new LastAuth(ApiKey.Key, ApiKey.KeySecret);
-                    var albumApi = new ArtistApi(auth, _httpClientFactory.CreateClient());
+                    var albumApi = new ArtistApi(auth, HttpClient);
                     var response = await albumApi.GetInfoAsync(query).ConfigureAwait(false);
                     if (!response.Success)
                     {
@@ -184,8 +184,15 @@ namespace Roadie.Library.MetaData.LastFm
                         MusicBrainzId = lastFmArtist.Mbid,
                         Bio = lastFmArtist.Bio != null ? lastFmArtist.Bio.Content : null
                     };
-                    if (lastFmArtist.Tags != null) result.Tags = lastFmArtist.Tags.Select(x => x.Name).ToList();
-                    // No longer fetching/consuming images LastFm says is violation of ToS ; https://getsatisfaction.com/lastfm/topics/api-announcement-dac8oefw5vrxq
+                    if (lastFmArtist.Tags != null)
+                    {
+                        result.Tags = lastFmArtist.Tags.Select(x => x.Name).ToList();
+                    }
+                    if(lastFmArtist.MainImage != null)
+                    {
+                        result.ImageUrls = new string[1] { lastFmArtist.MainImage.Largest?.AbsoluteUri };
+                    }
+
                     if (lastFmArtist.Url != null)
                     {
                         result.Urls = new[] { lastFmArtist.Url.ToString() };
@@ -211,50 +218,54 @@ namespace Roadie.Library.MetaData.LastFm
             var cacheKey = $"uri:lastfm:releasesearch:{ artistName.ToAlphanumericName() }:{ query.ToAlphanumericName() }";
             var data = await CacheManager.GetAsync<ReleaseSearchResult>(cacheKey, async () =>
             {
-                Rootobject response = null;
-                var client = _httpClientFactory.CreateClient();
-                var request = new HttpRequestMessage(HttpMethod.Get, $"http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={ ApiKey.Key }&artist={ artistName }&album={ query }&format=json");
-                request.Headers.Add("User-Agent", WebHelper.UserAgent);
-                var sendResponse = await client.SendAsync(request).ConfigureAwait(false);
-                if (sendResponse.IsSuccessStatusCode)
+                var auth = new LastAuth(ApiKey.Key, ApiKey.KeySecret);
+                var releaseApi =new IF.Lastfm.Core.Api.AlbumApi(auth, HttpClient);
+                var sendResponse = await releaseApi.GetInfoAsync(artistName, query).ConfigureAwait(false);
+                if (!sendResponse.Success)
                 {
-                    try
-                    {
-                        var r = await sendResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        response = CacheManager.CacheSerializer.Deserialize<Rootobject>(r);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogError(ex);                       
-                    }
+                    return null;
                 }
+                var response = sendResponse.Content;
+
                 ReleaseSearchResult result = null;
-                if (response != null && response.album != null)
+                if (response != null)
                 {
-                    var lastFmAlbum = response.album;
+                    var lastFmAlbum = response;
                     result = new ReleaseSearchResult
                     {
-                        ReleaseTitle = lastFmAlbum.name,
-                        MusicBrainzId = lastFmAlbum.mbid
+                        ReleaseTitle = lastFmAlbum.Name,
+                        MusicBrainzId = lastFmAlbum.Mbid
                     };
 
-                    // No longer fetching/consuming images LastFm says is violation of ToS ; https://getsatisfaction.com/lastfm/topics/api-announcement-dac8oefw5vrxq
-
-                    if (!string.IsNullOrWhiteSpace(lastFmAlbum.tags))
+                    if(lastFmAlbum.Images != null)
                     {
-                        result.Tags = lastFmAlbum.GetTags(CacheManager.CacheSerializer)?.Select(x => x.name).ToList();
+
+                        result.ImageUrls = new string[1] { lastFmAlbum.Images.Largest.AbsoluteUri };
                     }
-                    if (lastFmAlbum.tracks != null)
+
+                    if (lastFmAlbum.TopTags?.Any() == true)
+                    {
+                        result.Tags = FilterTags(lastFmAlbum.TopTags.Select(x => x.Name));
+                    }
+                    else
+                    {
+                        var tagResult = await releaseApi.GetTopTagsAsync(artistName, query).ConfigureAwait(false);
+                        if(tagResult != null)
+                        {
+                            result.Tags = FilterTags(tagResult.Select(x => x.Name).Distinct().Take(25).ToArray());
+                        }
+                    }
+                    if (lastFmAlbum.Tracks != null)
                     {
                         var tracks = new List<TrackSearchResult>();
-                        foreach (var lastFmTrack in lastFmAlbum.tracks.track)
+                        foreach (var lastFmTrack in lastFmAlbum.Tracks)
                         {
                             tracks.Add(new TrackSearchResult
                             {
-                                TrackNumber = SafeParser.ToNumber<short?>(lastFmTrack.TrackNumber),
-                                Title = lastFmTrack.name,
-                                Duration = SafeParser.ToNumber<int?>(lastFmTrack.duration),
-                                Urls = string.IsNullOrEmpty(lastFmTrack.url) ? new[] { lastFmTrack.url } : null
+                                TrackNumber = SafeParser.ToNumber<short?>(lastFmTrack.Rank),
+                                Title = lastFmTrack.Name,
+                                Duration = SafeParser.ToNumber<int?>(lastFmTrack.Duration),
+                                Urls = lastFmTrack.Url != null ? new[] { lastFmTrack.Url.AbsoluteUri } : null
                             });
                         }
                         result.ReleaseMedia = new List<ReleaseMediaSearchResult>
@@ -274,6 +285,31 @@ namespace Roadie.Library.MetaData.LastFm
                 IsSuccess = data != null,
                 Data = new[] { data }
             };
+        }
+
+        private static IEnumerable<string> _tagsToIgnore = new List<string>
+        {
+            "albums I listened to",
+            "albums i own on vinyl",
+            "albums I own",
+            "everything",
+            "favorite album",
+            "me in concert",
+            "my favorites",
+            "our wedding dance",
+            "records i own",
+            "reminds me of my childhood",
+            "vinyls i own"
+        };
+
+        private List<string> FilterTags(IEnumerable<string> tags)
+        {
+            if(tags.Any() == false)
+            {
+                return null;
+            }
+            var result = tags.Where(x => !string.IsNullOrWhiteSpace(x) && x.Length > 1).ToList();
+            return result.Except(_tagsToIgnore).ToList();
         }
 
         public async Task<OperationResult<bool>> Scrobble(User roadieUser, ScrobbleInfo scrobble)
@@ -315,10 +351,9 @@ namespace Roadie.Library.MetaData.LastFm
                 parameters.Add("api_sig", signature);
 
                 ServicePointManager.Expect100Continue = false;
-                var client = _httpClientFactory.CreateClient();
                 XPathNavigator xp = null;
                 var parametersJson = new StringContent(CacheManager.CacheSerializer.Serialize(parameters), System.Text.Encoding.UTF8, Application.Json);
-                using (var httpResponseMessage = await client.PostAsync(url, parametersJson).ConfigureAwait(false))
+                using (var httpResponseMessage = await HttpClient.PostAsync(url, parametersJson).ConfigureAwait(false))
                 {
                     if (httpResponseMessage.IsSuccessStatusCode)
                     {
