@@ -495,7 +495,8 @@ namespace Roadie.Api.Services
                        .ConfigureAwait(false);
 
             // Dynamic list of favorites
-            if (!request.FilterToArtistId.HasValue && !request.FilterToReleaseId.HasValue && roadieUser != null)
+            if (string.IsNullOrWhiteSpace(normalizedFilterValue) && 
+                !request.FilterToArtistId.HasValue && !request.FilterToReleaseId.HasValue && roadieUser != null)
             {
                 var userFavoriteTracks = from ut in DbContext.UserTracks
                                          join t in DbContext.Tracks on ut.TrackId equals t.Id
