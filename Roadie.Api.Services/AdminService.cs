@@ -81,7 +81,7 @@ namespace Roadie.Api.Services
 
         private void EventMessageLogger_Messages(object sender, EventMessage e) => Task.WaitAll(LogAndPublishAsync(e.Message, e.Level));
 
-        private async Task LogAndPublishAsync(string message, LogLevel level = LogLevel.Trace)
+        private Task LogAndPublishAsync(string message, LogLevel level = LogLevel.Trace)
         {
             switch (level)
             {
@@ -105,8 +105,7 @@ namespace Roadie.Api.Services
                     Logger.LogCritical(message);
                     break;
             }
-
-            await ScanActivityHub.Clients.All.SendAsync("SendSystemActivityAsync", message).ConfigureAwait(false);
+            return ScanActivityHub.Clients.All.SendAsync("SendSystemActivityAsync", level, message);
         }
 
         private async Task<OperationResult<bool>> ScanFolderAsync(User user, DirectoryInfo d, bool isReadOnly, bool doDeleteFiles = true)
@@ -115,7 +114,7 @@ namespace Roadie.Api.Services
             sw.Start();
 
             long processedFiles = 0;
-            await LogAndPublishAsync($"** Processing Folder: [{d.FullName}]").ConfigureAwait(false);
+            await LogAndPublishAsync($"*\\ Processing Folder: [{d.FullName}]").ConfigureAwait(false);
 
             long processedFolders = 0;
             foreach (var folder in Directory.EnumerateDirectories(d.FullName).ToArray())
@@ -126,6 +125,7 @@ namespace Roadie.Api.Services
                                                                                          doDeleteFiles: doDeleteFiles).ConfigureAwait(false);
                 processedFolders++;
                 processedFiles += SafeParser.ToNumber<int>(directoryProcessResult.AdditionalData["ProcessedFiles"]);
+                await LogAndPublishAsync($"*+ Processing Folder: [{folder}]").ConfigureAwait(false);
             }
             CacheManager.Clear();
             if (!isReadOnly)
@@ -143,7 +143,7 @@ namespace Roadie.Api.Services
             };
             DbContext.ScanHistories.Add(newScanHistory);
             await DbContext.SaveChangesAsync().ConfigureAwait(false);
-            await LogAndPublishAsync($"** Completed! Processed Folders [{processedFolders}], Processed Files [{processedFiles}], New Artists [{ newScanHistory.NewArtists }], New Releases [{ newScanHistory.NewReleases }], New Tracks [{ newScanHistory.NewTracks }] : Elapsed Time [{sw.Elapsed}]").ConfigureAwait(false);
+            await LogAndPublishAsync($"*/ Completed! Processed Folders [{processedFolders}], Processed Files [{processedFiles}], New Artists [{ newScanHistory.NewArtists }], New Releases [{ newScanHistory.NewReleases }], New Tracks [{ newScanHistory.NewTracks }] : Elapsed Time [{sw.Elapsed}]").ConfigureAwait(false);
             return new OperationResult<bool>
             {
                 Data = true,
