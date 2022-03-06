@@ -2,6 +2,8 @@
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Processing;
 using System.IO;
+using SixLabors.ImageSharp.PixelFormats;
+using System;
 
 namespace Roadie.Library.Imaging
 {
@@ -52,6 +54,8 @@ namespace Roadie.Library.Imaging
             return count;
         }
 
+        private static ulong _averageHash = 0;
+
         #endregion Private constants and utility methods
 
         #region Public interface methods
@@ -63,16 +67,17 @@ namespace Roadie.Library.Imaging
         /// <returns>Hash of Image</returns>
         public static ulong AverageHash(byte[] bytes)
         {
-            using (var image = sl.Image.Load(bytes))
+            _averageHash = 0;
+            using var image = sl.Image.Load<Rgba32>(bytes);
             {
                 image.Mutate(ctx => ctx.Resize(8, 8).Grayscale());
-                using (var ms = new MemoryStream())
+                image.ProcessPixelRows(static pixelAccessor =>
                 {
                     var grayscale = new byte[64];
                     uint averageValue = 0;
                     for (var y = 0; y < 8; y++)
                     {
-                        var pixelRowSpan = image.GetPixelRowSpan(y);
+                        var pixelRowSpan = pixelAccessor.GetRowSpan(y);
                         for (var x = 0; x < 8; x++)
                         {
                             var pixel = pixelRowSpan[x].PackedValue;
@@ -84,15 +89,18 @@ namespace Roadie.Library.Imaging
                             averageValue += gray;
                         }
                     }
-
                     averageValue /= 64;
-                    ulong hash = 0;
                     for (var i = 0; i < 64; i++)
+                    {
                         if (grayscale[i] >= averageValue)
-                            hash |= 1UL << (63 - i);
-                    return hash;
-                }
+                        {
+                            _averageHash |= 1UL << (63 - i);
+                        }
+                    }
+
+                });
             }
+            return _averageHash;
         }
 
         /// <summary>
