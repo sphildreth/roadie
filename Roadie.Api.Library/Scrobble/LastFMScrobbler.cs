@@ -6,7 +6,6 @@ using Roadie.Library.MetaData.LastFm;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System.Threading.Tasks;
-using data = Roadie.Library.Data;
 
 namespace Roadie.Library.Scrobble
 {
@@ -16,10 +15,17 @@ namespace Roadie.Library.Scrobble
     /// </summary>
     public class LastFMScrobbler : ScrobblerIntegrationBase, ILastFMScrobbler
     {
+        public override int SortOrder => 0;
+
         private ILastFmHelper LastFmHelper { get; }
 
-        public LastFMScrobbler(IRoadieSettings configuration, ILogger<LastFMScrobbler> logger, IRoadieDbContext dbContext,
-                    ICacheManager cacheManager, ILastFmHelper lastFmHelper, IHttpContext httpContext)
+        public LastFMScrobbler(
+            IRoadieSettings configuration,
+            ILogger<LastFMScrobbler> logger,
+            IRoadieDbContext dbContext,
+            ICacheManager cacheManager,
+            ILastFmHelper lastFmHelper,
+            IHttpContext httpContext)
             : base(configuration, logger, dbContext, cacheManager, httpContext)
         {
             LastFmHelper = lastFmHelper;
@@ -43,6 +49,5 @@ namespace Roadie.Library.Scrobble
         ///     </remark>
         /// </summary>
         public override async Task<OperationResult<bool>> Scrobble(User roadieUser, ScrobbleInfo scrobble) => await LastFmHelper.Scrobble(roadieUser, scrobble).ConfigureAwait(false);
-
     }
 }

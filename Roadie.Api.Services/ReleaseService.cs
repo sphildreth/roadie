@@ -487,7 +487,7 @@ namespace Roadie.Api.Services
                 if (result.Data.Medias != null)
                 {
                     tsw.Restart();
-                    var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+                    var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
                     tsw.Stop();
                     timings.Add("getUser", tsw.ElapsedMilliseconds);
 

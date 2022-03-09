@@ -31,7 +31,12 @@ namespace Roadie.Library.Scrobble
 
         private IEnumerable<IScrobblerIntegration> Scrobblers { get; }
 
-        public ScrobbleHandler(IRoadieSettings configuration, ILogger logger, IRoadieDbContext dbContext, ICacheManager cacheManager, RoadieScrobbler roadieScrobbler)
+        public ScrobbleHandler(
+            IRoadieSettings configuration,
+            ILogger logger,
+            IRoadieDbContext dbContext,
+            ICacheManager cacheManager,
+            IRoadieScrobbler roadieScrobbler)
         {
             Logger = logger;
             Configuration = configuration;
@@ -43,9 +48,16 @@ namespace Roadie.Library.Scrobble
             Scrobblers = scrobblers;
         }
 
-        public ScrobbleHandler(IRoadieSettings configuration, ILogger<ScrobbleHandler> logger, IRoadieDbContext dbContext,
-                               ICacheManager cacheManager, IHttpEncoder httpEncoder, IHttpContext httpContext,
-                               ILastFmHelper lastFmHelper, IRoadieScrobbler roadieScrobbler, ILastFMScrobbler lastFMScrobbler)
+        public ScrobbleHandler(
+            IRoadieSettings configuration,
+            ILogger<ScrobbleHandler> logger,
+            IRoadieDbContext dbContext,
+            ICacheManager cacheManager,
+            IHttpEncoder httpEncoder,
+            IHttpContext httpContext,
+            ILastFmHelper lastFmHelper,
+            IRoadieScrobbler roadieScrobbler,
+            ILastFMScrobbler lastFMScrobbler)
         {
             Logger = logger;
             Configuration = configuration;
@@ -110,7 +122,7 @@ namespace Roadie.Library.Scrobble
         public async Task<OperationResult<bool>> Scrobble(User user, ScrobbleInfo scrobble)
         {
             var s = await GetScrobbleInfoDetailsAsync(scrobble).ConfigureAwait(false);
-            foreach (var scrobbler in Scrobblers)
+            foreach (var scrobbler in Scrobblers.OrderBy(x => x.SortOrder))
             {
                 await scrobbler.Scrobble(user, s).ConfigureAwait(false);
             }

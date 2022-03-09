@@ -195,7 +195,7 @@ namespace Roadie.Api.Services
             }, data.Track.CacheRegionUrn(id));
         }
 
-        protected async Task<User> GetUser(string username)
+        public async Task<User> GetUserByUserNameAsync(string username)
         {
             if (string.IsNullOrEmpty(username))
             {
@@ -205,10 +205,10 @@ namespace Roadie.Api.Services
             {
                 return DbContext.Users.FirstOrDefaultAsync(x => x.UserName == username);
             }, null).ConfigureAwait(false);
-            return await GetUser(userByUsername?.RoadieId).ConfigureAwait(false);
+            return await GetUserAsync(userByUsername?.RoadieId).ConfigureAwait(false);
         }
 
-        protected Task<User> GetUser(Guid? id)
+        public Task<User> GetUserAsync(Guid? id)
         {
            return CacheManager.GetAsync(User.CacheUrn(id.Value), async () =>
            {

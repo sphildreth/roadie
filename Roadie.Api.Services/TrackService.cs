@@ -229,7 +229,7 @@ namespace Roadie.Api.Services
             if (result?.Data != null && roadieUser != null)
             {
                 tsw.Restart();
-                var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+                var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
                 tsw.Stop();
                 timings.Add("getUser", tsw.ElapsedMilliseconds);
 
@@ -620,7 +620,7 @@ namespace Roadie.Api.Services
                     resultQuery = resultQuery.Where(x => x.ti.Tags != null && x.ti.Tags.Contains(tagValue));
                 }
 
-                var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+                var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
                 var result = resultQuery.Select(x =>
                     new TrackList
                     {

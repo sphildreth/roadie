@@ -110,13 +110,12 @@ namespace Roadie.Api.Services
         {
             if (request == null || string.IsNullOrEmpty(request?.u))
             {
-                return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>(
-                   subsonic.ErrorCodes.WrongUsernameOrPassword, "Unknown Username");
+                return new subsonic.SubsonicOperationResult<subsonic.SubsonicAuthenticateResponse>(subsonic.ErrorCodes.WrongUsernameOrPassword, "Unknown Username");
             }
 
             try
             {
-                var user = DbContext.Users.FirstOrDefault(x => x.UserName == request.u);
+                var user = await GetUserByUserNameAsync(request.u).ConfigureAwait(false);
                 if (user == null)
                 {
                     Logger.LogTrace($"Unknown User [{request.u}]");
@@ -144,8 +143,7 @@ namespace Roadie.Api.Services
                 {
                     try
                     {
-                        var hashCheck =
-                            UserManger.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+                        var hashCheck = UserManger.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
                         if (hashCheck == PasswordVerificationResult.Failed)
                         {
                             user = null;
@@ -235,7 +233,7 @@ namespace Roadie.Api.Services
 
             await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             CacheManager.ClearRegion(user.CacheRegion);
 
             Logger.LogTrace(
@@ -371,7 +369,7 @@ namespace Roadie.Api.Services
                 DbContext.Bookmarks.Remove(userBookmark);
                 await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
-                var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+                var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
                 CacheManager.ClearRegion(user.CacheRegion);
 
                 Logger.LogTrace($"Subsonic: Deleted Bookmark `{userBookmark}` for User `{roadieUser}`");
@@ -847,7 +845,7 @@ namespace Roadie.Api.Services
             }
             else if (!string.IsNullOrEmpty(request.u))
             {
-                var user = await GetUser(request.u).ConfigureAwait(false);
+                var user = await GetUserByUserNameAsync(request.u).ConfigureAwait(false);
                 if (user == null)
                 {
                     return new subsonic.SubsonicFileOperationResult<Library.Models.Image>(
@@ -990,7 +988,7 @@ namespace Roadie.Api.Services
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetMusicDirectoryAsync(subsonic.Request request, Library.Models.Users.User roadieUser)
         {
             var directory = new subsonic.Directory();
-            var user = await GetUser(roadieUser?.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser?.UserId).ConfigureAwait(false);
 
             // Request to get albums for an Artist
             if (request.ArtistId != null)
@@ -1232,7 +1230,7 @@ namespace Roadie.Api.Services
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetPlayQueueAsync(subsonic.Request request,
             Library.Models.Users.User roadieUser)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
 
             subsonic.PlayQueue playQue = null;
 
@@ -1546,7 +1544,7 @@ namespace Roadie.Api.Services
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetUserAsync(subsonic.Request request,
             string username)
         {
-            var user = await GetUser(username).ConfigureAwait(false);
+            var user = await GetUserByUserNameAsync(username).ConfigureAwait(false);
             if (user == null)
             {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
@@ -1612,7 +1610,7 @@ namespace Roadie.Api.Services
             Library.Models.Users.User roadieUser, string current, long? position)
         {
             // Remove any existing Que for User
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user.UserQues?.Any() == true)
             {
                 DbContext.UserQues.RemoveRange(user.UserQues);
@@ -1744,7 +1742,7 @@ namespace Roadie.Api.Services
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> SetRatingAsync(subsonic.Request request,
             Library.Models.Users.User roadieUser, short rating)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
@@ -1800,7 +1798,7 @@ namespace Roadie.Api.Services
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> ToggleStarAsync(subsonic.Request request,
             Library.Models.Users.User roadieUser, bool star, string[] albumIds = null, string[] artistIds = null)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new subsonic.SubsonicOperationResult<subsonic.Response>(
@@ -1954,7 +1952,7 @@ namespace Roadie.Api.Services
 
             await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             CacheManager.ClearRegion(user.CacheRegion);
 
             return new subsonic.SubsonicOperationResult<subsonic.Response>

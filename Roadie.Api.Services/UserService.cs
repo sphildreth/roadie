@@ -128,7 +128,7 @@ namespace Roadie.Api.Services
             var tsw = new Stopwatch();
 
             tsw.Restart();
-            var user = await GetUser(id).ConfigureAwait(false);
+            var user = await GetUserAsync(id).ConfigureAwait(false);
             tsw.Stop();
             timings.Add("getUser", tsw.ElapsedMilliseconds);
 
@@ -257,7 +257,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<bool>> DeleteAllBookmarksAsync(User roadieUser)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -356,7 +356,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<bool>> SetArtistBookmarkAsync(Guid artistId, User roadieUser, bool isBookmarked)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -380,7 +380,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<bool>> SetArtistDislikedAsync(Guid artistId, User roadieUser, bool isDisliked)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -390,7 +390,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<bool>> SetArtistFavoriteAsync(Guid artistId, User roadieUser, bool isFavorite)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -400,7 +400,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<short>> SetArtistRatingAsync(Guid artistId, User roadieUser, short rating)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<short>(true, $"Invalid User [{roadieUser}]");
@@ -410,7 +410,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<bool>> SetCollectionBookmarkAsync(Guid collectionId, User roadieUser, bool isBookmarked)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -433,7 +433,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<bool>> SetLabelBookmarkAsync(Guid labelId, User roadieUser, bool isBookmarked)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -457,7 +457,7 @@ namespace Roadie.Api.Services
         public async Task<OperationResult<bool>> SetPlaylistBookmarkAsync(Guid playlistId, User roadieUser,
             bool isBookmarked)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -480,7 +480,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<bool>> SetReleaseBookmarkAsync(Guid releaseid, User roadieUser, bool isBookmarked)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -503,7 +503,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<bool>> SetReleaseDislikedAsync(Guid releaseId, User roadieUser, bool isDisliked)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -513,7 +513,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<bool>> SetReleaseFavoriteAsync(Guid releaseId, User roadieUser, bool isFavorite)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -523,7 +523,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<short>> SetReleaseRatingAsync(Guid releaseId, User roadieUser, short rating)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<short>(true, $"Invalid User [{roadieUser}]");
@@ -533,7 +533,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<bool>> SetTrackBookmarkAsync(Guid trackId, User roadieUser, bool isBookmarked)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -556,7 +556,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<bool>> SetTrackDislikedAsync(Guid trackId, User roadieUser, bool isDisliked)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -566,7 +566,7 @@ namespace Roadie.Api.Services
 
         public async Task<OperationResult<bool>> SetTrackFavoriteAsync(Guid trackId, User roadieUser, bool isFavorite)
         {
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             if (user == null)
             {
                 return new OperationResult<bool>(true, $"Invalid User [{roadieUser}]");
@@ -578,9 +578,9 @@ namespace Roadie.Api.Services
         {
             var timings = new Dictionary<string, long>();
             var sw = Stopwatch.StartNew();
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
             sw.Stop();
-            timings.Add(nameof(GetUser), sw.ElapsedMilliseconds);
+            timings.Add(nameof(GetUserByUserNameAsync), sw.ElapsedMilliseconds);
 
             if (user == null)
             {

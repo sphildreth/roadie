@@ -265,10 +265,10 @@ namespace Roadie.Api
             services.AddSingleton<IWikipediaHelper, WikipediaHelper>();
             services.AddSingleton<IFileNameHelper, FileNameHelper>();
             services.AddSingleton<IID3TagsHelper, ID3TagsHelper>();
+            services.AddSingleton<ILastFmHelper, LastFmHelper>();
+            services.AddSingleton<IRoadieScrobbler, RoadieScrobbler>();
+            services.AddSingleton<ILastFMScrobbler, LastFMScrobbler>();
 
-            services.AddScoped<ILastFmHelper, LastFmHelper>();
-            services.AddScoped<IRoadieScrobbler, RoadieScrobbler>();
-            services.AddScoped<ILastFMScrobbler, LastFMScrobbler>();
             services.AddScoped<IStatisticsService, StatisticsService>();
             services.AddScoped<ICollectionService, CollectionService>();
             services.AddScoped<IPlaylistService, PlaylistService>();
@@ -361,7 +361,6 @@ namespace Roadie.Api
                 }
                 return new HttpContext(factory.GetService<IRoadieSettings>(), new UrlHelper(actionContext));
             });
-
         }
 
         private static string _roadieApiVersion = null;

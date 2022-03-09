@@ -5,7 +5,6 @@ using Roadie.Library.Data.Context;
 using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System.Threading.Tasks;
-using data = Roadie.Library.Data;
 
 namespace Roadie.Library.Scrobble
 {
@@ -21,8 +20,14 @@ namespace Roadie.Library.Scrobble
 
         protected ILogger Logger { get; }
 
-        public ScrobblerIntegrationBase(IRoadieSettings configuration, ILogger logger, IRoadieDbContext dbContext,
-                                                    ICacheManager cacheManager, IHttpContext httpContext)
+        public abstract int SortOrder { get; }
+
+        public ScrobblerIntegrationBase(
+            IRoadieSettings configuration,
+            ILogger logger,
+            IRoadieDbContext dbContext,
+            ICacheManager cacheManager,
+            IHttpContext httpContext)
         {
             Logger = logger;
             Configuration = configuration;

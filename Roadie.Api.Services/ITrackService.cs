@@ -10,6 +10,8 @@ namespace Roadie.Api.Services
 {
     public interface ITrackService
     {
+        Task<Roadie.Library.Identity.User> GetUserByUserNameAsync(string username);
+
         Task<OperationResult<Track>> ByIdAsyncAsync(User roadieUser, Guid id, IEnumerable<string> includes);
 
         Task<PagedResult<TrackList>> ListAsync(PagedRequest request, User roadieUser, bool? doRandomize = false, Guid? releaseId = null);

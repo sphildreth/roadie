@@ -88,7 +88,12 @@ namespace Roadie.Api.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Scrobble(Guid id, string startedPlaying, bool isRandom)
         {
-            var result = await PlayActivityService.ScrobbleAsync(await CurrentUserModel().ConfigureAwait(false), new ScrobbleInfo
+            var user = await CurrentUserModel().ConfigureAwait(false);
+
+            // Put user in cache (if not already) for future track related API operations.
+            await TrackService.GetUserByUserNameAsync(user.UserName).ConfigureAwait(false);
+
+            var result = await PlayActivityService.ScrobbleAsync(user, new ScrobbleInfo
             {
                 TrackId = id,
                 TimePlayed = SafeParser.ToDateTime(startedPlaying) ?? DateTime.UtcNow,
@@ -119,7 +124,8 @@ namespace Roadie.Api.Controllers
             {
                 return StatusCode((int)HttpStatusCode.Unauthorized);
             }
-
+            // Put user in cache (if not already) for future track related API operations.
+            await System.Threading.Tasks.Task.Run(async () => await TrackService.GetUserByUserNameAsync(user.UserName).ConfigureAwait(false));
             if (!ServiceBase.ConfirmTrackPlayToken(user, id, trackPlayToken))
             {
                 return StatusCode((int)HttpStatusCode.Unauthorized);

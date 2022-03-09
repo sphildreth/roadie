@@ -70,7 +70,7 @@ namespace Roadie.Api.Services
             var rowCount = result.Count();
             var rows = result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArray();
 
-            var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+            var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
 
             foreach (var row in rows)
             {

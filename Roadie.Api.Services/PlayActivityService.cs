@@ -28,16 +28,26 @@ namespace Roadie.Api.Services
 
         protected IScrobbleHandler ScrobblerHandler { get; }
 
-        public PlayActivityService(IRoadieSettings configuration, IRoadieDbContext dbContext, ICacheManager cacheManager,
-                                   ILogger logger, ScrobbleHandler scrobbleHandler)
+        public PlayActivityService(
+            IRoadieSettings configuration,
+            IRoadieDbContext dbContext,
+            ICacheManager cacheManager,
+            ILogger logger,
+            ScrobbleHandler scrobbleHandler)
             : base(configuration, null, dbContext, cacheManager, logger, null)
         {
             ScrobblerHandler = scrobbleHandler;
         }
 
-        public PlayActivityService(IRoadieSettings configuration, IHttpEncoder httpEncoder, IHttpContext httpContext,
-                                   IRoadieDbContext dbContext, ICacheManager cacheManager, ILogger<PlayActivityService> logger,
-                                   IScrobbleHandler scrobbleHandler, IHubContext<PlayActivityHub> playActivityHub)
+        public PlayActivityService(
+            IRoadieSettings configuration,
+            IHttpEncoder httpEncoder,
+            IHttpContext httpContext,
+            IRoadieDbContext dbContext,
+            ICacheManager cacheManager,
+            ILogger<PlayActivityService> logger,
+            IScrobbleHandler scrobbleHandler,
+            IHubContext<PlayActivityHub> playActivityHub)
             : base(configuration, httpEncoder, dbContext, cacheManager, logger, httpContext)
         {
             PlayActivityHub = playActivityHub;
@@ -195,7 +205,7 @@ namespace Roadie.Api.Services
                     ? request.OrderValue(new Dictionary<string, string> { { "PlayedDateDateTime", "DESC" } })
                     : request.OrderValue();
                 var rowCount = result.Count();
-                var rows = await result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArrayAsync().ConfigureAwait(false); 
+                var rows = await result.OrderBy(sortBy).Skip(request.SkipValue).Take(request.LimitValue).ToArrayAsync().ConfigureAwait(false);
                 sw.Stop();
                 return new Library.Models.Pagination.PagedResult<PlayActivityList>
                 {

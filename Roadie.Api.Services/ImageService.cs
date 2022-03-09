@@ -564,7 +564,7 @@ namespace Roadie.Api.Services
         {
             try
             {
-                var user = await GetUser(id).ConfigureAwait(false);
+                var user = await GetUserAsync(id).ConfigureAwait(false);
                 if (user == null)
                 {
                     return new FileOperationResult<IImage>(true, $"User Not Found [{id}]");

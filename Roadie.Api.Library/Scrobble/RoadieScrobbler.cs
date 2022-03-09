@@ -7,7 +7,6 @@ using Roadie.Library.Models.Users;
 using Roadie.Library.Utility;
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
 using data = Roadie.Library.Data;
 
@@ -15,18 +14,26 @@ namespace Roadie.Library.Scrobble
 {
     public class RoadieScrobbler : ScrobblerIntegrationBase, IRoadieScrobbler
     {
+        public override int SortOrder => 99; // Ensure that the Roadie Scrobbler is last due to heavy database and cache manipulation
 
-        public RoadieScrobbler(IRoadieSettings configuration, ILogger logger, IRoadieDbContext dbContext, ICacheManager cacheManager)
+        public RoadieScrobbler(
+            IRoadieSettings configuration,
+            ILogger logger,
+            IRoadieDbContext dbContext,
+            ICacheManager cacheManager)
             : base(configuration, logger, dbContext, cacheManager, null)
         {
         }
 
-        public RoadieScrobbler(IRoadieSettings configuration, ILogger<RoadieScrobbler> logger, IRoadieDbContext dbContext,
-                               ICacheManager cacheManager, IHttpContext httpContext)
+        public RoadieScrobbler(
+            IRoadieSettings configuration,
+            ILogger<RoadieScrobbler> logger,
+            IRoadieDbContext dbContext,
+            ICacheManager cacheManager,
+            IHttpContext httpContext)
             : base(configuration, logger, dbContext, cacheManager, httpContext)
         {
         }
-
 
         /// <summary>
         ///     For Roadie we only add a user play on the full scrobble event, otherwise we get double track play numbers.
@@ -48,7 +55,7 @@ namespace Roadie.Library.Scrobble
             try
             {
                 // If a user and If less than half of duration then do nothing
-                if (roadieUser != null && 
+                if (roadieUser != null &&
                     scrobble.ElapsedTimeOfTrackPlayed.TotalSeconds < scrobble.TrackDuration.TotalSeconds / 2)
                 {
                     Logger.LogTrace("Skipping Scrobble, Playback did not exceed minimum elapsed time");
@@ -81,22 +88,25 @@ namespace Roadie.Library.Scrobble
                 {
                     if (roadieUser != null)
                     {
-                        var user = await DbContext.Users.FirstOrDefaultAsync(x => x.RoadieId == roadieUser.UserId).ConfigureAwait(false);
-                        userTrack = await DbContext.UserTracks.FirstOrDefaultAsync(x => x.UserId == user.Id && x.TrackId == track.Id).ConfigureAwait(false);
-                        if (userTrack == null)
+                        // User should be cached if not then skip as probably a bad user
+                        var user = CacheManager.Get<Identity.User>(Identity.User.CacheUrn(roadieUser.UserId));
+                        if (user != null)
                         {
-                            userTrack = new data.UserTrack(now)
+                            userTrack = await DbContext.UserTracks.FirstOrDefaultAsync(x => x.UserId == user.Id && x.TrackId == track.Id).ConfigureAwait(false);
+                            if (userTrack == null)
                             {
-                                UserId = user.Id,
-                                TrackId = track.Id
-                            };
-                            await DbContext.UserTracks.AddAsync(userTrack).ConfigureAwait(false);
+                                userTrack = new data.UserTrack(now)
+                                {
+                                    UserId = user.Id,
+                                    TrackId = track.Id
+                                };
+                                await DbContext.UserTracks.AddAsync(userTrack).ConfigureAwait(false);
+                            }
+                            userTrack.LastPlayed = now;
+                            userTrack.PlayedCount = (userTrack.PlayedCount ?? 0) + 1;
+
+                            CacheManager.ClearRegion(user.CacheRegion);
                         }
-
-                        userTrack.LastPlayed = now;
-                        userTrack.PlayedCount = (userTrack.PlayedCount ?? 0) + 1;
-
-                        CacheManager.ClearRegion(user.CacheRegion);
                     }
 
                     track.PlayedCount = (track.PlayedCount ?? 0) + 1;
@@ -139,7 +149,7 @@ namespace Roadie.Library.Scrobble
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex,$"Error in Scrobble, Creating UserTrack: User `{roadieUser}` TrackId [{track.Id}");
+                    Logger.LogError(ex, $"Error in Scrobble, Creating UserTrack: User `{roadieUser}` TrackId [{track.Id}");
                 }
 
                 sw.Stop();

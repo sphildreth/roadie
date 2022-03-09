@@ -336,7 +336,7 @@ namespace Roadie.Api.Services
             {
                 if (result?.Data?.Tracks != null)
                 {
-                    var user = await GetUser(roadieUser.UserId).ConfigureAwait(false);
+                    var user = await GetUserAsync(roadieUser.UserId).ConfigureAwait(false);
                     foreach (var track in result.Data.Tracks)
                     {
                         track.Track.TrackPlayUrl = MakeTrackPlayUrl(user, HttpContext.BaseUrl, track.Track.Id);
