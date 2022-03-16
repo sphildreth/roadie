@@ -15,7 +15,12 @@ namespace Roadie.Library.SearchEngines.Imaging
 {
     public class ITunesSearchEngine : ImageSearchEngineBase, IITunesSearchEngine
     {
-        public ITunesSearchEngine(IRoadieSettings configuration, ICacheManager cacheManager, ILogger<ITunesSearchEngine> logger, string requestIp = null, string referrer = null)
+        public ITunesSearchEngine(
+            IRoadieSettings configuration,
+            ICacheManager cacheManager,
+            ILogger<ITunesSearchEngine> logger,
+            string requestIp = null,
+            string referrer = null)
             : base(configuration, logger, "http://itunes.apple.com", requestIp, referrer)
         {
             CacheManager = cacheManager;
@@ -36,9 +41,10 @@ namespace Roadie.Library.SearchEngines.Imaging
                 if (response.ResponseStatus == ResponseStatus.Error)
                 {
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
                         throw new AuthenticationException("Unauthorized");
-                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.",
-                        response.ErrorMessage, response.Content));
+                    }
+                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
                 }
 
                 var responseData = response?.Data?.results?.FirstOrDefault();
@@ -74,7 +80,7 @@ namespace Roadie.Library.SearchEngines.Imaging
 
         public override RestRequest BuildRequest(string query, int resultsCount)
         {
-            return BuildRequest(query, resultsCount, "Release");
+            return BuildRequest(query, resultsCount, "album");
         }
 
 #pragma warning disable CS1998
@@ -89,12 +95,16 @@ namespace Roadie.Library.SearchEngines.Imaging
                 if (response.ResponseStatus == ResponseStatus.Error)
                 {
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
                         throw new AuthenticationException("Unauthorized");
-                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.",
-                        response.ErrorMessage, response.Content));
+                    }
+                    throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
                 }
 
-                if (response.Data.results == null) return new ImageSearchResult[0];
+                if (response.Data.results == null)
+                {
+                    return new ImageSearchResult[0];
+                }
                 result = response.Data.results.Select(x => new ImageSearchResult
                 {
                     ArtistId = x.artistId.ToString(),
@@ -120,9 +130,10 @@ namespace Roadie.Library.SearchEngines.Imaging
             if (response.ResponseStatus == ResponseStatus.Error)
             {
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
                     throw new AuthenticationException("Unauthorized");
-                throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage,
-                    response.Content));
+                }
+                throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
             }
 
             ReleaseSearchResult data = null;

@@ -12,15 +12,19 @@ using System.Threading.Tasks;
 namespace Roadie.Library.SearchEngines.Imaging
 {
     /// <summary>
-    ///     https://msdn.microsoft.com/en-us/library/dn760791(v=bsynd.50).aspx
+    /// https://docs.microsoft.com/en-us/bing/search-apis/bing-image-search/how-to/get-images
     /// </summary>
     public class BingImageSearchEngine : ImageSearchEngineBase, IBingImageSearchEngine
     {
 
         public override bool IsEnabled => Configuration.Integrations.BingImageSearchEngineEnabled;
 
-        public BingImageSearchEngine(IRoadieSettings configuration, ILogger<BingImageSearchEngine> logger, string requestIp = null, string referrer = null)
-            : base(configuration, logger, "https://api.cognitive.microsoft.com", requestIp, referrer)
+        public BingImageSearchEngine(
+            IRoadieSettings configuration,
+            ILogger<BingImageSearchEngine> logger,
+            string requestIp = null,
+            string referrer = null)
+            : base(configuration, logger, "https://api.bing.microsoft.com", requestIp, referrer)
         {
             _apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "BingImageSearch") ??
                       new ApiKey();
@@ -30,7 +34,7 @@ namespace Roadie.Library.SearchEngines.Imaging
         {
             var request = new RestRequest
             {
-                Resource = "/bing/v7.0/images/search",
+                Resource = "/v7.0/images/search",
                 Method = Method.Get,
                 RequestFormat = DataFormat.Json
             };
@@ -51,17 +55,18 @@ namespace Roadie.Library.SearchEngines.Imaging
             var response = await _client.ExecuteAsync<BingImageResult>(request).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
                 throw new AuthenticationException("Api Key is not correct");
-
+            }
             if (response.ResponseStatus == ResponseStatus.Error)
-                throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage,
-                    response.Content));
+            {
+                throw new Exception(string.Format("Request Error Message: {0}. Content: {1}.", response.ErrorMessage, response.Content));
+            }
             if (response.Data == null || response.Data.value == null)
             {
                 Logger.LogWarning("Response Is Null on PerformImageSearch [" + response.ErrorMessage + "]");
                 return null;
             }
-
             return response.Data.value.Select(x => new ImageSearchResult
             {
                 Width = (x.width ?? 0).ToString(),
