@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -14,6 +15,8 @@ namespace Roadie.Library.Utility
             }
             return CreateMD5(System.Text.Encoding.UTF8.GetBytes(input));
         }
+
+        public static string CreateMD5(FileInfo file) => CreateMD5(File.ReadAllBytes(file.FullName));
 
         public static string CreateMD5(byte[] bytes)
         {
@@ -36,6 +39,11 @@ namespace Roadie.Library.Utility
                 // Return the hexadecimal string.
                 return sBuilder.ToString();
             }
+        }
+
+        public static uint GetHash(string file)
+        {
+            return K4os.Hash.xxHash.XXH32.DigestOf(File.ReadAllBytes(file));
         }
     }
 }

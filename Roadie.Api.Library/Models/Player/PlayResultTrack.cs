@@ -13,7 +13,7 @@ namespace Roadie.Library.Models.Player
 
         public int? Duration => Track.Duration;
 
-        public ReleaseList Release { get; set; }
+        public ReleaseList<TrackList> Release { get; set; }
 
         public string ShowArtistId => Track.TrackArtist?.Artist.Text ?? Artist.Artist.Text;
 

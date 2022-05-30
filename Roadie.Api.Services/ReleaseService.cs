@@ -372,10 +372,10 @@ namespace Roadie.Api.Services
                 if (includes.Contains("tracks"))
                 {
                     tsw.Restart();
-                    var releaseMedias = new List<ReleaseMediaList>();
+                    var releaseMedias = new List<ReleaseMediaList<TrackList>>();
                     foreach (var releaseMedia in release.Medias.OrderBy(x => x.MediaNumber))
                     {
-                        var rm = releaseMedia.Adapt<ReleaseMediaList>();
+                        var rm = releaseMedia.Adapt<ReleaseMediaList<TrackList>>();
                         var rmTracks = new List<TrackList>();
                         foreach (var track in releaseMedia.Tracks.OrderBy(x => x.TrackNumber))
                         {
@@ -781,7 +781,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        public async Task<Library.Models.Pagination.PagedResult<ReleaseList>> ListAsync(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
+        public async Task<Library.Models.Pagination.PagedResult<ReleaseList<TrackList>>> ListAsync(User roadieUser, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -890,7 +890,7 @@ namespace Roadie.Api.Services
                          where !isEqualFilter ||
                                r.Title.ToLower().Equals(normalizedFilterValue) ||
                                r.AlternateNames.ToLower().Contains(normalizedFilterValue)
-                         select new ReleaseList
+                         select new ReleaseList<TrackList>
                          {
                              DatabaseId = r.Id,
                              Id = r.RoadieId,
@@ -921,7 +921,7 @@ namespace Roadie.Api.Services
                              TrackPlayedCount = r.PlayedCount
                          };
 
-            ReleaseList[] rows = null;
+            ReleaseList<TrackList>[] rows = null;
 
             rowCount ??= result.Count();
 
@@ -1001,7 +1001,7 @@ namespace Roadie.Api.Services
 
                 if (request.FilterToCollectionId.HasValue)
                 {
-                    var newRows = new List<ReleaseList>(rows);
+                    var newRows = new List<ReleaseList<TrackList>>(rows);
                     var collection = await GetCollection(request.FilterToCollectionId.Value).ConfigureAwait(false);
                     var collectionReleases = from c in DbContext.Collections
                                              join cr in DbContext.CollectionReleases on c.Id equals cr.CollectionId
@@ -1022,7 +1022,7 @@ namespace Roadie.Api.Services
                         // Release is not known add missing dummy release to rows
                         else
                         {
-                            newRows.Add(new ReleaseList
+                            newRows.Add(new ReleaseList<TrackList>
                             {
                                 Artist = new DataToken
                                 {
@@ -1100,7 +1100,7 @@ namespace Roadie.Api.Services
                         .Where(x => x.ReleaseId == release.DatabaseId)
                         .ToArray()
                         .AsQueryable()
-                        .ProjectToType<ReleaseMediaList>()
+                        .ProjectToType<ReleaseMediaList<TrackList>>()
                         .OrderBy(x => x.MediaNumber)
                         .ToArray(); // Async operation on Project Mapping async throws error
 
@@ -1133,7 +1133,7 @@ namespace Roadie.Api.Services
                 rows = rows.OrderBy(x => x.UserRating.Rating).ToArray();
             }
             sw.Stop();
-            return new Library.Models.Pagination.PagedResult<ReleaseList>
+            return new Library.Models.Pagination.PagedResult<ReleaseList<TrackList>>
             {
                 TotalCount = rowCount.Value,
                 CurrentPage = request.PageValue,

@@ -20,7 +20,7 @@ namespace Roadie.Library.Models
         public LabelList Label { get; set; }
         public PlaylistList Playlist { get; set; }
         public int? Position { get; set; }
-        public ReleaseList Release { get; set; }
+        public ReleaseList<TrackList> Release { get; set; }
         public Image Thumbnail { get; set; }
         public TrackList Track { get; set; }
         public BookmarkType? Type { get; set; }

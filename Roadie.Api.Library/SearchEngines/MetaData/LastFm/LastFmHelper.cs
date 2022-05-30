@@ -22,7 +22,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.XPath;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Roadie.Library.MetaData.LastFm
 {
@@ -41,8 +40,6 @@ namespace Roadie.Library.MetaData.LastFm
             !string.IsNullOrEmpty(Configuration.Integrations.LastFMApiKey) &&
             !string.IsNullOrEmpty(Configuration.Integrations.LastFmApiSecret);
 
-        private IRoadieDbContext DbContext { get; }
-
         private IHttpEncoder HttpEncoder { get; }
 
         private LastAuth LastFmTrackApiAuth { get; }
@@ -57,13 +54,11 @@ namespace Roadie.Library.MetaData.LastFm
             IRoadieSettings configuration,
             ICacheManager cacheManager,
             ILogger<LastFmHelper> logger,
-            IRoadieDbContext dbContext,
             IHttpEncoder httpEncoder,
             IHttpClientFactory httpClientFactory)
             : base(configuration, cacheManager, logger, httpClientFactory)
         {
             _apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "LastFMApiKey") ?? new ApiKey();
-            DbContext = dbContext;
             HttpEncoder = httpEncoder;
 
             LastFmTrackApiAuth = new LastAuth(ApiKey.Key, ApiKey.KeySecret);

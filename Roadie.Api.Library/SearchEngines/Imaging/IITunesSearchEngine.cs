@@ -1,7 +1,4 @@
-﻿using RestSharp;
-using Roadie.Library.SearchEngines.MetaData;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using Roadie.Library.SearchEngines.MetaData;
 
 namespace Roadie.Library.SearchEngines.Imaging
 {

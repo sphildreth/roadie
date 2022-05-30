@@ -15,7 +15,9 @@ namespace Roadie.Library.MetaData.Audio
     public sealed class AudioMetaData : IAudioMetaData
     {
         public const char ArtistSplitCharacter = '/';
+
         public const int MinimumYearValue = 1900;
+
         public const string SoundTrackArtist = "Sound Tracks";
 
         private string _artist;

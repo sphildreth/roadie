@@ -1,5 +1,4 @@
-﻿using MetadataExtractor;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
 using Roadie.Library.Extensions;
@@ -44,11 +43,11 @@ namespace Roadie.Library.Inspect.Plugins.File
                 result = result.Replace(splitCharacter + trackArtist, string.Empty, StringComparison.OrdinalIgnoreCase);
                 result = result.Replace(trackArtist, string.Empty, StringComparison.OrdinalIgnoreCase);
             }
-            if(Configuration.Processing.DoDetectFeatureFragments)
+            if (Configuration.Processing.DoDetectFeatureFragments)
             {
-                if(!string.IsNullOrWhiteSpace(result))
+                if (!string.IsNullOrWhiteSpace(result))
                 {
-                    if(result.HasFeaturingFragments())
+                    if (result.HasFeaturingFragments())
                     {
                         throw new RoadieProcessingException($"Artist name [{ result }] has Feature fragments.");
                     }

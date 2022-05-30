@@ -137,7 +137,7 @@ namespace Roadie.Api.Services
                 if (includes.Contains("releases"))
                 {
                     tsw.Restart();
-                    var dtoReleases = new List<ReleaseList>();
+                    var dtoReleases = new List<ReleaseList<TrackList>>();
                     foreach (var release in await DbContext.Releases
                                             .Include("Medias")
                                             .Include("Medias.Tracks")
@@ -145,14 +145,14 @@ namespace Roadie.Api.Services
                                             .Where(x => x.ArtistId == artist.Id)
                                             .ToArrayAsync().ConfigureAwait(false))
                     {
-                        var releaseList = release.Adapt<ReleaseList>();
+                        var releaseList = release.Adapt<ReleaseList<TrackList>>();
                         releaseList.Thumbnail = ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId);
-                        var dtoReleaseMedia = new List<ReleaseMediaList>();
+                        var dtoReleaseMedia = new List<ReleaseMediaList<TrackList>>();
                         if (includes.Contains("tracks"))
                         {
                             foreach (var releasemedia in release.Medias.OrderBy(x => x.MediaNumber).ToArray())
                             {
-                                var dtoMedia = releasemedia.Adapt<ReleaseMediaList>();
+                                var dtoMedia = releasemedia.Adapt<ReleaseMediaList<TrackList>>();
                                 var tracks = new List<TrackList>();
                                 foreach (var t in await DbContext.Tracks
                                                             .Where(x => x.ReleaseMediaId == releasemedia.Id)
@@ -438,7 +438,7 @@ namespace Roadie.Api.Services
                                                                     select r)
                                                              .OrderBy(x => x.Title)
                                                              .ToArrayAsync().ConfigureAwait(false))
-                                                             .Select(r => ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, r.Artist.RoadieId), ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId)));
+                                                             .Select(r => ReleaseList<TrackList>.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, r.Artist.RoadieId), ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId)));
 
                         result.ArtistContributionReleases = result.ArtistContributionReleases.Any()
                             ? result.ArtistContributionReleases

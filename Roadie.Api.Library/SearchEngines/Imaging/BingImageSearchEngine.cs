@@ -16,7 +16,6 @@ namespace Roadie.Library.SearchEngines.Imaging
     /// </summary>
     public class BingImageSearchEngine : ImageSearchEngineBase, IBingImageSearchEngine
     {
-
         public override bool IsEnabled => Configuration.Integrations.BingImageSearchEngineEnabled;
 
         public BingImageSearchEngine(

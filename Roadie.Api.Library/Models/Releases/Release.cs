@@ -41,7 +41,7 @@ namespace Roadie.Library.Models.Releases
         public short MaxMediaNumber { get; set; }
         public short? MediaCount { get; set; }
 
-        public List<ReleaseMediaList> Medias { get; set; }
+        public List<ReleaseMediaList<TrackList>> Medias { get; set; }
 
         public Image MediumThumbnail { get; set; }
         [MaxLength(100)] public string MusicBrainzId { get; set; }

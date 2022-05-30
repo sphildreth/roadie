@@ -24,6 +24,9 @@ namespace Inspector
         [Required]
         public string Folder { get; }
 
+        [Option("-g", "Only generate Roadie data files", CommandOptionType.NoValue)]
+        public bool OnlyCreateRoadieFiles { get; }
+
         [Option("-r", "Only show what would be done, don't modify any files", CommandOptionType.NoValue)]
         public bool IsReadOnly { get; }
 
@@ -44,7 +47,14 @@ namespace Inspector
 
             var host = builder.Build();
             var inspector = new Roadie.Library.Inspect.Inspector(host.Services.GetRequiredService<IHttpClientFactory>());
-            inspector.Inspect(DoCopy, IsReadOnly, Folder, Destination ?? Folder, DontAppendSubFolder, IsReadOnly ? true : DontDeleteEmptyFolders, DontRunPreScript);
+            if (OnlyCreateRoadieFiles)
+            {
+                inspector.GenerateRoadieDataFiles(Folder);
+            }
+            else
+            {
+                inspector.Inspect(DoCopy, IsReadOnly, Folder, Destination ?? Folder, DontAppendSubFolder, IsReadOnly ? true : DontDeleteEmptyFolders, DontRunPreScript);
+            }
         }
     }
 }

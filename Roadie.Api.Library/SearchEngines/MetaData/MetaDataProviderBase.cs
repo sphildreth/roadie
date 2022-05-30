@@ -10,10 +10,13 @@ namespace Roadie.Library.MetaData
     public abstract class MetaDataProviderBase
     {
         private Lazy<HttpClient> _httpClient;
+
         private readonly IHttpClientFactory _httpClientFactory;
 
         protected readonly ICacheManager _cacheManager;
+
         protected readonly IRoadieSettings _configuration;
+
         protected readonly ILogger _logger;
 
         protected IApiKey _apiKey = null;

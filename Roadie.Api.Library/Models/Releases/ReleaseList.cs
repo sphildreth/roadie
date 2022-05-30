@@ -11,7 +11,7 @@ namespace Roadie.Library.Models.Releases
 {
     [Serializable]
     [DebuggerDisplay("DatabaseId [{ DatabaseId }] Name [{ ReleaseName }] IsValid [{ IsValid }]")]
-    public sealed class ReleaseList : EntityInfoModelBase
+    public sealed class ReleaseList<T> : EntityInfoModelBase
     {
         public DataToken Artist { get; set; }
 
@@ -55,7 +55,7 @@ namespace Roadie.Library.Models.Releases
         /// </summary>
         public int? ListNumber { get; set; }
 
-        public IEnumerable<ReleaseMediaList> Media { get; set; }
+        public IEnumerable<ReleaseMediaList<T>> Media { get; set; }
 
         public int? MediaCount { get; set; }
 
@@ -94,10 +94,10 @@ namespace Roadie.Library.Models.Releases
 
         public UserRelease UserRating { get; set; }
 
-        public static ReleaseList FromDataRelease(Data.Release release, Data.Artist artist, string baseUrl,
+        public static ReleaseList<T> FromDataRelease(Data.Release release, Data.Artist artist, string baseUrl,
             Image artistThumbnail, Image thumbnail)
         {
-            return new ReleaseList
+            return new ReleaseList<T>
             {
                 DatabaseId = release.Id,
                 Id = release.RoadieId,
@@ -129,9 +129,9 @@ namespace Roadie.Library.Models.Releases
             };
         }
 
-        public ReleaseList ShallowCopy()
+        public ReleaseList<T> ShallowCopy()
         {
-            return (ReleaseList)MemberwiseClone();
+            return (ReleaseList<T>)MemberwiseClone();
         }
     }
 }

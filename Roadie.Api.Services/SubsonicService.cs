@@ -550,7 +550,7 @@ namespace Roadie.Api.Services
         public async Task<subsonic.SubsonicOperationResult<subsonic.Response>> GetAlbumListAsync(subsonic.Request request,
             Library.Models.Users.User roadieUser, subsonic.AlbumListVersions version)
         {
-            var releaseResult = new PagedResult<ReleaseList>();
+            var releaseResult = new PagedResult<ReleaseList<TrackList>>();
 
             switch (request.Type)
             {
@@ -2155,7 +2155,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private subsonic.AlbumID3 SubsonicAlbumID3ForRelease(ReleaseList r)
+        private subsonic.AlbumID3 SubsonicAlbumID3ForRelease(ReleaseList<TrackList> r)
         {
             return new subsonic.AlbumID3
             {
@@ -2177,7 +2177,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private subsonic.AlbumID3[] SubsonicAlbumID3ForReleases(IEnumerable<ReleaseList> r)
+        private subsonic.AlbumID3[] SubsonicAlbumID3ForReleases(IEnumerable<ReleaseList<TrackList>> r)
         {
             if (r?.Any() != true)
             {
@@ -2321,7 +2321,7 @@ namespace Roadie.Api.Services
             return result.ToArray();
         }
 
-        private subsonic.Child SubsonicChildForRelease(ReleaseList r, string parent, string path)
+        private subsonic.Child SubsonicChildForRelease(ReleaseList<TrackList> r, string parent, string path)
         {
             return new subsonic.Child
             {
@@ -2405,7 +2405,7 @@ namespace Roadie.Api.Services
             };
         }
 
-        private subsonic.Child[] SubsonicChildrenForReleases(IEnumerable<ReleaseList> r, string parent)
+        private subsonic.Child[] SubsonicChildrenForReleases(IEnumerable<ReleaseList<TrackList>> r, string parent)
         {
             if (r?.Any() != true)
             {

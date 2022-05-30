@@ -11,6 +11,7 @@ using Roadie.Library.Enums;
 using Roadie.Library.Extensions;
 using Roadie.Library.Imaging;
 using Roadie.Library.MetaData.LastFm;
+using Roadie.Library.Models;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Releases;
 using Roadie.Library.Models.Statistics;
@@ -179,7 +180,7 @@ namespace Roadie.Api.Services
                             ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedArtist.RoadieId)),
                     MostPlayedRelease = mostPlayedRelease == null
                         ? null
-                        : ReleaseList.FromDataRelease(mostPlayedRelease,
+                        : ReleaseList<TrackList>.FromDataRelease(mostPlayedRelease,
                             mostPlayedRelease.Artist,
                             HttpContext.BaseUrl,
                             ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, mostPlayedRelease.Artist.RoadieId),

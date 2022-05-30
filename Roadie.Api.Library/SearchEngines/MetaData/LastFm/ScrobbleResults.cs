@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Roadie.Library.SearchEngines.MetaData.LastFm
+﻿namespace Roadie.Library.SearchEngines.MetaData.LastFm
 {
-
     // NOTE: Generated code may require at least .NET Framework 4.5 or .NET Core/Standard 2.0.
     /// <remarks/>
     [System.SerializableAttribute()]
@@ -13,7 +8,6 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
     [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
     public partial class scrobbles
     {
-
         private scrobblesScrobble scrobbleField;
 
         private byte ignoredField;
@@ -68,7 +62,6 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
     public partial class scrobblesScrobble
     {
-
         private scrobblesScrobbleTrack trackField;
 
         private scrobblesScrobbleArtist artistField;
@@ -166,7 +159,6 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
     public partial class scrobblesScrobbleTrack
     {
-
         private byte correctedField;
 
         private string valueField;
@@ -206,7 +198,6 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
     public partial class scrobblesScrobbleArtist
     {
-
         private byte correctedField;
 
         private string valueField;
@@ -246,7 +237,6 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
     public partial class scrobblesScrobbleAlbum
     {
-
         private byte correctedField;
 
         private string valueField;
@@ -286,7 +276,6 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
     public partial class scrobblesScrobbleAlbumArtist
     {
-
         private byte correctedField;
 
         /// <remarks/>
@@ -310,7 +299,6 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
     public partial class scrobblesScrobbleIgnoredMessage
     {
-
         private byte codeField;
 
         /// <remarks/>
@@ -327,6 +315,4 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
             }
         }
     }
-
-
 }

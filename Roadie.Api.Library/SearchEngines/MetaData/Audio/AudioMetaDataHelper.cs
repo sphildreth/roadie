@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Roadie.Library.Caching;
 using Roadie.Library.Configuration;
-using Roadie.Library.Data;
 using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Engines;
@@ -53,8 +52,8 @@ namespace Roadie.Library.MetaData.Audio
         private IMusicBrainzProvider MusicBrainzProvider { get; }
 
         public AudioMetaDataHelper(IRoadieSettings configuration, IHttpEncoder httpEncoder, IRoadieDbContext context,
-            IMusicBrainzProvider musicBrainzHelper, ILastFmHelper lastFmHelper, ICacheManager cacheManager, 
-            ILogger<AudioMetaDataHelper> logger, IArtistLookupEngine artistLookupEngine, IFileNameHelper filenameHelper, 
+            IMusicBrainzProvider musicBrainzHelper, ILastFmHelper lastFmHelper, ICacheManager cacheManager,
+            ILogger<AudioMetaDataHelper> logger, IArtistLookupEngine artistLookupEngine, IFileNameHelper filenameHelper,
             IID3TagsHelper id3TagsHelper)
         {
             Configuration = configuration;
@@ -113,7 +112,7 @@ namespace Roadie.Library.MetaData.Audio
 
                 if (!result.IsValid)
                 {
-                    Logger.LogWarning("File [{0}] MetaData Invalid, TagSources [{1}] MetaData [{2}]", fileInfo.FullName,  string.Join(",", tagSources), result.ToString());
+                    Logger.LogWarning("File [{0}] MetaData Invalid, TagSources [{1}] MetaData [{2}]", fileInfo.FullName, string.Join(",", tagSources), result.ToString());
                 }
                 else
                 {

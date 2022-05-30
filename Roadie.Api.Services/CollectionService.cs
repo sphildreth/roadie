@@ -100,7 +100,7 @@ namespace Roadie.Api.Services
                                        select new CollectionRelease
                                        {
                                            ListNumber = crc.ListNumber,
-                                           Release = ReleaseList.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, r.Artist.RoadieId), ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId))
+                                           Release = ReleaseList<TrackList>.FromDataRelease(r, r.Artist, HttpContext.BaseUrl, ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, r.Artist.RoadieId), ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, r.RoadieId))
                                        }).ToArray();
                     tsw.Stop();
                     timings.Add("releases", tsw.ElapsedMilliseconds);

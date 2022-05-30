@@ -245,7 +245,7 @@ namespace Roadie.Library.Engines
                     };
                 }
 
-                // See if roadie.json file exists in the metadata files folder, if so then use artist data from that
+                // See if roadie.artist.json file exists in the metadata files folder, if so then use artist data from that
                 string releaseRoadieDataFilename = null;
                 try
                 {
