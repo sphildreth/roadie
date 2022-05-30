@@ -16,6 +16,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
     public sealed class MusicBrainzProvider : MetaDataProviderBase, IMusicBrainzProvider
     {
         public override bool IsEnabled => Configuration.Integrations.MusicBrainzProviderEnabled;
+
         private MusicBrainzRepository Repository { get; }
 
         public MusicBrainzProvider(

@@ -16,7 +16,7 @@ namespace Roadie.Library.Models
     {
         public const string DefaultIncludes = "stats,images,associatedartists,similarartists,comments,collections,playlists,contributions,labels,genres";
 
-        public IEnumerable<ReleaseList> ArtistContributionReleases;
+        public IEnumerable<ReleaseList<TrackList>> ArtistContributionReleases;
         public IEnumerable<LabelList> ArtistLabels;
         private IEnumerable<string> _isniList;
         [MaxLength(100)] public string AmgId { get; set; }
@@ -97,7 +97,7 @@ namespace Roadie.Library.Models
 
         [MaxLength(500)] public string RealName { get; set; }
 
-        public IEnumerable<ReleaseList> Releases { get; set; }
+        public IEnumerable<ReleaseList<TrackList>> Releases { get; set; }
 
         public IEnumerable<ArtistList> SimilarArtists { get; set; }
 

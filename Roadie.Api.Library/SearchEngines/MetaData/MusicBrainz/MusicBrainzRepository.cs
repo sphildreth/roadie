@@ -17,6 +17,7 @@ namespace Roadie.Library.MetaData.MusicBrainz
         private ILogger<MusicBrainzProvider> Logger { get; }
 
         private Lazy<HttpClient> _httpClient;
+
         private readonly IHttpClientFactory _httpClientFactory;
 
         private HttpClient HttpClient => _httpClient.Value;

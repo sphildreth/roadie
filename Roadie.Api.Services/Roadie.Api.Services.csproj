@@ -8,11 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Hashids.net" Version="1.4.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="6.0.2" />
+    <PackageReference Include="Hashids.net" Version="1.5.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="6.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.16.0" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.17" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.18.0" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.18" />
   </ItemGroup>
 
   <ItemGroup>

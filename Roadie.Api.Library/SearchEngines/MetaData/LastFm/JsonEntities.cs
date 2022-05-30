@@ -15,7 +15,7 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
         public string artist { get; set; }
 
         public string mbid { get; set; }
-       
+
         public string tags { get; set; }
 
         public string name { get; set; }
@@ -35,12 +35,12 @@ namespace Roadie.Library.SearchEngines.MetaData.LastFm
         /// </summary>
         public IEnumerable<Tag> GetTags(ICacheSerializer serializer)
         {
-            if(string.IsNullOrWhiteSpace(tags))
+            if (string.IsNullOrWhiteSpace(tags))
             {
                 return Enumerable.Empty<Tag>();
             }
             var t = serializer.Deserialize<Tags>(tags);
-            if(t != null)
+            if (t != null)
             {
                 return t.tag;
             }

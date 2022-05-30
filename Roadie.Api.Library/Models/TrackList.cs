@@ -15,7 +15,7 @@ namespace Roadie.Library.Models
 {
     [Serializable]
     [DebuggerDisplay("Trackid [{ TrackId }], Track Name [{ TrackName }}, Release Name [{ ReleaseName }]")]
-    public sealed class TrackList : EntityInfoModelBase
+    public class TrackList : EntityInfoModelBase
     {
         public ArtistList Artist { get; set; }
 
@@ -55,7 +55,7 @@ namespace Roadie.Library.Models
 
         public short? Rating { get; set; }
 
-        public ReleaseList Release { get; set; }
+        public ReleaseList<TrackList> Release { get; set; }
 
         [JsonIgnore]
         public DateTime? ReleaseDate { get; set; }
@@ -141,7 +141,7 @@ namespace Roadie.Library.Models
                     Text = track.Title,
                     Value = track.RoadieId.ToString()
                 },
-                Release = ReleaseList.FromDataRelease(release, artist, baseUrl, artistThumbnail, releaseThumbnail),
+                Release = ReleaseList<TrackList>.FromDataRelease(release, artist, baseUrl, artistThumbnail, releaseThumbnail),
                 LastPlayed = track.LastPlayed,
                 Artist = ArtistList.FromDataArtist(artist, artistThumbnail),
                 TrackArtist = trackArtist == null ? null : ArtistList.FromDataArtist(trackArtist, trackArtistThumbnail),

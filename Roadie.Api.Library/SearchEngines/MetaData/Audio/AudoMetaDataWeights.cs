@@ -6,12 +6,19 @@ namespace Roadie.Library.MetaData.Audio
     public enum AudioMetaDataWeights
     {
         None = 0,
+
         Year = 1,
+
         Time = 2,
+
         TrackNumber = 4,
+
         TrackTotalNumber = 8,
+
         Release = 16,
+
         Title = 32,
+
         Artist = 64
     }
 

@@ -91,7 +91,7 @@ namespace Roadie.Library.Models
 
         public short Rating { get; set; }
 
-        public ReleaseList Release { get; set; }
+        public ReleaseList<TrackList> Release { get; set; }
 
         public string ReleaseMediaId { get; set; }
 

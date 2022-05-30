@@ -92,7 +92,7 @@ namespace Roadie.Api.Services
             result.Artist = ArtistList.FromDataArtist(track.ReleaseMedia.Release.Artist,
                 ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.Artist.RoadieId));
             result.ArtistThumbnail = ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.Artist.RoadieId);
-            result.Release = ReleaseList.FromDataRelease(track.ReleaseMedia.Release, track.ReleaseMedia.Release.Artist,
+            result.Release = ReleaseList<TrackList>.FromDataRelease(track.ReleaseMedia.Release, track.ReleaseMedia.Release.Artist,
                 HttpContext.BaseUrl, ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.Artist.RoadieId),
                 ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId));
             result.ReleaseThumbnail = ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, track.ReleaseMedia.Release.RoadieId);
@@ -545,7 +545,7 @@ namespace Roadie.Api.Services
                                       {
                                           rm.MediaNumber
                                       },
-                                      rl = new ReleaseList
+                                      rl = new ReleaseList<TrackList>
                                       {
                                           DatabaseId = r.Id,
                                           Id = r.RoadieId,

@@ -17,7 +17,7 @@ namespace Roadie.Library.Models
         /// </summary>
         [AdaptIgnore]
         [JsonIgnore]
-        public int DatabaseId { get; set; }
+        public virtual int DatabaseId { get; set; }
 
         [Key]
         [Required]

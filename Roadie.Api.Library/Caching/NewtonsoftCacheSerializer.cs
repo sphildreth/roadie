@@ -17,7 +17,8 @@ namespace Roadie.Library.Caching
             {
                 ContractResolver = new IgnoreJsonAttributesResolver(),
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                Formatting = Formatting.Indented
+                Formatting = Formatting.Indented,
+                NullValueHandling = NullValueHandling.Ignore
             };
         }
 

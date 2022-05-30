@@ -6,7 +6,6 @@ using Roadie.Library.MetaData.ID3Tags;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace Roadie.Library.Inspect.Plugins
 {
