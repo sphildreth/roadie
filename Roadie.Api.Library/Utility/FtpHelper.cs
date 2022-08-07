@@ -19,7 +19,7 @@ namespace Roadie.Library.Utility
                 foreach (var item in client.GetListing(ftpDirectory, FtpListOption.Recursive))
                     switch (item.Type)
                     {
-                        case FtpFileSystemObjectType.File:
+                        case FtpObjectType.File:
                             foundFiles.Add(item.FullName);
                             break;
                     }
