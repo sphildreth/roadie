@@ -53,8 +53,8 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="4.0.1" />
     <PackageReference Include="Serilog.Sinks.LiteDB.NetStandard" Version="1.0.14" />
     <PackageReference Include="Serilog.Sinks.RollingFileAlternate" Version="2.0.9" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.18.0" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.18" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.22.0" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.19" />
   </ItemGroup>
 
   <ItemGroup>
