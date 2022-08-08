@@ -61,7 +61,7 @@ namespace Roadie.Library.Tests
 
             var logger = new EventMessageLogger<LastFmHelper>();
             logger.Messages += MessageLogger_Messages;
-            var lfmHelper = new LastFmHelper(Configuration, CacheManager, new EventMessageLogger<LastFmHelper>(), RoadieDbContext, HttpEncoder, _httpClientFactory);
+            var lfmHelper = new LastFmHelper(Configuration, CacheManager, new EventMessageLogger<LastFmHelper>(), HttpEncoder, _httpClientFactory);
 
             var artistName = "Billy Joel";
             var title = "Piano Man";
@@ -103,7 +103,7 @@ namespace Roadie.Library.Tests
             }
             var logger = new EventMessageLogger<LastFmHelper>();
             logger.Messages += MessageLogger_Messages;
-            var lfmHelper = new LastFmHelper(Configuration, CacheManager, new EventMessageLogger<LastFmHelper>(), RoadieDbContext, HttpEncoder, _httpClientFactory);
+            var lfmHelper = new LastFmHelper(Configuration, CacheManager, new EventMessageLogger<LastFmHelper>(), HttpEncoder, _httpClientFactory);
 
             var artistName = "Billy Joel";
             var sw = Stopwatch.StartNew();

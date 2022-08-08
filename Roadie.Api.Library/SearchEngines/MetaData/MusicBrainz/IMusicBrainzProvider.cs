@@ -7,6 +7,6 @@ namespace Roadie.Library.MetaData.MusicBrainz
 {
     public interface IMusicBrainzProvider : IArtistSearchEngine, IReleaseSearchEngine
     {
-       Task<IEnumerable<AudioMetaData>> MusicBrainzReleaseTracksAsync(string artistName, string releaseTitle);
+        Task<IEnumerable<AudioMetaData>> MusicBrainzReleaseTracksAsync(string artistName, string releaseTitle);
     }
 }

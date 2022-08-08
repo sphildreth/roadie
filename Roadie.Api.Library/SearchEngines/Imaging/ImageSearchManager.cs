@@ -12,7 +12,9 @@ namespace Roadie.Library.SearchEngines.Imaging
     public class ImageSearchManager : IImageSearchManager
     {
         private readonly IImageSearchEngine _bingSearchEngine;
+
         private readonly IImageSearchEngine _itunesSearchEngine;
+
         private readonly IHttpClientFactory _httpClientFactory;
 
         private IRoadieSettings Configuration { get; }

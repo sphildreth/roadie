@@ -365,7 +365,7 @@ namespace Roadie.Dlna.Services
                                     {
                                         Artist = new DataToken { Value = a.RoadieId.ToString(), Text = a.Name }
                                     },
-                                    Release = new ReleaseList
+                                    Release = new ReleaseList<TrackList>
                                     {
                                         Release = new DataToken { Value = r.RoadieId.ToString(), Text = r.Title }
                                     }

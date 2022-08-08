@@ -20,7 +20,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A1", Text = "A1" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R1", Text = "R1" }
                     }
@@ -32,7 +32,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A2", Text = "A2" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R4", Text = "R4" }
                     }
@@ -44,7 +44,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A1", Text = "A1" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R5", Text = "R5" }
                     }
@@ -56,7 +56,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A1", Text = "A1" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R1", Text = "R1" }
                     }
@@ -68,7 +68,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A3", Text = "A3" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R6", Text = "R6" }
                     }
@@ -80,7 +80,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A2", Text = "A2" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R5", Text = "R5" }
                     }
@@ -92,7 +92,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A2", Text = "A2" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R5", Text = "R5" }
                     }
@@ -104,7 +104,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A2", Text = "A2" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R5", Text = "R5" }
                     }
@@ -116,7 +116,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A2", Text = "A2" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R6", Text = "R6" }
                     }
@@ -128,7 +128,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A4", Text = "A4" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R7", Text = "R7" }
                     }
@@ -140,7 +140,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A5", Text = "A5" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R8", Text = "R8" }
                     }
@@ -152,7 +152,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A6", Text = "A6" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R9", Text = "R9" }
                     }
@@ -164,7 +164,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A7", Text = "A7" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R10", Text = "R10" }
                     }
@@ -176,7 +176,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A8", Text = "A8" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R11", Text = "R11" }
                     }
@@ -188,7 +188,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A9", Text = "A9" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R12", Text = "R12" }
                     }
@@ -200,7 +200,7 @@ namespace Roadie.Library.Tests
                     {
                         Artist = new Models.DataToken { Value = "A10", Text = "A10" }
                     },
-                    Release = new Models.Releases.ReleaseList
+                    Release = new Models.Releases.ReleaseList<Models.TrackList>
                     {
                         Release = new Models.DataToken { Value = "R13", Text = "R13" }
                     }

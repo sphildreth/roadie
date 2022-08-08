@@ -28,7 +28,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Wikipedia
 
         public async Task<OperationResult<IEnumerable<ArtistSearchResult>>> PerformArtistSearchAsync(string query, int resultsCount)
         {
-            if(string.IsNullOrEmpty(query) || resultsCount == 0)
+            if (string.IsNullOrEmpty(query) || resultsCount == 0)
             {
                 return new OperationResult<IEnumerable<ArtistSearchResult>>();
             }

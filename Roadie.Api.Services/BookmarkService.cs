@@ -7,6 +7,7 @@ using Roadie.Library.Data.Context;
 using Roadie.Library.Encoding;
 using Roadie.Library.Enums;
 using Roadie.Library.Imaging;
+using Roadie.Library.Models;
 using Roadie.Library.Models.Collections;
 using Roadie.Library.Models.Pagination;
 using Roadie.Library.Models.Playlists;
@@ -107,7 +108,7 @@ namespace Roadie.Api.Services
                             Text = release.Title,
                             Value = release.RoadieId.ToString()
                         };
-                        row.Release = ReleaseList.FromDataRelease(release, release.Artist, HttpContext.BaseUrl,
+                        row.Release = ReleaseList<TrackList>.FromDataRelease(release, release.Artist, HttpContext.BaseUrl,
                             ImageHelper.MakeArtistThumbnailImage(Configuration, HttpContext, release.Artist.RoadieId),
                             ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId));
                         row.Thumbnail = ImageHelper.MakeReleaseThumbnailImage(Configuration, HttpContext, release.RoadieId);

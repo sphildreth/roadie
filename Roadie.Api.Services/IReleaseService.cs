@@ -19,7 +19,7 @@ namespace Roadie.Api.Services
 
         Task<OperationResult<bool>> DeleteReleasesAsync(Library.Identity.User user, IEnumerable<Guid> releaseIds, bool doDeleteFiles = false);
 
-        Task<PagedResult<ReleaseList>> ListAsync(Library.Models.Users.User user, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null);
+        Task<PagedResult<ReleaseList<TrackList>>> ListAsync(Library.Models.Users.User user, PagedRequest request, bool? doRandomize = false, IEnumerable<string> includes = null);
 
         Task<OperationResult<bool>> MergeReleasesAsync(Library.Identity.User user, Guid releaseToMergeId, Guid releaseToMergeIntoId, bool addAsMedia);
 

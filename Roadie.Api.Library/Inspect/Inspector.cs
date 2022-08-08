@@ -21,7 +21,6 @@ using System.IO;
 using System.Linq;
 using System.Management.Automation;
 using System.Net.Http;
-using System.Text.Json;
 
 namespace Roadie.Library.Inspect
 {
@@ -30,8 +29,11 @@ namespace Roadie.Library.Inspect
         private const string Salt = "6856F2EE-5965-4345-884B-2CCA457AAF59";
 
         private IRoadieSettings Configuration { get; }
+
         private ILogger Logger => MessageLogger as ILogger;
+
         private IEventMessageLogger MessageLogger { get; }
+
         private ID3TagsHelper TagsHelper { get; }
 
         private IEnumerable<IInspectorDirectoryPlugin> _directoryPlugins;
@@ -139,6 +141,7 @@ namespace Roadie.Library.Inspect
             var tagHelperLooper = new EventMessageLogger<ID3TagsHelper>();
             tagHelperLooper.Messages += MessageLogger_Messages;
             TagsHelper = new ID3TagsHelper(Configuration, CacheManager, tagHelperLooper, httpClientFactory);
+
         }
 
         private void InspectImage(bool isReadOnly, bool doCopy, string dest, string subdirectory, FileInfo image)
@@ -238,11 +241,11 @@ namespace Roadie.Library.Inspect
             {
                 if (!File.Exists(scriptFilename))
                 {
-                    Console.WriteLine($"Script Not Found: [{ scriptFilename }]");
+                    Console.WriteLine($"Script Not Found: [{scriptFilename}]");
                     return null;
                 }
 
-                Console.WriteLine($"Running Script: [{ scriptFilename }]");
+                Console.WriteLine($"Running Script: [{scriptFilename}]");
                 var script = File.ReadAllText(scriptFilename);
                 using (var ps = PowerShell.Create())
                 {
@@ -269,17 +272,8 @@ namespace Roadie.Library.Inspect
 
         public static string ArtistInspectorToken(AudioMetaData metaData) => ToToken(metaData.Artist);
 
-        public void Inspect(bool doCopy, bool isReadOnly, string directoryToInspect, string destination, bool dontAppendSubFolder, bool dontDeleteEmptyFolders, bool dontRunPreScripts)
+        void PrintInspectorBanner(string directory)
         {
-            Configuration.Inspector.IsInReadOnlyMode = isReadOnly;
-            Configuration.Inspector.DoCopyFiles = doCopy;
-
-            var artistsFound = new List<string>();
-            var releasesFound = new List<string>();
-            var mp3FilesFoundCount = 0;
-
-            Trace.Listeners.Add(new LoggingTraceListener());
-
             Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine("");
             Console.WriteLine(" ▄▄▄         ▄▄▄· ·▄▄▄▄  ▪  ▄▄▄ .    • ▌ ▄ ·. ▄▄▄ .·▄▄▄▄  ▪   ▄▄▄·     ▪   ▐ ▄ .▄▄ ·  ▄▄▄·▄▄▄ . ▄▄· ▄▄▄▄▄      ▄▄▄  ");
@@ -295,13 +289,61 @@ namespace Roadie.Library.Inspect
             Console.WriteLine($"✨ Inspector Start, UTC [{DateTime.UtcNow.ToString("s")}]");
             Console.ResetColor();
 
-            if (!Directory.Exists(directoryToInspect))
+            if (!Directory.Exists(directory))
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"📛 Folder To Inspect [{ directoryToInspect }] is not found.");
+                Console.WriteLine($"📛 Folder [{directory}] is not found.");
                 Console.ResetColor();
                 return;
             }
+        }
+
+        public void GenerateRoadieDataFiles(string directory)
+        {
+            PrintInspectorBanner(directory);
+
+            var roadieDataFilePlugin = DirectoryPlugins.FirstOrDefault(x => x.Description == RoadieDataFileCreator.RoadieDataFileCreatorDescription);
+            if(roadieDataFilePlugin == null)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"📛 Unable to find Roadie Data File Creator Plugin.");
+                Console.ResetColor();
+                return;
+            }
+
+            Console.WriteLine($"╠╬═ Running Directory Plugin: {roadieDataFilePlugin.Description}");
+
+            // Get all the top level directorys in the directory
+            var directoryDirectories = Directory.GetDirectories(directory, "*.*", SearchOption.TopDirectoryOnly);
+            foreach(var directoryDirectory in directoryDirectories)
+            {
+                var directoryInfo = new DirectoryInfo(directoryDirectory);
+
+                var pluginResult = roadieDataFilePlugin.Process(directoryInfo);
+                if (!pluginResult.IsSuccess)
+                {
+                    Console.WriteLine($"📛 Plugin Failed: Error [{CacheManager.CacheSerializer.Serialize(pluginResult)}]");
+                    return;
+                }
+                if (!string.IsNullOrEmpty(pluginResult.Data))
+                {
+                    Console.WriteLine($"╠╣ Directory Plugin Message: {pluginResult.Data}");
+                }
+            }
+        }
+
+        public void Inspect(bool doCopy, bool isReadOnly, string directoryToInspect, string destination, bool dontAppendSubFolder, bool dontDeleteEmptyFolders, bool dontRunPreScripts)
+        {
+            Configuration.Inspector.IsInReadOnlyMode = isReadOnly;
+            Configuration.Inspector.DoCopyFiles = doCopy;
+
+            var artistsFound = new List<string>();
+            var releasesFound = new List<string>();
+            var mp3FilesFoundCount = 0;
+
+            Trace.Listeners.Add(new LoggingTraceListener());
+
+            PrintInspectorBanner(directoryToInspect);
 
             string scriptResult = null;
             // Run PreInspect script
@@ -366,7 +408,7 @@ namespace Roadie.Library.Inspect
                         // Run directory plugins against current directory
                         foreach (var plugin in DirectoryPlugins.Where(x => !x.IsPostProcessingPlugin).OrderBy(x => x.Order))
                         {
-                            Console.WriteLine($"╠╬═ Running Directory Plugin {plugin.Description}");
+                            Console.WriteLine($"╠╬═ Running Directory Plugin: {plugin.Description}");
                             var pluginResult = plugin.Process(directoryInfo);
                             if (!pluginResult.IsSuccess)
                             {
@@ -662,12 +704,12 @@ namespace Roadie.Library.Inspect
     {
         public override void Write(string message)
         {
-            Console.WriteLine($"╠╬═ { message }");
+            Console.WriteLine($"╠╬═ {message}");
         }
 
         public override void WriteLine(string message)
         {
-            Console.WriteLine($"╠╬═ { message }");
+            Console.WriteLine($"╠╬═ {message}");
         }
     }
 }

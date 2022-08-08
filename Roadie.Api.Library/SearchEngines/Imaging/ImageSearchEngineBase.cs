@@ -12,10 +12,15 @@ namespace Roadie.Library.SearchEngines.Imaging
     public abstract class ImageSearchEngineBase : IImageSearchEngine
     {
         protected readonly RestClient _client;
+
         protected readonly IRoadieSettings _configuratio;
+
         protected readonly string _referrer;
+
         protected readonly string _requestIp;
+
         protected IApiKey _apiKey = null;
+
         protected ILogger _logger;
 
         public abstract bool IsEnabled { get; }

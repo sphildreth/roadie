@@ -13,7 +13,7 @@ namespace Roadie.Library.Models.Statistics
         public int? FavoritedReleases { get; set; }
         public int? FavoritedTracks { get; set; }
         public ArtistList MostPlayedArtist { get; set; }
-        public ReleaseList MostPlayedRelease { get; set; }
+        public ReleaseList<TrackList> MostPlayedRelease { get; set; }
         public TrackList MostPlayedTrack { get; set; }
         public TrackList LastPlayedTrack { get; set; }
 

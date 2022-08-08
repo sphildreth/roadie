@@ -23,8 +23,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
             IRoadieSettings configuration,
             ICacheManager cacheManager,
             ILogger<DiscogsHelper> logger,
-            IHttpClientFactory httpClientFactory) : base(
-                    configuration, cacheManager, logger, httpClientFactory)
+            IHttpClientFactory httpClientFactory) 
+        : base(configuration, cacheManager, logger, httpClientFactory)
         {
             _apiKey = configuration.Integrations.ApiKeys.FirstOrDefault(x => x.ApiName == "DiscogsConsumerKey") ?? new ApiKey();
         }
@@ -41,8 +41,8 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                     var request = BuildSearchRequest(query, 1, "artist");
 
                     var client = new RestClient(new RestClientOptions("https://api.discogs.com/database")
-                    {  
-                        UserAgent  = WebHelper.UserAgent
+                    {
+                        UserAgent = WebHelper.UserAgent
                     });
                     var response = await client.ExecuteAsync<DiscogsResult>(request).ConfigureAwait(false);
 

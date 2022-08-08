@@ -24,7 +24,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             ICacheManager cacheManager,
             ILogger<SpotifyHelper> logger,
             IHttpClientFactory httpClientFactory)
-                    : base(configuration, cacheManager, logger, httpClientFactory)
+        : base(configuration, cacheManager, logger, httpClientFactory)
         {
         }
 
@@ -83,8 +83,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Spotify
             };
         }
 
-        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName,
-            string query, int resultsCount)
+        public async Task<OperationResult<IEnumerable<ReleaseSearchResult>>> PerformReleaseSearch(string artistName, string query, int resultsCount)
         {
             var artistResult = await PerformArtistSearchAsync(artistName, resultsCount).ConfigureAwait(false);
             if (!artistResult.IsSuccess) return new OperationResult<IEnumerable<ReleaseSearchResult>>();
