@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Thumbnails\**" />
+    <EmbeddedResource Remove="Thumbnails\**" />
+    <None Remove="Thumbnails\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Roadie.Api.Library\Roadie.Library.csproj" />
   </ItemGroup>
 

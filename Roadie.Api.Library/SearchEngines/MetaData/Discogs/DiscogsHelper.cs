@@ -211,8 +211,7 @@ namespace Roadie.Library.SearchEngines.MetaData.Discogs
                     var client = new RestClient(new RestClientOptions("https://api.discogs.com/database")
                     {
                         UserAgent = WebHelper.UserAgent, 
-                        Timeout = SafeParser.ToNumber<int>(Configuration.Integrations.DiscogsTimeout)
-
+                        MaxTimeout = SafeParser.ToNumber<int>(Configuration.Integrations.DiscogsTimeout)
                     });
                     var response = await client.ExecuteAsync<DiscogsReleaseSearchResult>(request).ConfigureAwait(false);
                     if (response?.ResponseStatus == null || response.ResponseStatus == ResponseStatus.Error)
