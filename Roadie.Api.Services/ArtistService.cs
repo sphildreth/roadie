@@ -470,7 +470,7 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            Logger.LogInformation($"ByIdAction: Artist `{ artist }`: includes [{includes.ToCSV() }], timings: [{ timings.ToTimings() }]");
+            Logger.LogInformation($"ByIdAction: Artist `{artist}`: includes [{includes.ToCSV()}], timings: [{timings.ToTimings()}]");
             return new OperationResult<Artist>
             {
                 Data = result,
@@ -582,9 +582,9 @@ namespace Roadie.Api.Services
                 }
 
                 var userArtists = await DbContext.UserArtists.Where(x => x.ArtistId == artistToMerge.Id).ToArrayAsync().ConfigureAwait(false);
-                if(userArtists != null)
+                if (userArtists != null)
                 {
-                    foreach(var userArtist in userArtists)
+                    foreach (var userArtist in userArtists)
                     {
                         userArtist.ArtistId = artistToMergeInto.Id;
                         userArtist.LastUpdated = now;
@@ -755,7 +755,7 @@ namespace Roadie.Api.Services
             }
 
             sw.Stop();
-            Logger.LogInformation($"ById Artist: `{ result?.Data }`, includes [{ includes.ToCSV() }], timings [{ timings.ToTimings() }]");
+            Logger.LogInformation($"ById Artist: `{result?.Data}`, includes [{includes.ToCSV()}], timings [{timings.ToTimings()}]");
             return new OperationResult<Artist>(result.Messages)
             {
                 Data = result?.Data,
@@ -901,12 +901,12 @@ namespace Roadie.Api.Services
                                 a.Name.ToLower().Contains(normalizedFilterValue) ||
                                 a.SortName.ToLower().Contains(normalizedFilterValue) ||
                                 a.RealName.ToLower().Contains(normalizedFilterValue) ||
-                                a.AlternateNames.Contains(normalizedFilterValue)
+                                (a.AlternateNames.Contains(normalizedFilterValue) || a.AlternateNames.Contains(request.FilterValue))
                          where !isEqualFilter ||
                                a.Name.ToLower().Equals(normalizedFilterValue) ||
                                a.SortName.ToLower().Equals(normalizedFilterValue) ||
                                a.RealName.ToLower().Equals(normalizedFilterValue) ||
-                               a.AlternateNames.ToLower().Equals(normalizedFilterValue)
+                               (a.AlternateNames.Contains(normalizedFilterValue) || a.AlternateNames.Contains(request.FilterValue))
                          where !request.FilterFavoriteOnly || favoriteArtistIds.Contains(a.Id)
                          where request.FilterToLabelId == null || labelArtistIds.Contains(a.Id)
                          where !isFilteredToGenre || genreArtistIds.Contains(a.Id)
