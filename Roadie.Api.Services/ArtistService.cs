@@ -906,7 +906,7 @@ namespace Roadie.Api.Services
                                a.Name.ToLower().Equals(normalizedFilterValue) ||
                                a.SortName.ToLower().Equals(normalizedFilterValue) ||
                                a.RealName.ToLower().Equals(normalizedFilterValue) ||
-                               (a.AlternateNames.Contains(normalizedFilterValue) || a.AlternateNames.Contains(request.FilterValue))
+                               (a.AlternateNames.Equals(normalizedFilterValue) || a.AlternateNames.Equals(request.FilterValue))
                          where !request.FilterFavoriteOnly || favoriteArtistIds.Contains(a.Id)
                          where request.FilterToLabelId == null || labelArtistIds.Contains(a.Id)
                          where !isFilteredToGenre || genreArtistIds.Contains(a.Id)
