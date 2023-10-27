@@ -13,11 +13,6 @@ Powerful API Music Server. Serve (stream) your high quality MP3 files.
 
 Roadie is an API server that works well with [roadie-vuejs](https://github.com/sphildreth/roadie-vuejs) as a graphical UI Front End and also has a full [Subsonic compatible API](http://www.subsonic.org/pages/apps.jsp) that works with many Subsonic mobile applications. Roadie was built to be able to handle music collections with [hundreds of thousands of tracks](http://www.redferret.net/?page_id=38781).
 
-Demo Site:
----------
-* [DEMO SITE](https://www.roadie.rocks/)
-* The demo site is running  [Roadie-VueJs](https://github.com/sphildreth/roadie-vuejs) frontend, with Roadie API running against a MariaDB server.
-
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 <a target="_blank" href="https://github.com/sphildreth/roadie/pulls">
     <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" />
