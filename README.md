@@ -1,4 +1,6 @@
 
+NOTE: Roadie is dead, see the replacement project [Melodee](https://github.com/sphildreth/melodee).
+
 
                                   ____   __    __   ____  __  ____     __   ____  __  
                                  (  _ \ /  \  / _\ (    \(  )(  __)   / _\ (  _ \(  ) 
